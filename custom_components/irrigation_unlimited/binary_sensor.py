@@ -6,7 +6,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.core import ServiceCall
 import voluptuous as vol
 
-from .IrrigationUnlimited import (
+from .irrigation_unlimited import (
     IUCoordinator,
     IUController,
     IUZone,

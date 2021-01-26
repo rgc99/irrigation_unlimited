@@ -40,10 +40,10 @@ from .const import (
     CONF_PREAMBLE,
     CONF_POSTAMBLE,
     CONF_TESTING,
-    CONF_TEST_SPEED,
-    CONF_TEST_TIMES,
-    CONF_TEST_START,
-    CONF_TEST_END,
+    CONF_SPEED,
+    CONF_TIMES,
+    CONF_START,
+    CONF_END,
     CONF_CONTROLLERS,
     CONF_SCHEDULES,
     CONF_ZONES,
@@ -1153,6 +1153,7 @@ class IUCoordinator:
         self._initialised: bool = False
         self._last_poll: datetime = None
         # Testing variables
+        self._testing: bool = False
         self._test_number: int = 0
         self._test_delta: timedelta = None
         self._test_start: datetime = None
@@ -1191,13 +1192,14 @@ class IUCoordinator:
 
         global SYSTEM_GRANULARITY
         SYSTEM_GRANULARITY = config.get(CONF_GRANULARITY, DEFAULT_GRANULATITY)
-        self._testing = config.get(CONF_TESTING, False)
-        self._test_speed = config.get(CONF_TEST_SPEED, DEFAULT_TEST_SPEED)
         self.test = []
-        if CONF_TEST_TIMES in config:
-            for test in config[CONF_TEST_TIMES]:
-                start = wash_dt(dt.as_utc(test[CONF_TEST_START]))
-                end = wash_dt(dt.as_utc(test[CONF_TEST_END]))
+        if CONF_TESTING in config:
+            test_config = config[CONF_TESTING]
+            self._testing = test_config.get(CONF_ENABLED, False)
+            self._test_speed = test_config.get(CONF_SPEED, DEFAULT_TEST_SPEED)
+            for test in test_config[CONF_TIMES]:
+                start = wash_dt(dt.as_utc(test[CONF_START]))
+                end = wash_dt(dt.as_utc(test[CONF_END]))
                 if CONF_NAME in test[CONF_NAME]:
                     name = test[CONF_NAME]
                 else:

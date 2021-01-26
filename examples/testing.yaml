@@ -11,15 +11,16 @@ debugpy:
 
 irrigation_unlimited:
   granularity: 60
-  testing: true
-  test_speed: 60.0
-  test_times:
-    - name: 'Test 1'
-      start: '2021-01-04 07:03'
-      end: '2021-01-11 07:30'
-    - name: 'Test 2'
-      start: '2021-01-01 05:00'
-      end: '2021-01-01 05:30'
+  testing:
+    enabled: true
+    speed: 3600.0
+    times:
+      - name: 'Test 1'
+        start: '2021-01-04 05:00'
+        end: '2021-01-11 07:30'
+      - name: 'Test 2'
+        start: '2021-01-01 05:00'
+        end: '2021-01-01 05:30'
   controllers:
     - name: 'Controller 1'
       preamble: '00:01'

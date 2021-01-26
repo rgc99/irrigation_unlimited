@@ -19,7 +19,7 @@ from homeassistant.const import (
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
 
-from .IrrigationUnlimited import (
+from .irrigation_unlimited import (
     IUComponent,
     IUCoordinator,
 )
@@ -47,10 +47,10 @@ from .const import (
     CONF_POSTAMBLE,
     CONF_GRANULARITY,
     CONF_TESTING,
-    CONF_TEST_SPEED,
-    CONF_TEST_TIMES,
-    CONF_TEST_START,
-    CONF_TEST_END,
+    CONF_SPEED,
+    CONF_TIMES,
+    CONF_START,
+    CONF_END,
     MONTHS,
 )
 
@@ -103,7 +103,7 @@ ZONE_SCHEMA = vol.Schema(
 
 CONTROLLER_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_ZONES, default={}): vol.All(
+        vol.Required(CONF_ZONES): vol.All(
             cv.ensure_list, [ZONE_SCHEMA], _list_is_not_empty
         ),
         vol.Optional(CONF_NAME): cv.string,
@@ -114,24 +114,29 @@ CONTROLLER_SCHEMA = vol.Schema(
     }
 )
 
-TEST_SCHEMA = vol.Schema(
+TEST_TIME_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_TEST_START): cv.datetime,
-        vol.Required(CONF_TEST_END): cv.datetime,
+        vol.Required(CONF_START): cv.datetime,
+        vol.Required(CONF_END): cv.datetime,
         vol.Optional(CONF_NAME): cv.string,
     }
 )
+
+TEST_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_ENABLED): cv.boolean,
+        vol.Optional(CONF_SPEED): cv.positive_float,
+        vol.Optional(CONF_TIMES): [TEST_TIME_SCHEMA],
+    }
+)
+
 IRRIGATION_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_CONTROLLERS, default={}): vol.All(
             cv.ensure_list, [CONTROLLER_SCHEMA], _list_is_not_empty
         ),
         vol.Optional(CONF_GRANULARITY): cv.positive_int,
-        vol.Optional(CONF_TESTING): cv.boolean,
-        vol.Optional(CONF_TEST_SPEED): cv.positive_float,
-        vol.Optional(CONF_TEST_TIMES, default={}): vol.All(
-            cv.ensure_list, [TEST_SCHEMA]
-        ),
+        vol.Optional(CONF_TESTING): TEST_SCHEMA,
     }
 )
 
