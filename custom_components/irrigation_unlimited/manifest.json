@@ -1,12 +1,12 @@
 {
-  "domain": "integration_blueprint",
-  "name": "Integration blueprint",
-  "documentation": "https://github.com/custom-components/integration_blueprint",
-  "issue_tracker": "https://github.com/custom-components/integration_blueprint/issues",
+  "domain": "irrigation_unlimited",
+  "name": "Irrigation Unlimited",
+  "documentation": "https://github.com/custom-components/irrigation_unlimited",
+  "issue_tracker": "https://github.com/custom-components/irrigation_unlimited/issues",
   "dependencies": [],
-  "config_flow": true,
+  "config_flow": false,
   "codeowners": [
-    "@ludeeus"
+    "@rgc99"
   ],
   "requirements": []
 }

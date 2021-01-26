@@ -1,0 +1,93 @@
+default_config:
+
+irrigation_unlimited:
+  granularity: 60
+  testing: true
+  test_speed: 3600.0
+  test_times:
+    - name: 'Test 1'
+      start: '2021-01-04 05:00'
+      end: '2021-01-11 07:30'
+    - name: 'Test 2'
+      start: '2021-01-01 05:00'
+      end: '2021-01-01 05:30'
+  controllers:
+    - name: 'Controller 1'
+      zones:
+        - schedules:
+          - time: '07:00'
+            duration: '00:10'
+            weekday: [mon, tue, wed]
+            month: [jan, feb, mar]
+            day: 'even'
+    - name: 'Controller 2'
+#      entity_id: my_master_switch
+      enabled: true
+      preamble: '00:02'
+      postamble: '00:02'
+      zones:
+        - name: 'Example schedules'
+#          entity_id: my_zone_switch
+          enabled: true
+          minimum: '00:02'
+          maximum: '01:00'
+          schedules:
+            - name: 'Before sunrise'
+              time:
+                sun: 'sunrise'
+                before: '00:20'
+              duration: '00:30'
+            - name: 'After sunset'
+              time:
+                sun: 'sunset'
+                after: '00:30'
+              duration: '00:20'
+            - name: 'Overlapping 1'
+              time: '05:45'
+              duration: '00:30'
+            - name: 'Overlaping 2'
+              time: '06:00'
+              duration: '00:30'
+            - name: 'Lazy Summer Sundays'
+              time: '12:00'
+              duration: '00:10'
+              month: [dec, jan, feb]
+              weekday: [sun]
+            - name: 'Watering odd days only'
+              time: '08:00'
+              duration: '00:20'
+              day: 'odd'
+            - name: 'Golden days'
+              time: '08:30'
+              duration: '00:10'
+              day: [1, 2, 3, 5, 8, 13, 21]
+            - name: 'Never on a Sunday'
+              time: '09:00'
+              duration: '00:05'
+              weekday: [mon, tue, wed, thu, fri, sat]
+            - name: 'Happy New Year'
+              time: '00:00'
+              duration: '00:10'
+              month: [jan]
+              day: [1]
+            - name: 'Long hand'
+              time: '13:00'
+              duration:
+                minutes: 10
+              weekday:
+                - mon
+                - wed
+                - thu
+              month:
+                - jan
+                - feb
+              day:
+                - 1
+                - 5
+                - 10
+        - name: 'Overlapped Zone'
+          schedules:
+            - name: 'Overlaps with Zone 1'
+              time: '05:50'
+              duration: '00:20'
+

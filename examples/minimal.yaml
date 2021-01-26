@@ -1,0 +1,7 @@
+irrigation_unlimited:
+  controllers:
+    - zones:
+      entity_id: 'my_switch'
+      schedules:
+        - time: '06:00'
+          duration: '00:20'

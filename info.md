@@ -9,15 +9,13 @@
 [![Discord][discord-shield]][discord]
 [![Community Forum][forum-shield]][forum]
 
-_Component to integrate with [integration_blueprint][integration_blueprint]._
+_Component to integrate with [irrigation_unlimited][irrigation_unlimited]._
 
 **This component will set up the following platforms.**
 
 Platform | Description
 -- | --
 `binary_sensor` | Show something `True` or `False`.
-`sensor` | Show info from API.
-`switch` | Switch something `True` or `False`.
 
 ![example][exampleimg]
 
@@ -25,7 +23,7 @@ Platform | Description
 ## Installation
 
 1. Click install.
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Blueprint".
+1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Irrigation Unlimited".
 
 {% endif %}
 

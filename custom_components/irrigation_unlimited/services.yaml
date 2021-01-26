@@ -1,0 +1,56 @@
+# Describes the format for available Irrigation Unlimited serivces
+
+enable:
+  description: Enable the controller or zone.
+  fields:
+    entity_id:
+      description: Name of the Irrigation Unlimited entity.
+      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+disable:
+  description: Disable the controller or zone
+  fields:
+    entity_id:
+      description: Name of the Irrigation Unlimited entity.
+      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+reload:
+  description: Reload the configuration (not implemented)
+  fields:
+    entity_id:
+      description: Name of the Irrigation Unlimited entity.
+      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+adjust_time:
+  description: Adjust the run times.
+  fields:
+    entity_id:
+      description: Name of the Irrigation Unlimited entity.
+      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+    reset:
+      description: Revert to original schedule
+      example: ''
+    percentage:
+      description: Adjust the run time by a percentage.
+      example: '150'
+    actual:
+      description: Set a new run time.
+      example: '00:15'
+    increase:
+      description: Increase the run time.
+      example: '00:02'
+    descrease:
+      description: Decrease the run time.
+      example: '00:02'
+    minimum:
+      description: Minimum run time.
+      example: '00:01'
+    maximum:
+      description: Maximum run time.
+      example: '01:00'
+manual_run:
+  description: Turn on immidiately for a set period.
+  fields:
+    entity_id:
+      description: Name of the Irrigation Unlimited entity.
+      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+    time:
+      description: The amount of time to run.
+      example: '00:10'

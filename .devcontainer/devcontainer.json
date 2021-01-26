@@ -1,7 +1,7 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
 	"image": "ludeeus/container:integration-debian",
-	"name": "Blueprint integration development",
+	"name": "Irrigation Unlimited development",
 	"context": "..",
 	"appPort": [
 		"9123:8123"

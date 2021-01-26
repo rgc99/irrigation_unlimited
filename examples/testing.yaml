@@ -1,0 +1,33 @@
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.irrigation_unlimited: debug
+
+debugpy:
+  start: true
+  wait: true
+
+irrigation_unlimited:
+  granularity: 60
+  testing: true
+  test_speed: 60.0
+  test_times:
+    - name: 'Test 1'
+      start: '2021-01-04 07:03'
+      end: '2021-01-11 07:30'
+    - name: 'Test 2'
+      start: '2021-01-01 05:00'
+      end: '2021-01-01 05:30'
+  controllers:
+    - name: 'Controller 1'
+      preamble: '00:01'
+      postamble: '00:01'
+      zones:
+        - schedules:
+          - time: '07:05'
+            duration: '00:03:10'
+            weekday: [mon, tue, wed]
+            month: [jan, feb, mar]
+            day: 'even'
