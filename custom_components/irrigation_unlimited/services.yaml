@@ -1,4 +1,4 @@
-# Describes the format for available Irrigation Unlimited serivces
+# Describes the format for available Irrigation Unlimited services
 
 enable:
   description: Enable the controller or zone.

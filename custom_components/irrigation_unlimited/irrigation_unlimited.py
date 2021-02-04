@@ -2,9 +2,9 @@
 
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
+import homeassistant
 from homeassistant.core import HomeAssistant, Config
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.helpers.sun as sun
 import homeassistant.util.dt as dt
@@ -16,10 +16,12 @@ from homeassistant.const import (
     CONF_ENTITY_ID,
     CONF_NAME,
     CONF_WEEKDAY,
+    SERVICE_TURN_OFF,
+    SERVICE_TURN_ON,
     STATE_OFF,
     STATE_ON,
-    STATE_OK,
     WEEKDAYS,
+    ATTR_ENTITY_ID,
 )
 
 from .const import (
@@ -31,7 +33,6 @@ from .const import (
     CONF_RESET,
     DEFAULT_GRANULATITY,
     DEFAULT_TEST_SPEED,
-    DOMAIN,
     CONF_DURATION,
     CONF_ENABLED,
     CONF_GRANULARITY,
@@ -50,10 +51,13 @@ from .const import (
     CONF_MINIMUM,
     CONF_MAXIMUM,
     CONF_MONTH,
-    ICON,
     MONTHS,
     CONF_ODD,
     CONF_EVEN,
+    SERVICE_DISABLE,
+    SERVICE_ENABLE,
+    SERVICE_MANUAL_RUN,
+    SERVICE_TIME_ADJUST,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -99,7 +103,7 @@ def wash_dt(date: datetime, granularity=SYSTEM_GRANULARITY) -> datetime:
 def wash_t(time: time, granularity=SYSTEM_GRANULARITY) -> time:
     """Truncate the supplied time to internal boundaries"""
     if time is not None:
-        utc = datetime.utcnow()
+        utc = dt.utcnow()
         d = utc.combine(utc.date(), time)
         rounded_seconds = int(d.second / granularity) * granularity
         t = d.replace(second=rounded_seconds, microsecond=0)
@@ -238,7 +242,7 @@ class IUSchedule:
         """Return the duration"""
         return self._duration
 
-    def clear(self):
+    def clear(self) -> None:
         """Reset this schedule"""
         self._dirty = True
         return
@@ -354,6 +358,7 @@ class IURun:
         self._duration: timedelta = duration
         self._end_time: datetime = self._start_time + self._duration
         self._remaining_time: timedelta = self._end_time - self._start_time
+        self._percent_complete: int = 0
         return
 
     @property
@@ -394,6 +399,10 @@ class IURun:
     def time_remaining(self) -> timedelta:
         return self._remaining_time
 
+    @property
+    def percent_complete(self) -> float:
+        return self._percent_complete
+
     def is_manual(self) -> bool:
         """Check if this is a manual run"""
         return self._zone is None and self.schedule is None
@@ -416,10 +425,15 @@ class IURun:
         """
         return self.is_running(time) and not self.is_future(time)
 
-    def update_time_remaining(self, time: datetime) -> None:
+    def update_time_remaining(self, time: datetime) -> bool:
         if self.is_running(time):
             self._remaining_time = self._end_time - time
-        return
+            total_duration: timedelta = self._end_time - self._start_time
+            time_elapsed: timedelta = time - self._start_time
+            self._percent_complete = int((time_elapsed / total_duration) * 100)
+            return True
+        else:
+            return False
 
 
 class IURunQueue(list):
@@ -572,10 +586,11 @@ class IURunQueue(list):
 
         return status
 
-    def update_sensor(self, time):
+    def update_sensor(self, time) -> bool:
         if self._current_run is not None:
-            self._current_run.update_time_remaining(time)
-        return
+            return self._current_run.update_time_remaining(time)
+        else:
+            return False
 
 
 class IUScheduleQueue(IURunQueue):
@@ -666,20 +681,19 @@ class IUZone:
         self, hass: HomeAssistant, coordinator, controller, zone_index: int
     ) -> None:
         # Passed parameters
-        self.hass = hass
+        self._hass = hass
         self._coordinator = coordinator  # Grandparent
         self._controller = controller  # Parent
         self._zone_index: int = zone_index  # Our position within siblings
         # Config parameters
         self._is_enabled: bool = True
         self._name: str = None
-        self._entity_id: Entity = None
+        self._switch_entity_id: str = None
         # Private variables
         self._schedules: list(IUSchedule) = []
         self._run_queue = IUScheduleQueue()
         self._adjustment = IUAdjustment()
         self._zone_sensor: Entity = None
-        self._zone_sensor_issetup: bool = False
         self._is_on: bool = False
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
@@ -715,7 +729,11 @@ class IUZone:
         return self._is_on
 
     @property
-    def enabled(self):
+    def is_setup(self) -> bool:
+        return self._is_setup()
+
+    @property
+    def enabled(self) -> bool:
         """Return true is this zone is on"""
         return self._is_enabled
 
@@ -729,15 +747,6 @@ class IUZone:
         return
 
     @property
-    def zone_sensor_issetup(self) -> bool:
-        return self._zone_sensor_issetup
-
-    @zone_sensor_issetup.setter
-    def zone_sensor_issetup(self, value: bool):
-        self._zone_sensor_issetup = value
-        return
-
-    @property
     def zone_sensor(self) -> Entity:
         return self._zone_sensor
 
@@ -746,22 +755,30 @@ class IUZone:
         self._zone_sensor = value
         return
 
-    def service_adjust_time(self, data: MappingProxyType):
+    def _is_setup(self) -> bool:
+        """Check if this object is setup"""
+        all_setup: bool = self._zone_sensor is not None
+
+        for schedule in self._schedules:
+            all_setup = all_setup and schedule.is_setup
+        return all_setup
+
+    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
         """Adjust the scheduled run times"""
         self._adjustment.load(data)
-        self._run_queue.clear(datetime.utcnow())
+        self._run_queue.clear(time)
         return
 
-    def service_manual_run(self, data: MappingProxyType):
+    def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
         """Add a manual run."""
         if self._is_enabled and self._controller.enabled:
-            ns = wash_dt(dt.utcnow() + granularity_time())
-            if not self._controller.is_on:
+            ns = wash_dt(time + granularity_time())
+            if self._controller.preamble is not None:
                 ns = ns + self._controller.preamble
             self._run_queue.add_manual(ns, wash_td(data[CONF_TIME]))
         return
 
-    def add(self, schedule: IUSchedule):
+    def add(self, schedule: IUSchedule) -> None:
         """Add a new schedule to the zone"""
         self._schedules.append(schedule)
         return
@@ -779,18 +796,10 @@ class IUZone:
 
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._name = config.get(CONF_NAME, f"Zone {self.zone_index + 1}")
-        self._entity_id = config.get(CONF_ENTITY_ID)
+        self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._adjustment.load(config)
         self._dirty = True
         return self
-
-    def is_setup(self) -> bool:
-        """Check if this object is setup"""
-        all_setup: bool = self._zone_sensor_issetup and self._zone_sensor is not None
-
-        for schedule in self._schedules:
-            all_setup = all_setup and schedule.is_setup
-        return all_setup
 
     def muster(self, time: datetime, force: bool) -> int:
         """Calculate run times for this zone"""
@@ -826,37 +835,49 @@ class IUZone:
 
         return state_changed
 
-    def request_update(self):
+    def request_update(self) -> None:
         """Flag the sensor needs an update"""
         self._sensor_update_required = True
         return
 
-    def update_sensor(self, time: datetime):
+    def update_sensor(self, time: datetime, do_on: bool) -> bool:
         """Lazy sensor updater"""
-        self._run_queue.update_sensor(time)
+        updated: bool = False
+        do_update: bool = False
 
         if self._zone_sensor is not None:
-            do_update: bool = self._sensor_update_required
+            if do_on == False:
+                updated |= self._run_queue.update_sensor(time)
+                if not self._is_on:
+                    do_update = self._sensor_update_required
+            else:
+                if self._is_on:
+                    # If we are running then update sensor every second
+                    if self._run_queue.current_run is not None:
+                        do_update = time - self._sensor_last_update >= timedelta(
+                            seconds=1
+                        )
+                    do_update = do_update or self._sensor_update_required
+        else:
+            do_update = False
 
-            # If we are running then update sensor every second
-            if self._run_queue.current_run is not None:
-                do_update = do_update or time - self._sensor_last_update >= timedelta(
-                    seconds=1
+        if do_update:
+            self._zone_sensor.schedule_update_ha_state()
+            self._sensor_update_required = False
+            self._sensor_last_update = time
+            updated = True
+
+        return updated
+
+    def call_switch(self, service_type: str) -> None:
+        if self._switch_entity_id is not None:
+            self._hass.async_create_task(
+                self._hass.services.async_call(
+                    homeassistant.core.DOMAIN,
+                    service_type,
+                    {ATTR_ENTITY_ID: self._switch_entity_id},
                 )
-
-            if do_update:
-                self._zone_sensor.schedule_update_ha_state()
-                self._sensor_update_required = False
-                self._sensor_last_update = time
-
-        return
-
-    def update_entity(self, state: str):
-        if (
-            self._entity_id is not None
-            and self.hass.states.get(self._entity_id) is not None
-        ):
-            self.hass.states.set(self._entity_id, state)
+            )
         return
 
 
@@ -913,14 +934,13 @@ class IUController:
         # Config parameters
         self._is_enabled: bool = True
         self._name: str = None
-        self._entity_id: Entity = None
+        self._switch_entity_id: str = None
         self._preamble: timedelta = None
         self._postamble: timedelta = None
         # Private variables
         self._zones: list(IUZone) = []
         self._run_queue = IUZoneQueue()
         self._master_sensor: Entity = None
-        self._master_sensor_issetup: bool = False
         self._is_on: bool = False
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
@@ -944,26 +964,21 @@ class IUController:
         return self._is_on
 
     @property
+    def is_setup(self) -> bool:
+        return self._is_setup()
+
+    @property
     def enabled(self) -> bool:
         """Return true is this zone is on"""
         return self._is_enabled
 
     @enabled.setter
-    def enabled(self, value: bool):
+    def enabled(self, value: bool) -> None:
         """Enable/disable this controller"""
         if value != self._is_enabled:
             self._is_enabled = value
             self._dirty = True
             self.request_update()
-        return
-
-    @property
-    def master_sensor_issetup(self) -> bool:
-        return self._master_sensor_issetup
-
-    @master_sensor_issetup.setter
-    def master_sensor_issetup(self, value: bool):
-        self._master_sensor_issetup = value
         return
 
     @property
@@ -979,12 +994,18 @@ class IUController:
     def preamble(self) -> timedelta:
         return self._preamble
 
+    def _is_setup(self) -> bool:
+        all_setup: bool = self._master_sensor is not None
+        for zone in self._zones:
+            all_setup = all_setup and zone.is_setup
+        return all_setup
+
     def add(self, zone: IUZone):
         """Add a new zone to the controller"""
         self._zones.append(zone)
         return self
 
-    def clear(self):
+    def clear(self) -> None:
         # self._next_zone = None
         self._zones.clear()
         self._is_on = False
@@ -996,32 +1017,10 @@ class IUController:
         self.clear()
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._name = config.get(CONF_NAME, f"Controller {self._controller_index + 1}")
-        self._entity_id = config.get(CONF_ENTITY_ID)
+        self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
         return self
-
-    def service_adjust_time(self, data: MappingProxyType):
-        zl = data.get(CONF_ZONES, None)
-        for zone in self._zones:
-            if zl is None or zone.zone_index + 1 in zl:
-                zone.service_adjust_time(data)
-        return
-
-    def service_manual_run(self, data: MappingProxyType):
-        zl = data.get(CONF_ZONES, None)
-        for zone in self._zones:
-            if zl is None or zone.zone_index + 1 in zl:
-                zone.service_manual_run(data)
-        return
-
-    def is_setup(self) -> bool:
-        all_setup: bool = (
-            self._master_sensor_issetup and self._master_sensor is not None
-        )
-        for zone in self._zones:
-            all_setup = all_setup and zone.is_setup()
-        return all_setup
 
     def muster(self, time: datetime, force: bool) -> int:
         """Calculate run times for this controller. This is where most of the hard yakka
@@ -1056,10 +1055,11 @@ class IUController:
             self.request_update()
 
         self._dirty = False
-        return status
+        return status | zone_status
 
     def check_run(self, time: datetime) -> bool:
-        """Check the run status and update sensors."""
+        """Check the run status and update sensors. Return flag
+        if anything has changed."""
         zones_changed: list(int) = []
         is_running: bool = False
         state_changed: bool = False
@@ -1073,7 +1073,7 @@ class IUController:
         for index in zones_changed:
             z: IUZone = self._zones[index]
             if not z.is_on:
-                z.update_entity(STATE_OFF)
+                z.call_switch(SERVICE_TURN_OFF)
                 write_status_to_log(time, self, z)
 
         # Check if master has changed and update
@@ -1082,30 +1082,30 @@ class IUController:
         if state_changed:
             self._is_on = not self._is_on
             self.request_update()
-            self.update_entity(STATE_ON if self._is_on else STATE_OFF)
+            self.call_switch(SERVICE_TURN_ON if self._is_on else SERVICE_TURN_OFF)
             write_status_to_log(time, self, None)
 
         # Handle on zones after master
         for index in zones_changed:
             z: IUZone = self._zones[index]
             if z.is_on:
-                z.update_entity(STATE_ON)
+                z.call_switch(SERVICE_TURN_ON)
                 write_status_to_log(time, self, z)
 
         return state_changed
 
-    def request_update(self):
+    def request_update(self) -> None:
         """Flag the sensor needs an update. The actual update is done
         in update_sensor"""
         self._sensor_update_required = True
         return
 
-    def update_sensor(self, time: datetime):
+    def update_sensor(self, time: datetime) -> None:
         """Lazy sensor updater."""
         self._run_queue.update_sensor(time)
 
         for zone in self._zones:
-            zone.update_sensor(time)
+            zone.update_sensor(time, False)
 
         if self._master_sensor is not None:
             do_update: bool = self._sensor_update_required
@@ -1121,15 +1121,20 @@ class IUController:
                 self._sensor_update_required = False
                 self._sensor_last_update = time
 
+        for zone in self._zones:
+            zone.update_sensor(time, True)
         return
 
-    def update_entity(self, state: str):
+    def call_switch(self, service_type: str) -> None:
         """Update the linked entity if enabled"""
-        if (
-            self._entity_id is not None
-            and self._hass.states.get(self._entity_id) is not None
-        ):
-            self._hass.states.set(self._entity_id, state)
+        if self._switch_entity_id is not None:
+            self._hass.async_create_task(
+                self._hass.services.async_call(
+                    homeassistant.core.DOMAIN,
+                    service_type,
+                    {ATTR_ENTITY_ID: self._switch_entity_id},
+                )
+            )
         return
 
 
@@ -1151,7 +1156,8 @@ class IUCoordinator:
         self._component_sensor_issetup: bool = False
         self._component = None
         self._initialised: bool = False
-        self._last_poll: datetime = None
+        self._last_muster: datetime = None
+        self._muster_required: bool = False
         # Testing variables
         self._testing: bool = False
         self._test_number: int = 0
@@ -1161,11 +1167,15 @@ class IUCoordinator:
         return
 
     @property
+    def is_setup(self) -> bool:
+        return self._is_setup()
+
+    @property
     def component(self):
         return self._component
 
     @component.setter
-    def component(self, value):
+    def component(self, value) -> None:
         self._component = value
         return
 
@@ -1174,16 +1184,26 @@ class IUCoordinator:
         return self._component_sensor_issetup
 
     @component_sensor_issetup.setter
-    def component_sensor_issetup(self, value: bool):
+    def component_sensor_issetup(self, value: bool) -> None:
         self._component_sensor_issetup = value
         return
+
+    def _is_setup(self) -> bool:
+        """Wait for sensors to be setup"""
+        all_setup: bool = self._component is not None
+        for controller in self._controllers:
+            all_setup = all_setup and controller.is_setup
+        return all_setup
+
+    def _is_testing(self) -> bool:
+        return self._testing and self._test_end is not None
 
     def add(self, controller: IUController):
         """Add a new controller to the system"""
         self._controllers.append(controller)
         return self
 
-    def clear(self):
+    def clear(self) -> None:
         self._controllers.clear()
         return
 
@@ -1219,24 +1239,6 @@ class IUCoordinator:
 
         return self
 
-    def start(self):
-        """Start the system up"""
-        track_time = SYSTEM_GRANULARITY / self._test_speed
-        track_time = min(1, track_time)  # Run no slower than 1 second for reponse
-        track_time *= 0.95  # Run clock slightly ahead of required to avoid skipping
-
-        async_track_time_interval(
-            self._hass, self._async_timer, timedelta(seconds=track_time)
-        )
-        return
-
-    def is_setup(self) -> bool:
-        """Wait for sensors to be setup"""
-        all_setup: bool = not self._component or self.component_sensor_issetup
-        for controller in self._controllers:
-            all_setup = all_setup and controller.is_setup()
-        return all_setup
-
     def muster(self, time: datetime, force: bool) -> int:
         """Calculate run times for system"""
         status: int = 0
@@ -1256,19 +1258,20 @@ class IUCoordinator:
 
         return is_running
 
-    def update_sensor(self, time: datetime):
+    def update_sensor(self, time: datetime) -> None:
         """Update home assistant sensors if required"""
         for controller in self._controllers:
             controller.update_sensor(time)
         return
 
-    def poll(self, time: datetime, force: bool = False):
+    def poll(self, time: datetime, force: bool = False) -> None:
         """Poll the system for changes, updates and refreshes"""
         wtime: datetime = wash_dt(time)
-        if wtime != self._last_poll:
-            self.muster(wtime, force)
-            self.check_run(wtime)
-            self._last_poll = wtime
+        if (wtime != self._last_muster) or self._muster_required:
+            if self.muster(wtime, force) != 0:
+                self.check_run(wtime)
+            self._muster_required = False
+            self._last_muster = wtime
         self.update_sensor(wash_dt(time, 1))
         return
 
@@ -1283,7 +1286,7 @@ class IUCoordinator:
         test_time: datetime = self._test_start + timedelta(seconds=virtual_duration)
         return test_time
 
-    def poll_test(self, time: datetime):
+    def poll_test(self, time: datetime) -> None:
         if self._test_start is None:  # Start a new test
             if self._test_number < len(self._test_times):
                 d = self._test_times[self._test_number]
@@ -1312,7 +1315,18 @@ class IUCoordinator:
             self.poll(self.virtual_time(time))
         return
 
-    async def _async_timer(self, time: datetime):
+    def start(self) -> None:
+        """Start the system up"""
+        track_time = SYSTEM_GRANULARITY / self._test_speed
+        track_time = min(1, track_time)  # Run no slower than 1 second for reponse
+        track_time *= 0.95  # Run clock slightly ahead of required to avoid skipping
+
+        async_track_time_interval(
+            self._hass, self._async_timer, timedelta(seconds=track_time)
+        )
+        return
+
+    async def _async_timer(self, time: datetime) -> None:
         """Timer callback"""
         if self._initialised:
             if self._testing:
@@ -1320,11 +1334,88 @@ class IUCoordinator:
             else:
                 self.poll(time)
         else:
-            self._initialised = self.is_setup()
+            self._initialised = self.is_setup
+        return
+
+    def register_entity(
+        self, controller: IUController, zone: IUZone, entity: Entity
+    ) -> None:
+        if controller is None:
+            self._component = entity
+        elif zone is None:
+            controller.master_sensor = entity
+        else:
+            zone.zone_sensor = entity
+        return
+
+    def deregister_entity(
+        self, controller: IUController, zone: IUZone, entity: Entity
+    ) -> None:
+        if controller is None:
+            self._component = None
+        elif zone is None:
+            controller.master_sensor = None
+        else:
+            zone.zone_sensor = None
+        return
+
+    def service_call(
+        self,
+        service: str,
+        controller: IUController,
+        zone: IUZone,
+        data: MappingProxyType,
+    ) -> None:
+        """Entry point for all service calls."""
+        time: datetime = dt.utcnow()
+        if self._is_testing():
+            time = self.virtual_time(time)
+
+        def adjust_time_all(
+            controller: IUController, data: MappingProxyType, time: datetime
+        ) -> None:
+            zl = data.get(CONF_ZONES, None)
+            for zone in controller:
+                if zl is None or zone.zone_index + 1 in zl:
+                    zone.service_adjust_time(data, time)
+            return
+
+        def manual_run_all(
+            controller: IUController, data: MappingProxyType, time: datetime
+        ) -> None:
+            zl = data.get(CONF_ZONES, None)
+            for zone in controller:
+                if zl is None or zone.zone_index + 1 in zl:
+                    zone.service_manual_run(data, time)
+            return
+
+        if service == SERVICE_ENABLE:
+            if zone is not None:
+                zone.enabled = True
+            else:
+                controller.enabled = True
+        elif service == SERVICE_DISABLE:
+            if zone is not None:
+                zone.enabled = False
+            else:
+                controller.enabled = False
+        elif service == SERVICE_TIME_ADJUST:
+            if zone is not None:
+                zone.service_adjust_time(data, time)
+            else:
+                adjust_time_all(controller, data, time)
+        elif service == SERVICE_MANUAL_RUN:
+            if zone is not None:
+                zone.service_manual_run(data, time)
+            else:
+                manual_run_all(controller, data, time)
+        else:
+            return
+        self._muster_required = True
         return
 
 
-def write_status_to_log(time: datetime, controller: IUController, zone: IUZone):
+def write_status_to_log(time: datetime, controller: IUController, zone: IUZone) -> None:
     """Output the status of master or zone"""
     if zone is not None:
         zm = f"Zone {zone.zone_index + 1}"
@@ -1340,50 +1431,3 @@ def write_status_to_log(time: datetime, controller: IUController, zone: IUZone):
         status,
     )
     return
-
-
-class IUComponent(RestoreEntity):
-    """Representation of IrrigationUnlimitedCoordinator"""
-
-    def __init__(self, coordinator: IUCoordinator):
-        self._coordinator = coordinator
-        self.entity_id = f"{DOMAIN}.coordinator"
-        return
-
-    @property
-    def should_poll(self):
-        """If entity should be polled"""
-        return False
-
-    @property
-    def unique_id(self):
-        """Return a unique ID."""
-        return "coordinator"
-
-    @property
-    def name(self):
-        """Return the name of the integration."""
-        return "Irrigation Unlimited Coordinator"
-
-    @property
-    def state(self):
-        """Return the state of the entity."""
-        return STATE_OK
-
-    @property
-    def icon(self):
-        """Return the icon to be used for this entity"""
-        return ICON
-
-    @property
-    def state_attributes(self):
-        """Return the state attributes."""
-        attr = {}
-        return attr
-
-    async def async_added_to_hass(self):
-        self._coordinator.component_sensor_issetup = True
-        return
-
-    async def async_reload(self):
-        return

@@ -22,13 +22,13 @@ irrigation_unlimited:
             month: [jan, feb, mar]
             day: 'even'
     - name: 'Controller 2'
-#      entity_id: my_master_switch
+#      entity_id: 'my_master_switch'
       enabled: true
       preamble: '00:02'
       postamble: '00:02'
       zones:
         - name: 'Example schedules'
-#          entity_id: my_zone_switch
+#          entity_id: 'my_zone_switch'
           enabled: true
           minimum: '00:02'
           maximum: '01:00'

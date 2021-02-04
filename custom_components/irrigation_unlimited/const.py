@@ -49,6 +49,12 @@ DEFAULT_NAME = DOMAIN
 DEFAULT_GRANULATITY = 60
 DEFAULT_TEST_SPEED = 1.0
 
+# Services
+SERVICE_ENABLE = "enable"
+SERVICE_DISABLE = "disable"
+SERVICE_TIME_ADJUST = "adjust_time"
+SERVICE_MANUAL_RUN = "manual_run"
+
 MONTHS = [
     "jan",
     "feb",

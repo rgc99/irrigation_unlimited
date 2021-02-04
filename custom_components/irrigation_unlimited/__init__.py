@@ -14,15 +14,13 @@ from homeassistant.const import (
     CONF_ENTITY_ID,
     CONF_NAME,
     CONF_WEEKDAY,
-    SERVICE_RELOAD,
 )
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
 
-from .irrigation_unlimited import (
-    IUComponent,
-    IUCoordinator,
-)
+from .irrigation_unlimited import IUCoordinator
+from .entity import IUComponent
+from .service import register_component_services
 
 from .const import (
     BINARY_SENSOR,
@@ -152,17 +150,16 @@ async def async_setup(hass: HomeAssistant, config: Config):
     coordinator = IUCoordinator(hass).load(config[DOMAIN])
     hass.data[DOMAIN][COORDINATOR] = coordinator
 
+    component = EntityComponent(_LOGGER, DOMAIN, hass)
+    hass.data[DOMAIN][COMPONENT] = component
+
+    await component.async_add_entities([IUComponent(coordinator)])
+
     await hass.async_create_task(
         async_load_platform(hass, BINARY_SENSOR, DOMAIN, {}, config)
     )
 
-    component = EntityComponent(_LOGGER, DOMAIN, hass)
-    coordinator.component = IUComponent(coordinator)
-    hass.data[DOMAIN][COMPONENT] = component
-
-    await component.async_add_entities([coordinator.component])
-
-    component.async_register_entity_service(SERVICE_RELOAD, {}, "async_reload")
+    register_component_services(component)
 
     coordinator.start()
 
