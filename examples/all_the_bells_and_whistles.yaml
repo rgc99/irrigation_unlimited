@@ -3,7 +3,7 @@ default_config:
 irrigation_unlimited:
   granularity: 60
   testing:
-    enabled: true
+    enabled: false
     speed: 3600.0
     times:
       - name: 'Test 1'
@@ -22,13 +22,13 @@ irrigation_unlimited:
             month: [jan, feb, mar]
             day: 'even'
     - name: 'Controller 2'
-#      entity_id: 'my_master_switch'
+#      entity_id: 'switch.my_master_switch'
       enabled: true
       preamble: '00:02'
       postamble: '00:02'
       zones:
         - name: 'Example schedules'
-#          entity_id: 'my_zone_switch'
+#          entity_id: 'switch.my_zone_switch'
           enabled: true
           minimum: '00:02'
           maximum: '01:00'
@@ -49,12 +49,12 @@ irrigation_unlimited:
             - name: 'Overlaping 2'
               time: '06:00'
               duration: '00:30'
-            - name: 'Lazy Summer Sundays'
+            - name: 'Lazy Summer Sunday Afternoons'
               time: '12:00'
               duration: '00:10'
               month: [dec, jan, feb]
               weekday: [sun]
-            - name: 'Watering odd days only'
+            - name: 'Watering on odd days only'
               time: '08:00'
               duration: '00:20'
               day: 'odd'
@@ -91,4 +91,3 @@ irrigation_unlimited:
             - name: 'Overlaps with Zone 1'
               time: '05:50'
               duration: '00:20'
-

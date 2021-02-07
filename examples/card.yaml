@@ -1,0 +1,111 @@
+type: entities
+entities:
+  - type: 'custom:fold-entity-row'
+    style:
+      .: |
+        div#head {
+          --toggle-icon-width: 24px;
+        }
+    head:
+      type: 'custom:multiple-entity-row'
+      entity: binary_sensor.irrigation_unlimited_c1_m
+      name: Controller 1
+      state_header: Status
+      state_color: true
+      entities:
+        - attribute: current_duration
+          name: Duration
+          hide_unavailable: true
+        - attribute: time_remaining
+          name: Remaining
+          hide_unavailable: true
+        - attribute: percent_complete
+          name: Complete
+          unit: '%'
+      secondary_info:
+        attribute: current_name
+        hide_unavailable: true
+    padding: 20
+    entities:
+      - type: 'custom:multiple-entity-row'
+        entity: binary_sensor.irrigation_unlimited_c1_m
+        name: Enabled
+        icon: 'mdi:sprinkler'
+        show_state: false
+        secondary_info:
+          attribute: enabled
+        entities:
+          - attribute: zones
+            name: Zones
+      - type: 'custom:multiple-entity-row'
+        entity: binary_sensor.irrigation_unlimited_c1_m
+        name: Next
+        icon: 'mdi:clock-start'
+        show_state: false
+        secondary_info:
+          attribute: next_name
+          hide_unavailable: true
+        entities:
+          - attribute: next_start
+            name: Start
+            hide_unavailable: true
+            format: datetime
+          - attribute: next_duration
+            name: Duration
+            hide_unavailable: true
+  - type: divider
+  - type: 'custom:fold-entity-row'
+    style:
+      .: |
+        div#head {
+          --toggle-icon-width: 24px;
+        }
+    head:
+      type: 'custom:multiple-entity-row'
+      entity: binary_sensor.irrigation_unlimited_c1_z1
+      name: Zone 1
+      state_header: Status
+      state_color: true
+      entities:
+        - attribute: current_duration
+          name: Duration
+          hide_unavailable: true
+        - attribute: time_remaining
+          name: Remaining
+          hide_unavailable: true
+        - attribute: percent_complete
+          name: Complete
+          unit: '%'
+      secondary_info:
+        attribute: current_name
+        hide_unavailable: true
+    padding: 20
+    entities:
+      - type: 'custom:multiple-entity-row'
+        entity: binary_sensor.irrigation_unlimited_c1_z1
+        name: Enabled
+        icon: 'mdi:sprinkler'
+        show_state: false
+        secondary_info:
+          attribute: enabled
+        entities:
+          - attribute: schedules
+            name: Schedules
+          - attribute: adjustment
+            name: Adjustment
+      - type: 'custom:multiple-entity-row'
+        entity: binary_sensor.irrigation_unlimited_c1_z1
+        name: Next
+        icon: 'mdi:clock-start'
+        show_state: false
+        secondary_info:
+          attribute: next_name
+          hide_unavailable: true
+        entities:
+          - attribute: next_start
+            name: Start
+            hide_unavailable: true
+            format: datetime
+          - attribute: next_duration
+            name: Duration
+            hide_unavailable: true
