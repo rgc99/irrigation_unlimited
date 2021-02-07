@@ -21,9 +21,10 @@ Zones also have an associated sensor which, like the master, shows on/off status
 ## Features
 
 1. Unlimited controllers.
-2. Unlimited zones. Not 2 or 4, 8, 16 but unlimited.
-3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...).
-4. Hardware independant.
+2. Unlimited zones.
+3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
+4. Hardware independant. Use your own switches/valve controllers.
+5. Software independant. Pure play python.
 
 Practicle limitations will depend on your hardware.
 
@@ -66,7 +67,7 @@ A binary sensor is associated with each controller and zone. Controller or maste
 ### Install from HACS (NOT YET IMPLEMENTED)
 
 1. Just search for Irrigation Unlimited integration in [HACS][hacs] and install it.
-2. Add Irrigation Unlimited to your configuration.yaml file. See configuration examples below.
+2. Add Irrigation Unlimited to your configuration.yaml file. See _[configuration examples](#configuration-examples)_ below.
 3. Restart Home Assistant.
 
 ### Manual installation
@@ -96,7 +97,7 @@ custom_components/irrigation_unlimited/services.yaml
 
 Configuration is done by yaml.
 
-The time type is a string in the format HH:MM. Seconds can be speicified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). All times will be syncronised to these boundaries.
+The time type is a string in the format HH:MM. Time type must be a positive value. Seconds can be speicified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). All times will be syncronised to these boundaries.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
@@ -141,7 +142,7 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 | `time` | time/_[Sun Event](#sun-event)_ | **Required** | The start time. Either a time (07:30) or sun event |
 | `duration` | time | **Required** | The length of time to run |
 | `name` | string | Schedule *N* | Friendly name for the schedule |
-| `weekday` | list | | The days of week to run [mon, tue... sun] |
+| `weekday` | list | | The days of week to run [mon, tue...sun] |
 | `day` | list | | Days of month to run [1, 2...31]/odd/even |
 | `month` | list | | Months of year to run [jan, feb...dec] |
 
@@ -167,7 +168,7 @@ The testing object is useful for running through a predetermined regime. Note: t
 
 ### Test Time Objects
 
-This is the test time object.
+This is the test time object. Test times do _not_ alter the system clock so there is no danger of disruption to the Home Assistant system.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -238,7 +239,7 @@ Turn on the controller or zone for a period of time.
 
 ### Service `adjust_time`
 
-Adjust the run times. Calling this service will override any previous adjustment i.e. it will *not* make adjustments on adjustments. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`.
+Adjust the run times. Calling this service will override any previous adjustment i.e. it will *not* make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`.
 
 #### Tip
 
@@ -247,17 +248,17 @@ Use forecast and observation data collected by weather integrations in automatio
 | Service data attribute | Optional | Description |
 | ---------------------- | -------- | ----------- |
 | `entity_id` | no | Controller or zone to run.
-| `actual` | no | Specify a new time time.
-| `percentage` | no | Adjust time by a percentage
-| `increase` | no | Increase the run time by the specified time.
-| `descrease` | no | Decrease the run time by the specified time.
-| `reset` | no | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings).
-| `minimum` | no | Set the minimum run time.
-| `maximum` | no | Set the maximum run time.
+| `actual` | yes | Specify a new time time. This will replace the existing duration. A time value is required '00:30'.
+| `percentage` | yes | Adjust time by a percentage. A positive float value. Values less than 1 will decrease the run time while values greater than 1 will increase the run time.
+| `increase` | yes | Increase the run time by the specified time. A value of '00:10' will increase the duration by 10 minutes. Value will be capped by the `maximum` setting.
+| `descrease` | yes | Decrease the run time by the specified time. A value of '00:05' will decrease the run time by 5 minutes. Value will be limited by the `minimum` setting.
+| `reset` | yes | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings).
+| `minimum` | yes | Set the minimum run time. Minimum run time is 1 minute and will be limited to this. Use the `disable` service to turn off.
+| `maximum` | yes | Set the maximum run time. Note: The default is no limit.
 
 ## Frontend
 
-Because this is an integration there is no frontend. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on. However, for some inspiration and a compact card try [this](./examples/lovelace.yaml).
+Because this is an integration there is no frontend. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on. However, for some inspiration and a compact card try [this](./examples/card.yaml).
 
 ![Collapsed](./examples/card_collapsed.png)
 
