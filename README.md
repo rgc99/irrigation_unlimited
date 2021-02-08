@@ -64,7 +64,7 @@ A binary sensor is associated with each controller and zone. Controller or maste
 
 ## Installation
 
-### Install from HACS (NOT YET IMPLEMENTED)
+### Install from HACS
 
 1. Just search for Irrigation Unlimited integration in [HACS][hacs] and install it.
 2. Add Irrigation Unlimited to your configuration.yaml file. See _[configuration examples](#configuration-examples)_ below.
