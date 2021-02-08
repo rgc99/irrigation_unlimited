@@ -287,11 +287,11 @@ logger:
 
 ## Contributions are welcome
 
-If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
+If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md).
 
 ## Credits
 
-Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [integration_blueprint][integration_blueprint] template
+Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [integration_blueprint][integration_blueprint] template.
 
 ***
 
@@ -309,3 +309,4 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Robert%20Cook%20%40rgc99-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/custom-components/blueprint.svg?style=for-the-badge
 [releases]: https://github.com/custom-components/irrigation_unlimited/releases
+[integration_blueprint]: https://github.com/custom-components/integration_blueprint
