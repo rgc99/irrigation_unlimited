@@ -4,6 +4,5 @@
     "domains": [
         "binary_sensor"
     ],
-    "iot_class": "Local Push",
     "homeassistant": "0.118.0"
 }
