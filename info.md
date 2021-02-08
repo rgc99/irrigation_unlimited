@@ -20,13 +20,13 @@ Platform | Description
 ![example][exampleimg]
 
 {% if not installed %}
+
 ## Installation
 
 1. Click install.
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Irrigation Unlimited".
 
 {% endif %}
-
 
 ## Configuration is done in the UI
 
