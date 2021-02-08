@@ -3,6 +3,7 @@
   "name": "Irrigation Unlimited",
   "documentation": "https://github.com/custom-components/irrigation_unlimited",
   "issue_tracker": "https://github.com/custom-components/irrigation_unlimited/issues",
+  "version": "0.0.1",
   "dependencies": [],
   "config_flow": false,
   "codeowners": [
