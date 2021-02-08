@@ -289,6 +289,10 @@ logger:
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md)
 
+## Credits
+
+Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [integration_blueprint][integration_blueprint] template
+
 ***
 
 [irrigation_unlimited]: https://github.com/custom-components/irrigation_unlimited
