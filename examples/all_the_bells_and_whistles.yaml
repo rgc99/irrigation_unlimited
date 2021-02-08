@@ -4,7 +4,7 @@ irrigation_unlimited:
   granularity: 60
   testing:
     enabled: false
-    speed: 3600.0
+    speed: 60.0
     times:
       - name: 'Test 1'
         start: '2021-01-04 05:00'
