@@ -26,7 +26,7 @@ Zones also have an associated sensor which, like the master, shows on/off status
 4. Hardware independant. Use your own switches/valve controllers.
 5. Software independant. Pure play python.
 
-Practicle limitations will depend on your hardware.
+*Practicle limitations will depend on your hardware.
 
 ## Structure
 
@@ -295,18 +295,18 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 
 ***
 
-[irrigation_unlimited]: https://github.com/custom-components/irrigation_unlimited
+[irrigation_unlimited]: https://github.com/rgc99/irrigation_unlimited
 [buymecoffee]: https://www.buymeacoffee.com/rgc99
 [buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
-[commits-shield]: https://img.shields.io/github/commit-activity/y/custom-components/blueprint.svg?style=for-the-badge
-[commits]: https://github.com/custom-components/irrigation_unlimited/commits/master
+[commits-shield]: https://img.shields.io/github/commit-activity/y/rgc99/irrigation_unlimited?style=for-the-badge
+[commits]: https://github.com/rgc99/irrigation_unlimited/commits/master
 [hacs]: https://github.com/custom-components/hacs
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
 [exampleimg]: example.png
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
 [forum]: https://community.home-assistant.io/
-[license-shield]: https://img.shields.io/github/license/custom-components/blueprint.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/rgc99/irrigation_unlimited.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Robert%20Cook%20%40rgc99-blue.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/custom-components/blueprint.svg?style=for-the-badge
-[releases]: https://github.com/custom-components/irrigation_unlimited/releases
+[releases-shield]: https://img.shields.io/github/release/rgc99/irrigation_unlimited.svg?style=for-the-badge
+[releases]: https://github.com/rgc99/irrigation_unlimited/releases
 [integration_blueprint]: https://github.com/custom-components/integration_blueprint
