@@ -1375,7 +1375,7 @@ class IUCoordinator:
             controller: IUController, data: MappingProxyType, time: datetime
         ) -> None:
             zl = data.get(CONF_ZONES, None)
-            for zone in controller:
+            for zone in controller.zones:
                 if zl is None or zone.zone_index + 1 in zl:
                     zone.service_adjust_time(data, time)
             return
@@ -1384,7 +1384,7 @@ class IUCoordinator:
             controller: IUController, data: MappingProxyType, time: datetime
         ) -> None:
             zl = data.get(CONF_ZONES, None)
-            for zone in controller:
+            for zone in controller.zones:
                 if zl is None or zone.zone_index + 1 in zl:
                     zone.service_manual_run(data, time)
             return
