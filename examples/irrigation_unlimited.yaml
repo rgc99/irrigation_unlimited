@@ -1,0 +1,150 @@
+# Set up some observation sensors.
+# This uses the Weather Underground (WUnderground) https://www.home-assistant.io/integrations/wunderground/ integration.
+# Rain information (wupws_preciptotal) is a daily accumulation total. So we want to grab the
+# data just before midnight to get the daily total. We shouldn't be too eager to look after midnight
+# because the reset from WU may take a few minutes to come through, currently 10 min. Increase this
+# if data is unreliable.
+# Note: Requires the ha-average integration to be installed https://github.com/Limych/ha-average
+
+sensor:
+  - platform: average
+    name: irrigation_unlimited_rain_0
+    entities:
+      - sensor.wupws_preciptotal
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) }}'
+    end: '{{ now() }}'
+
+  - platform: average
+    name: irrigation_unlimited_rain_1
+    entities:
+      - sensor.wupws_preciptotal
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=1) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
+
+  - platform: average
+    name: irrigation_unlimited_rain_2
+    entities:
+      - sensor.wupws_preciptotal
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=2) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
+
+  - platform: average
+    name: irrigation_unlimited_rain_3
+    entities:
+      - sensor.wupws_preciptotal
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=3) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
+
+  - platform: average
+    name: irrigation_unlimited_rain_4
+    entities:
+      - sensor.wupws_preciptotal
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=4) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
+
+  - platform: average
+    name: irrigation_unlimited_temperature_0
+    entities:
+      - sensor.wupws_temp
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) }}'
+    end: '{{ now() }}'
+
+  - platform: average
+    name: irrigation_unlimited_temperature_1
+    entities:
+      - sensor.wupws_temp
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=1) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
+
+  - platform: average
+    name: irrigation_unlimited_temperature_2
+    entities:
+      - sensor.wupws_temp
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=2) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
+
+  - platform: average
+    name: irrigation_unlimited_temperature_3
+    entities:
+      - sensor.wupws_temp
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=3) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
+
+  - platform: average
+    name: irrigation_unlimited_temperature_4
+    entities:
+      - sensor.wupws_temp
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=4) }}'
+    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
+
+  - platform: average
+    name: irrigation_unlimited_temperature_5_day_moving_average
+    entities:
+      - sensor.wupws_temp
+    precision: 1
+    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=4) }}'
+    end: '{{ now() }}'
+
+  # Five day weighted rain total sensor.
+  # Adjust the weight values (0.7, 0.3, 0.15, 0.05) to suit your needs (0.0 = ignore that day).
+  - platform: template
+    sensors:
+      irrigation_unlimited_rain_weighted_total:
+        friendly_name: "Irrigation Unlimited Rain Weighted Total"
+        unit_of_measurement: 'mm'
+        icon_template: 'mdi:umbrella'
+        value_template: >
+          {% set rain_total = state_attr('sensor.irrigation_unlimited_rain_0','max_value') | float %}
+          {% set rain_total = rain_total + state_attr('sensor.irrigation_unlimited_rain_1','max_value') | float * 0.7 %}
+          {% set rain_total = rain_total + state_attr('sensor.irrigation_unlimited_rain_2','max_value') | float * 0.3 %}
+          {% set rain_total = rain_total + state_attr('sensor.irrigation_unlimited_rain_3','max_value') | float * 0.15 %}
+          {% set rain_total = rain_total + state_attr('sensor.irrigation_unlimited_rain_4','max_value') | float * 0.05 %}
+          {{ rain_total | round(1) }}
+
+# Automation to adjust the run times for Irrigation Unlimited.
+# It uses the 5 day weighted rain total and the moving 5 day average temperature sensors
+# created above to generate a variation.
+# Adjust rain_total_threshold, rain_rate_threshold and temperature_threshold variables to suit you needs.
+automation:
+  - alias: Irrigation Unlimited Adjustment
+    trigger:
+      platform: state
+      entity_id:
+        - sensor.irrigation_unlimited_rain_weighted_total
+        - sensor.irrigation_unlimited_temperature_5_day_moving_average
+        - sensor.wupws_preciprate
+    action:
+      service: irrigation_unlimited.adjust_time
+      data:
+        entity_id: binary_sensor.irrigation_unlimited_c1_z1
+        percentage: >
+          {% set rain_total_threshold = 3.5 %}
+          {% set rain_rate_threshold = 1.0 %}
+          {% set temperature_threshold = 20.0 %}
+
+          {% set rain_total = states('sensor.irrigation_unlimited_rain_weighted_total') | float %}
+          {% set rain_multiplier = (1 - (rain_total / rain_total_threshold)) %}
+
+          {% set temperature_average = states('sensor.irrigation_unlimited_temperature_5_day_moving_average') | float %}
+          {% set temperature_multiplier = temperature_average / temperature_threshold %}
+
+          {% set multiplier = 1.0 %}
+          {% if states('sensor.wupws_preciprate') | float < rain_rate_threshold %}
+            {% set multiplier = multiplier * temperature_multiplier %}
+
+            {% if rain_multiplier > 0 and rain_total < rain_total_threshold %}
+              {% set multiplier = multiplier * rain_multiplier %}
+            {% endif %}
+          {% endif %}
+
+          {{ (multiplier * 100) | round(0) }}
