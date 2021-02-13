@@ -1,0 +1,68 @@
+title: Observations
+type: entities
+entities:
+  - type: 'custom:multiple-entity-row'
+    entity: sensor.irrigation_unlimited_temperature_0
+    name: Today
+    state_header: Avg Temp
+    unit: false
+    entities:
+      - entity: sensor.irrigation_unlimited_rain_0
+        name: Rain
+        attribute: max_value
+      - attribute: min_value
+        name: Min Temp
+      - attribute: max_value
+        name: Max Temp
+  - type: 'custom:multiple-entity-row'
+    name: Yesterday
+    entity: sensor.irrigation_unlimited_temperature_1
+    state_header: Avg Temp
+    unit: false
+    entities:
+      - entity: sensor.irrigation_unlimited_rain_1
+        name: Rain
+        attribute: max_value
+      - attribute: min_value
+        name: Min Temp
+      - attribute: max_value
+        name: Max Temp
+  - type: 'custom:multiple-entity-row'
+    name: Two days ago
+    entity: sensor.irrigation_unlimited_temperature_2
+    state_header: Avg Temp
+    unit: false
+    entities:
+      - entity: sensor.irrigation_unlimited_rain_2
+        name: Rain
+        attribute: max_value
+      - attribute: min_value
+        name: Min Temp
+      - attribute: max_value
+        name: Max Temp
+  - type: 'custom:multiple-entity-row'
+    name: Three days ago
+    entity: sensor.irrigation_unlimited_temperature_3
+    state_header: Avg Temp
+    unit: false
+    entities:
+      - entity: sensor.irrigation_unlimited_rain_3
+        name: Rain
+        attribute: max_value
+      - attribute: min_value
+        name: Min Temp
+      - attribute: max_value
+        name: Max Temp
+  - type: 'custom:multiple-entity-row'
+    name: Four days ago
+    entity: sensor.irrigation_unlimited_temperature_4
+    state_header: Avg Temp
+    unit: false
+    entities:
+      - entity: sensor.irrigation_unlimited_rain_4
+        name: Rain
+        attribute: max_value
+      - attribute: min_value
+        name: Min Temp
+      - attribute: max_value
+        name: Max Temp
