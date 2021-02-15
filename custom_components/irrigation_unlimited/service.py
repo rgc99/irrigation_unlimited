@@ -2,14 +2,17 @@ from homeassistant.core import ServiceCall
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.service import async_register_admin_service
 import voluptuous as vol
 from homeassistant.const import (
     CONF_ENTITY_ID,
     SERVICE_RELOAD,
 )
 
-from .entity import IUComponent, IUEntity
+from custom_components.irrigation_unlimited.irrigation_unlimited import IUCoordinator
+from .entity import IUEntity
 from .const import (
+    DOMAIN,
     SERVICE_ENABLE,
     SERVICE_DISABLE,
     SERVICE_TIME_ADJUST,
@@ -58,6 +61,8 @@ MANUAL_RUN_SCHEMA = {
     vol.Optional(CONF_ZONES): cv.ensure_list,
 }
 
+RELOAD_SERVICE_SCHEMA = vol.Schema({})
+
 
 async def async_enable(entity: IUEntity, call: ServiceCall) -> None:
     entity.dispatch(SERVICE_ENABLE, call)
@@ -93,12 +98,22 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
     return
 
 
-async def async_reload(entity: IUComponent, call: ServiceCall) -> None:
-    entity.dispatch(SERVICE_RELOAD, call)
-    return
+def register_component_services(
+    component: EntityComponent, coordinator: IUCoordinator
+) -> None:
+    async def reload_service_handler(call: ServiceCall) -> None:
+        """Reload yaml entities."""
+        conf = await component.async_prepare_reload(skip_reset=True)
+        if conf is None:
+            conf = {DOMAIN: {}}
+        coordinator.load(conf[DOMAIN])
+        return
 
-
-def register_component_services(component: EntityComponent) -> None:
-    component.async_register_entity_service(SERVICE_RELOAD, {}, async_reload)
-
+    async_register_admin_service(
+        component.hass,
+        DOMAIN,
+        SERVICE_RELOAD,
+        reload_service_handler,
+        schema=RELOAD_SERVICE_SCHEMA,
+    )
     return

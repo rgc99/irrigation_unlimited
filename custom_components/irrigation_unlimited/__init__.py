@@ -159,7 +159,7 @@ async def async_setup(hass: HomeAssistant, config: Config):
         async_load_platform(hass, BINARY_SENSOR, DOMAIN, {}, config)
     )
 
-    register_component_services(component)
+    register_component_services(component, coordinator)
 
     coordinator.start()
 

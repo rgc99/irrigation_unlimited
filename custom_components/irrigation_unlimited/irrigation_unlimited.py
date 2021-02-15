@@ -2,6 +2,7 @@
 
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
+from typing import OrderedDict
 import homeassistant
 from homeassistant.core import HomeAssistant, Config
 from homeassistant.helpers.entity import Entity
@@ -247,7 +248,7 @@ class IUSchedule:
         self._dirty = True
         return
 
-    def load(self, config: Config):
+    def load(self, config: OrderedDict):
         """Load schedule data from config"""
         self.clear()
 
@@ -778,10 +779,18 @@ class IUZone:
             self._run_queue.add_manual(ns, wash_td(data[CONF_TIME]))
         return
 
-    def add(self, schedule: IUSchedule) -> None:
+    def add(self, schedule: IUSchedule) -> IUSchedule:
         """Add a new schedule to the zone"""
         self._schedules.append(schedule)
-        return
+        return schedule
+
+    def find_add(self, coordinator, controller, zone, index: int) -> IUSchedule:
+        if index >= len(self._schedules):
+            return self.add(
+                IUSchedule(self._hass, coordinator, controller, zone, index)
+            )
+        else:
+            return self._schedules[index]
 
     def clear(self) -> None:
         """Reset this zone"""
@@ -790,7 +799,7 @@ class IUZone:
         self._is_on = False
         return
 
-    def load(self, config: Config):
+    def load(self, config: OrderedDict):
         """ Load zone data from the configuration"""
         self.clear()
 
@@ -1000,19 +1009,24 @@ class IUController:
             all_setup = all_setup and zone.is_setup
         return all_setup
 
-    def add(self, zone: IUZone):
+    def add(self, zone: IUZone) -> IUZone:
         """Add a new zone to the controller"""
         self._zones.append(zone)
-        return self
+        return zone
+
+    def find_add(self, coordinator, controller, index: int) -> IUZone:
+        if index >= len(self._zones):
+            return self.add(IUZone(self._hass, coordinator, controller, index))
+        else:
+            return self._zones[index]
 
     def clear(self) -> None:
-        # self._next_zone = None
-        self._zones.clear()
+        # Don't clear zones
+        # self._zones.clear()
         self._is_on = False
-        self._dirty = True
         return
 
-    def load(self, config: Config):
+    def load(self, config: OrderedDict):
         """Load config data for the controller"""
         self.clear()
         self._is_enabled = config.get(CONF_ENABLED, True)
@@ -1020,6 +1034,7 @@ class IUController:
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
+        self._dirty = True
         return self
 
     def muster(self, time: datetime, force: bool) -> int:
@@ -1198,21 +1213,29 @@ class IUCoordinator:
     def _is_testing(self) -> bool:
         return self._testing and self._test_end is not None
 
-    def add(self, controller: IUController):
+    def add(self, controller: IUController) -> IUController:
         """Add a new controller to the system"""
         self._controllers.append(controller)
-        return self
+        return controller
+
+    def find_add(self, coordinator, index: int) -> IUController:
+        if index >= len(self._controllers):
+            return self.add(IUController(self._hass, coordinator, index))
+        else:
+            return self._controllers[index]
 
     def clear(self) -> None:
-        self._controllers.clear()
+        # Don't clear controllers
+        # self._controllers.clear()
+        self._is_on: bool = False
         return
 
-    def load(self, config: Config):
+    def load(self, config: OrderedDict):
         """Load config data for the system"""
+        self.clear()
 
         global SYSTEM_GRANULARITY
         SYSTEM_GRANULARITY = config.get(CONF_GRANULARITY, DEFAULT_GRANULATITY)
-        self.test = []
         if CONF_TESTING in config:
             test_config = config[CONF_TESTING]
             self._testing = test_config.get(CONF_ENABLED, False)
@@ -1227,16 +1250,16 @@ class IUCoordinator:
                 self._test_times.append({"name": name, "start": start, "end": end})
 
         for ci, controller in enumerate(config[CONF_CONTROLLERS]):
-            Ctrl = IUController(self._hass, self, ci).load(controller)
-            self.add(Ctrl)
+            Ctrl = self.find_add(self, ci).load(controller)
 
             for zi, zone in enumerate(controller[CONF_ZONES]):
-                Zn = IUZone(self._hass, self, Ctrl, zi).load(zone)
-                Ctrl.add(Zn)
+                Zn = Ctrl.find_add(self, Ctrl, zi).load(zone)
 
                 for si, schedule in enumerate(zone[CONF_SCHEDULES]):
-                    Zn.add(IUSchedule(self._hass, self, Ctrl, Zn, si).load(schedule))
+                    Zn.find_add(self, Ctrl, Zn, si).load(schedule)
 
+        self._dirty = True
+        self._muster_required = True
         return self
 
     def muster(self, time: datetime, force: bool) -> int:
