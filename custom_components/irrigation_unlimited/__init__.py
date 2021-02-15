@@ -2,7 +2,7 @@
 Custom integration to integrate irrigation_unlimited with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/custom-components/irrigation_unlimited
+https://github.com/rgc99/irrigation_unlimited
 """
 import logging
 import voluptuous as vol

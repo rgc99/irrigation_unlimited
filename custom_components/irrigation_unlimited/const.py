@@ -7,7 +7,7 @@ COORDINATOR = "coordinator"
 COMPONENT = "component"
 VERSION = "0.0.1"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
-ISSUE_URL = "https://github.com/custom-components/irrigation_unlimited/issues"
+ISSUE_URL = "https://github.com/rgc99/irrigation_unlimited/issues"
 
 # Icons
 ICON = "mdi:valve"
