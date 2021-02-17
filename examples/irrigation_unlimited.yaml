@@ -12,7 +12,7 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}'
     end: '{{ now() }}'
 
   - platform: average
@@ -20,7 +20,7 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=1) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
 
   - platform: average
@@ -28,7 +28,7 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=2) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
 
   - platform: average
@@ -36,7 +36,7 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=3) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
 
   - platform: average
@@ -44,7 +44,7 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=4) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
 
   - platform: average
@@ -52,7 +52,7 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}'
     end: '{{ now() }}'
 
   - platform: average
@@ -60,7 +60,7 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=1) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
 
   - platform: average
@@ -68,7 +68,7 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=2) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
 
   - platform: average
@@ -76,7 +76,7 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=3) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
 
   - platform: average
@@ -84,7 +84,7 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=4) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
 
   - platform: average
@@ -92,7 +92,7 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=10).replace(second=0) - timedelta(days=4) }}'
+    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
     end: '{{ now() }}'
 
   # Five day weighted rain total sensor.
