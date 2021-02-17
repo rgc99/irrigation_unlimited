@@ -128,23 +128,27 @@ automation:
       data:
         entity_id: binary_sensor.irrigation_unlimited_c1_z1
         percentage: >
+          {# Threshold variables #}
           {% set rain_total_threshold = 3.5 %}
           {% set rain_rate_threshold = 1.0 %}
           {% set temperature_threshold = 20.0 %}
 
+          {# Sensor data #}
           {% set rain_total = states('sensor.irrigation_unlimited_rain_weighted_total') | float %}
-          {% set rain_multiplier = (1 - (rain_total / rain_total_threshold)) %}
-
+          {% set rain_rate = states('sensor.wupws_preciprate') | float %}
           {% set temperature_average = states('sensor.irrigation_unlimited_temperature_5_day_moving_average') | float %}
+
+          {# Threshold variables #}
+          {% set rain_multiplier = (1 - (rain_total / rain_total_threshold)) %}
           {% set temperature_multiplier = temperature_average / temperature_threshold %}
 
           {% set multiplier = 1.0 %}
-          {% if states('sensor.wupws_preciprate') | float < rain_rate_threshold %}
+          {% if rain_rate < rain_rate_threshold and rain_multiplier > 0 and rain_total < rain_total_threshold %}
             {% set multiplier = multiplier * temperature_multiplier %}
-
-            {% if rain_multiplier > 0 and rain_total < rain_total_threshold %}
-              {% set multiplier = multiplier * rain_multiplier %}
-            {% endif %}
+            {% set multiplier = multiplier * rain_multiplier %}
+          {% else %}
+            {% set multiplier = 0.0 %} {# It's raining or enough already #}
           {% endif %}
 
+          {# Return multiplier as a percentage #}
           {{ (multiplier * 100) | round(0) }}
