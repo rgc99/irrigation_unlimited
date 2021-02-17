@@ -13,6 +13,7 @@ ISSUE_URL = "https://github.com/rgc99/irrigation_unlimited/issues"
 ICON = "mdi:valve"
 ICON_ON = "mdi:valve-open"
 ICON_OFF = "mdi:valve-closed"
+ICON_DISABLED = "mdi:circle-off-outline"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"

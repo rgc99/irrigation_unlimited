@@ -10,6 +10,7 @@ from .const import (
     COORDINATOR,
     ICON_OFF,
     ICON_ON,
+    ICON_DISABLED,
     NAME,
 )
 
@@ -64,10 +65,13 @@ class IUMasterEntity(IUEntity):
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
-        if self._controller.is_on:
-            return ICON_ON
+        if self._controller.enabled:
+            if self._controller.is_on:
+                return ICON_ON
+            else:
+                return ICON_OFF
         else:
-            return ICON_OFF
+            return ICON_DISABLED
 
     @property
     def device_state_attributes(self):
@@ -125,10 +129,13 @@ class IUZoneEntity(IUEntity):
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
-        if self._zone.is_on:
-            return ICON_ON
+        if self._zone.enabled:
+            if self._zone.is_on:
+                return ICON_ON
+            else:
+                return ICON_OFF
         else:
-            return ICON_OFF
+            return ICON_DISABLED
 
     @property
     def device_state_attributes(self):
