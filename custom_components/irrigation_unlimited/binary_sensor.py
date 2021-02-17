@@ -8,8 +8,9 @@ from custom_components.irrigation_unlimited.service import register_platform_ser
 from .const import (
     DOMAIN,
     COORDINATOR,
+    ICON_OFF,
+    ICON_ON,
     NAME,
-    ICON,
 )
 
 RES_MANUAL = "Manual"
@@ -62,8 +63,11 @@ class IUMasterEntity(IUEntity):
 
     @property
     def icon(self):
-        """Return the icon to use in the frontend, if any."""
-        return ICON
+        """Return the icon to use in the frontend."""
+        if self._controller.is_on:
+            return ICON_ON
+        else:
+            return ICON_OFF
 
     @property
     def device_state_attributes(self):
@@ -120,8 +124,11 @@ class IUZoneEntity(IUEntity):
 
     @property
     def icon(self):
-        """Return the icon to use in the frontend, if any."""
-        return ICON
+        """Return the icon to use in the frontend."""
+        if self._zone.is_on:
+            return ICON_ON
+        else:
+            return ICON_OFF
 
     @property
     def device_state_attributes(self):
