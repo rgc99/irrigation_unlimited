@@ -3,6 +3,7 @@
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]](LICENSE)
+[![GitHub Downloads][download-shield]][releases]
 
 [![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
@@ -319,4 +320,5 @@ Some inspiration was taken from [kloggy](https://github.com/kloggy/HA-Irrigation
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Robert%20Cook%20%40rgc99-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/rgc99/irrigation_unlimited.svg?style=for-the-badge
 [releases]: https://github.com/rgc99/irrigation_unlimited/releases
+[download-shield]: https://img.shields.io/github/downloads/rgc99/irrigation_unlimited/total?style=for-the-badge
 [integration_blueprint]: https://github.com/custom-components/integration_blueprint
