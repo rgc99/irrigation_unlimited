@@ -79,7 +79,8 @@ class IUMasterEntity(IUEntity):
         """Return the state attributes of the device."""
         attr = {}
         attr["enabled"] = self._controller.enabled
-        attr["zones"] = len(self._controller._zones)
+        attr["zone_count"] = len(self._controller._zones)
+        attr["zones"] = ""
         current = self._controller.runs.current_run
         if current is not None:
             attr["current_zone"] = current.index + 1
@@ -131,13 +132,13 @@ class IUZoneEntity(IUEntity):
     def icon(self):
         """Return the icon to use in the frontend."""
         if self._controller.enabled:
-        if self._zone.enabled:
-            if self._zone.is_on:
-                return ICON_ON
+            if self._zone.enabled:
+                if self._zone.is_on:
+                    return ICON_ON
+                else:
+                    return ICON_OFF
             else:
-                return ICON_OFF
-        else:
-            return ICON_DISABLED
+                return ICON_DISABLED
         else:
             return ICON_BLOCKED
 
@@ -145,8 +146,10 @@ class IUZoneEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
-        attr["enabled"] = self._zone.enabled
-        attr["schedules"] = len(self._zone.schedules)
+        attr["enabled"] = self._zone.enabled and self._controller.enabled
+        attr["status"] = self._zone.status
+        attr["schedule_count"] = len(self._zone.schedules)
+        attr["schedules"] = ""
         attr["adjustment"] = self._zone.adjustment.as_string
         current = self._zone.runs.current_run
         if current is not None:

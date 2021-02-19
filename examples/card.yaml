@@ -35,7 +35,7 @@ entities:
         secondary_info:
           attribute: enabled
         entities:
-          - attribute: zones
+          - attribute: zone_count
             name: Zones
       - type: 'custom:multiple-entity-row'
         entity: binary_sensor.irrigation_unlimited_c1_m
@@ -89,7 +89,7 @@ entities:
         secondary_info:
           attribute: enabled
         entities:
-          - attribute: schedules
+          - attribute: schedule_count
             name: Schedules
           - attribute: adjustment
             name: Adjustment
