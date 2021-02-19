@@ -691,6 +691,7 @@ class IUZone:
         self._name: str = None
         self._switch_entity_id: str = None
         # Private variables
+        self._initialised: bool = False
         self._schedules: list(IUSchedule) = []
         self._run_queue = IUScheduleQueue()
         self._adjustment = IUAdjustment()
@@ -756,13 +757,35 @@ class IUZone:
         self._zone_sensor = value
         return
 
+    @property
+    def status(self) -> str:
+        return self._status()
+
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
-        all_setup: bool = self._zone_sensor is not None
+        if not self._initialised:
+            self._initialised = self._zone_sensor is not None
 
-        for schedule in self._schedules:
-            all_setup = all_setup and schedule.is_setup
-        return all_setup
+            if self._initialised:
+                for schedule in self._schedules:
+                    self._initialised = self._initialised and schedule.is_setup
+        return self._initialised
+
+    def _status(self) -> str:
+        """Return status of zone"""
+        if self._initialised:
+            if self._controller.enabled:
+                if self._is_enabled:
+                    if self._is_on:
+                        return STATE_ON
+                    else:
+                        return STATE_OFF
+                else:
+                    return "disabled"
+            else:
+                return "blocked"
+        else:
+            return "initialising"
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
         """Adjust the scheduled run times"""
