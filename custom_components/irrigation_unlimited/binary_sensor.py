@@ -11,6 +11,7 @@ from .const import (
     ICON_OFF,
     ICON_ON,
     ICON_DISABLED,
+    ICON_BLOCKED,
     NAME,
 )
 
@@ -129,6 +130,7 @@ class IUZoneEntity(IUEntity):
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
+        if self._controller.enabled:
         if self._zone.enabled:
             if self._zone.is_on:
                 return ICON_ON
@@ -136,6 +138,8 @@ class IUZoneEntity(IUEntity):
                 return ICON_OFF
         else:
             return ICON_DISABLED
+        else:
+            return ICON_BLOCKED
 
     @property
     def device_state_attributes(self):
