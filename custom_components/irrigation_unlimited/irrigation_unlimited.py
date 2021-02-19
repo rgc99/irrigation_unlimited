@@ -1168,7 +1168,7 @@ class IUCoordinator:
         self._controllers: list(IUController) = []
         self._is_on: bool = False
         self._dirty: bool = True
-        self._component_sensor_issetup: bool = False
+        # self._component_sensor_issetup: bool = False
         self._component = None
         self._initialised: bool = False
         self._last_muster: datetime = None
