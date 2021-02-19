@@ -1194,15 +1194,6 @@ class IUCoordinator:
         self._component = value
         return
 
-    @property
-    def component_sensor_issetup(self) -> bool:
-        return self._component_sensor_issetup
-
-    @component_sensor_issetup.setter
-    def component_sensor_issetup(self, value: bool) -> None:
-        self._component_sensor_issetup = value
-        return
-
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
         all_setup: bool = self._component is not None
