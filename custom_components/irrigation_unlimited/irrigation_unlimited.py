@@ -1412,16 +1412,23 @@ class IUCoordinator:
                     zone.service_manual_run(data, time)
             return
 
+        def notify_children(controller: IUController) -> None:
+            for zone in controller.zones:
+                zone.request_update()
+            return
+
         if service == SERVICE_ENABLE:
             if zone is not None:
                 zone.enabled = True
             else:
                 controller.enabled = True
+                notify_children(controller)
         elif service == SERVICE_DISABLE:
             if zone is not None:
                 zone.enabled = False
             else:
                 controller.enabled = False
+                notify_children(controller)
         elif service == SERVICE_TIME_ADJUST:
             if zone is not None:
                 zone.service_adjust_time(data, time)
