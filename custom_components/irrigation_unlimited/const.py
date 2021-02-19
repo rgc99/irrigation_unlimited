@@ -14,6 +14,7 @@ ICON = "mdi:valve"
 ICON_ON = "mdi:valve-open"
 ICON_OFF = "mdi:valve-closed"
 ICON_DISABLED = "mdi:circle-off-outline"
+ICON_BLOCKED = "mdi:alert-octagon-outline"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
