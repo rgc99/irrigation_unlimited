@@ -13,11 +13,11 @@ disable:
       description: Name of the Irrigation Unlimited entity.
       example: 'binary_sensor.irrigation_unlimited_c1_z1'
 reload:
-  description: Reload the configuration (not implemented)
+  description: Reload the configuration
   fields:
     entity_id:
-      description: Name of the Irrigation Unlimited entity.
-      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+      description: Name of the Irrigation Unlimited corrdinator.
+      example: 'irrigation_unlimited.coordinator'
 adjust_time:
   description: Adjust the run times.
   fields:
