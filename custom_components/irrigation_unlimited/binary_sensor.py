@@ -1,7 +1,13 @@
 """Binary sensor platform for irrigation_unlimited."""
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_platform
-from homeassistant.helpers import config_validation as cv
 import homeassistant.util.dt as dt
+from datetime import datetime, timedelta
+from homeassistant.components import history
+
+from homeassistant.const import (
+    STATE_ON,
+)
 
 from .entity import IUEntity
 from .service import register_platform_services
@@ -38,6 +44,50 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     register_platform_services(platform)
 
     return
+
+
+def on_duration(
+    hass: HomeAssistant, start: datetime, end: datetime, entity_id: str
+) -> timedelta:
+    """Return the total on time between start and end"""
+    history_list = history.state_changes_during_period(hass, start, end, entity_id)
+
+    elapsed = timedelta()
+    current_state: str = None
+    current_time: datetime = None
+
+    if len(history_list) > 0:
+        for item in history_list.get(entity_id):
+
+            # Initialise on first pass
+            if current_state is None:
+                current_state = item.state
+                current_time = item.last_changed
+                continue
+
+            if current_state == STATE_ON and item.state != STATE_ON:
+                elapsed += item.last_changed - current_time
+
+            current_state = item.state
+            current_time = item.last_changed
+
+        if current_state == STATE_ON:
+            elapsed += end - current_time
+
+    return timedelta(seconds=round(elapsed.total_seconds()))
+
+
+def midnight(utc: datetime) -> datetime:
+    """Accept a UTC time and return midnight for that day"""
+    return dt.as_utc(
+        dt.as_local(utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    )
+
+
+def today_on_duration(hass: HomeAssistant, entity_id: str) -> timedelta:
+    end = dt.utcnow()
+    start = midnight(end)
+    return on_duration(hass, start, end, entity_id)
 
 
 class IUMasterEntity(IUEntity):
@@ -179,5 +229,8 @@ class IUZoneEntity(IUEntity):
             attr["next_duration"] = str(next.duration)
         else:
             attr["next_schedule"] = RES_NONE
+        attr["today_total"] = (
+            today_on_duration(self.hass, self.entity_id).total_seconds() / 60
+        )
 
         return attr
