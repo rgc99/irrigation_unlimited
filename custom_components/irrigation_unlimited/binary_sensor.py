@@ -4,7 +4,7 @@ from homeassistant.helpers import config_validation as cv
 import homeassistant.util.dt as dt
 
 from .entity import IUEntity
-from custom_components.irrigation_unlimited.service import register_platform_services
+from .service import register_platform_services
 from .const import (
     DOMAIN,
     COORDINATOR,

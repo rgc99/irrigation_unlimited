@@ -9,7 +9,7 @@ from homeassistant.const import (
     SERVICE_RELOAD,
 )
 
-from custom_components.irrigation_unlimited.irrigation_unlimited import IUCoordinator
+from .irrigation_unlimited import IUCoordinator
 from .entity import IUEntity
 from .const import (
     DOMAIN,
