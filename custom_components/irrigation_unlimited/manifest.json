@@ -4,7 +4,9 @@
   "documentation": "https://github.com/custom-components/irrigation_unlimited",
   "issue_tracker": "https://github.com/custom-components/irrigation_unlimited/issues",
   "version": "2021.2.9",
-  "dependencies": [],
+  "dependencies": [
+    "history"
+  ],
   "config_flow": false,
   "codeowners": [
     "@rgc99"
