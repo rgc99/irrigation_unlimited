@@ -500,12 +500,12 @@ class IURunQueue(list):
         """Clear out the queue except for manual or running schedules"""
         modified: bool = False
         if len(self) > 0:
-                i = len(self) - 1
-                while i >= 0:
+            i = len(self) - 1
+            while i >= 0:
                 if not (self[i].is_running(time) or self[i].is_manual()):
-                        self.pop(i)
-                        modified = True
-                    i -= 1
+                    self.pop(i)
+                    modified = True
+                i -= 1
             if modified:
                 self._next_run = None
                 self._sorted = True
@@ -803,7 +803,7 @@ class IUZone:
         """Adjust the scheduled run times. Return true if adjustment changed"""
         result = self._adjustment.load(data)
         if result:
-        self._run_queue.clear(time)
+            self._run_queue.clear(time)
         return result
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
