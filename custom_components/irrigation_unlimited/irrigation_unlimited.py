@@ -129,8 +129,15 @@ class IUAdjustment:
         """Return a string representation of the adjustment"""
         return self.to_string()
 
-    def load(self, data: MappingProxyType):
-        """Read the adjustment configuration"""
+    def load(self, data: MappingProxyType) -> bool:
+        """Read the adjustment configuration. Return true if anything has changed"""
+
+        # Save current settings
+        old_method = self._method
+        old_time_adjustment = self._time_adjustment
+        old_minimum = self._minimum
+        old_maximum = self._maximum
+
         if CONF_ACTUAL in data:
             self._method = CONF_ACTUAL
             self._time_adjustment = wash_td(data.get(CONF_ACTUAL))
@@ -152,7 +159,13 @@ class IUAdjustment:
             self._minimum = max(self._minimum, granularity_time())  # Set floor
 
         self._maximum = wash_td(data.get(CONF_MAXIMUM, None))
-        return self
+
+        return (
+            self._method != old_method
+            or self._time_adjustment != old_time_adjustment
+            or self._minimum != old_minimum
+            or self._maximum != old_maximum
+        )
 
     def adjust(self, time: timedelta) -> timedelta:
         """Return the adjusted time"""
@@ -484,14 +497,12 @@ class IURunQueue(list):
         return modified
 
     def clear(self, time: datetime) -> bool:
+        """Clear out the queue except for manual or running schedules"""
         modified: bool = False
         if len(self) > 0:
-            if self._current_run is None:
-                modified = self.clear_all()
-            else:
                 i = len(self) - 1
                 while i >= 0:
-                    if not self[i].is_running(time):
+                if not (self[i].is_running(time) or self[i].is_manual()):
                         self.pop(i)
                         modified = True
                     i -= 1
@@ -788,11 +799,12 @@ class IUZone:
         else:
             return "initialising"
 
-    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
-        """Adjust the scheduled run times"""
-        self._adjustment.load(data)
+    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> bool:
+        """Adjust the scheduled run times. Return true if adjustment changed"""
+        result = self._adjustment.load(data)
+        if result:
         self._run_queue.clear(time)
-        return
+        return result
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
         """Add a manual run."""
