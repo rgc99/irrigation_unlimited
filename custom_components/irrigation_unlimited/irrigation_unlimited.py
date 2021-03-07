@@ -57,6 +57,7 @@ from .const import (
     CONF_EVEN,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
+    SERVICE_TOGGLE,
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
 )
@@ -1442,6 +1443,12 @@ class IUCoordinator:
                 zone.enabled = False
             else:
                 controller.enabled = False
+                notify_children(controller)
+        elif service == SERVICE_TOGGLE:
+            if zone is not None:
+                zone.enabled = not zone.enabled
+            else:
+                controller.enabled = not controller.enabled
                 notify_children(controller)
         elif service == SERVICE_TIME_ADJUST:
             if zone is not None:

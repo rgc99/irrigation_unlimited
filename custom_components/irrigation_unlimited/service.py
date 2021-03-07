@@ -15,6 +15,7 @@ from .const import (
     DOMAIN,
     SERVICE_ENABLE,
     SERVICE_DISABLE,
+    SERVICE_TOGGLE,
     SERVICE_TIME_ADJUST,
     SERVICE_MANUAL_RUN,
     CONF_PERCENTAGE,
@@ -32,11 +33,7 @@ from .const import (
     SERVICE_TIME_ADJUST,
 )
 
-ENABLE_SCHEMA = {
-    vol.Required(CONF_ENTITY_ID): cv.entity_id,
-}
-
-DISABLE_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
+ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
 
 TIME_ADJUST_SCHEMA = vol.All(
     vol.Schema(
@@ -74,6 +71,10 @@ async def async_disable(entity: IUEntity, call: ServiceCall) -> None:
     return
 
 
+async def async_toggle(entity: IUEntity, call: ServiceCall) -> None:
+    entity.dispatch(SERVICE_TOGGLE, call)
+
+
 async def async_time_adjust(entity: IUEntity, call: ServiceCall) -> None:
     entity.dispatch(SERVICE_TIME_ADJUST, call)
     return
@@ -85,10 +86,11 @@ async def async_manual_run(entity: IUEntity, call: ServiceCall) -> None:
 
 
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
-    platform.async_register_entity_service(SERVICE_ENABLE, ENABLE_SCHEMA, async_enable)
+    platform.async_register_entity_service(SERVICE_ENABLE, ENTITY_SCHEMA, async_enable)
     platform.async_register_entity_service(
-        SERVICE_DISABLE, DISABLE_SCHEMA, async_disable
+        SERVICE_DISABLE, ENTITY_SCHEMA, async_disable
     )
+    platform.async_register_entity_service(SERVICE_TOGGLE, ENTITY_SCHEMA, async_toggle)
     platform.async_register_entity_service(
         SERVICE_TIME_ADJUST, TIME_ADJUST_SCHEMA, async_time_adjust
     )

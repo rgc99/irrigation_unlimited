@@ -216,18 +216,19 @@ The binary sensor associated with each controller and zone provide several servi
 
 - `enable`
 - `disable`
+- `toggle`
 - `manual_run`
 - `adjust_time`
 
 If a controller sensor is targetted then it will effect all its children zones.
 
-### Services `enable` and `disable`
+### Services `enable`, `disable` and `toggle`
 
-Enables/disables the controller or zone respectively.
+Enables/disables/toggles the controller or zone respectively.
 
 | Service data attribute | Optional | Description |
 | ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to enable/disable.
+| `entity_id` | no | Controller or zone to enable/disable/toggle.
 
 ### Service `manual_run`
 
