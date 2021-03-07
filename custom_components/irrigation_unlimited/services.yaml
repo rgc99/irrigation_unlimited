@@ -46,7 +46,7 @@ adjust_time:
       description: Maximum run time.
       example: '01:00'
 manual_run:
-  description: Turn on immidiately for a set period.
+  description: Turn on immediately for a set period.
   fields:
     entity_id:
       description: Name of the Irrigation Unlimited entity.
