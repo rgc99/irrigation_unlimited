@@ -229,8 +229,8 @@ class IUZoneEntity(IUEntity):
             attr["next_duration"] = str(next.duration)
         else:
             attr["next_schedule"] = RES_NONE
-        attr["today_total"] = (
-            today_on_duration(self.hass, self.entity_id).total_seconds() / 60
+        attr["today_total"] = round(
+            today_on_duration(self.hass, self.entity_id).total_seconds() / 60, 1
         )
 
         return attr
