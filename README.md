@@ -258,6 +258,14 @@ Use forecast and observation data collected by weather integrations in automatio
 | `minimum` | yes | Set the minimum run time. Minimum run time is 1 minute and will be limited to this. Use the `disable` service to turn off.
 | `maximum` | yes | Set the maximum run time. Note: The default is no limit.
 
+### Service `reload`
+
+Reload the configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. Suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed.
+
+| Service data attribute | Optional | Description |
+| ---------------------- | -------- | ----------- |
+| `entity_id` | no | Controller or zone to run.
+
 ## Frontend
 
 Because this is an integration there is no frontend. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on. However, for some inspiration and a compact card try [this](./examples/card.yaml).
