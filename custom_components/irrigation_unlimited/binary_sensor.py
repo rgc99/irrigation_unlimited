@@ -128,6 +128,7 @@ class IUMasterEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
+        attr["index"] = self._controller.controller_index
         attr["enabled"] = self._controller.enabled
         attr["zone_count"] = len(self._controller._zones)
         attr["zones"] = ""
@@ -196,6 +197,7 @@ class IUZoneEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
+        attr["index"] = self._zone.zone_index
         attr["enabled"] = self._zone.enabled and self._controller.enabled
         attr["status"] = self._zone.status
         attr["schedule_count"] = len(self._zone.schedules)
