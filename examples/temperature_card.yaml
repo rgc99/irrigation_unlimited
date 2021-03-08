@@ -1,0 +1,20 @@
+type: 'custom:mini-graph-card'
+name: Temperature
+entities:
+  - entity: sensor.wupws_temp
+    aggregate_func: max
+    name: Actual Max
+  - entity: sensor.wentworth_falls_temp_max_0
+    aggregate_func: avg
+    name: Forecast Max
+  - entity: sensor.wupws_temp
+    aggregate_func: min
+    name: Min
+  - entity: sensor.wupws_temp
+    aggregate_func: avg
+    name: Avg
+group_by: date
+hours_to_show: 144
+decimals: 1
+show:
+  labels: true
