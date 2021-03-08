@@ -1,0 +1,16 @@
+type: 'custom:mini-graph-card'
+name: Watering Last 7 Days
+icon: 'mdi:sprinkler-variant'
+entities:
+  - entity: binary_sensor.irrigation_unlimited_c1_z1
+    attribute: today_total
+  - entity: binary_sensor.irrigation_unlimited_c1_z2
+    attribute: today_total
+show:
+  graph: bar
+  labels: true
+unit: min
+aggregate_func: max
+hours_to_show: 168
+group_by: date
+lower_bound: 0
