@@ -14,6 +14,8 @@ from .service import register_platform_services
 from .const import (
     DOMAIN,
     COORDINATOR,
+    ICON_CONTROLLER_OFF,
+    ICON_CONTROLLER_ON,
     ICON_OFF,
     ICON_ON,
     ICON_DISABLED,
@@ -117,9 +119,9 @@ class IUMasterEntity(IUEntity):
         """Return the icon to use in the frontend."""
         if self._controller.enabled:
             if self._controller.is_on:
-                return ICON_ON
+                return ICON_CONTROLLER_ON
             else:
-                return ICON_OFF
+                return ICON_CONTROLLER_OFF
         else:
             return ICON_DISABLED
 
