@@ -18,7 +18,6 @@ from .const import (
     ICON_ON,
     ICON_DISABLED,
     ICON_BLOCKED,
-    NAME,
 )
 
 RES_MANUAL = "Manual"
@@ -100,8 +99,8 @@ class IUMasterEntity(IUEntity):
 
     @property
     def name(self):
-        """Return the name of the binary_sensor."""
-        return f"{NAME} {RES_CONTROLLER} {self._controller.controller_index + 1} {RES_MASTER}"
+        """Return the friendly name of the binary_sensor."""
+        return self._controller.name
 
     @property
     def is_on(self):
@@ -166,8 +165,8 @@ class IUZoneEntity(IUEntity):
 
     @property
     def name(self):
-        """Return the name of the binary_sensor."""
-        return f"{NAME} {RES_CONTROLLER} {self._zone.controller_index + 1} {RES_ZONE} {self._zone.zone_index + 1}"
+        """Return the friendly name of the binary_sensor."""
+        return self._zone.name
 
     @property
     def is_on(self):

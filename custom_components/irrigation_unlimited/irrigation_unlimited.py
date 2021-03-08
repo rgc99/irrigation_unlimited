@@ -1005,6 +1005,10 @@ class IUController:
         return self._run_queue
 
     @property
+    def name(self) -> str:
+        return self._name
+
+    @property
     def is_on(self) -> bool:
         return self._is_on
 
