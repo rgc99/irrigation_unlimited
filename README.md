@@ -260,11 +260,7 @@ Use forecast and observation data collected by weather integrations in automatio
 
 ### Service `reload`
 
-Reload the configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. Suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed.
-
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to run.
+Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading.
 
 ## Frontend
 
