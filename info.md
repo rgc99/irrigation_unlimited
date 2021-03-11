@@ -23,12 +23,6 @@ This integration is for irrigation systems large and small. It can offer some co
 
 *Practicle limitations will depend on your hardware.
 
-**This component will set up the following platforms.**
-
-Platform | Description
--- | --
-`binary_sensor` | Show a controller or zone `On` or `Off`.
-
 ![example][exampleimg]
 
 {% if not installed %}

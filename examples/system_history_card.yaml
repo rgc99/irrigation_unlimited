@@ -1,0 +1,6 @@
+type: logbook
+entities:
+  - binary_sensor.irrigation_unlimited_c1_z1
+  - binary_sensor.irrigation_unlimited_c1_z2
+hours_to_show: 144
+title: History

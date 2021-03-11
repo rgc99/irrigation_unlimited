@@ -6,6 +6,7 @@ entities:
     aggregate_func: max
   - entity: sensor.irrigation_unlimited_rain_weighted_total
     name: Weighted total
+    aggregate_func: min
     y_axis: secondary
 hours_to_show: 144
 group_by: date

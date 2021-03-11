@@ -4,7 +4,7 @@ entities:
   - entity: sensor.wupws_temp
     aggregate_func: max
     name: Actual Max
-  - entity: sensor.wentworth_falls_temp_max_0
+  - entity: sensor.bom_temp_max_0
     aggregate_func: avg
     name: Forecast Max
   - entity: sensor.wupws_temp

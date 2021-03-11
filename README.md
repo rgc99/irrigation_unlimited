@@ -61,7 +61,7 @@ Controllers and zones can specify an entity such as a switch or light, basically
 
 A binary sensor is associated with each controller and zone. Controller or master sensors are named `binary_sensor.irrigation_unlimited_cN_m` and zone sensors `binary_sensor.irrigation_unlimited_cN_zN`. These sensors show the state of the master or child zones. Attributes show additional information like current schedule and next run time and duration.
 
-![example][exampleimg]
+![entities](./examples/entities.png)
 
 ## Installation
 
@@ -245,7 +245,7 @@ Adjust the run times. Calling this service will override any previous adjustment
 
 #### Tip
 
-Use forecast and observation data collected by weather integrations in automations to adjust the run times.
+Use forecast and observation data collected by weather integrations in automations to adjust the run times. See [below](#automation) for more information.
 
 | Service data attribute | Optional | Description |
 | ---------------------- | -------- | ----------- |
@@ -272,11 +272,35 @@ and it expands to:
 
 ![Expanded](./examples/card_expanded.png)
 
-Note: This card uses some custom cards [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row), [fold-entity-row](https://github.com/thomasloven/lovelace-fold-entity-row) and at the moment [card-mod](https://github.com/thomasloven/lovelace-card-mod) for styles.
+Note: This card uses some custom cards [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row), [fold-entity-row](https://github.com/thomasloven/lovelace-fold-entity-row), [logbook-card](https://github.com/royto/logbook-card) and at the moment [card-mod](https://github.com/thomasloven/lovelace-card-mod) for styles.
+
+For watering history information here is a [sample card](./examples/watering_history_card.yaml).
+
+![watering_history_card](./examples/watering_history_card.png).
+
+Note: At time of writing this requires a pre-released version of [mini-graph-card](https://github.com/kalkih/mini-graph-card/releases/tag/v0.11.0-dev.3).
+
+Although not really part of the integration but to get you started quickly here is a [temperature card](./examples/temperature_card.yaml).
+
+![temperature_card](./examples/temperature_card.png).
+
+And a [rainfall card](./examples/rainfall_card.yaml). Note how the watering times reduced as rainfall started. More on this below in [Automation](#Automation).
+
+![rainfall_card](./examples/rainfall_card.png).
+
+Finally, a system event [log](./examples/system_history_card.yaml).
+
+![system_history_card](./examples/system_history_card.png).
+
+Putting it all together, here is the [complete picture](./examples/my_dashboard.yaml).
+
+![my_dashboard.png](./examples/my_dashboard.png).
+
+This configuration is three vertical stacks and works well on mobile devices.
 
 ## Automation
 
-Due to the many weather integrations available and their relevance to your situation, there is realistically no way to provide a run time 'auto-adjustment' feature. Therefore, no attempt has been made to include a solution and this also makes the integration more independant. Run time adjustment is achieved by way of services which can be called from within Home Assistant. This does mean some knowledge of creating automations is required.
+Due to the many weather integrations available and their relevance to your situation, there is realistically no way to provide a built in 'auto-adjustment' feature. Therefore, no attempt has been made to include a solution and this also makes the integration more independant and flexible. Run time adjustment is achieved by setting up sensor(s) that consume weather information such as rainfall and temperature but could factor in wind speed, solar radiation etc. to determine if more or less watering time is required. You might also consider using forecast information... A service call is then made to irrigation unlimited to adjust the run times. This does mean some knowledge of creating automations is required.
 
 On a personal note, I use the national weather service [BOM](http://www.bom.gov.au) for my forecast information but find their observation data not relevant due to the extreme regional variations in my situation. There are many micro climates (mountains) and a few kilometers in any direction makes a lot of difference, down pour to a few drops. To this end I have a Personal Weather Station (PWS) that feeds [Weather Underground](https://www.wunderground.com) where I use the [WUnderground](https://www.home-assistant.io/integrations/wunderground) integration to retrieve the data.
 

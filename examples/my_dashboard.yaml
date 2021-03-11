@@ -1,0 +1,278 @@
+  - title: Irrigation
+    path: irrigation
+    panel: false
+    theme: ''
+    badges: []
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: 'custom:mini-graph-card'
+            name: Rainfall 5 Days
+            entities:
+              - entity: sensor.wupws_preciptotal
+                name: Current
+                aggregate_func: max
+              - entity: sensor.irrigation_unlimited_rain_weighted_total
+                name: Weighted total
+                aggregate_func: min
+                y_axis: secondary
+            hours_to_show: 144
+            group_by: date
+            lower_bound: 0
+            decimals: 1
+            show:
+              labels: true
+              labels_secondary: true
+          - type: 'custom:mini-graph-card'
+            name: Temperature 5 Days
+            entities:
+              - entity: sensor.wupws_temp
+                aggregate_func: max
+                name: Actual Max
+              - entity: sensor.wentworth_falls_temp_max_0
+                aggregate_func: avg
+                name: Forecast Max
+              - entity: sensor.wupws_temp
+                aggregate_func: min
+                name: Min
+              - entity: sensor.wupws_temp
+                aggregate_func: avg
+                name: Avg
+            group_by: date
+            hours_to_show: 144
+            decimals: 1
+            show:
+              labels: true
+          - type: 'custom:mini-graph-card'
+            name: Watering Last 7 Days
+            icon: 'mdi:sprinkler-variant'
+            entities:
+              - entity: binary_sensor.irrigation_unlimited_c1_z1
+                attribute: today_total
+              - entity: binary_sensor.irrigation_unlimited_c1_z2
+                attribute: today_total
+            show:
+              graph: bar
+              labels: true
+            unit: min
+            aggregate_func: max
+            hours_to_show: 168
+            group_by: date
+            lower_bound: 0
+      - type: vertical-stack
+        cards:
+          - type: entities
+            entities:
+              - type: 'custom:fold-entity-row'
+                style:
+                  .: |
+                    div#head {
+                      --toggle-icon-width: 24px;
+                    }
+                head:
+                  type: 'custom:multiple-entity-row'
+                  entity: binary_sensor.irrigation_unlimited_c1_m
+                  state_header: Status
+                  state_color: true
+                  entities:
+                    - attribute: current_duration
+                      name: Duration
+                      hide_unavailable: true
+                    - attribute: time_remaining
+                      name: Remaining
+                      hide_unavailable: true
+                    - attribute: percent_complete
+                      name: Complete
+                      unit: '%'
+                  secondary_info:
+                    attribute: current_name
+                    hide_unavailable: true
+                padding: 20
+                entities:
+                  - type: 'custom:multiple-entity-row'
+                    entity: binary_sensor.irrigation_unlimited_c1_m
+                    name: Enabled
+                    icon: 'mdi:sprinkler'
+                    show_state: false
+                    secondary_info:
+                      attribute: enabled
+                    tap_action:
+                      action: call-service
+                      service: irrigation_unlimited.toggle
+                      service_data:
+                        entity_id: binary_sensor.irrigation_unlimited_c1_m
+                    entities:
+                      - attribute: zone_count
+                        name: Zones
+                  - type: 'custom:multiple-entity-row'
+                    entity: binary_sensor.irrigation_unlimited_c1_m
+                    name: Next
+                    icon: 'mdi:clock-start'
+                    show_state: false
+                    secondary_info:
+                      attribute: next_name
+                      hide_unavailable: true
+                    entities:
+                      - attribute: next_start
+                        name: Start
+                        hide_unavailable: true
+                        format: datetime
+                      - attribute: next_duration
+                        name: Duration
+                        hide_unavailable: true
+              - type: divider
+              - type: 'custom:fold-entity-row'
+                style:
+                  .: |
+                    div#head {
+                      --toggle-icon-width: 24px;
+                    }
+                head:
+                  type: 'custom:multiple-entity-row'
+                  entity: binary_sensor.irrigation_unlimited_c1_z1
+                  state_header: Status
+                  state_color: true
+                  entities:
+                    - attribute: current_duration
+                      name: Duration
+                      hide_unavailable: true
+                    - attribute: time_remaining
+                      name: Remaining
+                      hide_unavailable: true
+                    - attribute: percent_complete
+                      name: Complete
+                      unit: '%'
+                  secondary_info:
+                    attribute: current_name
+                    hide_unavailable: true
+                padding: 20
+                entities:
+                  - type: 'custom:multiple-entity-row'
+                    entity: binary_sensor.irrigation_unlimited_c1_z1
+                    name: Enabled
+                    icon: 'mdi:sprinkler'
+                    show_state: false
+                    secondary_info:
+                      attribute: enabled
+                    tap_action:
+                      action: call-service
+                      service: irrigation_unlimited.toggle
+                      service_data:
+                        entity_id: binary_sensor.irrigation_unlimited_c1_z1
+                    entities:
+                      - attribute: adjustment
+                        name: Adjustment
+                      - attribute: schedule_count
+                        name: Schedules
+                  - type: 'custom:multiple-entity-row'
+                    entity: binary_sensor.irrigation_unlimited_c1_z1
+                    name: Next
+                    icon: 'mdi:clock-start'
+                    show_state: false
+                    secondary_info:
+                      attribute: next_name
+                      hide_unavailable: true
+                    entities:
+                      - attribute: next_start
+                        name: Start
+                        hide_unavailable: true
+                        format: datetime
+                      - attribute: next_duration
+                        name: Duration
+                        hide_unavailable: true
+                  - type: 'custom:logbook-card'
+                    entity: binary_sensor.irrigation_unlimited_c1_z1
+                    title: History
+                    attributes:
+                      - value: current_name
+                        label: Schedule
+                      - value: adjustment
+                        label: Adjustment
+                    history: 5
+                    collapse: 2
+                    show:
+                      separator: true
+                    hiddenState:
+                      - 'off'
+              - type: divider
+              - type: 'custom:fold-entity-row'
+                style:
+                  .: |
+                    div#head {
+                      --toggle-icon-width: 24px;
+                    }
+                head:
+                  type: 'custom:multiple-entity-row'
+                  entity: binary_sensor.irrigation_unlimited_c1_z2
+                  state_header: Status
+                  state_color: true
+                  entities:
+                    - attribute: current_duration
+                      name: Duration
+                      hide_unavailable: true
+                    - attribute: time_remaining
+                      name: Remaining
+                      hide_unavailable: true
+                    - attribute: percent_complete
+                      name: Complete
+                      unit: '%'
+                  secondary_info:
+                    attribute: current_name
+                    hide_unavailable: true
+                padding: 20
+                entities:
+                  - type: 'custom:multiple-entity-row'
+                    entity: binary_sensor.irrigation_unlimited_c1_z2
+                    name: Enabled
+                    icon: 'mdi:sprinkler'
+                    show_state: false
+                    secondary_info:
+                      attribute: enabled
+                    tap_action:
+                      action: call-service
+                      service: irrigation_unlimited.toggle
+                      service_data:
+                        entity_id: binary_sensor.irrigation_unlimited_c1_z2
+                    entities:
+                      - attribute: adjustment
+                        name: Adjustment
+                      - attribute: schedule_count
+                        name: Schedules
+                  - type: 'custom:multiple-entity-row'
+                    entity: binary_sensor.irrigation_unlimited_c1_z2
+                    name: Next
+                    icon: 'mdi:clock-start'
+                    show_state: false
+                    secondary_info:
+                      attribute: next_name
+                      hide_unavailable: true
+                    entities:
+                      - attribute: next_start
+                        name: Start
+                        hide_unavailable: true
+                        format: datetime
+                      - attribute: next_duration
+                        name: Duration
+                        hide_unavailable: true
+                  - type: 'custom:logbook-card'
+                    entity: binary_sensor.irrigation_unlimited_c1_z2
+                    title: History
+                    attributes:
+                      - value: current_name
+                        label: Schedule
+                      - value: adjustment
+                        label: Adjustment
+                    history: 5
+                    collapse: 2
+                    show:
+                      separator: true
+                    hiddenState:
+                      - 'off'
+      - type: vertical-stack
+        cards:
+          - type: logbook
+            entities:
+              - binary_sensor.irrigation_unlimited_c1_z1
+              - binary_sensor.irrigation_unlimited_c1_z2
+            hours_to_show: 144
+            title: History
