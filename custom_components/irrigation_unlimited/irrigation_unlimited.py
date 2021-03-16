@@ -82,9 +82,11 @@ def granularity_time() -> timedelta:
     return timedelta(seconds=SYSTEM_GRANULARITY)
 
 
-def wash_td(delta: timedelta, granularity=SYSTEM_GRANULARITY) -> timedelta:
+def wash_td(delta: timedelta, granularity: int = None) -> timedelta:
     """Truncate the supplied timedelta to internal boundaries"""
     if delta is not None:
+        if granularity is None:
+            granularity = SYSTEM_GRANULARITY
         whole_seconds = int(delta.total_seconds())
         rounded_seconds = int(whole_seconds / granularity) * granularity
         return timedelta(seconds=rounded_seconds)
@@ -92,9 +94,11 @@ def wash_td(delta: timedelta, granularity=SYSTEM_GRANULARITY) -> timedelta:
         return None
 
 
-def wash_dt(date: datetime, granularity=SYSTEM_GRANULARITY) -> datetime:
+def wash_dt(date: datetime, granularity: int = None) -> datetime:
     """Truncate the supplied datetime to internal boundaries"""
     if date is not None:
+        if granularity is None:
+            granularity = SYSTEM_GRANULARITY
         rounded_seconds = int(date.second / granularity) * granularity
         d = date.replace(second=rounded_seconds, microsecond=0)
         return d
@@ -102,9 +106,11 @@ def wash_dt(date: datetime, granularity=SYSTEM_GRANULARITY) -> datetime:
         return None
 
 
-def wash_t(time: time, granularity=SYSTEM_GRANULARITY) -> time:
+def wash_t(time: time, granularity: int = None) -> time:
     """Truncate the supplied time to internal boundaries"""
     if time is not None:
+        if granularity is None:
+            granularity = SYSTEM_GRANULARITY
         utc = dt.utcnow()
         d = utc.combine(utc.date(), time)
         rounded_seconds = int(d.second / granularity) * granularity
@@ -1492,7 +1498,7 @@ def write_status_to_log(time: datetime, controller: IUController, zone: IUZone) 
         status = f"{STATE_ON if controller._is_on else STATE_OFF}"
     _LOGGER.debug(
         "[%s] Controller %d %s is %s",
-        datetime.strftime(dt.as_local(time), "%Y-%m-%d %H:%M"),
+        datetime.strftime(dt.as_local(time), "%Y-%m-%d %H:%M:%S"),
         controller._controller_index + 1,
         zm,
         status,
