@@ -32,6 +32,7 @@ from .const import (
     CONF_INCREASE,
     CONF_PERCENTAGE,
     CONF_RESET,
+    CONF_SHOW_CONFIG,
     DEFAULT_GRANULATITY,
     DEFAULT_TEST_SPEED,
     CONF_DURATION,
@@ -293,6 +294,24 @@ class IUSchedule:
 
         return self
 
+    def as_dict(self) -> OrderedDict:
+        dict = OrderedDict()
+
+        dict[CONF_TIME] = self._time
+        dict[CONF_DURATION] = self._duration
+        dict[CONF_NAME] = self._name
+        if self._weekdays is not None:
+            dict[CONF_WEEKDAY] = []
+            for item in self._weekdays:
+                dict[CONF_WEEKDAY].append(WEEKDAYS[item])
+        if self._months is not None:
+            dict[CONF_MONTH] = []
+            for item in self._months:
+                dict[CONF_MONTH].append(MONTHS[item - 1])
+        if self._days is not None:
+            dict[CONF_DAY] = self._days
+        return dict
+
     def get_next_run(self, atime: datetime) -> datetime:
         """
         Determine the next start time. Date processing in this routine
@@ -456,6 +475,12 @@ class IURun:
         else:
             return False
 
+    def as_dict(self) -> OrderedDict:
+        dict = OrderedDict()
+        dict["start"] = self._start_time
+        dict["end"] = self._end_time
+        return dict
+
 
 class IURunQueue(list):
     MAX_DEPTH: int = 6
@@ -611,6 +636,12 @@ class IURunQueue(list):
         else:
             return False
 
+    def as_list(self) -> list:
+        l = []
+        for run in self:
+            l.append(run.as_dict())
+        return l
+
 
 class IUScheduleQueue(IURunQueue):
     """Class to hold the upcoming schedules to run"""
@@ -708,6 +739,7 @@ class IUZone:
         self._is_enabled: bool = True
         self._name: str = None
         self._switch_entity_id: str = None
+        self._show_config: bool = False
         # Private variables
         self._initialised: bool = False
         self._schedules: list(IUSchedule) = []
@@ -742,7 +774,10 @@ class IUZone:
 
     @property
     def name(self) -> str:
-        return self._name
+        if self._name is not None:
+            return self._name
+        else:
+            return f"Zone {self._zone_index + 1}"
 
     @property
     def is_on(self) -> bool:
@@ -778,6 +813,10 @@ class IUZone:
     @property
     def status(self) -> str:
         return self._status()
+
+    @property
+    def show_config(self) -> bool:
+        return self._show_config
 
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
@@ -846,11 +885,24 @@ class IUZone:
         self.clear()
 
         self._is_enabled = config.get(CONF_ENABLED, True)
-        self._name = config.get(CONF_NAME, f"Zone {self.zone_index + 1}")
+        self._name = config.get(CONF_NAME, None)
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._adjustment.load(config)
+        self._show_config = config.get(CONF_SHOW_CONFIG, False)
         self._dirty = True
         return self
+
+    def as_dict(self) -> OrderedDict:
+        dict = OrderedDict()
+        dict[CONF_ENABLED] = self._is_enabled
+        if self._name is not None:
+            dict[CONF_NAME] = self._name
+        if self._switch_entity_id is not None:
+            dict[CONF_ENTITY_ID] = self._switch_entity_id
+        dict[CONF_SCHEDULES] = []
+        for schedule in self._schedules:
+            dict[CONF_SCHEDULES].append(schedule.as_dict())
+        return dict
 
     def muster(self, time: datetime, force: bool) -> int:
         """Calculate run times for this zone"""

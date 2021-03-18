@@ -4,6 +4,7 @@ from homeassistant.helpers import entity_platform
 import homeassistant.util.dt as dt
 from datetime import datetime, timedelta
 from homeassistant.components import history
+import json
 
 from homeassistant.const import (
     STATE_ON,
@@ -153,7 +154,6 @@ class IUMasterEntity(IUEntity):
             attr["next_duration"] = str(next.duration)
         else:
             attr["next_schedule"] = RES_NONE
-
         return attr
 
 
@@ -235,5 +235,7 @@ class IUZoneEntity(IUEntity):
         attr["today_total"] = round(
             today_on_duration(self.hass, self.entity_id).total_seconds() / 60, 1
         )
-
+        if self._zone.show_config:
+            attr["configuration"] = json.dumps(self._zone.as_dict(), default=str)
+        attr["timeline"] = json.dumps(self._zone.runs.as_list(), default=str)
         return attr
