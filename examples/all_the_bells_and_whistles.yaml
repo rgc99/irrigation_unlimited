@@ -1,7 +1,7 @@
 default_config:
 
 irrigation_unlimited:
-  granularity: 60
+  granularity: 10
   testing:
     enabled: false
     speed: 60.0
@@ -22,13 +22,13 @@ irrigation_unlimited:
             month: [jan, feb, mar]
             day: 'even'
     - name: 'Controller 2'
-#      entity_id: 'switch.my_master_switch'
+      entity_id: 'switch.my_master_switch'
       enabled: true
       preamble: '00:02'
       postamble: '00:02'
       zones:
         - name: 'Example schedules'
-#          entity_id: 'switch.my_zone_switch'
+          entity_id: 'switch.my_zone_switch'
           enabled: true
           minimum: '00:02'
           maximum: '01:00'
@@ -91,3 +91,54 @@ irrigation_unlimited:
             - name: 'Overlaps with Zone 1'
               time: '05:50'
               duration: '00:20'
+    - name: "Fundos"
+      zones:
+        - name: "Gramado"
+          entity_id: "switch.irrigacao_grama"
+        - name: "Lateral"
+          entity_id: "switch.irrigacao_lateral"
+        - name: "Corredor"
+          entity_id: "switch.irrigacao_corredor"
+        - name: "Horta"
+          entity_id: "switch.irrigacao_horta"
+      sequences:
+        - name: "Run 1"
+          delay: "00:00:10"
+          schedules:
+            - name: "Alvorada"
+              time:
+                sun: "sunrise"
+            - name: "Por do Sol"
+              time:
+                sun: "sunset"
+                after: "00:30"
+          zones:
+            - zone_id: 1
+              duration: "00:10"
+            - zone_id: 2
+              duration: "00:02"
+            - zone_id: 3
+              duration: "00:01"
+            - zone_id: 4
+              duration: "00:06"
+        - name: "Run 2"
+          delay: "00:00:10"
+          schedules:
+            - name: "Midday"
+              time: "12:00"
+          zones:
+            - zone_id: 2
+              duration: "00:02"
+            - zone_id: 3
+              duration: "00:01"
+        - name: "Split soaker"
+          delay: "00:05"
+          schedules:
+            - name: "Morning"
+              time: "05:30"
+          zones:
+            - zone_id: 2
+              duration: "00:02"
+            - zone_id: 2
+              duration: "00:02"
+

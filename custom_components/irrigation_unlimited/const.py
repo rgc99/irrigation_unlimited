@@ -49,6 +49,12 @@ CONF_MONTH = "month"
 CONF_DAY = "day"
 CONF_ODD = "odd"
 CONF_EVEN = "even"
+CONF_SHOW = "show"
+CONF_CONFIG = "config"
+CONF_TIMELINE = "timeline"
+CONF_ZONE_ID = "zone_id"
+CONF_SEQUENCES = "sequences"
+CONF_ALL_ZONES_CONFIG = "all_zones_config"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

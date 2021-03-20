@@ -31,12 +31,12 @@ class IUEntity(BinarySensorEntity):
         self._controller = controller
         self._zone = zone  # This will be None if it belongs to a Master/Controller
         self.entity_id = (
-            f"{BINARY_SENSOR}.{DOMAIN}_c{self._controller.controller_index + 1}"
+            f"{BINARY_SENSOR}.{DOMAIN}_c{self._controller.index + 1}"
         )
         if self._zone is None:
             self.entity_id = self.entity_id + "_m"
         else:
-            self.entity_id = self.entity_id + f"_z{self._zone.zone_index + 1}"
+            self.entity_id = self.entity_id + f"_z{self._zone.index + 1}"
         return
 
     async def async_added_to_hass(self):

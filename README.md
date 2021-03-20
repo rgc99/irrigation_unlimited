@@ -24,8 +24,9 @@ Zones also have an associated sensor which, like the master, shows on/off status
 1. Unlimited controllers.
 2. Unlimited zones.
 3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
-4. Hardware independant. Use your own switches/valve controllers.
-5. Software independant. Pure play python.
+4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between.
+5. Hardware independant. Use your own switches/valve controllers.
+6. Software independant. Pure play python.
 
 *Practicle limitations will depend on your hardware.
 
@@ -113,6 +114,7 @@ This is the controller or master object and manages a collection of zones. There
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zones` | list | _[Zone Objects](#zone-objects)_ | Zone details (Must have at least one) |
+| `sequences` | list | _[Sequence Objects](#sequence-objects)_ | Sequence details |
 | `name` | string | Controller _N_ | Friendly name for the controller |
 | `enabled` | bool | true | Enable/disable the controller |
 | `preamble` | time | '00:00' | The time master turns on before any zone turns on |
@@ -126,6 +128,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `schedules` | list | _[Schedule Objects](#schedule-objects)_ | Schedule details (Must have at least one) |
+| `zone_id` | string | _N_ | Zone reference. Used for sequencing. |
 | `name` | string | Zone _N_ | Friendly name for the zone |
 | `enabled` | bool | true | Enable/disable the zone |
 | `minimum` | time | '00:01' | The minimum run time |
@@ -156,6 +159,26 @@ Leave the time value in the _[Schedule Objects](#schedule-objects)_ blank and ad
 | `sun` | string | **Required** | `sunrise` or `sunset` |
 | `before` | time | '00:00' | Time before the event |
 | `after` | time | '00:00' | Time after the event |
+
+### Sequence Objects
+
+Sequences allow zones to run one at a time in a particular order with a delay in between.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `schedules` | list | _[Schedule Objects](#schedule-objects)_ | Schedule details (Must have at least one). Note: `duration` is ignored |
+| `zones` | list | _[Sequence Zone Objects](#sequence-zone-objects)_ | Zone details (Must have at least one) |
+| `delay` | time | **Required** | Delay between zones |
+| `name` | string | Run _N_ | Friendly name for the sequence |
+
+### Sequence Zone Objects
+
+The sequence zone is a reference to the actual zone defined in the _[Zone Objects](#zone-objects)_. Ensure the `zone_id`'s match between this object and the zone object. The zone may appear more than once in the case of a split run.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `zone_id` | string | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#zone-objects)_ |
+| `duration` | time | **Required** | The length of time to run |
 
 ### Testing Object
 
@@ -206,6 +229,38 @@ irrigation_unlimited:
             sun: 'sunrise'
             before: '00:20'
           duration: '00:30'
+~~~
+
+### Sequence example
+
+~~~yaml
+# Example configuration.yaml entry
+irrigation_unlimited:
+  controllers:
+    zones:
+      - name: "Front lawn"
+        entity_id: "switch.my_switch_1"
+      - name: "Vege patch"
+        entity_id: "switch.my_switch_2"
+      - name: "Flower bed"
+        entity_id: "switch.my_switch_3"
+    sequences:
+      - delay: "00:01"
+        schedules:
+          - name: "Sunrise"
+            time:
+              sun: "sunrise"
+          - name: "After sunset"
+            time:
+              sun: "sunset"
+              after: "00:30"
+        zones:
+          - zone_id: 1
+            duration: "00:10"
+          - zone_id: 2
+            duration: "00:02"
+          - zone_id: 3
+            duration: "00:01"
 ~~~
 
 For a more comprehensive example refer to [here](./examples/all_the_bells_and_whistles.yaml).

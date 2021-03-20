@@ -5,6 +5,7 @@ For more details about this integration, please refer to
 https://github.com/rgc99/irrigation_unlimited
 """
 import logging
+from typing import Optional
 import voluptuous as vol
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.core import Config, HomeAssistant
@@ -14,6 +15,8 @@ from homeassistant.const import (
     CONF_ENTITY_ID,
     CONF_NAME,
     CONF_WEEKDAY,
+    CONF_DELAY,
+    CONF_ID,
 )
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
@@ -50,6 +53,12 @@ from .const import (
     CONF_START,
     CONF_END,
     MONTHS,
+    CONF_SHOW,
+    CONF_CONFIG,
+    CONF_TIMELINE,
+    CONF_ZONE_ID,
+    CONF_SEQUENCES,
+    CONF_ALL_ZONES_CONFIG,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -60,6 +69,13 @@ def _list_is_not_empty(value):
         raise vol.Invalid("Must have at least one entry")
     return value
 
+
+SHOW_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_CONFIG, False): cv.boolean,
+        vol.Optional(CONF_TIMELINE, False): cv.boolean,
+    }
+)
 
 SUN_SCHEMA = vol.Schema(
     {
@@ -88,14 +104,50 @@ SCHEDULE_SCHEMA = vol.Schema(
 
 ZONE_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_SCHEDULES, default={}): vol.All(
-            cv.ensure_list, [SCHEDULE_SCHEMA], _list_is_not_empty
-        ),
+        vol.Optional(CONF_SCHEDULES): vol.All(cv.ensure_list, [SCHEDULE_SCHEMA]),
+        vol.Optional(CONF_ZONE_ID): cv.string,
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_ENTITY_ID): cv.entity_id,
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_MINIMUM): cv.positive_time_period,
         vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
+        vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
+    }
+)
+
+ALL_ZONES_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
+    }
+)
+
+SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_TIME): time_event,
+        vol.Optional(CONF_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_WEEKDAY): cv.weekdays,
+        vol.Optional(CONF_MONTH): month_event,
+        vol.Optional(CONF_DAY): day_event,
+    }
+)
+
+SEQUENCE_ZONE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_ZONE_ID): cv.positive_int,
+        vol.Required(CONF_DURATION): cv.positive_time_period,
+    }
+)
+SEQUENCE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_SCHEDULES, default={}): vol.All(
+            cv.ensure_list, [SEQUENCE_SCHEDULE_SCHEMA], _list_is_not_empty
+        ),
+        vol.Required(CONF_ZONES, default={}): vol.All(
+            cv.ensure_list, [SEQUENCE_ZONE_SCHEMA], _list_is_not_empty
+        ),
+        vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_DELAY): cv.positive_time_period,
     }
 )
 
@@ -104,11 +156,15 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Required(CONF_ZONES): vol.All(
             cv.ensure_list, [ZONE_SCHEMA], _list_is_not_empty
         ),
+        vol.Optional(CONF_SEQUENCES): vol.All(
+            cv.ensure_list, [SEQUENCE_SCHEMA], _list_is_not_empty
+        ),
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_ENTITY_ID): cv.entity_id,
         vol.Optional(CONF_PREAMBLE): cv.positive_time_period,
         vol.Optional(CONF_POSTAMBLE): cv.positive_time_period,
         vol.Optional(CONF_ENABLED): cv.boolean,
+        vol.Optional(CONF_ALL_ZONES_CONFIG): vol.All(ALL_ZONES_SCHEMA),
     }
 )
 

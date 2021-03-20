@@ -4,6 +4,7 @@ from homeassistant.helpers import entity_platform
 import homeassistant.util.dt as dt
 from datetime import datetime, timedelta
 from homeassistant.components import history
+from custom_components.irrigation_unlimited.irrigation_unlimited import IUSchedule, IUZone
 import json
 
 from homeassistant.const import (
@@ -98,7 +99,7 @@ class IUMasterEntity(IUEntity):
     @property
     def unique_id(self):
         """Return a unique ID."""
-        return f"c{self._controller.controller_index + 1}_m"
+        return f"c{self._controller.index + 1}_m"
 
     @property
     def name(self):
@@ -130,14 +131,15 @@ class IUMasterEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
-        attr["index"] = self._controller.controller_index
+        attr["index"] = self._controller.index
         attr["enabled"] = self._controller.enabled
         attr["zone_count"] = len(self._controller._zones)
         attr["zones"] = ""
         current = self._controller.runs.current_run
         if current is not None:
-            attr["current_zone"] = current.index + 1
-            attr["current_name"] = current.zone.name
+            if isinstance(current.parent, IUZone):
+                attr["current_zone"] = current.parent.index + 1
+                attr["current_name"] = current.parent.name
             attr["current_start"] = dt.as_local(current.start_time)
             attr["current_duration"] = str(current.duration)
             attr["time_remaining"] = str(current.time_remaining)
@@ -148,8 +150,9 @@ class IUMasterEntity(IUEntity):
 
         next = self._controller.runs.next_run
         if next is not None:
-            attr["next_zone"] = next.index + 1
-            attr["next_name"] = next.zone.name
+            if isinstance(next.parent, IUZone):
+                attr["next_zone"] = next.parent.index + 1
+                attr["next_name"] = next.parent.name
             attr["next_start"] = dt.as_local(next.start_time)
             attr["next_duration"] = str(next.duration)
         else:
@@ -163,7 +166,7 @@ class IUZoneEntity(IUEntity):
     @property
     def unique_id(self):
         """Return a unique ID."""
-        return f"c{self._zone.controller_index + 1}_z{self._zone.zone_index + 1}"
+        return f"c{self._controller.index + 1}_z{self._zone.index + 1}"
 
     @property
     def name(self):
@@ -198,7 +201,8 @@ class IUZoneEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
-        attr["index"] = self._zone.zone_index
+        attr["zone_id"] = self._zone.zone_id
+        attr["index"] = self._zone.index
         attr["enabled"] = self._zone.enabled and self._controller.enabled
         attr["status"] = self._zone.status
         attr["schedule_count"] = len(self._zone.schedules)
@@ -206,9 +210,9 @@ class IUZoneEntity(IUEntity):
         attr["adjustment"] = self._zone.adjustment.as_string
         current = self._zone.runs.current_run
         if current is not None:
-            if current.schedule is not None:
-                attr["current_schedule"] = current.schedule.schedule_index + 1
-                attr["current_name"] = current.schedule.name
+            if isinstance(current.parent, IUSchedule):
+                attr["current_schedule"] = current.parent.index + 1
+                attr["current_name"] = current.parent.name
             else:
                 attr["current_schedule"] = RES_MANUAL
                 attr["current_name"] = RES_MANUAL
@@ -222,9 +226,9 @@ class IUZoneEntity(IUEntity):
 
         next = self._zone.runs.next_run
         if next is not None:
-            if next.schedule is not None:
-                attr["next_schedule"] = next.schedule.schedule_index + 1
-                attr["next_name"] = next.schedule.name
+            if isinstance(next.parent, IUSchedule):
+                attr["next_schedule"] = next.parent.index + 1
+                attr["next_name"] = next.parent.name
             else:
                 attr["next_schedule"] = RES_MANUAL
                 attr["next_name"] = RES_MANUAL
@@ -237,5 +241,6 @@ class IUZoneEntity(IUEntity):
         )
         if self._zone.show_config:
             attr["configuration"] = json.dumps(self._zone.as_dict(), default=str)
-        attr["timeline"] = json.dumps(self._zone.runs.as_list(), default=str)
+        if self._zone.show_timeline:
+            attr["timeline"] = json.dumps(self._zone.runs.as_list(), default=str)
         return attr
