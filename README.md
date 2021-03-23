@@ -3,7 +3,6 @@
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]](LICENSE)
-[![GitHub Downloads][download-shield]][releases]
 
 [![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
