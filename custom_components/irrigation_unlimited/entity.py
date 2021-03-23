@@ -13,14 +13,17 @@ from .irrigation_unlimited import (
 )
 
 from .const import (
+    ATTR_ENABLED,
     BINARY_SENSOR,
     DOMAIN,
     COORDINATOR,
     ICON,
+    SERVICE_ENABLE,
+    SERVICE_DISABLE,
 )
 
 
-class IUEntity(BinarySensorEntity):
+class IUEntity(BinarySensorEntity, RestoreEntity):
     def __init__(
         self,
         coordinator: IUCoordinator,
@@ -41,6 +44,14 @@ class IUEntity(BinarySensorEntity):
 
     async def async_added_to_hass(self):
         self._coordinator.register_entity(self._controller, self._zone, self)
+        state = await self.async_get_last_state()
+        if state is not None:
+            if ATTR_ENABLED in state.attributes:
+                if state.attributes[ATTR_ENABLED]:
+                    self._coordinator.service_call(SERVICE_ENABLE, self._controller, self._zone, None)
+                else:
+                    self._coordinator.service_call(SERVICE_DISABLE, self._controller, self._zone, None)
+            return
         return
 
     async def async_will_remove_from_hass(self):

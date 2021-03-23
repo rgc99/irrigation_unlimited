@@ -14,6 +14,7 @@ from homeassistant.const import (
 from .entity import IUEntity
 from .service import register_platform_services
 from .const import (
+    ATTR_ENABLED,
     DOMAIN,
     COORDINATOR,
     ICON_CONTROLLER_OFF,
@@ -132,7 +133,7 @@ class IUMasterEntity(IUEntity):
         """Return the state attributes of the device."""
         attr = {}
         attr["index"] = self._controller.index
-        attr["enabled"] = self._controller.enabled
+        attr[ATTR_ENABLED] = self._controller.enabled
         attr["zone_count"] = len(self._controller._zones)
         attr["zones"] = ""
         current = self._controller.runs.current_run
@@ -203,7 +204,7 @@ class IUZoneEntity(IUEntity):
         attr = {}
         attr["zone_id"] = self._zone.zone_id
         attr["index"] = self._zone.index
-        attr["enabled"] = self._zone.enabled and self._controller.enabled
+        attr[ATTR_ENABLED] = self._zone.enabled
         attr["status"] = self._zone.status
         attr["schedule_count"] = len(self._zone.schedules)
         attr["schedules"] = ""

@@ -68,6 +68,9 @@ SERVICE_TOGGLE = "toggle"
 SERVICE_TIME_ADJUST = "adjust_time"
 SERVICE_MANUAL_RUN = "manual_run"
 
+# Attributes
+ATTR_ENABLED = "enabled"
+
 MONTHS = [
     "jan",
     "feb",
