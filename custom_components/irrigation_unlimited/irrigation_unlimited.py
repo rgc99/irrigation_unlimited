@@ -1465,7 +1465,7 @@ class IUCoordinator:
 
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
-        all_setup: bool = self._component is not None
+        all_setup: bool = self._hass.is_running and self._component is not None
         for controller in self._controllers:
             all_setup = all_setup and controller.is_setup
         return all_setup
