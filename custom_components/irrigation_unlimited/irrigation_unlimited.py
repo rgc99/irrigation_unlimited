@@ -694,7 +694,7 @@ class IUScheduleQueue(IURunQueue):
                 # the finish time of the last entry.
                 run = self.find_last_by_id(schedule.id)
                 if run is not None:
-                    next_time = run.end_time
+                    next_time = run.end_time + granularity_time()
                 else:
                     next_time = time
                 if next_time < last_date:
@@ -708,7 +708,7 @@ class IUScheduleQueue(IURunQueue):
 
             if len(dates) > 0:
                 ns = min(dates)
-                if ns < last_date:
+                if ns != end_of_time and ns < last_date:
                     # There might be overlapping schedules. Add them all.
                     for i, d in enumerate(dates):
                         if d == ns:
