@@ -135,7 +135,7 @@ class IUBase:
 
     def __init__(self, index: int) -> None:
         # Private variables
-        self._id: str = uuid.uuid4().hex.upper()
+        self._id: int = uuid.uuid4().int
         self._index: int = index
         return
 
@@ -480,7 +480,7 @@ class IURun:
 
 
 class IURunQueue(list):
-    DAYS_DEPTH: int = 7
+    DAYS_DEPTH: int = 3
 
     RQ_STATUS_CLEARED: int = 0x01
     RQ_STATUS_EXTENDED: int = 0x02
@@ -532,7 +532,7 @@ class IURunQueue(list):
                 self._sorted = True
         return modified
 
-    def find_last_by_id(self, id: str) -> IURun:
+    def find_last_by_id(self, id: int) -> IURun:
         """Return the run that finishes last in the queue. This routine
         does not require the list to be sorted."""
         last_time: datetime = None
@@ -683,6 +683,8 @@ class IUScheduleQueue(IURunQueue):
         """Increase the items in the run queue"""
         modified: bool = False
 
+        last_date = time + timedelta(days=self.DAYS_DEPTH)
+        end_of_time = time.replace(year=9998)
         dates: list(datetime) = []
         while True:
             dates.clear()
@@ -692,16 +694,21 @@ class IUScheduleQueue(IURunQueue):
                 # the finish time of the last entry.
                 run = self.find_last_by_id(schedule.id)
                 if run is not None:
-                    next_time = run.end_time + granularity_time()
+                    next_time = run.end_time
                 else:
                     next_time = time
-                next_run = schedule.get_next_run(next_time)
-                if next_run is not None:
-                    dates.append(next_run)
+                if next_time < last_date:
+                    next_run = schedule.get_next_run(next_time)
+                    if next_run is not None:
+                        dates.append(next_run)
+                    else:
+                        dates.append(end_of_time)
+                else:
+                    dates.append(end_of_time)
 
             if len(dates) > 0:
                 ns = min(dates)
-                if ns < time + timedelta(days=self.DAYS_DEPTH):
+                if ns < last_date:
                     # There might be overlapping schedules. Add them all.
                     for i, d in enumerate(dates):
                         if d == ns:
@@ -710,7 +717,7 @@ class IUScheduleQueue(IURunQueue):
                             self.add_schedule(schedules[i], d, adjustment, duration)
                             modified = True
                 else:
-                    break  # Exceeded future span
+                    break  # Exceeded future span or no future date
             else:
                 break  # No schedule was able to produce a future run time
 
@@ -947,6 +954,7 @@ class IUZone(IUBase):
             parent_enabled
             and self._is_enabled
             and self._run_queue.current_run is not None
+            and self._run_queue.current_run.is_running(time)
         )
 
         state_changed = is_running ^ self._is_on
@@ -1078,7 +1086,7 @@ class IUSequenceZone:
         """ Load sequence zone data from the configuration"""
         self.clear()
         self._zone_id = str(config[CONF_ZONE_ID])
-        self._duration = wash_td(config.get(CONF_DURATION, None))
+        self._duration = wash_td(config[CONF_DURATION])
         return self
 
 
@@ -1145,7 +1153,7 @@ class IUSequence(IUBase):
         """ Load sequence data from the configuration"""
         self.clear()
         self._name = config.get(CONF_NAME, f"Run {self.index + 1}")
-        self._delay = wash_td(config.get(CONF_DELAY, None))
+        self._delay = wash_td(config.get(CONF_DELAY, timedelta(0)))
         for si, schedule_config in enumerate(config[CONF_SCHEDULES]):
             self.find_add_schedule(self._coordinator, self._controller, si).load(
                 schedule_config
@@ -1305,7 +1313,7 @@ class IUController(IUBase):
 
         # Process sequence schedules
         for sequence in self._sequences:
-            offset = timedelta()
+            offset = timedelta(0)
             for zone in sequence.zones:
                 zn: IUZone = self.find_zone_by_zone_id(zone.zone_id)
                 if zn is not None:
@@ -1595,7 +1603,7 @@ class IUCoordinator:
     def start(self) -> None:
         """Start the system up"""
         track_time = SYSTEM_GRANULARITY / self._test_speed
-        track_time = min(1, track_time)  # Run no slower than 1 second for reponse
+        track_time = min(1, track_time)  # Run no slower than 1 second for response
         track_time *= 0.95  # Run clock slightly ahead of required to avoid skipping
 
         async_track_time_interval(
