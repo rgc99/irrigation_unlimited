@@ -538,7 +538,7 @@ class IURunQueue(list):
         last_time: datetime = None
         last_index: int = None
         for i, run in enumerate(self):
-            if run.parent.id == id:
+            if run.parent is not None and run.parent.id == id:
                 if last_time is None or run.end_time > last_time:
                     last_time = run.end_time
                     last_index = i
