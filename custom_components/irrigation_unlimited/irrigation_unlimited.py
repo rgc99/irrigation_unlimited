@@ -4,7 +4,7 @@ from datetime import datetime, time, timedelta
 from types import MappingProxyType
 from typing import OrderedDict
 import homeassistant
-from homeassistant.core import HomeAssistant, Config
+from homeassistant.core import HomeAssistant, CALLBACK_TYPE
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.helpers.sun as sun
@@ -1456,6 +1456,7 @@ class IUCoordinator:
         self._initialised: bool = False
         self._last_muster: datetime = None
         self._muster_required: bool = False
+        self._remove_listener: CALLBACK_TYPE = None
         # Testing variables
         self._testing: bool = False
         self._test_number: int = 0
@@ -1619,7 +1620,10 @@ class IUCoordinator:
         track_time = min(1, track_time)  # Run no slower than 1 second for response
         track_time *= 0.95  # Run clock slightly ahead of required to avoid skipping
 
-        async_track_time_interval(
+        if self._remove_listener is not None:
+            self._remove_listener()
+            self._remove_listener = None
+        self._remove_listener = async_track_time_interval(
             self._hass, self._async_timer, timedelta(seconds=track_time)
         )
         return

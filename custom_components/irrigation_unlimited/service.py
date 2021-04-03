@@ -109,6 +109,7 @@ def register_component_services(
         if conf is None:
             conf = {DOMAIN: {}}
         coordinator.load(conf[DOMAIN])
+        coordinator.start()
         return
 
     async_register_admin_service(
