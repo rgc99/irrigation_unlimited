@@ -55,11 +55,13 @@ CONF_TIMELINE = "timeline"
 CONF_ZONE_ID = "zone_id"
 CONF_SEQUENCES = "sequences"
 CONF_ALL_ZONES_CONFIG = "all_zones_config"
+CONF_REFRESH_INTERVAL = "refresh_interval"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
 DEFAULT_GRANULATITY = 60
 DEFAULT_TEST_SPEED = 1.0
+DEFAULT_REFRESH_INTERVAL = 30
 
 # Services
 SERVICE_ENABLE = "enable"

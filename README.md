@@ -23,7 +23,7 @@ Zones also have an associated sensor which, like the master, shows on/off status
 1. Unlimited controllers.
 2. Unlimited zones.
 3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
-4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between.
+4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between. A 'playlist' for your zones.
 5. Hardware independant. Use your own switches/valve controllers.
 6. Software independant. Pure play python.
 
@@ -104,6 +104,7 @@ The time type is a string in the format HH:MM. Time type must be a positive valu
 | -----| ---- | ------- | ----------- |
 | `controllers` | list | _[Controller Objects](#controller-objects)_ | Controller details (Must have at least one) |
 | `granularity` | number | 60 | System time boundaries in seconds |
+| `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more repsonsive display. Increase this number to conserve resources.
 | `testing` | object | _[Testing Object](#testing-object)_ | Used for testing setup |
 
 ### Controller Objects

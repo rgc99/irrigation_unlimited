@@ -36,9 +36,11 @@ from .const import (
     CONF_DECREASE,
     CONF_INCREASE,
     CONF_PERCENTAGE,
+    CONF_REFRESH_INTERVAL,
     CONF_RESET,
     CONF_SEQUENCES,
     DEFAULT_GRANULATITY,
+    DEFAULT_REFRESH_INTERVAL,
     DEFAULT_TEST_SPEED,
     CONF_DURATION,
     CONF_ENABLED,
@@ -981,10 +983,11 @@ class IUZone(IUBase):
                     do_update = self._sensor_update_required
             else:
                 if self._is_on:
-                    # If we are running then update sensor every second
+                    # If we are running then update sensor according to refresh_interval
                     if self._run_queue.current_run is not None:
-                        do_update = time - self._sensor_last_update >= timedelta(
-                            seconds=1
+                        do_update = (
+                            time - self._sensor_last_update
+                            >= self._coordinator.refresh_interval
                         )
                     do_update = do_update or self._sensor_update_required
         else:
@@ -1402,10 +1405,12 @@ class IUController(IUBase):
         if self._master_sensor is not None:
             do_update: bool = self._sensor_update_required
 
-            # If we are running then update sensor every second
+            # If we are running then update sensor according to refresh_interval
             if self._run_queue.current_run is not None:
-                do_update = do_update or time - self._sensor_last_update >= timedelta(
-                    seconds=1
+                do_update = (
+                    do_update
+                    or time - self._sensor_last_update
+                    >= self._coordinator.refresh_interval
                 )
 
             if do_update:
@@ -1441,6 +1446,7 @@ class IUCoordinator:
         self._test_name: str = None
         self._test_speed: float = 1.0
         self._test_times = []
+        self._refresh_interval: timedelta = None
         # Private variables
         self._controllers: list(IUController) = []
         self._is_on: bool = False
@@ -1470,6 +1476,10 @@ class IUCoordinator:
     def component(self, value) -> None:
         self._component = value
         return
+
+    @property
+    def refresh_interval(self) -> timedelta:
+        return self._refresh_interval
 
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
@@ -1504,6 +1514,9 @@ class IUCoordinator:
 
         global SYSTEM_GRANULARITY
         SYSTEM_GRANULARITY = config.get(CONF_GRANULARITY, DEFAULT_GRANULATITY)
+        self._refresh_interval = timedelta(
+            seconds=config.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
+        )
         if CONF_TESTING in config:
             test_config = config[CONF_TESTING]
             self._testing = test_config.get(CONF_ENABLED, False)

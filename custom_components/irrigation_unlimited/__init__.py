@@ -59,6 +59,7 @@ from .const import (
     CONF_ZONE_ID,
     CONF_SEQUENCES,
     CONF_ALL_ZONES_CONFIG,
+    CONF_REFRESH_INTERVAL,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -190,6 +191,7 @@ IRRIGATION_SCHEMA = vol.Schema(
             cv.ensure_list, [CONTROLLER_SCHEMA], _list_is_not_empty
         ),
         vol.Optional(CONF_GRANULARITY): cv.positive_int,
+        vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
     }
 )
