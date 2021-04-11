@@ -4,7 +4,10 @@ from homeassistant.helpers import entity_platform
 import homeassistant.util.dt as dt
 from datetime import datetime, timedelta
 from homeassistant.components import history
-from custom_components.irrigation_unlimited.irrigation_unlimited import IUSchedule, IUZone
+from custom_components.irrigation_unlimited.irrigation_unlimited import (
+    IUSchedule,
+    IUZone,
+)
 import json
 
 from homeassistant.const import (
@@ -15,10 +18,13 @@ from .entity import IUEntity
 from .service import register_platform_services
 from .const import (
     ATTR_ENABLED,
+    ATTR_STATUS,
+    ATTR_INDEX,
     DOMAIN,
     COORDINATOR,
     ICON_CONTROLLER_OFF,
     ICON_CONTROLLER_ON,
+    ICON_CONTROLLER_PAUSED,
     ICON_OFF,
     ICON_ON,
     ICON_DISABLED,
@@ -124,7 +130,10 @@ class IUMasterEntity(IUEntity):
             if self._controller.is_on:
                 return ICON_CONTROLLER_ON
             else:
-                return ICON_CONTROLLER_OFF
+                if self._controller.is_paused:
+                    return ICON_CONTROLLER_PAUSED
+                else:
+                    return ICON_CONTROLLER_OFF
         else:
             return ICON_DISABLED
 
@@ -132,8 +141,9 @@ class IUMasterEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
-        attr["index"] = self._controller.index
+        attr[ATTR_INDEX] = self._controller.index
         attr[ATTR_ENABLED] = self._controller.enabled
+        attr[ATTR_STATUS] = self._controller.status
         attr["zone_count"] = len(self._controller._zones)
         attr["zones"] = ""
         current = self._controller.runs.current_run
@@ -203,9 +213,9 @@ class IUZoneEntity(IUEntity):
         """Return the state attributes of the device."""
         attr = {}
         attr["zone_id"] = self._zone.zone_id
-        attr["index"] = self._zone.index
+        attr[ATTR_INDEX] = self._zone.index
         attr[ATTR_ENABLED] = self._zone.enabled
-        attr["status"] = self._zone.status
+        attr[ATTR_STATUS] = self._zone.status
         attr["schedule_count"] = len(self._zone.schedules)
         attr["schedules"] = ""
         attr["adjustment"] = self._zone.adjustment.as_string

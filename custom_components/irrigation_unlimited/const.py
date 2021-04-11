@@ -17,6 +17,7 @@ ICON_DISABLED = "mdi:circle-off-outline"
 ICON_BLOCKED = "mdi:alert-octagon-outline"
 ICON_CONTROLLER_ON = "mdi:water"
 ICON_CONTROLLER_OFF = "mdi:water-off"
+ICON_CONTROLLER_PAUSED = "mdi:pause-circle-outline"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
@@ -70,8 +71,16 @@ SERVICE_TOGGLE = "toggle"
 SERVICE_TIME_ADJUST = "adjust_time"
 SERVICE_MANUAL_RUN = "manual_run"
 
+# Status
+STATUS_DISABLED = "disabled"
+STATUS_BLOCKED = "blocked"
+STATUS_INITIALISING = "initialising"
+STATUS_PAUSED = "paused"
+
 # Attributes
 ATTR_ENABLED = "enabled"
+ATTR_STATUS = "status"
+ATTR_INDEX = "index"
 
 MONTHS = [
     "jan",
