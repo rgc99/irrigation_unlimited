@@ -66,6 +66,7 @@ from .const import (
     CONF_CONFIG,
     CONF_TIMELINE,
     CONF_ZONE_ID,
+    SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
     SERVICE_TOGGLE,
@@ -511,12 +512,14 @@ class IURunQueue(list):
     RQ_STATUS_REDUCED: int = 0x04
     RQ_STATUS_SORTED: int = 0x08
     RQ_STATUS_UPDATED: int = 0x10
+    RQ_STATUS_CANCELED: int = 0x20
 
     def __init__(self) -> None:
         # Private variables
         self._current_run: IURun = None
         self._next_run: IURun = None
         self._sorted: bool = False
+        self._cancel_request: bool = False
         return
 
     @property
@@ -540,6 +543,11 @@ class IURunQueue(list):
         self.append(run)
         self._sorted = False
         return self
+
+    def cancel(self) -> None:
+        """Flag the current run to be cancelled"""
+        self._cancel_request = True
+        return
 
     def clear_all(self) -> bool:
         modified: bool = False
@@ -619,6 +627,16 @@ class IURunQueue(list):
             i -= 1
         return modified
 
+    def remove_current(self) -> bool:
+        """Remove the current run"""
+        modified: bool = False
+        if self._current_run is not None:
+            if len(self) > 0:
+                self.pop(0)
+            self._current_run = None
+            modified = True
+        return modified
+
     def update_queue(self, time: datetime) -> int:
         """Update the run queue. Sort the queue, remove expired runs
         and set current and next runs.
@@ -629,6 +647,11 @@ class IURunQueue(list):
 
         if self.sort():
             status |= self.RQ_STATUS_SORTED
+
+        if self._cancel_request:
+            if self.remove_current():
+                status |= self.RQ_STATUS_CANCELED
+            self._cancel_request = False
 
         if self.remove_expired(time):
             status |= self.RQ_STATUS_REDUCED
@@ -914,6 +937,11 @@ class IUZone(IUBase):
             if self._controller.preamble is not None:
                 ns = ns + self._controller.preamble
             self._run_queue.add_manual(ns, wash_td(data[CONF_TIME]))
+        return
+
+    def service_cancel(self, data: MappingProxyType, time: datetime) -> None:
+        """Cancel the current running schedule"""
+        self._run_queue.cancel()
         return
 
     def add(self, schedule: IUSchedule) -> IUSchedule:
@@ -1465,10 +1493,11 @@ class IUController(IUBase):
                 IURunQueue.RQ_STATUS_CLEARED
                 | IURunQueue.RQ_STATUS_EXTENDED
                 | IURunQueue.RQ_STATUS_SORTED
+                | IURunQueue.RQ_STATUS_CANCELED
             )
             != 0
         ):
-            all = zone_status & IURunQueue.RQ_STATUS_CLEARED
+            all = bool(zone_status & (IURunQueue.RQ_STATUS_CLEARED | IURunQueue.RQ_STATUS_CANCELED))
             status |= self._run_queue.rebuild_schedule(
                 time, self._zones, self._preamble, self._postamble, all
             )
@@ -1820,6 +1849,15 @@ class IUCoordinator:
                     zone.service_manual_run(data, time)
             return
 
+        def cancel_all(
+            controller: IUController, data: MappingProxyType, time: datetime
+        ) -> None:
+            zl = data.get(CONF_ZONES, None)
+            for zone in controller.zones:
+                if zl is None or zone.zone_index + 1 in zl:
+                    zone.service_cancel(data, time)
+            return
+
         def notify_children(controller: IUController) -> None:
             for zone in controller.zones:
                 zone.request_update()
@@ -1843,6 +1881,11 @@ class IUCoordinator:
             else:
                 controller.enabled = not controller.enabled
                 notify_children(controller)
+        elif service == SERVICE_CANCEL:
+            if zone is not None:
+                zone.service_cancel(data, time)
+            else:
+                cancel_all(controller, data, time)
         elif service == SERVICE_TIME_ADJUST:
             if zone is not None:
                 zone.service_adjust_time(data, time)

@@ -272,6 +272,7 @@ The binary sensor associated with each controller and zone provide several servi
 - `enable`
 - `disable`
 - `toggle`
+- `cancel`
 - `manual_run`
 - `adjust_time`
 
@@ -284,6 +285,14 @@ Enables/disables/toggles the controller or zone respectively.
 | Service data attribute | Optional | Description |
 | ---------------------- | -------- | ----------- |
 | `entity_id` | no | Controller or zone to enable/disable/toggle.
+
+### Service `cancel`
+
+Cancels the current running schedule.
+
+| Service data attribute | Optional | Description |
+| ---------------------- | -------- | ----------- |
+| `entity_id` | no | Controller or zone to cancel.
 
 ### Service `manual_run`
 

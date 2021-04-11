@@ -13,6 +13,7 @@ from .irrigation_unlimited import IUCoordinator
 from .entity import IUEntity
 from .const import (
     DOMAIN,
+    SERVICE_CANCEL,
     SERVICE_ENABLE,
     SERVICE_DISABLE,
     SERVICE_TOGGLE,
@@ -85,12 +86,17 @@ async def async_manual_run(entity: IUEntity, call: ServiceCall) -> None:
     return
 
 
+async def async_cancel(entity: IUEntity, call: ServiceCall) -> None:
+    entity.dispatch(SERVICE_CANCEL, call)
+
+
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
     platform.async_register_entity_service(SERVICE_ENABLE, ENTITY_SCHEMA, async_enable)
     platform.async_register_entity_service(
         SERVICE_DISABLE, ENTITY_SCHEMA, async_disable
     )
     platform.async_register_entity_service(SERVICE_TOGGLE, ENTITY_SCHEMA, async_toggle)
+    platform.async_register_entity_service(SERVICE_CANCEL, ENTITY_SCHEMA, async_cancel)
     platform.async_register_entity_service(
         SERVICE_TIME_ADJUST, TIME_ADJUST_SCHEMA, async_time_adjust
     )

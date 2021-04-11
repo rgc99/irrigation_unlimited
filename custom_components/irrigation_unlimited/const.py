@@ -68,6 +68,7 @@ DEFAULT_REFRESH_INTERVAL = 30
 SERVICE_ENABLE = "enable"
 SERVICE_DISABLE = "disable"
 SERVICE_TOGGLE = "toggle"
+SERVICE_CANCEL = "cancel"
 SERVICE_TIME_ADJUST = "adjust_time"
 SERVICE_MANUAL_RUN = "manual_run"
 
