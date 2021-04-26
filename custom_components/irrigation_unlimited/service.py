@@ -44,13 +44,15 @@ TIME_ADJUST_SCHEMA = vol.All(
             vol.Exclusive(CONF_PERCENTAGE, "adjust_method"): cv.positive_float,
             vol.Exclusive(CONF_INCREASE, "adjust_method"): cv.positive_time_period,
             vol.Exclusive(CONF_DECREASE, "adjust_method"): cv.positive_time_period,
-            vol.Exclusive(CONF_RESET, "adjust_method"): str,
+            vol.Exclusive(CONF_RESET, "adjust_method"): None,
             vol.Optional(CONF_MINIMUM): cv.positive_time_period,
             vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
             vol.Optional(CONF_ZONES): cv.ensure_list,
         }
     ),
-    cv.has_at_least_one_key(CONF_ACTUAL, CONF_PERCENTAGE, CONF_INCREASE, CONF_DECREASE),
+    cv.has_at_least_one_key(
+        CONF_ACTUAL, CONF_PERCENTAGE, CONF_INCREASE, CONF_DECREASE, CONF_RESET
+    ),
 )
 
 MANUAL_RUN_SCHEMA = {
