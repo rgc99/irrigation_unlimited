@@ -7,6 +7,7 @@
   "dependencies": [
     "history"
   ],
+  "iot_class": "local_polling",
   "config_flow": false,
   "codeowners": [
     "@rgc99"
