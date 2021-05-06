@@ -57,7 +57,7 @@ Controllers and zones can specify an entity such as a switch or light, basically
 
 | Platform | Description |
 | ---- | ---- |
-| `binary_sensor` | Show a valve `On` or `Off`|
+| `binary_sensor` | Show a valve `on` or `off`|
 
 A binary sensor is associated with each controller and zone. Controller or master sensors are named `binary_sensor.irrigation_unlimited_cN_m` and zone sensors `binary_sensor.irrigation_unlimited_cN_zN`. These sensors show the state of the master or child zones. Attributes show additional information like current schedule and next run time and duration.
 
@@ -96,7 +96,7 @@ custom_components/irrigation_unlimited/services.yaml
 
 ## Configuration
 
-Configuration is done by yaml.
+Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#service-reload) for details and limitations.
 
 The time type is a string in the format HH:MM. Time type must be a positive value. Seconds can be speicified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). All times will be syncronised to these boundaries.
 
@@ -152,7 +152,7 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 
 ### Sun Event
 
-Leave the time value in the _[Schedule Objects](#schedule-objects)_ blank and add the following object. An optional before or after time can be specified.
+Leave the time value in the _[Schedule Objects](#schedule-objects)_ blank and add the following object. An optional `before` or `after` time can be specified.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -162,13 +162,15 @@ Leave the time value in the _[Schedule Objects](#schedule-objects)_ blank and ad
 
 ### Sequence Objects
 
-Sequences allow zones to run one at a time in a particular order with a delay in between.
+Sequences allow zones to run one at a time in a particular order with a delay in between. This is a type of watering 'playlist'.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `schedules` | list | _[Schedule Objects](#schedule-objects)_ | Schedule details (Must have at least one). Note: `duration` is ignored |
 | `zones` | list | _[Sequence Zone Objects](#sequence-zone-objects)_ | Zone details (Must have at least one) |
-| `delay` | time | **Required** | Delay between zones |
+| `delay` | time | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#sequence-zone-objects)_ |
+| `duration` | time | | The length of time to run. This value is a default for all _[Sequence Zone Objects](#sequence-zone-objects)_ |
+| `repeat` | number | 1 | Number of times to repeat the sequence |
 | `name` | string | Run _N_ | Friendly name for the sequence |
 
 ### Sequence Zone Objects
@@ -178,7 +180,9 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zone_id` | string | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#zone-objects)_ |
-| `duration` | time | **Required** | The length of time to run |
+| `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#sequence-objects)_ |
+| `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#sequence-objects)_ |
+| `repeat` | number | 1 | Number of times to repeat this zone |
 
 ### Testing Object
 
@@ -223,6 +227,7 @@ irrigation_unlimited:
 irrigation_unlimited:
   controllers:
     zones:
+      entity_id: "switch.my_switch_1"
       schedules:
         - name: 'Before sunrise'
           time:
@@ -238,32 +243,102 @@ irrigation_unlimited:
 irrigation_unlimited:
   controllers:
     zones:
-      - name: "Front lawn"
-        entity_id: "switch.my_switch_1"
-      - name: "Vege patch"
-        entity_id: "switch.my_switch_2"
-      - name: "Flower bed"
-        entity_id: "switch.my_switch_3"
+      - name: 'Front lawn'
+        entity_id: 'switch.my_switch_1'
+      - name: 'Vege patch'
+        entity_id: 'switch.my_switch_2'
+      - name: 'Flower bed'
+        entity_id: 'switch.my_switch_3'
     sequences:
-      - delay: "00:01"
+      - delay: '00:01'
         schedules:
-          - name: "Sunrise"
+          - name: 'Sunrise'
             time:
-              sun: "sunrise"
-          - name: "After sunset"
+              sun: 'sunrise'
+          - name: 'After sunset'
             time:
-              sun: "sunset"
-              after: "00:30"
+              sun: 'sunset'
+              after: '00:30'
         zones:
           - zone_id: 1
-            duration: "00:10"
+            duration: '00:10'
           - zone_id: 2
-            duration: "00:02"
+            duration: '00:02'
           - zone_id: 3
-            duration: "00:01"
+            duration: '00:01'
+~~~
+
+### Simple water saving / eco mode example
+
+~~~yaml
+# Example water saver. Run for 5 min on 2 off repeat 3 times
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: 'switch.my_switch_1'
+    sequences:
+      - duration: '00:05'
+        delay: '00:02'
+        repeat: 3
+        schedules:
+          - time: '05:00'
+        zones:
+          - zone_id: 1
+~~~
+
+### Every hour on the hour
+
+~~~yaml
+# Example to run for 5 min every hour on the hour from 5am to 5pm
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: 'switch.my_switch_1'
+    sequences:
+      - name: 'On the hour from 5am to 5pm'
+        duration: '00:05'
+        delay: '00:55'
+        repeat: 12
+        schedules:
+          - time: '05:00'
+        zones:
+          - zone_id: 1
+~~~
+
+### Seasonal watering
+
+~~~yaml
+# Run 15 min 3 times a week in summer, 10 min once a week in winter and twice a week in spring/autumn
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: 'switch.my_switch_1'
+        schedules:
+          - time: '05:30'
+            duration: '00:15'
+            days: [mon, wed, fri]
+            months: [dec, jan, feb]
+          - time: '05:30'
+            duration: '00:10'
+            days: [sun]
+            months: [jun, jul, aug]
+          - time: '05:30'
+            duration: '00:12'
+            days: [mon, thu]
+            months: [mar, apr, may, sep, oct, nov]
 ~~~
 
 For a more comprehensive example refer to [here](./examples/all_the_bells_and_whistles.yaml).
+
+### Tips
+
+1. Schedules can not only have a day of week (mon, wed, fri) but also a month of year (jan, feb, mar). This allows the setup of seasonal watering schedules. For example run every day in summer and twice a week in winter. Setup a different schedule for each month of the year using this filter.
+
+2. Use sequences to setup a water saving or eco mode. Eco mode uses small cycles with a delay to allow the water to soak in and minimise run off. Run all the zones for half the time and then repeat.
+
+3. No need to restart HA after changing the configuration.yaml file. Go to Configuration -> Server Controls -> YAML configuration and reloading and press 'RELOAD IRRIGATION UNLIMITED'.
+
+4. After setting up configuration.yaml, the operation can be controlled via service calls as shown _[below](#services)_. Perform manual runs, adjust watering times, cancel running schedules and enable/disable zones from a _[frontend](#frontend)_
 
 ## Services
 
@@ -369,6 +444,27 @@ Due to the many weather integrations available and their relevance to your situa
 On a personal note, I use the national weather service [BOM](http://www.bom.gov.au) for my forecast information but find their observation data not relevant due to the extreme regional variations in my situation. There are many micro climates (mountains) and a few kilometers in any direction makes a lot of difference, down pour to a few drops. To this end I have a Personal Weather Station (PWS) that feeds [Weather Underground](https://www.wunderground.com) where I use the [WUnderground](https://www.home-assistant.io/integrations/wunderground) integration to retrieve the data.
 
 You will find my adjustment automation [here](./examples/irrigation_unlimited.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./examples/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
+
+### HAsmartirrigation
+[HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 04:00 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket.
+
+~~~yaml
+# Example automation for HAsmartirrigation integration
+- alias: Smart Irrigation
+  description: Adjust watering times
+  trigger:
+  - platform: time
+    at: 04:00
+  action:
+  - service: irrigation_unlimited.adjust_time
+    data:
+      entity_id: binary_sensor.irrigation_unlimited_c1_z1
+      actual: >
+        {% set t = states('sensor.smart_irrigation_daily_adjusted_run_time') | int %}
+        {{ '{:02d}:{:02d}:{:02d}'.format((t // 3600) % 24, (t % 3600) // 60, (t % 3600) % 60) }}
+  - service: smart_irrigation.smart_irrigation_reset_bucket
+  mode: single
+~~~
 
 ## Troubleshooting
 
