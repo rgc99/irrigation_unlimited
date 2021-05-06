@@ -133,13 +133,20 @@ irrigation_unlimited:
             - zone_id: 3
               duration: "00:01"
         - name: "Split soaker"
+          duration: "00:02"
           delay: "00:05"
+          repeat: 3
           schedules:
             - name: "Morning"
               time: "05:30"
           zones:
             - zone_id: 2
-              duration: "00:02"
-            - zone_id: 2
-              duration: "00:02"
+        - name: "On the hour from 5am to 5pm"
+          duration: "00:05"
+          delay: "00:55"
+          repeat: 12
+          schedules:
+            - time: "05:00"
+          zones:
+            - zone_id: 3
 
