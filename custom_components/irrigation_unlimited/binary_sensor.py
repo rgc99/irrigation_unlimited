@@ -144,9 +144,8 @@ class IUMasterEntity(IUEntity):
         attr["zones"] = ""
         current = self._controller.runs.current_run
         if current is not None:
-            if isinstance(current.parent, IUZone):
-                attr["current_zone"] = current.parent.index + 1
-                attr["current_name"] = current.parent.name
+            attr["current_zone"] = current.zone.index + 1
+            attr["current_name"] = current.zone.name
             attr["current_start"] = dt.as_local(current.start_time)
             attr["current_duration"] = str(current.duration)
             attr["time_remaining"] = str(current.time_remaining)
@@ -157,9 +156,8 @@ class IUMasterEntity(IUEntity):
 
         next = self._controller.runs.next_run
         if next is not None:
-            if isinstance(next.parent, IUZone):
-                attr["next_zone"] = next.parent.index + 1
-                attr["next_name"] = next.parent.name
+            attr["next_zone"] = next.zone.index + 1
+            attr["next_name"] = next.zone.name
             attr["next_start"] = dt.as_local(next.start_time)
             attr["next_duration"] = str(next.duration)
         else:
@@ -217,9 +215,9 @@ class IUZoneEntity(IUEntity):
         attr["adjustment"] = self._zone.adjustment.as_string
         current = self._zone.runs.current_run
         if current is not None:
-            if isinstance(current.parent, IUSchedule):
-                attr["current_schedule"] = current.parent.index + 1
-                attr["current_name"] = current.parent.name
+            if current.schedule is not None:
+                attr["current_schedule"] = current.schedule.index + 1
+                attr["current_name"] = current.schedule.name
             else:
                 attr["current_schedule"] = RES_MANUAL
                 attr["current_name"] = RES_MANUAL
@@ -233,9 +231,9 @@ class IUZoneEntity(IUEntity):
 
         next = self._zone.runs.next_run
         if next is not None:
-            if isinstance(next.parent, IUSchedule):
-                attr["next_schedule"] = next.parent.index + 1
-                attr["next_name"] = next.parent.name
+            if next.schedule is not None:
+                attr["next_schedule"] = next.schedule.index + 1
+                attr["next_name"] = next.schedule.name
             else:
                 attr["next_schedule"] = RES_MANUAL
                 attr["next_name"] = RES_MANUAL

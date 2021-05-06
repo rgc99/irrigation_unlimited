@@ -14,9 +14,9 @@ from homeassistant.const import (
     CONF_BEFORE,
     CONF_ENTITY_ID,
     CONF_NAME,
+    CONF_REPEAT,
     CONF_WEEKDAY,
     CONF_DELAY,
-    CONF_ID,
 )
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
@@ -136,9 +136,12 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
 SEQUENCE_ZONE_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_ZONE_ID): cv.positive_int,
-        vol.Required(CONF_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_DELAY): cv.positive_time_period,
+        vol.Optional(CONF_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_REPEAT): cv.positive_int,
     }
 )
+
 SEQUENCE_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_SCHEDULES, default={}): vol.All(
@@ -147,8 +150,10 @@ SEQUENCE_SCHEMA = vol.Schema(
         vol.Required(CONF_ZONES, default={}): vol.All(
             cv.ensure_list, [SEQUENCE_ZONE_SCHEMA], _list_is_not_empty
         ),
-        vol.Optional(CONF_DELAY): cv.positive_time_period,
         vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_DELAY): cv.positive_time_period,
+        vol.Optional(CONF_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_REPEAT): cv.positive_int,
     }
 )
 
