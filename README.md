@@ -316,16 +316,16 @@ irrigation_unlimited:
         schedules:
           - time: '05:30'
             duration: '00:15'
-            days: [mon, wed, fri]
-            months: [dec, jan, feb]
+            weekday: [mon, wed, fri]
+            month: [dec, jan, feb]
           - time: '05:30'
             duration: '00:10'
-            days: [sun]
-            months: [jun, jul, aug]
+            weekday: [sun]
+            month: [jun, jul, aug]
           - time: '05:30'
             duration: '00:12'
-            days: [mon, thu]
-            months: [mar, apr, may, sep, oct, nov]
+            weekday: [mon, thu]
+            month: [mar, apr, may, sep, oct, nov]
 ~~~
 
 For a more comprehensive example refer to [here](./examples/all_the_bells_and_whistles.yaml).
