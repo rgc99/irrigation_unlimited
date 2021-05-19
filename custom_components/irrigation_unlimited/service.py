@@ -1,4 +1,4 @@
-from homeassistant.core import ServiceCall
+from homeassistant.core import ServiceCall, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers import config_validation as cv
@@ -64,46 +64,29 @@ MANUAL_RUN_SCHEMA = {
 RELOAD_SERVICE_SCHEMA = vol.Schema({})
 
 
-async def async_enable(entity: IUEntity, call: ServiceCall) -> None:
-    entity.dispatch(SERVICE_ENABLE, call)
-    return
-
-
-async def async_disable(entity: IUEntity, call: ServiceCall) -> None:
-    entity.dispatch(SERVICE_DISABLE, call)
-    return
-
-
-async def async_toggle(entity: IUEntity, call: ServiceCall) -> None:
-    entity.dispatch(SERVICE_TOGGLE, call)
-
-
-async def async_time_adjust(entity: IUEntity, call: ServiceCall) -> None:
-    entity.dispatch(SERVICE_TIME_ADJUST, call)
-    return
-
-
-async def async_manual_run(entity: IUEntity, call: ServiceCall) -> None:
-    entity.dispatch(SERVICE_MANUAL_RUN, call)
-    return
-
-
-async def async_cancel(entity: IUEntity, call: ServiceCall) -> None:
-    entity.dispatch(SERVICE_CANCEL, call)
+@callback
+async def async_entity_service_handler(entity: IUEntity, call: ServiceCall) -> None:
+    entity.dispatch(call.service, call)
 
 
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
-    platform.async_register_entity_service(SERVICE_ENABLE, ENTITY_SCHEMA, async_enable)
     platform.async_register_entity_service(
-        SERVICE_DISABLE, ENTITY_SCHEMA, async_disable
-    )
-    platform.async_register_entity_service(SERVICE_TOGGLE, ENTITY_SCHEMA, async_toggle)
-    platform.async_register_entity_service(SERVICE_CANCEL, ENTITY_SCHEMA, async_cancel)
-    platform.async_register_entity_service(
-        SERVICE_TIME_ADJUST, TIME_ADJUST_SCHEMA, async_time_adjust
+        SERVICE_ENABLE, ENTITY_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
-        SERVICE_MANUAL_RUN, MANUAL_RUN_SCHEMA, async_manual_run
+        SERVICE_DISABLE, ENTITY_SCHEMA, async_entity_service_handler
+    )
+    platform.async_register_entity_service(
+        SERVICE_TOGGLE, ENTITY_SCHEMA, async_entity_service_handler
+    )
+    platform.async_register_entity_service(
+        SERVICE_CANCEL, ENTITY_SCHEMA, async_entity_service_handler
+    )
+    platform.async_register_entity_service(
+        SERVICE_TIME_ADJUST, TIME_ADJUST_SCHEMA, async_entity_service_handler
+    )
+    platform.async_register_entity_service(
+        SERVICE_MANUAL_RUN, MANUAL_RUN_SCHEMA, async_entity_service_handler
     )
     return
 
@@ -111,6 +94,7 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
 def register_component_services(
     component: EntityComponent, coordinator: IUCoordinator
 ) -> None:
+    @callback
     async def reload_service_handler(call: ServiceCall) -> None:
         """Reload yaml entities."""
         conf = await component.async_prepare_reload(skip_reset=True)
