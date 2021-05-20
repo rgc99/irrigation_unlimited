@@ -62,4 +62,3 @@ manual_run:
       example: '00:10'
 reload:
   description: Reload the configuration
-  fields:
