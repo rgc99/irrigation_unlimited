@@ -108,7 +108,7 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_SCHEDULES): vol.All(cv.ensure_list, [SCHEDULE_SCHEMA]),
         vol.Optional(CONF_ZONE_ID): cv.string,
         vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_ENTITY_ID): cv.entity_id,
+        vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_MINIMUM): cv.positive_time_period,
         vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
@@ -166,7 +166,7 @@ CONTROLLER_SCHEMA = vol.Schema(
             cv.ensure_list, [SEQUENCE_SCHEMA], _list_is_not_empty
         ),
         vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_ENTITY_ID): cv.entity_id,
+        vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
         vol.Optional(CONF_PREAMBLE): cv.positive_time_period,
         vol.Optional(CONF_POSTAMBLE): cv.positive_time_period,
         vol.Optional(CONF_ENABLED): cv.boolean,
