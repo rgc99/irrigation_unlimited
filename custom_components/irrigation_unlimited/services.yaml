@@ -79,7 +79,7 @@ adjust_time:
       selector:
         number:
           min: 0
-          max: None
+          max: 1000
           unit_of_measurement: "%"
 
     actual:
@@ -144,7 +144,7 @@ manual_run:
       selector:
         number:
           min: 1
-          max: None
+          max: 9999
           mode: box
 
 reload:
