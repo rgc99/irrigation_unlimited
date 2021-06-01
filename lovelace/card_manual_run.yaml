@@ -1,0 +1,25 @@
+type: entities
+title: Manual Run
+entities:
+  - entity: input_select.irrigation_unlimited_entities
+    name: Controller/Zone
+  - entity: input_select.irrigation_unlimited_sequences
+    name: Controller/Sequence
+  - entity: input_datetime.irrigation_unlimited_run_time
+    name: Time
+  - type: divider
+  - type: 'custom:paper-buttons-row'
+    buttons:
+      - name: Go
+        tap_action:
+          action: call-service
+          service: irrigation_unlimited.shim_manual_run
+          service_data:
+            time_entity: input_datetime.irrigation_unlimited_run_time
+            controller_zone_entity: input_select.irrigation_unlimited_entities
+            controller_sequence_entity: input_select.irrigation_unlimited_sequences
+      - name: Cancel
+        tap_action:
+          action: call-service
+          service: irrigation_unlimited.shim_cancel
+          service_data: null
