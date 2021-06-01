@@ -119,7 +119,7 @@ This is the controller or master object and manages a collection of zones. There
 | `enabled` | bool | true | Enable/disable the controller |
 | `preamble` | time | '00:00' | The time master turns on before any zone turns on |
 | `postamble` | time | '00:00' | The time master remains on after all zones are off |
-| `entity_id` | string | | Entity ID (`switch.my_master_valve1`)|
+| `entity_id` | string | | Entity ID (`switch.my_master_valve1`). Takes a csv list for multiple id's|
 
 ### Zone Objects
 
@@ -133,7 +133,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `enabled` | bool | true | Enable/disable the zone |
 | `minimum` | time | '00:01' | The minimum run time |
 | `maximum` | time | | The maximum run time |
-| `entity_id` | string | | Entity ID (`switch.my_zone_valve1`) |
+| `entity_id` | string | | Entity ID (`switch.my_zone_valve1`). Takes a csv list for multiple id's |
 
 ### Schedule Objects
 
