@@ -371,12 +371,13 @@ Cancels the current running schedule.
 
 ### Service `manual_run`
 
-Turn on the controller or zone for a period of time.
+Turn on the controller or zone for a period of time. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence. Zone times are calculated and rounded to the nearest time boundary. This means the total run time may vary from the specified time.
 
 | Service data attribute | Optional | Description |
 | ---------------------- | -------- | ----------- |
 | `entity_id` | no | Controller or zone to run.
-| `time` | no | Controller or zone to run.
+| `time` | no | Total time to run.
+| `sequence_id` | yes | Sequence to run (1, 2..N). Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
 
 ### Service `adjust_time`
 
@@ -403,7 +404,7 @@ Reload the YAML configuration file. Do not add or delete controllers or zones, t
 
 ## Frontend
 
-Because this is an integration there is no frontend. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on. However, for some inspiration and a compact card try [this](./examples/card.yaml).
+Because this is an integration there is no frontend. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on. However, for some inspiration and a compact card try [this](./lovelace/card.yaml).
 
 ![Collapsed](./examples/card_collapsed.png)
 
@@ -413,29 +414,43 @@ and it expands to:
 
 Note: This card uses some custom cards [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row), [fold-entity-row](https://github.com/thomasloven/lovelace-fold-entity-row), [logbook-card](https://github.com/royto/logbook-card) and at the moment [card-mod](https://github.com/thomasloven/lovelace-card-mod) for styles.
 
-For watering history information here is a [sample card](./examples/watering_history_card.yaml).
+For watering history information here is a [sample card](./lovelace/watering_history_card.yaml).
 
 ![watering_history_card](./examples/watering_history_card.png).
 
 Note: At time of writing this requires a pre-released version of [mini-graph-card](https://github.com/kalkih/mini-graph-card/releases/tag/v0.11.0-dev.3).
 
-Although not really part of the integration but to get you started quickly here is a [temperature card](./examples/temperature_card.yaml).
+Although not really part of the integration but to get you started quickly here is a [temperature card](./lovelace/temperature_card.yaml).
 
 ![temperature_card](./examples/temperature_card.png).
 
-And a [rainfall card](./examples/rainfall_card.yaml). Note how the watering times reduced as rainfall started. More on this below in [Automation](#Automation).
+And a [rainfall card](./lovelace/rainfall_card.yaml). Note how the watering times reduced as rainfall started. More on this below in [Automation](#Automation).
 
-![rainfall_card](./examples/rainfall_card.png).
+![rainfall_card](./examples/rainfall_card.png)
 
-Finally, a system event [log](./examples/system_history_card.yaml).
+Finally, a system event [log](./lovelace/system_history_card.yaml)
 
-![system_history_card](./examples/system_history_card.png).
+![system_history_card](./examples/system_history_card.png)
 
-Putting it all together, here is the [complete picture](./examples/my_dashboard.yaml).
+Putting it all together, here is the [complete picture](./lovelace/my_dashboard.yaml)
 
-![my_dashboard.png](./examples/my_dashboard.png).
+![my_dashboard.png](./examples/my_dashboard.png)
 
 This configuration is three vertical stacks and works well on mobile devices.
+
+### Manual run card
+
+Here is a card for manual runs. You can find the code [here](./lovelace/card_manual_run.yaml). Note: This card uses [paper-buttons-row](https://github.com/jcwillox/lovelace-paper-buttons-row) because it can create a button without the need for an actual entity.
+
+![manual_run_card](./examples/card_manual_run.png)
+
+There is a support file [here](./packages/irrigation_unlimited_controls.yaml) which should go in the config/packages directory. Also required is a [pyscript](./pyscript/irrigation_unlimited_service_shim.py) which is called from the above automation to populate the input_select with all the irrigation unlimited controllers and zones. The script should go in the config/pyscript directory. If you don't have a packages or pyscript folder then create them and add the following to your configuration.yaml.
+
+```yaml
+homeassistant:
+  packages: !include_dir_named packages
+```
+More information on packages can be found [here](https://www.home-assistant.io/docs/configuration/packages) and pyscript can be found [here](https://github.com/custom-components/pyscript), don't worry about the Jupyter kernel unless you are really keen. Hint: A pyscript is used instead of Jinja2 as it produces a list which Jinja2 is not capable of, many have tried...
 
 ## Automation
 
@@ -443,27 +458,39 @@ Due to the many weather integrations available and their relevance to your situa
 
 On a personal note, I use the national weather service [BOM](http://www.bom.gov.au) for my forecast information but find their observation data not relevant due to the extreme regional variations in my situation. There are many micro climates (mountains) and a few kilometers in any direction makes a lot of difference, down pour to a few drops. To this end I have a Personal Weather Station (PWS) that feeds [Weather Underground](https://www.wunderground.com) where I use the [WUnderground](https://www.home-assistant.io/integrations/wunderground) integration to retrieve the data.
 
-You will find my adjustment automation [here](./examples/irrigation_unlimited.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./examples/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
+You will find my adjustment automation [here](./packages/irrigation_unlimited_adjustment.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./lovelace/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
 ### HAsmartirrigation
-[HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 04:00 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket.
+[HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 23:30 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
 
 ~~~yaml
-# Example automation for HAsmartirrigation integration
-- alias: Smart Irrigation
-  description: Adjust watering times
-  trigger:
-  - platform: time
-    at: 04:00
-  action:
-  - service: irrigation_unlimited.adjust_time
-    data:
-      entity_id: binary_sensor.irrigation_unlimited_c1_z1
-      actual: >
-        {% set t = states('sensor.smart_irrigation_daily_adjusted_run_time') | int %}
-        {{ '{:02d}:{:02d}:{:02d}'.format((t // 3600) % 24, (t % 3600) // 60, (t % 3600) % 60) }}
-  - service: smart_irrigation.smart_irrigation_reset_bucket
-  mode: single
+# Example automation for HAsmartirrigation integration (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
+automation:
+  - alias: Smart Irrigation adjustment
+    description: Adjust watering times based on smart irrigation calculations
+    trigger:
+      - platform: time
+          at: "23:30"
+    action:
+      - service: irrigation_unlimited.adjust_time
+        data:
+          entity_id: binary_sensor.irrigation_unlimited_c1_z1
+          actual: >
+            {% set t = states('sensor.smart_irrigation_daily_adjusted_run_time') | int %}
+            {{ '{:02d}:{:02d}:{:02d}'.format((t // 3600) % 24, (t % 3600) // 60, (t % 3600) % 60) }}
+    mode: single
+
+  - alias: Smart Irrigation reset bucket
+    description: Resets the Smart Irrigation bucket after watering
+    trigger:
+      - platform: state
+        entity_id:
+          # Add Irrigation Unlimited sensors here
+          - binary_sensor.irrigation_unlimited_c1_m
+        from: "on"
+        to: "off"
+    action:
+      - service: smart_irrigation.smart_irrigation_reset_bucket
 ~~~
 
 ## Troubleshooting
