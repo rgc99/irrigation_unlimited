@@ -71,7 +71,6 @@ adjust_time:
       description: Revert to original schedule
       example: ''
       required: false
-      selector:
 
     percentage:
       description: Adjust the run time by a percentage.
@@ -80,6 +79,7 @@ adjust_time:
       selector:
         number:
           min: 0
+          max: None
           unit_of_measurement: "%"
 
     actual:
@@ -144,6 +144,7 @@ manual_run:
       selector:
         number:
           min: 1
+          max: None
           mode: box
 
 reload:
