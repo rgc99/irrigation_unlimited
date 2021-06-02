@@ -1,3 +1,4 @@
+from typing import Optional
 from homeassistant.core import ServiceCall, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
@@ -28,6 +29,7 @@ from .const import (
     CONF_MINIMUM,
     CONF_MAXIMUM,
     CONF_ZONES,
+    CONF_SEQUENCE_ID,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
     SERVICE_MANUAL_RUN,
@@ -59,6 +61,7 @@ MANUAL_RUN_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_id,
     vol.Required(CONF_TIME): cv.positive_time_period,
     vol.Optional(CONF_ZONES): cv.ensure_list,
+    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
 }
 
 RELOAD_SERVICE_SCHEMA = vol.Schema({})
