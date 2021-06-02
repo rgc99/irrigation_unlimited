@@ -16,7 +16,7 @@ Home Assistant makes automating switches easy with the built in tools available.
 
 Each controller has an associated (master) sensor which shows on/off status and other attributes. The master will be on when any of its zones are on. The master sensor can have a pre and post amble period to activate or warm up the system like charge up a pump, enable WiFi or turn on a master valve. The master sensor has a number of service calls available to enable/disable all the zones it controls.
 
-Zones also have an associated sensor which, like the master, shows on/off status and various attributes. Zones sensors have service calls that can enable/disable and provide manual runs. Also adjust run times in automation scripts using information from integrations that collect weather data like [OpenWeatherMap](https://www.home-assistant.io/integrations/openweathermap/), [BOM](https://github.com/bremor/bureau_of_meteorology), [weatherunderground](https://www.home-assistant.io/integrations/wunderground/) and many others. Go crazy with projects like [HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation).
+Zones also have an associated sensor which, like the master, shows on/off status and various attributes. Zones sensors have service calls that can enable/disable and provide manual runs. Also adjust run times in automation scripts using information from integrations that collect weather data like [OpenWeatherMap](https://www.home-assistant.io/integrations/openweathermap/), [BOM](https://github.com/bremor/bureau_of_meteorology), [weatherunderground](https://www.home-assistant.io/integrations/wunderground/) and many others. Go crazy with projects like [HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation). Easily integrate probes and sensors from [ESPHome](https://esphome.io) for real-time adjustments. Examples provided [below](#automation).
 
 ## Features
 
@@ -459,6 +459,40 @@ Due to the many weather integrations available and their relevance to your situa
 On a personal note, I use the national weather service [BOM](http://www.bom.gov.au) for my forecast information but find their observation data not relevant due to the extreme regional variations in my situation. There are many micro climates (mountains) and a few kilometers in any direction makes a lot of difference, down pour to a few drops. To this end I have a Personal Weather Station (PWS) that feeds [Weather Underground](https://www.wunderground.com) where I use the [WUnderground](https://www.home-assistant.io/integrations/wunderground) integration to retrieve the data.
 
 You will find my adjustment automation [here](./packages/irrigation_unlimited_adjustment.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./lovelace/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
+
+### ESPHome
+This example uses the data from a soil moisture probe created in [ESPHome](https://esphome.io/) to adjust the run times.
+
+~~~yaml
+automation:
+  - alias: ESPHome soil moisture adjustment
+    trigger:
+      platform: state
+      entity_id:
+        - sensor.yard1_humidity
+    action:
+      service: irrigation_unlimited.adjust_time
+      data:
+        entity_id: binary_sensor.irrigation_unlimited_c1_m
+        percentage: >
+          {# Threshold variable 0-100 percent #}
+          {% set threshold = 40 %}
+
+          {# Sensor data #}
+          {% set humidity = states('sensor.yard1_humidity') | float %}
+
+          {% if humidity < threshold %}
+            {# Option 1 - A linear sliding scale #}
+            {% set multiplier = 1 - (humidity / threshold) %}
+            {# Option 2 - On or Off #}
+            {% set multiplier = 1.0 %}
+          {% else %}
+            {% set multiplier = 0.0 %} {# It's too wet, turn off #}
+          {% endif %}
+
+          {# Return multiplier as a percentage #}
+          {{ (multiplier * 100) | round(0) }}
+~~~
 
 ### HAsmartirrigation
 [HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 23:30 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
