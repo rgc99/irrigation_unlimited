@@ -1,6 +1,7 @@
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import ServiceCall
 from homeassistant.helpers.restore_state import RestoreEntity
+import json
 
 from homeassistant.const import (
     STATE_OK,
@@ -33,9 +34,7 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         self._coordinator = coordinator
         self._controller = controller
         self._zone = zone  # This will be None if it belongs to a Master/Controller
-        self.entity_id = (
-            f"{BINARY_SENSOR}.{DOMAIN}_c{self._controller.index + 1}"
-        )
+        self.entity_id = f"{BINARY_SENSOR}.{DOMAIN}_c{self._controller.index + 1}"
         if self._zone is None:
             self.entity_id = self.entity_id + "_m"
         else:
@@ -48,9 +47,13 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         if state is not None:
             if ATTR_ENABLED in state.attributes:
                 if state.attributes[ATTR_ENABLED]:
-                    self._coordinator.service_call(SERVICE_ENABLE, self._controller, self._zone, None)
+                    self._coordinator.service_call(
+                        SERVICE_ENABLE, self._controller, self._zone, None
+                    )
                 else:
-                    self._coordinator.service_call(SERVICE_DISABLE, self._controller, self._zone, None)
+                    self._coordinator.service_call(
+                        SERVICE_DISABLE, self._controller, self._zone, None
+                    )
             return
         return
 
@@ -120,4 +123,5 @@ class IUComponent(RestoreEntity):
     def state_attributes(self):
         """Return the state attributes."""
         attr = {}
+        attr["configuration"] = json.dumps(self._coordinator.as_dict(), default=str)
         return attr

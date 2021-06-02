@@ -35,10 +35,12 @@ from .const import (
     CONF_DAY,
     CONF_DECREASE,
     CONF_INCREASE,
+    CONF_INDEX,
     CONF_PERCENTAGE,
     CONF_REFRESH_INTERVAL,
     CONF_RESET,
     CONF_SEQUENCES,
+    CONF_SEQUENCE_ID,
     DEFAULT_GRANULATITY,
     DEFAULT_REFRESH_INTERVAL,
     DEFAULT_TEST_SPEED,
@@ -133,6 +135,20 @@ def wash_t(time: time, granularity: int = None) -> time:
         rounded_seconds = int(d.second / granularity) * granularity
         t = d.replace(second=rounded_seconds, microsecond=0)
         return t.time()
+    else:
+        return None
+
+
+def round_td(delta: timedelta, granularity: int = None) -> timedelta:
+    """Round the supplied timedelta to internal boundaries"""
+    if delta is not None:
+        if granularity is None:
+            granularity = SYSTEM_GRANULARITY
+        whole_seconds = int(delta.total_seconds())
+        rounded_seconds = (
+            int((whole_seconds + granularity / 2) / granularity) * granularity
+        )
+        return timedelta(seconds=rounded_seconds)
     else:
         return None
 
@@ -657,12 +673,15 @@ class IURunQueue(list):
         return modified
 
     def remove_current(self) -> bool:
-        """Remove the current run"""
+        """Remove the current run or upcoming manual run"""
         modified: bool = False
-        if self._current_run is not None:
+        if self._current_run is not None or (
+            self._next_run is not None and self._next_run.is_manual()
+        ):
             if len(self) > 0:
                 self.pop(0)
             self._current_run = None
+            self._next_run = None
             modified = True
         return modified
 
@@ -827,7 +846,7 @@ class IUZone(IUBase):
         self._show_timeline: bool = False
         # Private variables
         self._initialised: bool = False
-        self._schedules: list(IUSchedule) = []
+        self._schedules: list[IUSchedule] = []
         self._run_queue = IUScheduleQueue()
         self._adjustment = IUAdjustment()
         self._zone_sensor: Entity = None
@@ -997,11 +1016,8 @@ class IUZone(IUBase):
 
     def as_dict(self) -> OrderedDict:
         dict = OrderedDict()
-        dict[CONF_ENABLED] = self._is_enabled
-        if self._name is not None:
-            dict[CONF_NAME] = self._name
-        if self._switch_entity_id is not None:
-            dict[CONF_ENTITY_ID] = self._switch_entity_id
+        dict[CONF_INDEX] = self._index
+        dict[CONF_NAME] = self.name
         dict[CONF_SCHEDULES] = []
         for schedule in self._schedules:
             dict[CONF_SCHEDULES].append(schedule.as_dict())
@@ -1235,8 +1251,8 @@ class IUSequence(IUBase):
         self._duration: timedelta = None
         self._repeat: int = None
         # Private variables
-        self._schedules = []
-        self._zones = []
+        self._schedules: list[IUSchedule] = []
+        self._zones: list[IUSequenceZone] = []
         return
 
     @property
@@ -1258,6 +1274,56 @@ class IUSequence(IUBase):
     @property
     def repeat(self) -> int:
         return self._repeat
+
+    def zone_duration(self, zone: IUSequenceZone) -> timedelta:
+        """Return the duration for the specified zone"""
+        if zone.duration is not None:
+            duration = zone.duration
+        else:
+            duration = self._duration
+        if duration is None:
+            duration = granularity_time()
+        return duration
+
+    def zone_delay(self, zone: IUSequenceZone) -> timedelta:
+        """Return the delay for the specified zone"""
+        if zone.delay is not None:
+            delay = zone.delay
+        else:
+            delay = self._delay
+        if delay is None:
+            delay = timedelta(0)
+        return delay
+
+    def total_duration(self) -> timedelta:
+        """Return the total duration for all the zones"""
+        duration = timedelta(0)
+        for zone in self._zones:
+            duration += self.zone_duration(zone) * zone.repeat
+        duration *= self._repeat
+        return duration
+
+    def total_delay(self) -> timedelta:
+        """Return the total delay for all the zones"""
+        delay = timedelta(0)
+        for zone in self._zones:
+            delay += self.zone_delay(zone) * zone.repeat
+        delay *= self._repeat
+        delay -= self.zone_delay(zone)
+        return delay
+
+    def total_time(self) -> timedelta:
+        """Return the total time for the sequence"""
+        return self.total_duration() + self.total_delay()
+
+    def duration_multiplier(self, total_time: timedelta) -> float:
+        """Given a new total run time, calculate how much to shrink or expand each
+        zone duration. Final time will be approximate as the new durations must
+        be rounded to internal boundaries"""
+        if total_time is not None:
+            return (total_time - self.total_delay()) / self.total_duration()
+        else:
+            return 1.0
 
     def clear(self) -> None:
         """Reset this sequence"""
@@ -1304,6 +1370,12 @@ class IUSequence(IUBase):
             )
         return self
 
+    def as_dict(self) -> OrderedDict:
+        dict = OrderedDict()
+        dict[CONF_INDEX] = self._index
+        dict[CONF_NAME] = self._name
+        return dict
+
 
 class IUController(IUBase):
     """Irrigation Unlimited Controller (Master) class"""
@@ -1321,8 +1393,8 @@ class IUController(IUBase):
         self._postamble: timedelta = None
         # Private variables
         self._initialised: bool = False
-        self._zones: list(IUZone) = []
-        self._sequences: list(IUSequence) = []
+        self._zones: list[IUZone] = []
+        self._sequences: list[IUSequence] = []
         self._run_queue = IUZoneQueue()
         self._master_sensor: Entity = None
         self._is_on: bool = False
@@ -1363,6 +1435,7 @@ class IUController(IUBase):
             self._is_enabled = value
             self._dirty = True
             self.request_update()
+            self.notify_children()
         return
 
     @property
@@ -1427,6 +1500,12 @@ class IUController(IUBase):
         self._sequences.append(sequence)
         return sequence
 
+    def find_sequence(self, index: int) -> IUSequence:
+        if index >= 0 and index < len(self._sequences):
+            return self._sequences[index]
+        else:
+            return None
+
     def find_add_sequence(self, coordinator, controller, index: int) -> IUSequence:
         if index >= len(self._sequences):
             return self.add_sequence(
@@ -1445,6 +1524,11 @@ class IUController(IUBase):
         # Don't clear zones
         # self._zones.clear()
         self._is_on = False
+        return
+
+    def notify_children(self) -> None:
+        for zone in self._zones:
+            zone.request_update()
         return
 
     def load(self, config: OrderedDict):
@@ -1468,48 +1552,59 @@ class IUController(IUBase):
         self._dirty = True
         return self
 
+    def as_dict(self) -> OrderedDict:
+        dict = OrderedDict()
+        dict[CONF_INDEX] = self._index
+        dict[CONF_NAME] = self._name
+        dict[CONF_ZONES] = []
+        for zone in self._zones:
+            dict[CONF_ZONES].append(zone.as_dict())
+        dict[CONF_SEQUENCES] = []
+        for sequence in self._sequences:
+            dict[CONF_SEQUENCES].append(sequence.as_dict())
+        return dict
+
     def muster_sequence(
-        self, time: datetime, sequence: IUSequence, schedule: IUSchedule
+        self,
+        time: datetime,
+        sequence: IUSequence,
+        schedule: IUSchedule,
+        total_duration: timedelta = None,
     ) -> int:
         status: int = 0
-
+        duration_multiplier = sequence.duration_multiplier(total_duration)
         sid = uuid.uuid4().int
         sidx: int = 0
         next_run: datetime = None
         for i in range(sequence.repeat):  # pylint: disable=unused-variable
             for sequence_zone in sequence.zones:
-                zone: IUZone = self.find_zone_by_zone_id(sequence_zone.zone_id)
+                zone = self.find_zone_by_zone_id(sequence_zone.zone_id)
                 if zone is not None:
 
                     # Initialise on first pass
                     if next_run is None:
-                        last_time = zone.runs.last_time(time)
-                        next_time = zone.runs.find_last_date(schedule.id)
-                        if next_time is not None:
-                            next_time += granularity_time()
+                        if schedule is not None:
+                            last_time = zone.runs.last_time(time)
+                            next_time = zone.runs.find_last_date(schedule.id)
+                            if next_time is not None:
+                                next_time += granularity_time()
+                            else:
+                                next_time = time
+                            next_run = schedule.get_next_run(next_time)
+                            if next_run > last_time:
+                                return status  # Exit if queue is full
                         else:
-                            next_time = time
-                        next_run = schedule.get_next_run(next_time)
-                        if next_run > last_time:
-                            return status  # Exit if queue is full
+                            next_run = time + granularity_time()
 
                     # Calculate duration
-                    if sequence_zone.duration is not None:
-                        duration = sequence_zone.duration
-                    else:
-                        duration = sequence.duration
-                    if duration is None:
-                        duration = granularity_time()
+                    duration = round_td(
+                        sequence.zone_duration(sequence_zone) * duration_multiplier
+                    )
                     if zone.adjustment is not None:
                         duration = zone.adjustment.adjust(duration)
 
                     # Calculate delay
-                    if sequence_zone.delay is not None:
-                        delay = sequence_zone.delay
-                    else:
-                        delay = sequence.delay
-                    if delay is None:
-                        delay = timedelta(0)
+                    delay = sequence.zone_delay(sequence_zone)
 
                     for j in range(  # pylint: disable=unused-variable
                         sequence_zone.repeat
@@ -1552,7 +1647,9 @@ class IUController(IUBase):
         for sequence in self._sequences:
             for schedule in sequence.schedules:
                 while True:
-                    sequence_status = self.muster_sequence(time, sequence, schedule)
+                    sequence_status = self.muster_sequence(
+                        time, sequence, schedule, None
+                    )
                     zone_status |= sequence_status
                     if sequence_status & IURunQueue.RQ_STATUS_EXTENDED == 0:
                         break
@@ -1671,6 +1768,34 @@ class IUController(IUBase):
             )
         return
 
+    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
+        zl: list[int] = data.get(CONF_ZONES, None)
+        for zone in self._zones:
+            if zl is None or zone.zone_index + 1 in zl:
+                zone.service_adjust_time(data, time)
+        return
+
+    def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
+        sequence_id = data.get(CONF_SEQUENCE_ID, None)
+        if sequence_id is None:
+            zl: list[int] = data.get(CONF_ZONES, None)
+            for zone in self._zones:
+                if zl is None or zone.zone_index + 1 in zl:
+                    zone.service_manual_run(data, time)
+        else:
+            sequence = self.find_sequence(sequence_id - 1)
+            if sequence is not None:
+                self.muster_sequence(time, sequence, None, wash_td(data[CONF_TIME]))
+            return
+        return
+
+    def service_cancel(self, data: MappingProxyType, time: datetime) -> None:
+        zl: list[int] = data.get(CONF_ZONES, None)
+        for zone in self._zones:
+            if zl is None or zone.zone_index + 1 in zl:
+                zone.service_cancel(data, time)
+        return
+
 
 class IUCoordinator:
     """Irrigation Unimited Coordinator class"""
@@ -1685,10 +1810,11 @@ class IUCoordinator:
         self._test_times = []
         self._refresh_interval: timedelta = None
         # Private variables
-        self._controllers: list(IUController) = []
+        self._controllers: list[IUController] = []
         self._is_on: bool = False
+        self._sensor_update_required: bool = False
+        self._sensor_last_update: datetime = None
         self._dirty: bool = True
-        # self._component_sensor_issetup: bool = False
         self._component = None
         self._initialised: bool = False
         self._last_muster: datetime = None
@@ -1775,6 +1901,13 @@ class IUCoordinator:
         self._muster_required = True
         return self
 
+    def as_dict(self) -> OrderedDict:
+        dict = OrderedDict()
+        dict[CONF_CONTROLLERS] = []
+        for controller in self._controllers:
+            dict[CONF_CONTROLLERS].append(controller.as_dict())
+        return dict
+
     def muster(self, time: datetime, force: bool) -> int:
         """Calculate run times for system"""
         status: int = 0
@@ -1794,10 +1927,21 @@ class IUCoordinator:
 
         return is_running
 
+    def request_update(self) -> None:
+        """Flag the sensor needs an update. The actual update is done
+        in update_sensor"""
+        self._sensor_update_required = True
+        return
+
     def update_sensor(self, time: datetime) -> None:
         """Update home assistant sensors if required"""
         for controller in self._controllers:
             controller.update_sensor(time)
+
+        if self._component is not None and self._sensor_update_required:
+            self._component.schedule_update_ha_state()
+            self._sensor_update_required = False
+            self._sensor_last_update = time
         return
 
     def poll(self, time: datetime, force: bool = False) -> None:
@@ -1874,6 +2018,8 @@ class IUCoordinator:
                 self.poll(time)
         else:
             self._initialised = self.is_setup
+            if self._initialised:
+                self.request_update()
         return
 
     def register_entity(
@@ -1906,75 +2052,40 @@ class IUCoordinator:
         data: MappingProxyType,
     ) -> None:
         """Entry point for all service calls."""
-        time: datetime = dt.utcnow()
+        time: datetime = wash_dt(dt.utcnow())
         if self._is_testing():
             time = self.virtual_time(time)
-
-        def adjust_time_all(
-            controller: IUController, data: MappingProxyType, time: datetime
-        ) -> None:
-            zl = data.get(CONF_ZONES, None)
-            for zone in controller.zones:
-                if zl is None or zone.zone_index + 1 in zl:
-                    zone.service_adjust_time(data, time)
-            return
-
-        def manual_run_all(
-            controller: IUController, data: MappingProxyType, time: datetime
-        ) -> None:
-            zl = data.get(CONF_ZONES, None)
-            for zone in controller.zones:
-                if zl is None or zone.zone_index + 1 in zl:
-                    zone.service_manual_run(data, time)
-            return
-
-        def cancel_all(
-            controller: IUController, data: MappingProxyType, time: datetime
-        ) -> None:
-            zl = data.get(CONF_ZONES, None)
-            for zone in controller.zones:
-                if zl is None or zone.zone_index + 1 in zl:
-                    zone.service_cancel(data, time)
-            return
-
-        def notify_children(controller: IUController) -> None:
-            for zone in controller.zones:
-                zone.request_update()
-            return
 
         if service == SERVICE_ENABLE:
             if zone is not None:
                 zone.enabled = True
             else:
                 controller.enabled = True
-                notify_children(controller)
         elif service == SERVICE_DISABLE:
             if zone is not None:
                 zone.enabled = False
             else:
                 controller.enabled = False
-                notify_children(controller)
         elif service == SERVICE_TOGGLE:
             if zone is not None:
                 zone.enabled = not zone.enabled
             else:
                 controller.enabled = not controller.enabled
-                notify_children(controller)
         elif service == SERVICE_CANCEL:
             if zone is not None:
                 zone.service_cancel(data, time)
             else:
-                cancel_all(controller, data, time)
+                controller.service_cancel(data, time)
         elif service == SERVICE_TIME_ADJUST:
             if zone is not None:
                 zone.service_adjust_time(data, time)
             else:
-                adjust_time_all(controller, data, time)
+                controller.service_adjust_time(data, time)
         elif service == SERVICE_MANUAL_RUN:
             if zone is not None:
                 zone.service_manual_run(data, time)
             else:
-                manual_run_all(controller, data, time)
+                controller.service_manual_run(data, time)
         else:
             return
         self._muster_required = True
