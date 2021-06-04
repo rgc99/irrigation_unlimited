@@ -1166,7 +1166,7 @@ class IUZoneQueue(IURunQueue):
         else:
             self.clear(time)
         for zone in zones:
-            for run in zone._run_queue:
+            for run in zone.runs:
                 self.add_zone(
                     run.start_time,
                     run.duration,
