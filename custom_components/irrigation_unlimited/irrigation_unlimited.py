@@ -1,5 +1,4 @@
 """Irrigation Unlimited Coordinator and sub classes"""
-
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
 from typing import OrderedDict
@@ -354,12 +353,13 @@ class IUSchedule(IUBase):
             dict[CONF_DAY] = self._days
         return dict
 
-    def get_next_run(self, atime: datetime) -> datetime:
+    def get_next_run(self, atime: datetime, ftime: datetime) -> datetime:
         """
         Determine the next start time. Date processing in this routine
         is done in local time and returned as UTC
         """
         local_time = dt.as_local(atime)
+        final_time = dt.as_local(ftime)
 
         next_run: datetime = None
         while True:
@@ -370,7 +370,7 @@ class IUSchedule(IUBase):
                 next_run += timedelta(days=1)  # Advance to next day
 
             # Sanity check. Note: Astral events like sunrise might take months i.e. Antarctica winter
-            if next_run > local_time + timedelta(days=365):
+            if next_run > final_time:
                 return None
 
             # DOW filter
@@ -783,7 +783,6 @@ class IUScheduleQueue(IURunQueue):
     ) -> bool:
         modified: bool = False
 
-        last_date = self.last_time(time)
         # See if schedule already exists in run queue. If so get
         # the finish time of the last entry.
         next_time = self.find_last_date(schedule.id)
@@ -792,12 +791,9 @@ class IUScheduleQueue(IURunQueue):
         else:
             next_time = time
 
-        if next_time < last_date:
-            next_run = schedule.get_next_run(next_time)
-        else:
-            next_run = None
+        next_run = schedule.get_next_run(next_time, self.last_time(time))
 
-        if next_run is not None and next_run < last_date:
+        if next_run is not None:
             self.add_schedule(zone, schedule, next_run, adjustment)
             modified = True
 
@@ -1584,14 +1580,15 @@ class IUController(IUBase):
                     # Initialise on first pass
                     if next_run is None:
                         if schedule is not None:
-                            last_time = zone.runs.last_time(time)
                             next_time = zone.runs.find_last_date(schedule.id)
                             if next_time is not None:
                                 next_time += granularity_time()
                             else:
                                 next_time = time
-                            next_run = schedule.get_next_run(next_time)
-                            if next_run > last_time:
+                            next_run = schedule.get_next_run(
+                                next_time, zone.runs.last_time(time)
+                            )
+                            if next_run is None:
                                 return status  # Exit if queue is full
                         else:
                             next_run = time + granularity_time()
