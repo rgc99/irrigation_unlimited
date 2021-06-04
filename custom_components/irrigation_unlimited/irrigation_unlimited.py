@@ -778,7 +778,7 @@ class IUScheduleQueue(IURunQueue):
         self,
         time: datetime,
         zone,
-        schedule,
+        schedule: IUSchedule,
         adjustment: IUAdjustment,
     ) -> bool:
         modified: bool = False
@@ -807,7 +807,7 @@ class IUScheduleQueue(IURunQueue):
         self,
         time: datetime,
         zone,
-        schedule,
+        schedule: IUSchedule,
         adjustment: IUAdjustment,
     ) -> bool:
         """Merge the schedule into the run queue. Add as many until the span is
