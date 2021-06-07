@@ -1766,7 +1766,7 @@ class IUController(IUBase):
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
         zl: list[int] = data.get(CONF_ZONES, None)
         for zone in self._zones:
-            if zl is None or zone.zone_index + 1 in zl:
+            if zl is None or zone.index + 1 in zl:
                 zone.service_adjust_time(data, time)
         return
 
@@ -1775,7 +1775,7 @@ class IUController(IUBase):
         if sequence_id is None:
             zl: list[int] = data.get(CONF_ZONES, None)
             for zone in self._zones:
-                if zl is None or zone.zone_index + 1 in zl:
+                if zl is None or zone.index + 1 in zl:
                     zone.service_manual_run(data, time)
         else:
             sequence = self.find_sequence(sequence_id - 1)
@@ -1787,7 +1787,7 @@ class IUController(IUBase):
     def service_cancel(self, data: MappingProxyType, time: datetime) -> None:
         zl: list[int] = data.get(CONF_ZONES, None)
         for zone in self._zones:
-            if zl is None or zone.zone_index + 1 in zl:
+            if zl is None or zone.index + 1 in zl:
                 zone.service_cancel(data, time)
         return
 
