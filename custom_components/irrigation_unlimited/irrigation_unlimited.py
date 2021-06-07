@@ -274,12 +274,10 @@ class IUSchedule(IUBase):
         self,
         hass: HomeAssistant,
         schedule_index: int,
-        object: IUBase,
     ) -> None:
         super().__init__(schedule_index)
         # Passed parameters
         self._hass = hass
-        self._object: IUBase = object
         # Config parameters
         self._time = None
         self._duration: timedelta = None
@@ -972,7 +970,7 @@ class IUZone(IUBase):
 
     def find_add(self, coordinator, controller, index: int) -> IUSchedule:
         if index >= len(self._schedules):
-            return self.add(IUSchedule(self._hass, index, self))
+            return self.add(IUSchedule(self._hass, index))
         else:
             return self._schedules[index]
 
@@ -1332,7 +1330,7 @@ class IUSequence(IUBase):
 
     def find_add_schedule(self, coordinator, controller, index: int) -> IUSchedule:
         if index >= len(self._schedules):
-            return self.add_schedule(IUSchedule(self._hass, index, self))
+            return self.add_schedule(IUSchedule(self._hass, index))
         else:
             return self._schedules[index]
 
