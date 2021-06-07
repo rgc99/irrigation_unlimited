@@ -1685,7 +1685,7 @@ class IUController(IUBase):
     def check_run(self, time: datetime) -> bool:
         """Check the run status and update sensors. Return flag
         if anything has changed."""
-        zones_changed: list(int) = []
+        zones_changed: list[int] = []
         is_running: bool = False
         state_changed: bool = False
 
@@ -1695,11 +1695,10 @@ class IUController(IUBase):
                 zones_changed.append(zone.index)
 
         # Handle off zones before master
-        for index in zones_changed:
-            z: IUZone = self._zones[index]
-            if not z.is_on:
-                z.call_switch(SERVICE_TURN_OFF)
-                write_status_to_log(time, self, z)
+        for zone in (self._zones[i] for i in zones_changed):
+            if not zone.is_on:
+                zone.call_switch(SERVICE_TURN_OFF)
+                write_status_to_log(time, self, zone)
 
         # Check if master has changed and update
         is_running = self._is_enabled and self._run_queue.current_run is not None
@@ -1711,11 +1710,10 @@ class IUController(IUBase):
             write_status_to_log(time, self, None)
 
         # Handle on zones after master
-        for index in zones_changed:
-            z: IUZone = self._zones[index]
-            if z.is_on:
-                z.call_switch(SERVICE_TURN_ON)
-                write_status_to_log(time, self, z)
+        for zone in (self._zones[i] for i in zones_changed):
+            if zone.is_on:
+                zone.call_switch(SERVICE_TURN_ON)
+                write_status_to_log(time, self, zone)
 
         return state_changed
 
