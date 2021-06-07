@@ -3,7 +3,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_platform
 import homeassistant.util.dt as dt
 from datetime import datetime, timedelta
-from homeassistant.components import history
+from homeassistant.components.recorder import history
 import json
 
 from homeassistant.const import (
