@@ -1696,7 +1696,7 @@ class IUController(IUBase):
         for zone in (self._zones[i] for i in zones_changed):
             if not zone.is_on:
                 zone.call_switch(SERVICE_TURN_OFF)
-                write_status_to_log(time, self, zone)
+                self._coordinator.status_changed(time, self, zone)
 
         # Check if master has changed and update
         is_running = self._is_enabled and self._run_queue.current_run is not None
@@ -1705,13 +1705,13 @@ class IUController(IUBase):
             self._is_on = not self._is_on
             self.request_update()
             self.call_switch(SERVICE_TURN_ON if self._is_on else SERVICE_TURN_OFF)
-            write_status_to_log(time, self, None)
+            self._coordinator.status_changed(time, self, None)
 
         # Handle on zones after master
         for zone in (self._zones[i] for i in zones_changed):
             if zone.is_on:
                 zone.call_switch(SERVICE_TURN_ON)
-                write_status_to_log(time, self, zone)
+                self._coordinator.status_changed(time, self, zone)
 
         return state_changed
 
@@ -2084,20 +2084,28 @@ class IUCoordinator:
         self._muster_required = True
         return
 
+    def status_changed(
+        self, time: datetime, controller: IUController, zone: IUZone
+    ) -> None:
+        def write_status_to_log(
+            time: datetime, controller: IUController, zone: IUZone
+        ) -> None:
+            """Output the status of master or zone"""
+            if zone is not None:
+                zm = f"Zone {zone.index + 1}"
+                status = f"{STATE_ON if zone._is_on else STATE_OFF}"
+            else:
+                zm = "Master"
+                status = f"{STATE_ON if controller._is_on else STATE_OFF}"
+            _LOGGER.debug(
+                "[%s] Controller %d %s is %s",
+                datetime.strftime(dt.as_local(time), "%Y-%m-%d %H:%M:%S"),
+                controller.index + 1,
+                zm,
+                status,
+            )
+            return
 
-def write_status_to_log(time: datetime, controller: IUController, zone: IUZone) -> None:
-    """Output the status of master or zone"""
-    if zone is not None:
-        zm = f"Zone {zone.index + 1}"
-        status = f"{STATE_ON if zone._is_on else STATE_OFF}"
-    else:
-        zm = "Master"
-        status = f"{STATE_ON if controller._is_on else STATE_OFF}"
-    _LOGGER.debug(
-        "[%s] Controller %d %s is %s",
-        datetime.strftime(dt.as_local(time), "%Y-%m-%d %H:%M:%S"),
-        controller.index + 1,
-        zm,
-        status,
-    )
-    return
+        write_status_to_log(time, controller, zone)
+
+        return
