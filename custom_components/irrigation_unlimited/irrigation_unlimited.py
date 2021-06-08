@@ -38,6 +38,7 @@ from .const import (
     CONF_PERCENTAGE,
     CONF_REFRESH_INTERVAL,
     CONF_RESET,
+    CONF_RESULTS,
     CONF_SEQUENCES,
     CONF_SEQUENCE_ID,
     DEFAULT_GRANULATITY,
@@ -1801,6 +1802,7 @@ class IUCoordinator:
         self._test_name: str = None
         self._test_speed: float = 1.0
         self._test_times = []
+        self._test_results = []
         self._refresh_interval: timedelta = None
         # Private variables
         self._controllers: list[IUController] = []
@@ -1819,6 +1821,8 @@ class IUCoordinator:
         self._test_delta: timedelta = None
         self._test_start: datetime = None
         self._test_end: datetime = None
+        self._test_result_number: int = 0
+        self._test_errors: int = 0
         return
 
     @property
@@ -1886,6 +1890,9 @@ class IUCoordinator:
                 else:
                     name = None
                 self._test_times.append({"name": name, "start": start, "end": end})
+            self._test_results.extend(test_config[CONF_RESULTS])
+            for result in self._test_results:
+                result.update({"t": wash_dt(dt.as_utc(result["t"]))})
 
         for ci, controller_config in enumerate(config[CONF_CONTROLLERS]):
             self.find_add(self, ci).load(controller_config)
@@ -1975,7 +1982,7 @@ class IUCoordinator:
                 self.poll(self._test_start, True)
             elif self._test_end is not None:  # End of test regime
                 self._test_end = None  # Flag all tests run
-                _LOGGER.info("All tests completed (Idle)")
+                _LOGGER.info("All tests completed (Idle); errors: %d", self._test_errors)
                 return
             else:  # Out of tests to run
                 self.poll(time)
@@ -2106,6 +2113,33 @@ class IUCoordinator:
             )
             return
 
+        def check_result(time: datetime, controller: IUController, zone: IUZone):
+            def get_next_result():
+                if self._test_result_number < len(self._test_results):
+                    r = self._test_results[self._test_result_number]
+                    self._test_result_number += 1
+                    return r
+                else:
+                    return None
+
+            r = get_next_result()
+            if r is not None:
+                if zone is not None:
+                    s = zone.is_on
+                    z = zone.index + 1
+                else:
+                    s = controller.is_on
+                    z = 0
+                if (
+                    r["t"] != time
+                    or r["c"] != controller.index + 1
+                    or r["z"] != z
+                    or r["s"] != s
+                ):
+                    _LOGGER.debug("Event does not match result")
+                    self._test_errors += 1
+
         write_status_to_log(time, controller, zone)
+        check_result(time, controller, zone)
 
         return

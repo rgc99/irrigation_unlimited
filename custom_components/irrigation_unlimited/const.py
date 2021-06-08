@@ -59,6 +59,7 @@ CONF_SEQUENCES = "sequences"
 CONF_ALL_ZONES_CONFIG = "all_zones_config"
 CONF_REFRESH_INTERVAL = "refresh_interval"
 CONF_INDEX = "index"
+CONF_RESULTS = "results"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

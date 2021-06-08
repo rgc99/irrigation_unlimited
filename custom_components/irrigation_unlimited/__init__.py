@@ -33,6 +33,7 @@ from .const import (
     CONF_DAY,
     CONF_ODD,
     CONF_EVEN,
+    CONF_RESULTS,
     DOMAIN,
     COORDINATOR,
     COMPONENT,
@@ -173,6 +174,15 @@ CONTROLLER_SCHEMA = vol.Schema(
     }
 )
 
+TEST_RESULT_SCHEMA = vol.Schema(
+    {
+        vol.Required("t"): cv.datetime,
+        vol.Required("c"): cv.positive_int,
+        vol.Required("z"): cv.positive_int,
+        vol.Required("s"): cv.boolean,
+    }
+)
+
 TEST_TIME_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_START): cv.datetime,
@@ -186,6 +196,7 @@ TEST_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_SPEED): cv.positive_float,
         vol.Optional(CONF_TIMES): [TEST_TIME_SCHEMA],
+        vol.Optional(CONF_RESULTS, default={}): [TEST_RESULT_SCHEMA],
     }
 )
 
