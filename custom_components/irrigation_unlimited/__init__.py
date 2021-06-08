@@ -5,7 +5,6 @@ For more details about this integration, please refer to
 https://github.com/rgc99/irrigation_unlimited
 """
 import logging
-from typing import Optional
 import voluptuous as vol
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.core import Config, HomeAssistant
