@@ -149,4 +149,15 @@ irrigation_unlimited:
             - time: "05:00"
           zones:
             - zone_id: 3
+        - name: "Multi zone"
+          duration: "00:02"
+          delay: "00:01"
+          schedules:
+            - time: "03:15"
+          zones:
+            - zone_id: 1
+            - zone_id: 2
+            - zone_id: [1,2]
+            - zone_id: 3
+
 

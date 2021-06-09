@@ -179,7 +179,7 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `zone_id` | string | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#zone-objects)_ |
+| `zone_id` | string/list | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#zone-objects)_ |
 | `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#sequence-objects)_ |
 | `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#sequence-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat this zone |
