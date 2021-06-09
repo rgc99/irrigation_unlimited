@@ -1192,7 +1192,7 @@ class IUSequenceZone(IUBase):
         self._controller = controller
         self._sequence = sequence
         # Config parameters
-        self._zone_id: str = None
+        self._zone_ids: list[str] = None
         self._delay: timedelta = None
         self._duration: timedelta = None
         self._repeat: int = None
@@ -1200,8 +1200,8 @@ class IUSequenceZone(IUBase):
         return
 
     @property
-    def zone_id(self) -> str:
-        return self._zone_id
+    def zone_ids(self) -> list[str]:
+        return self._zone_ids
 
     @property
     def duration(self) -> timedelta:
@@ -1222,7 +1222,7 @@ class IUSequenceZone(IUBase):
     def load(self, config: OrderedDict):
         """ Load sequence zone data from the configuration"""
         self.clear()
-        self._zone_id = str(config[CONF_ZONE_ID])
+        self._zone_ids = config[CONF_ZONE_ID]
         self._delay = wash_td(config.get(CONF_DELAY))
         self._duration = wash_td(config.get(CONF_DURATION))
         self._repeat = config.get(CONF_REPEAT, 1)
@@ -1566,6 +1566,20 @@ class IUController(IUBase):
         schedule: IUSchedule,
         total_duration: timedelta = None,
     ) -> int:
+        def init_run_time(
+            time: datetime, schedule: IUSchedule, zone: IUZone
+        ) -> datetime:
+            if schedule is not None:
+                next_time = zone.runs.find_last_date(schedule.id)
+                if next_time is not None:
+                    next_time += granularity_time()
+                else:
+                    next_time = time
+                next_run = schedule.get_next_run(next_time, zone.runs.last_time(time))
+            else:
+                next_run = time + granularity_time()
+            return next_run
+
         status: int = 0
         duration_multiplier = sequence.duration_multiplier(total_duration)
         sid = uuid.uuid4().int
@@ -1573,53 +1587,50 @@ class IUController(IUBase):
         next_run: datetime = None
         for i in range(sequence.repeat):  # pylint: disable=unused-variable
             for sequence_zone in sequence.zones:
-                zone = self.find_zone_by_zone_id(sequence_zone.zone_id)
-                if zone is not None:
-
-                    # Initialise on first pass
-                    if next_run is None:
-                        if schedule is not None:
-                            next_time = zone.runs.find_last_date(schedule.id)
-                            if next_time is not None:
-                                next_time += granularity_time()
-                            else:
-                                next_time = time
-                            next_run = schedule.get_next_run(
-                                next_time, zone.runs.last_time(time)
-                            )
+                duration = round_td(
+                    sequence.zone_duration(sequence_zone) * duration_multiplier
+                )
+                duration_max = timedelta(0)
+                delay = sequence.zone_delay(sequence_zone)
+                for zone in (
+                    self.find_zone_by_zone_id(zone_id)
+                    for zone_id in sequence_zone.zone_ids
+                ):
+                    if zone is not None:
+                        # Initialise on first pass
+                        if next_run is None:
+                            next_run = init_run_time(time, schedule, zone)
                             if next_run is None:
                                 return status  # Exit if queue is full
+
+                        # Don't adjust manual run
+                        if schedule is not None:
+                            duration_adjusted = zone.adjustment.adjust(duration)
                         else:
-                            next_run = time + granularity_time()
+                            duration_adjusted = duration
 
-                    # Calculate duration
-                    duration = round_td(
-                        sequence.zone_duration(sequence_zone) * duration_multiplier
-                    )
-                    if zone.adjustment is not None:
-                        duration = zone.adjustment.adjust(duration)
-
-                    # Calculate delay
-                    delay = sequence.zone_delay(sequence_zone)
-
-                    for j in range(  # pylint: disable=unused-variable
-                        sequence_zone.repeat
-                    ):
-                        zone.runs.add(
-                            next_run,
-                            duration,
-                            zone,
-                            schedule,
-                            sid,
-                            sidx,
-                            sequence,
-                            sequence_zone,
-                        )
-                        sidx += 1
-                        next_run += duration + delay
-                    zone.request_update()
-                    status |= IURunQueue.RQ_STATUS_EXTENDED
-
+                        if duration_adjusted > timedelta(0):
+                            zone_run_time = next_run
+                            for j in range(  # pylint: disable=unused-variable
+                                sequence_zone.repeat
+                            ):
+                                zone.runs.add(
+                                    zone_run_time,
+                                    duration_adjusted,
+                                    zone,
+                                    schedule,
+                                    sid,
+                                    sidx,
+                                    sequence,
+                                    sequence_zone,
+                                )
+                                sidx += 1
+                                zone_run_time += duration_adjusted + delay
+                            zone.request_update()
+                            status |= IURunQueue.RQ_STATUS_EXTENDED
+                            duration_max = max(duration_max, zone_run_time - next_run)
+                if duration_max > timedelta(0):
+                    next_run += duration_max
         return status
 
     def muster(self, time: datetime, force: bool) -> int:
