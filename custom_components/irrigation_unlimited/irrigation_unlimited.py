@@ -1982,7 +1982,9 @@ class IUCoordinator:
                 self.poll(self._test_start, True)
             elif self._test_end is not None:  # End of test regime
                 self._test_end = None  # Flag all tests run
-                _LOGGER.info("All tests completed (Idle); errors: %d", self._test_errors)
+                _LOGGER.info(
+                    "All tests completed (Idle); errors: %d", self._test_errors
+                )
                 return
             else:  # Out of tests to run
                 self.poll(time)
