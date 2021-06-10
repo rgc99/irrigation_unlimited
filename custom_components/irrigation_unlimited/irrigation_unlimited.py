@@ -1609,28 +1609,26 @@ class IUController(IUBase):
                         else:
                             duration_adjusted = duration
 
-                        if duration_adjusted > timedelta(0):
-                            zone_run_time = next_run
-                            for j in range(  # pylint: disable=unused-variable
-                                sequence_zone.repeat
-                            ):
-                                zone.runs.add(
-                                    zone_run_time,
-                                    duration_adjusted,
-                                    zone,
-                                    schedule,
-                                    sid,
-                                    sidx,
-                                    sequence,
-                                    sequence_zone,
-                                )
-                                sidx += 1
-                                zone_run_time += duration_adjusted + delay
-                            zone.request_update()
-                            status |= IURunQueue.RQ_STATUS_EXTENDED
-                            duration_max = max(duration_max, zone_run_time - next_run)
-                if duration_max > timedelta(0):
-                    next_run += duration_max
+                        zone_run_time = next_run
+                        for j in range(  # pylint: disable=unused-variable
+                            sequence_zone.repeat
+                        ):
+                            zone.runs.add(
+                                zone_run_time,
+                                duration_adjusted,
+                                zone,
+                                schedule,
+                                sid,
+                                sidx,
+                                sequence,
+                                sequence_zone,
+                            )
+                            sidx += 1
+                            zone_run_time += duration_adjusted + delay
+                        zone.request_update()
+                        duration_max = max(duration_max, zone_run_time - next_run)
+                        status |= IURunQueue.RQ_STATUS_EXTENDED
+                next_run += duration_max
         return status
 
     def muster(self, time: datetime, force: bool) -> int:
