@@ -1200,7 +1200,7 @@ class IUSequenceZone(IUBase):
         return
 
     @property
-    def zone_ids(self) -> list[str]:
+    def zone_ids(self) -> list:
         return self._zone_ids
 
     @property
