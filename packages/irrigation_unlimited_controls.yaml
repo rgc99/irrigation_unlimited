@@ -1,3 +1,16 @@
+# Irrigation Unlimited support file.
+#
+# Filename: irrigation_unlimited_controls.yaml
+#
+# This file is a package and should be located in the config/packages
+# folder. If you do not have a packages folder then create it and add
+# the following to configuration.yaml
+#
+# homeassistant:
+#  packages: !include_dir_named packages
+#
+# More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
+#
 input_select:
   irrigation_unlimited_entities:
     name: Irrigation Unlimited Entities

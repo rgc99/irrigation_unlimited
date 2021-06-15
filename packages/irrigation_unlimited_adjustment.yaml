@@ -1,3 +1,14 @@
+# Filename: irrigation_unlimited_adjustment.yaml
+#
+# This file is a package and should be located in the config/packages
+# folder. If you do not have a packages folder then create it and add
+# the following to configuration.yaml
+#
+# homeassistant:
+#  packages: !include_dir_named packages
+#
+# More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
+#
 # Set up some observation sensors.
 # This uses the Weather Underground (WUnderground) https://www.home-assistant.io/integrations/wunderground/ integration.
 # Rain information (wupws_preciptotal) is a daily accumulation total. So we want to grab the
@@ -5,7 +16,6 @@
 # because the reset from WU may take a few minutes to come through, currently 10 min. Increase this
 # if data is unreliable.
 # Note: Requires the ha-average integration to be installed https://github.com/Limych/ha-average
-
 sensor:
   - platform: average
     name: irrigation_unlimited_rain_0
