@@ -3,7 +3,7 @@
   "name": "Irrigation Unlimited",
   "documentation": "https://github.com/custom-components/irrigation_unlimited",
   "issue_tracker": "https://github.com/custom-components/irrigation_unlimited/issues",
-  "version": "2021.6.3",
+  "version": "2021.6.15",
   "dependencies": [
     "recorder"
   ],
