@@ -1580,8 +1580,14 @@ class IUController(IUBase):
                 next_run = time + granularity_time()
             return next_run
 
+        if total_duration is not None:
+            duration_multiplier = sequence.duration_multiplier(total_duration)
+        elif schedule is not None and schedule.run_time is not None:
+            duration_multiplier = sequence.duration_multiplier(schedule.run_time)
+        else:
+            duration_multiplier = 1.0
+
         status: int = 0
-        duration_multiplier = sequence.duration_multiplier(total_duration)
         sid = uuid.uuid4().int
         sidx: int = 0
         next_run: datetime = None
