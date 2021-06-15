@@ -144,7 +144,7 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `time` | time/_[Sun Event](#sun-event)_ | **Required** | The start time. Either a time (07:30) or sun event |
-| `duration` | time | **Required** | The length of time to run |
+| `duration` | time | | The length of time to run. Required for zones and optional for sequences |
 | `name` | string | Schedule *N* | Friendly name for the schedule |
 | `weekday` | list | | The days of week to run [mon, tue...sun] |
 | `day` | list | | Days of month to run [1, 2...31]/odd/even |
@@ -166,10 +166,10 @@ Sequences allow zones to run one at a time in a particular order with a delay in
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `schedules` | list | _[Schedule Objects](#schedule-objects)_ | Schedule details (Must have at least one). Note: `duration` is ignored |
+| `schedules` | list | _[Schedule Objects](#schedule-objects)_ | Schedule details (Must have at least one). Note: `duration` if specified is the total run time for the sequence, see below for more details |
 | `zones` | list | _[Sequence Zone Objects](#sequence-zone-objects)_ | Zone details (Must have at least one) |
 | `delay` | time | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#sequence-zone-objects)_ |
-| `duration` | time | | The length of time to run. This value is a default for all _[Sequence Zone Objects](#sequence-zone-objects)_ |
+| `duration` | time | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
 | `name` | string | Run _N_ | Friendly name for the sequence |
 
@@ -183,6 +183,8 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#sequence-objects)_ |
 | `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#sequence-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat this zone |
+
+Special note for [schedules](#schedule-objects) and the `duration` parameter contained within when used with sequences. Each zone in the sequence will be proportionaly adjusted to fit the specified duration. For example, if 3 zones were to each run for 10, 20 and 30 minutes respectively (total 1 hour) and the `schedule.duration` parameter specified 30 minutes then each zone would be adjusted to 5, 10 and 15 minutes. Likewise if `schedule.duration` specified 1.5 hours then the zones would be 15, 30 and 45 minutes. Some variation may occur due to rounding of the times to the system boundaries (granularity). This parameter influences the durations specified in the sequence and sequence zone objects.
 
 ### Testing Object
 
@@ -328,6 +330,40 @@ irrigation_unlimited:
             month: [mar, apr, may, sep, oct, nov]
 ~~~
 
+This is similar to the above but using sequences in a 3 zone system. Each zone runs for 12 minutes for a total of 36 min (plus delays). In Summer the total duration is extended to 45 minutes and winter reduced to 30 minutes. When using the duration parameter in the schedule it relates to the total duration of the sequence, each zone is adjusted accordingly.
+
+~~~yaml
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: 'switch.my_switch_1'
+      - entity_id: 'switch.my_switch_2'
+      - entity_id: 'switch.my_switch_3'
+    sequences:
+      - name: 'Run 1'
+        duration: '00:12'
+        delay: '00:01'
+        schedules:
+          - name: 'Summer'
+            time: '05:30'
+            weekday: [mon, wed, fri]
+            month: [dec, jan, feb]
+            duration: '00:45'
+          - name: 'Winter'
+            time: '05:30'
+            weekday: [sun]
+            month: [jun, jul, aug]
+            duration: '00:30'
+          - name: 'Spring and Autumn'
+            time: '05:30'
+            weekday: [mon, thu]
+            month: [mar, apr, may, sep, oct, nov]
+        zones:
+          - zone_id: 1
+          - zone_id: 2
+          - zone_id: 3
+~~~
+
 For a more comprehensive example refer to [here](./examples/all_the_bells_and_whistles.yaml).
 
 ### Tips
@@ -377,7 +413,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | ---------------------- | -------- | ----------- |
 | `entity_id` | no | Controller or zone to run.
 | `time` | no | Total time to run.
-| `sequence_id` | yes | Sequence to run (1, 2..N). Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
+| `sequence_id` | yes | Sequence to run (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
 
 ### Service `adjust_time`
 
@@ -444,7 +480,7 @@ Here is a card for manual runs. You can find the code [here](./lovelace/card_man
 
 ![manual_run_card](./examples/card_manual_run.png)
 
-There is a support file [here](./packages/irrigation_unlimited_controls.yaml) which should go in the config/packages directory. Also required is a [pyscript](./pyscript/irrigation_unlimited_service_shim.py) which is called from the above automation to populate the input_select with all the irrigation unlimited controllers and zones. The script should go in the config/pyscript directory. If you don't have a packages or pyscript folder then create them and add the following to your configuration.yaml.
+There is a support file [packages/irrigation_unlimited_controls.yaml](./packages/irrigation_unlimited_controls.yaml) which should go in the config/packages directory. Also required is a [pyscript](./pyscript/irrigation_unlimited_service_shim.py) which is called from the above automation to populate the input_select with all the irrigation unlimited controllers and zones. The script should go in the config/pyscript directory. If you don't have a packages or pyscript folder then create them and add the following to your configuration.yaml. Minimun version 2021.6.3 for Irrigation Unlimited is required.
 
 ```yaml
 homeassistant:
