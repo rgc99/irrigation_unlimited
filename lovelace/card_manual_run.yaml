@@ -22,4 +22,5 @@ entities:
         tap_action:
           action: call-service
           service: irrigation_unlimited.shim_cancel
-          service_data: null
+          service_data:
+            controller_zone_entity: input_select.irrigation_unlimited_entities
