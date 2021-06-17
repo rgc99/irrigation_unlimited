@@ -1905,9 +1905,10 @@ class IUCoordinator:
                 else:
                     name = None
                 self._test_times.append({"name": name, "start": start, "end": end})
-            self._test_results.extend(test_config[CONF_RESULTS])
-            for result in self._test_results:
-                result.update({"t": wash_dt(dt.as_utc(result["t"]))})
+            if CONF_RESULTS in test_config:
+                self._test_results.extend(test_config[CONF_RESULTS])
+                for result in self._test_results:
+                    result.update({"t": wash_dt(dt.as_utc(result["t"]))})
 
         for ci, controller_config in enumerate(config[CONF_CONTROLLERS]):
             self.find_add(self, ci).load(controller_config)

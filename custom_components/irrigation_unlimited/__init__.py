@@ -196,7 +196,7 @@ TEST_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_SPEED): cv.positive_float,
         vol.Optional(CONF_TIMES): [TEST_TIME_SCHEMA],
-        vol.Optional(CONF_RESULTS, default={}): [TEST_RESULT_SCHEMA],
+        vol.Optional(CONF_RESULTS): [TEST_RESULT_SCHEMA],
     }
 )
 
