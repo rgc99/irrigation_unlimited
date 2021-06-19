@@ -1,0 +1,31 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Blueprint",
+                "description": "Si necesitas ayuda con la configuracion hecha un vistazo aqui: https://github.com/custom-components/integration_blueprint",
+                "data": {
+                    "username": "Usuario",
+                    "password": "Password"
+                }
+            }
+        },
+        "error": {
+            "auth": "Usuario/Password incorrecto."
+        },
+        "abort": {
+            "single_instance_allowed": "Solo se permite una instancia."
+        }
+    },
+    "options": {
+        "step": {
+            "user": {
+                "data": {
+                    "binary_sensor": "Binary sensor habilitado",
+                    "sensor": "Sensor habilitado",
+                    "switch": "Switch habilitado"
+                }
+            }
+        }
+    }
+}
