@@ -119,6 +119,8 @@ ZONE_SCHEMA = vol.Schema(
 ALL_ZONES_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
+        vol.Optional(CONF_MINIMUM): cv.positive_time_period,
+        vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
     }
 )
 

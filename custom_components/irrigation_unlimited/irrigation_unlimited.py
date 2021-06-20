@@ -548,6 +548,7 @@ class IURunQueue(list):
         self._next_run: IURun = None
         self._sorted: bool = False
         self._cancel_request: bool = False
+        self._future_span = wash_td(timedelta(days=self.DAYS_SPAN))
         return
 
     @property
@@ -635,7 +636,13 @@ class IURunQueue(list):
         return None
 
     def last_time(self, time: datetime) -> datetime:
-        return time + timedelta(days=self.DAYS_SPAN)
+        return time + self._future_span
+
+    def load(self, config: OrderedDict, all_zones: OrderedDict):
+        # if all_zones is not None:
+        #     self._future_span = wash_td(all_zones.get(CONF_FUTURE_SPAN, self._future_span))
+        # self._future_span = wash_td(config.get(CONF_CONF_FUTURE_SPAN, self._future_span))
+        return self
 
     def sorter(self, run: IURun) -> datetime:
         """Sort call back routine. Items are sorted
@@ -738,21 +745,49 @@ class IURunQueue(list):
 class IUScheduleQueue(IURunQueue):
     """Class to hold the upcoming schedules to run"""
 
+    def __init__(self) -> None:
+        super().__init__()
+        # Config variables
+        self._minimum: timedelta = None
+        self._maximum: timedelta = None
+        return
+
+    def add(
+        self,
+        start_time: datetime,
+        duration: timedelta,
+        zone: IUBase,
+        schedule: IUBase,
+        sid: int,
+        sidx: int,
+        sequence,
+        sequence_zone,
+    ) -> timedelta:
+        if self._minimum is not None:
+            duration = max(duration, self._minimum)
+        if self._maximum is not None:
+            duration = min(duration, self._maximum)
+        super().add(
+            start_time, duration, zone, schedule, sid, sidx, sequence, sequence_zone
+        )
+        return duration
+
     def add_schedule(
         self,
         zone: IUBase,
         schedule: IUSchedule,
         start_time: datetime,
         adjustment: IUAdjustment,
-    ):
+    ) -> timedelta:
         """Add a new schedule run to the queue"""
         duration = schedule.run_time
         if adjustment is not None:
             duration = adjustment.adjust(duration)
-        self.add(start_time, duration, zone, schedule, None, None, None, None)
-        return self
+        return self.add(start_time, duration, zone, schedule, None, None, None, None)
 
-    def add_manual(self, start_time: datetime, duration: timedelta, zone: IUBase):
+    def add_manual(
+        self, start_time: datetime, duration: timedelta, zone: IUBase
+    ) -> timedelta:
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
 
@@ -767,11 +802,10 @@ class IUScheduleQueue(IURunQueue):
             else:
                 self.remove(run)
 
-        duration = max(duration, granularity_time())
-        self.add(start_time, duration, zone, None, None, None, None, None)
         self._current_run = None
         self._next_run = None
-        return self
+        duration = max(duration, granularity_time())
+        return self.add(start_time, duration, zone, None, None, None, None, None)
 
     def merge_one(
         self,
@@ -813,6 +847,15 @@ class IUScheduleQueue(IURunQueue):
             modified = True
 
         return modified
+
+    def load(self, config: OrderedDict, all_zones: OrderedDict):
+        super().load(config, all_zones)
+        if all_zones is not None:
+            self._minimum = wash_td(all_zones.get(CONF_MINIMUM, self._minimum))
+            self._maximum = wash_td(all_zones.get(CONF_MAXIMUM, self._maximum))
+        self._minimum = wash_td(config.get(CONF_MINIMUM, self._minimum))
+        self._maximum = wash_td(config.get(CONF_MAXIMUM, self._maximum))
+        return self
 
     def update_queue(
         self,
@@ -994,13 +1037,17 @@ class IUZone(IUBase):
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._name = config.get(CONF_NAME, None)
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
-        self._adjustment.load(config)
+        self._run_queue.load(config, all_zones)
         if all_zones is not None and CONF_SHOW in all_zones:
-            self._show_config = all_zones[CONF_SHOW].get(CONF_CONFIG, False)
-            self._show_timeline = all_zones[CONF_SHOW].get(CONF_TIMELINE, False)
+            self._show_config = all_zones[CONF_SHOW].get(CONF_CONFIG, self._show_config)
+            self._show_timeline = all_zones[CONF_SHOW].get(
+                CONF_TIMELINE, self._show_timeline
+            )
         if CONF_SHOW in config:
-            self._show_config = config[CONF_SHOW].get(CONF_CONFIG, False)
-            self._show_timeline = config[CONF_SHOW].get(CONF_TIMELINE, False)
+            self._show_config = config[CONF_SHOW].get(CONF_CONFIG, self._show_config)
+            self._show_timeline = config[CONF_SHOW].get(
+                CONF_TIMELINE, self._show_timeline
+            )
         if CONF_SCHEDULES in config:
             for si, schedule_config in enumerate(config[CONF_SCHEDULES]):
                 self.find_add(self._coordinator, self._controller, si).load(
@@ -1534,10 +1581,9 @@ class IUController(IUBase):
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
+        all_zones = config.get(CONF_ALL_ZONES_CONFIG)
         for zi, zone_config in enumerate(config[CONF_ZONES]):
-            self.find_add_zone(self._coordinator, self, zi).load(
-                zone_config, config.get(CONF_ALL_ZONES_CONFIG, None)
-            )
+            self.find_add_zone(self._coordinator, self, zi).load(zone_config, all_zones)
         if CONF_SEQUENCES in config:
             for qi, sequence_config in enumerate(config[CONF_SEQUENCES]):
                 self.find_add_sequence(self._coordinator, self, qi).load(
@@ -1619,7 +1665,7 @@ class IUController(IUBase):
                         for j in range(  # pylint: disable=unused-variable
                             sequence_zone.repeat
                         ):
-                            zone.runs.add(
+                            duration_adjusted = zone.runs.add(
                                 zone_run_time,
                                 duration_adjusted,
                                 zone,
