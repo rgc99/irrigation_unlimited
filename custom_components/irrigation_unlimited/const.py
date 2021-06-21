@@ -61,6 +61,7 @@ CONF_REFRESH_INTERVAL = "refresh_interval"
 CONF_INDEX = "index"
 CONF_RESULTS = "results"
 CONF_OUTPUT_EVENTS = "output_events"
+CONF_FUTURE_SPAN = "future_span"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

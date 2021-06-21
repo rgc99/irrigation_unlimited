@@ -70,6 +70,7 @@ from .const import (
     CONF_CONFIG,
     CONF_TIMELINE,
     CONF_ZONE_ID,
+    CONF_FUTURE_SPAN,
     SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
@@ -640,9 +641,12 @@ class IURunQueue(list):
         return time + self._future_span
 
     def load(self, config: OrderedDict, all_zones: OrderedDict):
-        # if all_zones is not None:
-        #     self._future_span = wash_td(all_zones.get(CONF_FUTURE_SPAN, self._future_span))
-        # self._future_span = wash_td(config.get(CONF_CONF_FUTURE_SPAN, self._future_span))
+        if all_zones is not None:
+            self._future_span = wash_td(
+                all_zones.get(CONF_FUTURE_SPAN, self._future_span)
+            )
+        self._future_span = wash_td(config.get(CONF_FUTURE_SPAN, self._future_span))
+        self._future_span = max(self._future_span, timedelta(hours=12))
         return self
 
     def sorter(self, run: IURun) -> datetime:

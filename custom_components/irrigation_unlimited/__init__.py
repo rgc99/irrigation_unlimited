@@ -27,6 +27,7 @@ from .service import register_component_services
 from .const import (
     BINARY_SENSOR,
     CONF_ENABLED,
+    CONF_FUTURE_SPAN,
     CONF_MAXIMUM,
     CONF_MINIMUM,
     CONF_MONTH,
@@ -113,6 +114,7 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_MINIMUM): cv.positive_time_period,
         vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
+        vol.Optional(CONF_FUTURE_SPAN): cv.positive_time_period,
         vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
     }
 )
@@ -122,6 +124,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
         vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
         vol.Optional(CONF_MINIMUM): cv.positive_time_period,
         vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
+        vol.Optional(CONF_FUTURE_SPAN): cv.positive_time_period,
     }
 )
 
