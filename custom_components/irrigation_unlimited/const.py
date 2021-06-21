@@ -60,6 +60,7 @@ CONF_ALL_ZONES_CONFIG = "all_zones_config"
 CONF_REFRESH_INTERVAL = "refresh_interval"
 CONF_INDEX = "index"
 CONF_RESULTS = "results"
+CONF_OUTPUT_EVENTS = "output_events"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

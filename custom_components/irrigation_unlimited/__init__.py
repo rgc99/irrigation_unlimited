@@ -60,6 +60,7 @@ from .const import (
     CONF_SEQUENCES,
     CONF_ALL_ZONES_CONFIG,
     CONF_REFRESH_INTERVAL,
+    CONF_OUTPUT_EVENTS,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -198,6 +199,7 @@ TEST_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_SPEED): cv.positive_float,
         vol.Optional(CONF_TIMES): [TEST_TIME_SCHEMA],
+        vol.Optional(CONF_OUTPUT_EVENTS): cv.boolean,
         vol.Optional(CONF_RESULTS): [TEST_RESULT_SCHEMA],
     }
 )
