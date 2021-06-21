@@ -1028,6 +1028,7 @@ class IUZone(IUBase):
         """Reset this zone"""
         self._schedules.clear()
         self.clear_run_queue()
+        self._adjustment = IUAdjustment()
         self._is_on = False
         return
 
@@ -1370,6 +1371,8 @@ class IUSequence(IUBase):
 
     def clear(self) -> None:
         """Reset this sequence"""
+        self._schedules.clear()
+        self._zones.clear()
         return
 
     def add_schedule(self, schedule: IUSchedule) -> IUSchedule:
@@ -1566,6 +1569,7 @@ class IUController(IUBase):
     def clear(self) -> None:
         # Don't clear zones
         # self._zones.clear()
+        self._sequences.clear()
         self._is_on = False
         return
 
