@@ -316,7 +316,7 @@ class IUSchedule(IUBase):
         self.clear()
 
         self._time = config[CONF_TIME]
-        self._duration = wash_td(config.get(CONF_DURATION), None)
+        self._duration = wash_td(config.get(CONF_DURATION, None))
         self._name = config.get(CONF_NAME, f"Schedule {self.index + 1}")
         if CONF_WEEKDAY in config:
             self._weekdays = []
