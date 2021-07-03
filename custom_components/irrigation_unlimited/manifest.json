@@ -5,6 +5,7 @@
   "issue_tracker": "https://github.com/custom-components/irrigation_unlimited/issues",
   "version": "2021.6.15",
   "dependencies": [
+    "recorder",
     "history"
   ],
   "iot_class": "local_polling",
