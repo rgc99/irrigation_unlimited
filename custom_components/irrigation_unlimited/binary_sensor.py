@@ -3,7 +3,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_platform
 import homeassistant.util.dt as dt
 from datetime import datetime, timedelta
-from homeassistant.components.recorder import history
+from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
+
+if MAJOR_VERSION >= 2021 and MINOR_VERSION >= 6:
+    from homeassistant.components.recorder import history
+else:
+    from homeassistant.components import history
+
 import json
 
 from homeassistant.const import (
