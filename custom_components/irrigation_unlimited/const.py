@@ -61,6 +61,8 @@ CONF_REFRESH_INTERVAL = "refresh_interval"
 CONF_INDEX = "index"
 CONF_RESULTS = "results"
 CONF_OUTPUT_EVENTS = "output_events"
+CONF_SHOW_LOG = "show_log"
+CONF_AUTOPLAY = "autoplay"
 CONF_FUTURE_SPAN = "future_span"
 
 # Defaults

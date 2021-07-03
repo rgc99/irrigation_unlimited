@@ -35,6 +35,8 @@ from .const import (
     CONF_ODD,
     CONF_EVEN,
     CONF_RESULTS,
+    CONF_SHOW_LOG,
+    CONF_AUTOPLAY,
     DOMAIN,
     COORDINATOR,
     COMPONENT,
@@ -194,6 +196,7 @@ TEST_TIME_SCHEMA = vol.Schema(
         vol.Required(CONF_START): cv.datetime,
         vol.Required(CONF_END): cv.datetime,
         vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_RESULTS): [TEST_RESULT_SCHEMA],
     }
 )
 
@@ -203,7 +206,8 @@ TEST_SCHEMA = vol.Schema(
         vol.Optional(CONF_SPEED): cv.positive_float,
         vol.Optional(CONF_TIMES): [TEST_TIME_SCHEMA],
         vol.Optional(CONF_OUTPUT_EVENTS): cv.boolean,
-        vol.Optional(CONF_RESULTS): [TEST_RESULT_SCHEMA],
+        vol.Optional(CONF_SHOW_LOG): cv.boolean,
+        vol.Optional(CONF_AUTOPLAY): cv.boolean,
     }
 )
 
