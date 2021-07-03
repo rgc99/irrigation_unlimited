@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 import pytest
 
-pytest_plugins = "pytest_homeassistant_custom_component"
+# pytest_plugins = "pytest_homeassistant_custom_component"
 
 
 # This fixture enables loading custom integrations in all tests.
