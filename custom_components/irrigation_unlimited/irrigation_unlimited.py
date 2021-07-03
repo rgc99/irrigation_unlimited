@@ -432,8 +432,8 @@ class IURun:
         schedule: IUBase,
         sid: int,
         sidx: int,
-        sequence,
-        sequence_zone,
+        sequence: IUBase,
+        sequence_zone: IUBase,
     ) -> None:
         # Passed parameters
         self._start_time: datetime = start_time
