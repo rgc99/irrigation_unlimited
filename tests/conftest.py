@@ -19,7 +19,7 @@ from _pytest.fixtures import yield_fixture
 
 import pytest
 
-pytest_plugins = "pytest_homeassistant_custom_component"
+# pytest_plugins = "pytest_homeassistant_custom_component"
 
 
 # This fixture enables loading custom integrations in all tests.
