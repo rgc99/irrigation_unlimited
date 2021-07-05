@@ -1,5 +1,5 @@
 """Test integration_blueprint setup process."""
-from unittest.mock import call, patch
+from unittest.mock import patch
 
 import pytest
 from datetime import datetime
@@ -30,6 +30,22 @@ def skip_start():
         yield
 
 
+@pytest.fixture(name="skip_dependencies")
+def skip_dep():
+    with patch("homeassistant.loader.Integration.dependencies", return_value=[]):
+        yield
+
+
+@pytest.fixture(name="skip_history", autouse=True)
+def skip_history():
+    """Skip history calls"""
+    with patch(
+        "homeassistant.components.recorder.history.state_changes_during_period",
+        return_value=[],
+    ):
+        yield
+
+
 # Shh, quiet now.
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
@@ -40,8 +56,7 @@ logging.getLogger("pytest_homeassistant_custom_component.common").setLevel(
 )
 _LOGGER = logging.getLogger(__name__)
 
-# These are local funtions, not tests
-@pytest.mark.skip
+
 async def run_test(
     hass: ha.HomeAssistant,
     coordinator: IUCoordinator,
@@ -68,7 +83,6 @@ async def run_test(
     return
 
 
-@pytest.mark.skip
 def check_summary(full_path: str, coordinator: IUCoordinator):
     assert coordinator.tester.total_checks == coordinator.tester.total_results
     assert coordinator.tester.total_errors == 0
@@ -84,9 +98,10 @@ def check_summary(full_path: str, coordinator: IUCoordinator):
     return
 
 
-async def test_service_adjust_time(hass: ha.HomeAssistant, skip_start):
+async def test_service_adjust_time(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
     """Test adjust_time service call."""
-
     full_path = "custom_components/test_configs/service_adjust_time.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
@@ -141,7 +156,9 @@ async def test_service_adjust_time(hass: ha.HomeAssistant, skip_start):
     check_summary(full_path, coordinator)
 
 
-async def test_service_enable_disable(hass: ha.HomeAssistant, skip_start):
+async def test_service_enable_disable(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
     """Test enable/disable service call."""
 
     full_path = "custom_components/test_configs/service_enable_disable.yaml"
@@ -171,7 +188,9 @@ async def test_service_enable_disable(hass: ha.HomeAssistant, skip_start):
     check_summary(full_path, coordinator)
 
 
-async def test_service_manual_run(hass: ha.HomeAssistant, skip_start):
+async def test_service_manual_run(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
     """Test manual_run service call."""
 
     full_path = "custom_components/test_configs/service_manual_run.yaml"
