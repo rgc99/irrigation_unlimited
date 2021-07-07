@@ -1982,6 +1982,7 @@ class IUTest(IUBase):
         self._results: list[IUEvent] = []
         # Private variables
         self._current_result: int = 0
+        self._events: int = 0
         self._checks: int = 0
         self._errors: int = 0
         self._perf_mon: int = 0
@@ -1996,6 +1997,10 @@ class IUTest(IUBase):
     @property
     def start(self) -> datetime:
         return self._start
+
+    @property
+    def events(self) -> int:
+        return self._events
 
     @property
     def checks(self) -> int:
@@ -2029,6 +2034,7 @@ class IUTest(IUBase):
             return None
 
     def check_result(self, result: IUEvent, event: IUEvent) -> bool:
+        self._events += 1
         if result is not None:
             self._checks += 1
             if result != event:
@@ -2054,6 +2060,7 @@ class IUTest(IUBase):
         self._delta = time - self._start
         self._perf_mon = tm.perf_counter()
         self._current_result = 0
+        self._events = 0
         self._checks = 0
         self._errors = 0
         self._test_time = 0
