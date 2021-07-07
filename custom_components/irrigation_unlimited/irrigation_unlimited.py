@@ -2238,7 +2238,7 @@ class IUTester:
     def entity_state_changed(self, event: IUEvent) -> None:
         """Called when an entity has changed state"""
 
-        def check_result(event: IUEvent):
+        def check_state(event: IUEvent):
             """Check the event against the next result"""
             ct = self.current_test
             if ct is not None:
@@ -2257,7 +2257,7 @@ class IUTester:
         if self._is_testing():
             if self._output_events:
                 print(event.as_str())
-            check_result(event)
+            check_state(event)
         return
 
 
