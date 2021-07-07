@@ -2040,6 +2040,8 @@ class IUTest(IUBase):
             if result != event:
                 self._errors += 1
                 return False
+        else:
+            return False
         return True
 
     def clear(self) -> None:
@@ -2249,7 +2251,7 @@ class IUTester:
                             "(%d) Event <> result %s <> %s",
                             ct.current_result,
                             event.as_str(),
-                            r.as_str(),
+                            r.as_str() if r is not None else "None",
                         )
 
         if self._show_log:
