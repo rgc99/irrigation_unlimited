@@ -2127,6 +2127,13 @@ class IUTester:
             return None
 
     @property
+    def total_events(self) -> int:
+        result: int = 0
+        for test in self._tests:
+            result += test.events
+        return result
+
+    @property
     def total_checks(self) -> int:
         result: int = 0
         for test in self._tests:
