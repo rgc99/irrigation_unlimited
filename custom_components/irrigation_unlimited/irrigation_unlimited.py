@@ -1677,7 +1677,7 @@ class IUController(IUBase):
                     self.find_zone_by_zone_id(zone_id)
                     for zone_id in sequence_zone.zone_ids
                 ):
-                    if zone is not None:
+                    if zone is not None and zone.enabled:
                         # Initialise on first pass
                         if next_run is None:
                             next_run = init_run_time(time, schedule, zone)
@@ -1742,7 +1742,11 @@ class IUController(IUBase):
 
         # Process zone schedules
         for zone in self._zones:
-            zone_status |= zone.muster_schedules(time)
+            if zone.enabled:
+                zone_status |= zone.muster_schedules(time)
+
+        # Post processing
+        for zone in self._zones:
             zone_status |= zone.runs.update_queue(time)
 
         if (
