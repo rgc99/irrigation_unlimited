@@ -1,7 +1,6 @@
 """Test irrigation_unlimited timing operations."""
-from unittest.mock import call, patch
+from unittest.mock import patch
 import pytest
-import os
 import glob
 import homeassistant.core as ha
 from homeassistant.util import dt as dt_util
