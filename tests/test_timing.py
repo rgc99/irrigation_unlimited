@@ -47,11 +47,16 @@ async def test_timings(hass: ha.HomeAssistant, skip_setup):
             await coordinator._async_timer(next_time)
             next_time += interval
 
-        assert coordinator.tester.total_checks == coordinator.tester.total_results
+        assert (
+            coordinator.tester.total_events
+            == coordinator.tester.total_checks
+            == coordinator.tester.total_results
+        )
         assert coordinator.tester.total_errors == 0
         print(
-            "Finished: {0}; checks: {1}; errors: {2}; time: {3:.2f}s".format(
+            "Finished: {0}; events: {1}; checks: {2}; errors: {3}; time: {4:.2f}s".format(
                 fname,
+                coordinator.tester.total_events,
                 coordinator.tester.total_checks,
                 coordinator.tester.total_errors,
                 coordinator.tester.total_time,
