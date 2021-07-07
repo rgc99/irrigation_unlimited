@@ -98,11 +98,14 @@ def check_summary(full_path: str, coordinator: IUCoordinator):
     return
 
 
+test_config_dir = "tests/configs/"
+
+
 async def test_service_adjust_time(
     hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
 ):
     """Test adjust_time service call."""
-    full_path = "custom_components/test_configs/service_adjust_time.yaml"
+    full_path = test_config_dir + "service_adjust_time.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -161,7 +164,7 @@ async def test_service_enable_disable(
 ):
     """Test enable/disable service call."""
 
-    full_path = "custom_components/test_configs/service_enable_disable.yaml"
+    full_path = test_config_dir + "service_enable_disable.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -193,7 +196,7 @@ async def test_service_manual_run(
 ):
     """Test manual_run service call."""
 
-    full_path = "custom_components/test_configs/service_manual_run.yaml"
+    full_path = test_config_dir + "service_manual_run.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
