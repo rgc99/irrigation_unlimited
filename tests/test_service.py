@@ -17,6 +17,7 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_ENABLE,
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
+    SERVICE_TOGGLE,
 )
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
@@ -183,6 +184,54 @@ async def test_service_enable_disable(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_ENABLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    # Single toggle should turn off (Toggle)
+    next_time = coordinator.start_test(3)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    # Double toggle, zone should be off (Toggle, toggle)
+    next_time = coordinator.start_test(4)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    # Triple toggle, zone should be on (Toggle, toggle, toggle)
+    next_time = coordinator.start_test(5)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
         {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
         True,
     )

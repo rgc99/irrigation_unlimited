@@ -5,7 +5,7 @@ irrigation_unlimited:
     enabled: true
     speed: 60.0
     output_events: false
-    show_log: false
+    show_log: true
     autoplay: false
     times:
       - name: 'Disable'
@@ -13,6 +13,22 @@ irrigation_unlimited:
         end: '2021-01-04 07:00'
         results: []
       - name: 'Enable'
+        start: '2021-01-04 06:00'
+        end: '2021-01-04 07:00'
+        results:
+          - {t: '2021-01-04 06:05:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 06:05:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 0, s: 0}
+      - name: 'Toggle'
+        start: '2021-01-04 06:00'
+        end: '2021-01-04 07:00'
+        results: []
+      - name: 'Toggle, toggle'
+        start: '2021-01-04 06:00'
+        end: '2021-01-04 07:00'
+        results: []
+      - name: 'Toggle, toggle, toggle'
         start: '2021-01-04 06:00'
         end: '2021-01-04 07:00'
         results:
