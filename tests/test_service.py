@@ -77,7 +77,7 @@ async def run_test(
         next_time += interval
 
     assert test.errors == 0, f"Failed test {test.index + 1}"
-    assert test.checks == test.total_results, f"Failed test {test.index + 1}"
+    assert test.events == test.total_results, f"Failed test {test.index + 1}"
     _LOGGER.debug(
         "Finished test %d (%s) time: %.2fs", test.index + 1, test.name, test.test_time
     )
