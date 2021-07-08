@@ -194,7 +194,7 @@ async def test_service_enable_disable(
     )
     await run_test(hass, coordinator, next_time, True)
 
-    # Single toggle should turn off (Toggle)
+    # Zone 1 off, zone 2 on
     next_time = coordinator.start_test(3)
     await hass.services.async_call(
         DOMAIN,
@@ -204,7 +204,7 @@ async def test_service_enable_disable(
     )
     await run_test(hass, coordinator, next_time, True)
 
-    # Double toggle, zone should be off (Toggle, toggle)
+    # Double toggle: zone 1 on, zone 2 off
     next_time = coordinator.start_test(4)
     await hass.services.async_call(
         DOMAIN,
@@ -215,12 +215,12 @@ async def test_service_enable_disable(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TOGGLE,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2"},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
 
-    # Triple toggle, zone should be on (Toggle, toggle, toggle)
+    # All off
     next_time = coordinator.start_test(5)
     await hass.services.async_call(
         DOMAIN,
@@ -228,6 +228,10 @@ async def test_service_enable_disable(
         {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
         True,
     )
+    await run_test(hass, coordinator, next_time, True)
+
+    # All back on
+    next_time = coordinator.start_test(6)
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TOGGLE,
@@ -237,7 +241,7 @@ async def test_service_enable_disable(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TOGGLE,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2"},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
