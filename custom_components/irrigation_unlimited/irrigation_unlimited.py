@@ -2177,6 +2177,7 @@ class IUTester:
                     dt.as_local(ct._start).strftime("%c"),
                     dt.as_local(ct._end).strftime("%c"),
                 )
+            self._initialised = False
         else:
             self._running_test = None
         return self.current_test
@@ -2218,15 +2219,14 @@ class IUTester:
 
     def poll_test(self, time: datetime, poll_func) -> None:
         if self._autoplay and not self._initialised:
-            ct = self.start_test(1, time)
-            if ct is not None:
-                poll_func(ct._start, True)
-            self._initialised = True
-            return
+            self.start_test(1, time)
 
         ct = self.current_test
         if ct is not None:
-            if ct.is_finished(time):  # End of current test
+            if not self._initialised:
+                poll_func(ct._start, True)
+                self._initialised = True
+            elif ct.is_finished(time):  # End of current test
                 if self._autoplay:
                     ct = self.next_test(time)
                     if ct is not None:
@@ -2418,11 +2418,11 @@ class IUCoordinator:
         self.update_sensor(wash_dt(time, 1))
         return
 
-    def poll_main(self, time: datetime) -> None:
+    def poll_main(self, time: datetime, force: bool = False) -> None:
         if self._tester.enabled:
             self._tester.poll_test(time, self.poll)
         else:
-            self.poll(time)
+            self.poll(time, force)
         return
 
     async def _async_timer(self, time: datetime) -> None:
@@ -2524,7 +2524,7 @@ class IUCoordinator:
     def start_test(self, test_no: int) -> datetime:
         next_time = dt.utcnow()
         self._tester.start_test(test_no, next_time)
-        self.poll(next_time, True)
+        self.poll_main(next_time)
         return next_time
 
     def status_changed(
