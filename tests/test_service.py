@@ -66,7 +66,7 @@ async def run_test(
 ):
     test = coordinator.tester.current_test
 
-    _LOGGER.debug("Running test %d (%s)", test.index + 1, test.name)
+    _LOGGER.debug("Starting test %s", test.name)
 
     interval = coordinator.track_interval()
     next_time += interval
@@ -78,9 +78,7 @@ async def run_test(
 
     assert test.errors == 0, f"Failed test {test.index + 1}"
     assert test.events == test.total_results, f"Failed test {test.index + 1}"
-    _LOGGER.debug(
-        "Finished test %d (%s) time: %.2fs", test.index + 1, test.name, test.test_time
-    )
+    _LOGGER.debug("Finished test %s time: %.2fs", test.name, test.test_time)
     return
 
 
@@ -139,7 +137,7 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "actual": "00:30"},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "percentage": 0},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -148,7 +146,7 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "increase": "00:05"},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "actual": "00:30"},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -157,7 +155,88 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "increase": "00:05"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(6)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
         {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "decrease": "00:05"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(7)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "reset": None},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(8)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 50},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(9)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 200},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(10)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 0},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(11)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "actual": "00:30"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(12)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "increase": "00:05"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(13)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "decrease": "00:05"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(14)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "reset": None},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -176,6 +255,7 @@ async def test_service_enable_disable(
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
 
+    # Zone 1 off
     next_time = coordinator.start_test(1)
     await hass.services.async_call(
         DOMAIN,
@@ -185,6 +265,7 @@ async def test_service_enable_disable(
     )
     await run_test(hass, coordinator, next_time, True)
 
+    # Zone 1 on
     next_time = coordinator.start_test(2)
     await hass.services.async_call(
         DOMAIN,
@@ -246,6 +327,68 @@ async def test_service_enable_disable(
     )
     await run_test(hass, coordinator, next_time, True)
 
+    # Controller 1 off
+    next_time = coordinator.start_test(7)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    # Controller 1 off, zone 1 on, zone 2 off
+    next_time = coordinator.start_test(8)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_ENABLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    # Controller 1 on, zone 1 still on, zone 2 still off
+    next_time = coordinator.start_test(9)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_ENABLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    # Toggle controller 1
+    next_time = coordinator.start_test(10)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    # Toggle controller 1 & zone 2 (All back on)
+    next_time = coordinator.start_test(11)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m"},
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
     check_summary(full_path, coordinator)
 
 
@@ -270,6 +413,15 @@ async def test_service_manual_run(
     await run_test(hass, coordinator, next_time, True)
 
     next_time = coordinator.start_test(2)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_MANUAL_RUN,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "time": "00:10"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(3)
     await hass.services.async_call(
         DOMAIN,
         SERVICE_MANUAL_RUN,
