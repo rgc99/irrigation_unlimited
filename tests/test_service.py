@@ -2,7 +2,7 @@
 from unittest.mock import patch
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
@@ -13,6 +13,7 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
     COORDINATOR,
+    SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
     SERVICE_MANUAL_RUN,
@@ -58,27 +59,56 @@ logging.getLogger("pytest_homeassistant_custom_component.common").setLevel(
 _LOGGER = logging.getLogger(__name__)
 
 
-async def run_test(
+async def begin_test(
     hass: ha.HomeAssistant,
     coordinator: IUCoordinator,
     next_time: datetime,
+    how_long: timedelta,
     block: bool,
-):
-    test = coordinator.tester.current_test
+) -> datetime:
 
+    test = coordinator.tester.current_test
     _LOGGER.debug("Starting test %s", test.name)
 
+    start_time = next_time
     interval = coordinator.track_interval()
     next_time += interval
+    while coordinator.tester.is_testing and (
+        how_long is None or next_time - start_time < how_long
+    ):
+        await coordinator._async_timer(next_time)
+        if block:
+            await hass.async_block_till_done()
+        next_time += interval
+    return next_time
+
+
+async def finish_test(
+    hass: ha.HomeAssistant, coordinator: IUCoordinator, next_time: datetime, block: bool
+):
+    interval = coordinator.track_interval()
     while coordinator.tester.is_testing:
         await coordinator._async_timer(next_time)
         if block:
             await hass.async_block_till_done()
         next_time += interval
 
+    test = coordinator.tester.last_test
     assert test.errors == 0, f"Failed test {test.index + 1}"
     assert test.events == test.total_results, f"Failed test {test.index + 1}"
     _LOGGER.debug("Finished test %s time: %.2fs", test.name, test.test_time)
+    return
+
+
+async def run_test(
+    hass: ha.HomeAssistant,
+    coordinator: IUCoordinator,
+    next_time: datetime,
+    block: bool,
+):
+    next_time = await begin_test(hass, coordinator, next_time, None, block)
+    await finish_test(hass, coordinator, next_time, block)
+
     return
 
 
@@ -433,5 +463,43 @@ async def test_service_manual_run(
         True,
     )
     await run_test(hass, coordinator, next_time, True)
+
+    check_summary(full_path, coordinator)
+
+
+async def test_service_cancel(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
+    """Test cancel service call."""
+
+    full_path = test_config_dir + "service_cancel.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    start_time = coordinator.start_test(1)
+    next_time = await begin_test(
+        hass, coordinator, start_time, timedelta(minutes=12), True
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_CANCEL,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    start_time = coordinator.start_test(2)
+    next_time = await begin_test(
+        hass, coordinator, start_time, timedelta(minutes=12), True
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_CANCEL,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m"},
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
 
     check_summary(full_path, coordinator)
