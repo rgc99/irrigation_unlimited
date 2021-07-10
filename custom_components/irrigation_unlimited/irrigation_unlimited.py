@@ -2101,6 +2101,7 @@ class IUTester:
         # Private variables
         self._initialised: bool = False
         self._running_test: int = None
+        self._last_test: int = None
         return
 
     @property
@@ -2123,6 +2124,13 @@ class IUTester:
     def current_test(self) -> IUTest:
         if self._running_test is not None and self._running_test < len(self._tests):
             return self._tests[self._running_test]
+        else:
+            return None
+
+    @property
+    def last_test(self) -> IUTest:
+        if self._last_test is not None and self._last_test < len(self._tests):
+            return self._tests[self._last_test]
         else:
             return None
 
@@ -2188,6 +2196,7 @@ class IUTester:
             ct.end()
             if self._show_log:
                 _LOGGER.info("Test %d completed", self._running_test + 1)
+        self._last_test = self._running_test
         self._running_test = None
         return
 
