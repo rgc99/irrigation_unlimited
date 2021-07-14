@@ -101,7 +101,7 @@ def register_component_services(
     async def reload_service_handler(call: ServiceCall) -> None:
         """Reload yaml entities."""
         conf = await component.async_prepare_reload(skip_reset=True)
-        if conf is None:
+        if conf is None or conf == {}:
             conf = {DOMAIN: {}}
         coordinator.load(conf[DOMAIN])
         coordinator.start()
