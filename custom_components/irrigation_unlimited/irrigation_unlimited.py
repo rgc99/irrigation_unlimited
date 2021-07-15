@@ -2019,6 +2019,10 @@ class IUTest(IUBase):
         return self._test_time
 
     @property
+    def virtual_duration(self) -> timedelta:
+        return (self._end - self._start) / self._speed
+
+    @property
     def current_result(self) -> int:
         return self._current_result
 
@@ -2165,6 +2169,13 @@ class IUTester:
     @property
     def total_tests(self) -> int:
         return len(self._tests)
+
+    @property
+    def total_virtual_duration(self) -> timedelta:
+        result = timedelta(0)
+        for test in self._tests:
+            result += test.virtual_duration
+        return result
 
     @property
     def total_results(self) -> int:
