@@ -32,6 +32,7 @@ irrigation_unlimited:
     speed: 1.0
     output_events: false
     show_log: false
+    autoplay: false
     times:
       - name: 'Test 1'
         start: '2021-01-04 05:00'
