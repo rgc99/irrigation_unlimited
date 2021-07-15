@@ -214,7 +214,11 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 50},
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+            "percentage": 100,
+            "minimum": "00:20",
+        },
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -223,7 +227,11 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 200},
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+            "percentage": 100,
+            "maximum": "00:05",
+        },
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -232,7 +240,7 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 0},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 50},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -241,7 +249,7 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "actual": "00:30"},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 200},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -250,7 +258,7 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "increase": "00:05"},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 0},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -259,7 +267,7 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
-        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "decrease": "00:05"},
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "actual": "00:30"},
         True,
     )
     await run_test(hass, coordinator, next_time, True)
@@ -268,7 +276,51 @@ async def test_service_adjust_time(
     await hass.services.async_call(
         DOMAIN,
         SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "increase": "00:05"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(15)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "decrease": "00:05"},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(16)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
         {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "reset": None},
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(17)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "percentage": 100,
+            "minimum": "00:20",
+        },
+        True,
+    )
+    await run_test(hass, coordinator, next_time, True)
+
+    next_time = coordinator.start_test(18)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "percentage": 100,
+            "maximum": "00:05",
+        },
         True,
     )
     await run_test(hass, coordinator, next_time, True)
