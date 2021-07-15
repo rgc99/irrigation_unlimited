@@ -2,6 +2,7 @@
 from unittest.mock import patch
 import pytest
 import glob
+import asyncio
 import homeassistant.core as ha
 from homeassistant.util import dt as dt_util
 from homeassistant.config import (
@@ -13,7 +14,7 @@ from homeassistant.setup import async_setup_component
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
 )
-from custom_components.irrigation_unlimited.const import DOMAIN
+from custom_components.irrigation_unlimited.const import DOMAIN, COORDINATOR
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 
@@ -24,6 +25,42 @@ def skip_setup():
         return_value=True,
     ):
         yield
+
+
+@pytest.fixture(name="skip_dependencies")
+def skip_dep():
+    with patch("homeassistant.loader.Integration.dependencies", return_value=[]):
+        yield
+
+
+@pytest.fixture(name="skip_history", autouse=True)
+def skip_history():
+    """Skip history calls"""
+    with patch(
+        "homeassistant.components.recorder.history.state_changes_during_period",
+        return_value=[],
+    ):
+        yield
+
+
+def check_summary(full_path: str, coordinator: IUCoordinator):
+    assert (
+        coordinator.tester.total_events
+        == coordinator.tester.total_checks
+        == coordinator.tester.total_results
+    )
+    assert coordinator.tester.total_errors == 0
+    print(
+        "Finished: {0}; tests: {1}; events: {2}; checks: {3}; errors: {4}; time: {5:.2f}s".format(
+            full_path,
+            coordinator.tester.total_tests,
+            coordinator.tester.total_events,
+            coordinator.tester.total_checks,
+            coordinator.tester.total_errors,
+            coordinator.tester.total_time,
+        )
+    )
+    return
 
 
 test_config_dir = "tests/configs/"
@@ -41,24 +78,26 @@ async def test_timings(hass: ha.HomeAssistant, skip_setup):
             await async_process_ha_core_config(hass, config[ha.DOMAIN])
         coordinator = IUCoordinator(hass).load(config[DOMAIN])
 
-        next_time = dt_util.utcnow()
+        next_time = coordinator.start_test(1)
         interval = coordinator.track_interval()
-        while not coordinator.tester._initialised or coordinator.tester.is_testing:
+        while coordinator.tester.is_testing:
             await coordinator._async_timer(next_time)
             next_time += interval
 
-        assert (
-            coordinator.tester.total_events
-            == coordinator.tester.total_checks
-            == coordinator.tester.total_results
-        )
-        assert coordinator.tester.total_errors == 0
-        print(
-            "Finished: {0}; events: {1}; checks: {2}; errors: {3}; time: {4:.2f}s".format(
-                fname,
-                coordinator.tester.total_events,
-                coordinator.tester.total_checks,
-                coordinator.tester.total_errors,
-                coordinator.tester.total_time,
-            )
-        )
+        check_summary(fname, coordinator)
+
+
+async def test_autoplay(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test autoplay feature."""
+
+    full_path = test_config_dir + "test_autoplay.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    # coordinator.start_test(1)
+    duration = coordinator.tester.total_virtual_duration
+    await asyncio.sleep(duration.total_seconds())
+
+    check_summary(full_path, coordinator)
