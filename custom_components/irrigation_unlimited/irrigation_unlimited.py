@@ -2103,9 +2103,10 @@ class IUTester:
         self._show_log: bool = True
         self._autoplay: bool = True
         # Private variables
-        self._initialised: bool = False
+        self._test_initialised: bool = False
         self._running_test: int = None
         self._last_test: int = None
+        self._autoplay_initialised: bool = False
         return
 
     @property
@@ -2196,7 +2197,7 @@ class IUTester:
                     dt.as_local(ct._start).strftime("%c"),
                     dt.as_local(ct._end).strftime("%c"),
                 )
-            self._initialised = False
+            self._test_initialised = False
         else:
             self._running_test = None
         return self.current_test
@@ -2221,7 +2222,7 @@ class IUTester:
 
     def clear(self) -> None:
         self._tests.clear()
-        self._initialised = False
+        self._test_initialised = False
         self._running_test = None
         return
 
@@ -2238,14 +2239,15 @@ class IUTester:
         return self
 
     def poll_test(self, time: datetime, poll_func) -> None:
-        if self._autoplay and not self._initialised:
+        if self._autoplay and not self._autoplay_initialised:
             self.start_test(1, time)
+            self._autoplay_initialised = True
 
         ct = self.current_test
         if ct is not None:
-            if not self._initialised:
+            if not self._test_initialised:
                 poll_func(ct._start, True)
-                self._initialised = True
+                self._test_initialised = True
             elif ct.is_finished(time):  # End of current test
                 if self._autoplay:
                     ct = self.next_test(time)
