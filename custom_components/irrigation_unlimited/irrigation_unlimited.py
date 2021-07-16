@@ -139,7 +139,7 @@ def wash_t(time: time, granularity: int = None) -> time:
         d = utc.combine(utc.date(), time)
         rounded_seconds = int(d.second / granularity) * granularity
         t = d.replace(second=rounded_seconds, microsecond=0)
-        return t.time()
+        return t.timetz()
     else:
         return None
 
