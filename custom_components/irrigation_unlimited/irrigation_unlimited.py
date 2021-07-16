@@ -149,9 +149,8 @@ def round_td(delta: timedelta, granularity: int = None) -> timedelta:
     if delta is not None:
         if granularity is None:
             granularity = SYSTEM_GRANULARITY
-        whole_seconds = int(delta.total_seconds())
         rounded_seconds = (
-            int((whole_seconds + granularity / 2) / granularity) * granularity
+            int((delta.total_seconds() + granularity / 2) / granularity) * granularity
         )
         return timedelta(seconds=rounded_seconds)
     else:
