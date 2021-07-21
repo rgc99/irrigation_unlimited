@@ -25,31 +25,6 @@ from custom_components.irrigation_unlimited.const import (
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 
-@pytest.fixture(name="skip_start")
-def skip_start():
-    with patch(
-        "custom_components.irrigation_unlimited.IUCoordinator.start",
-        return_value=True,
-    ):
-        yield
-
-
-@pytest.fixture(name="skip_dependencies")
-def skip_dep():
-    with patch("homeassistant.loader.Integration.dependencies", return_value=[]):
-        yield
-
-
-@pytest.fixture(name="skip_history", autouse=True)
-def skip_history():
-    """Skip history calls"""
-    with patch(
-        "homeassistant.components.recorder.history.state_changes_during_period",
-        return_value=[],
-    ):
-        yield
-
-
 # Shh, quiet now.
 logging.basicConfig(level=logging.WARNING)
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)

@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 import glob
 import asyncio
+import logging
 import homeassistant.core as ha
 from homeassistant.util import dt as dt_util
 from homeassistant.config import (
@@ -17,30 +18,14 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
 from custom_components.irrigation_unlimited.const import DOMAIN, COORDINATOR
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
-
-@pytest.fixture(name="skip_setup")
-def skip_setup():
-    with patch(
-        "custom_components.irrigation_unlimited.IUCoordinator._is_setup",
-        return_value=True,
-    ):
-        yield
-
-
-@pytest.fixture(name="skip_dependencies")
-def skip_dep():
-    with patch("homeassistant.loader.Integration.dependencies", return_value=[]):
-        yield
-
-
-@pytest.fixture(name="skip_history", autouse=True)
-def skip_history():
-    """Skip history calls"""
-    with patch(
-        "homeassistant.components.recorder.history.state_changes_during_period",
-        return_value=[],
-    ):
-        yield
+# Shh, quiet now.
+logging.basicConfig(level=logging.WARNING)
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("homeassistant.core").setLevel(logging.WARNING)
+logging.getLogger("homeassistant.components.recorder").setLevel(logging.WARNING)
+logging.getLogger("pytest_homeassistant_custom_component.common").setLevel(
+    logging.WARNING
+)
 
 
 def check_summary(full_path: str, coordinator: IUCoordinator):

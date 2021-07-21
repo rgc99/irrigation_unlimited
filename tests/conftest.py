@@ -39,3 +39,37 @@ def skip_notifications_fixture():
         "homeassistant.components.persistent_notification.async_dismiss"
     ):
         yield
+
+
+@pytest.fixture(name="skip_setup")
+def skip_setup():
+    with patch(
+        "custom_components.irrigation_unlimited.IUCoordinator._is_setup",
+        return_value=True,
+    ):
+        yield
+
+
+@pytest.fixture(name="skip_dependencies")
+def skip_dep():
+    with patch("homeassistant.loader.Integration.dependencies", return_value=[]):
+        yield
+
+
+@pytest.fixture(name="skip_history", autouse=True)
+def skip_history():
+    """Skip history calls"""
+    with patch(
+        "homeassistant.components.recorder.history.state_changes_during_period",
+        return_value=[],
+    ):
+        yield
+
+
+@pytest.fixture(name="skip_start")
+def skip_start():
+    with patch(
+        "custom_components.irrigation_unlimited.IUCoordinator.start",
+        return_value=True,
+    ):
+        yield
