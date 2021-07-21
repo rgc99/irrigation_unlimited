@@ -73,16 +73,16 @@ async def test_timings(hass: ha.HomeAssistant, skip_setup):
     for fname in glob.glob(test_config_dir + "timing_*.yaml"):
         print(f"Processing: {fname}")
         config = CONFIG_SCHEMA(load_yaml_config_file(fname))
-
         if ha.DOMAIN in config:
             await async_process_ha_core_config(hass, config[ha.DOMAIN])
         coordinator = IUCoordinator(hass).load(config[DOMAIN])
 
-        next_time = coordinator.start_test(1)
-        interval = coordinator.track_interval()
-        while coordinator.tester.is_testing:
-            await coordinator._async_timer(next_time)
-            next_time += interval
+        for t in range(coordinator.tester.total_tests):
+            next_time = coordinator.start_test(t + 1)
+            interval = coordinator.track_interval()
+            while coordinator.tester.is_testing:
+                await coordinator._async_timer(next_time)
+                next_time += interval
 
         check_summary(fname, coordinator)
 
