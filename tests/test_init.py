@@ -11,8 +11,6 @@ from custom_components.irrigation_unlimited.const import (
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 
-test_config_dir = "tests/configs/"
-
 MOCK_CONFIG_BAD_1 = {DOMAIN: {CONF_CONTROLLERS: []}}
 MOCK_CONFIG_BAD_2 = {DOMAIN: {CONF_CONTROLLERS: [{CONF_ZONES: []}]}}
 
