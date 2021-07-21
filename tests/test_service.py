@@ -586,3 +586,37 @@ async def test_service_reload_error(
                 None,
                 True,
             )
+
+
+async def test_service_adjust_time_while_running(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
+    """Test adjust_time service call while sequence is running."""
+
+    full_path = test_config_dir + "service_adjust_time_while_running.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    start_time = coordinator.start_test(1)
+    next_time = await begin_test(
+        hass,
+        coordinator,
+        start_time,
+        coordinator.tester.current_test.virtual_duration / 2,
+        True,
+    )
+    # Hit controller with adjustment halfway through sequence
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "percentage": 200},
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+    # Run next test which should be 200%
+    next_time = coordinator.start_test(2)
+    await run_test(hass, coordinator, next_time, True)
+
+    check_summary(full_path, coordinator)
