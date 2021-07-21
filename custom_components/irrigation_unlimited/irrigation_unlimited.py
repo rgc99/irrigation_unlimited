@@ -611,13 +611,18 @@ class IURunQueue(list):
             modified = True
         return modified
 
-    def clear(self, time: datetime) -> bool:
+    def clear(self, time: datetime, running_sids: set) -> bool:
         """Clear out the queue except for manual or running schedules"""
         modified: bool = False
         if len(self) > 0:
             i = len(self) - 1
             while i >= 0:
-                if not (self[i].is_running(time) or self[i].is_manual()):
+                item: IURun = self[i]
+                if not (
+                    item.is_running(time)
+                    or item.is_manual()
+                    or (running_sids is not None and item.sid in running_sids)
+                ):
                     self.pop(i)
                     modified = True
                 i -= 1
@@ -655,6 +660,13 @@ class IURunQueue(list):
             if run.is_manual():
                 return run
         return None
+
+    def get_running_sequences(self, time: datetime) -> set:
+        result = set()
+        for run in self:
+            if run.sid is not None and run.is_running(time):
+                result.add(run.sid)
+        return result
 
     def last_time(self, time: datetime) -> datetime:
         return time + self._future_span
@@ -1010,11 +1022,13 @@ class IUZone(IUBase):
         else:
             return STATUS_INITIALISING
 
-    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> bool:
+    def service_adjust_time(
+        self, data: MappingProxyType, time: datetime, running_sids: set
+    ) -> bool:
         """Adjust the scheduled run times. Return true if adjustment changed"""
         result = self._adjustment.load(data)
         if result:
-            self._run_queue.clear(time)
+            self._run_queue.clear(time, running_sids)
         return result
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
@@ -1231,7 +1245,7 @@ class IUZoneQueue(IURunQueue):
         if all:
             self.clear_all()
         else:
-            self.clear(time)
+            self.clear(time, None)
         for zone in zones:
             for run in zone.runs:
                 self.add_zone(
@@ -1589,6 +1603,12 @@ class IUController(IUBase):
                 return zone
         return None
 
+    def get_running_sequences(self, time: datetime) -> set:
+        result = set()
+        for zone in self._zones:
+            result.update(zone.runs.get_running_sequences(time))
+        return result
+
     def clear(self) -> None:
         # Don't clear zones
         # self._zones.clear()
@@ -1856,10 +1876,11 @@ class IUController(IUBase):
         return
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
+        running_sids = self.get_running_sequences(time)
         zl: list[int] = data.get(CONF_ZONES, None)
         for zone in self._zones:
             if zl is None or zone.index + 1 in zl:
-                zone.service_adjust_time(data, time)
+                zone.service_adjust_time(data, time, running_sids)
         return
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
@@ -2529,7 +2550,7 @@ class IUCoordinator:
                 controller.service_cancel(data, time)
         elif service == SERVICE_TIME_ADJUST:
             if zone is not None:
-                zone.service_adjust_time(data, time)
+                zone.service_adjust_time(data, time, None)
             else:
                 controller.service_adjust_time(data, time)
         elif service == SERVICE_MANUAL_RUN:
