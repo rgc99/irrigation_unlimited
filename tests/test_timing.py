@@ -92,11 +92,12 @@ async def test_autoplay(hass: ha.HomeAssistant, skip_dependencies, skip_history)
 
     full_path = test_config_dir + "test_autoplay.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    if ha.DOMAIN in config:
+        await async_process_ha_core_config(hass, config[ha.DOMAIN])
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
 
-    # coordinator.start_test(1)
     duration = coordinator.tester.total_virtual_duration
     await asyncio.sleep(duration.total_seconds())
 
