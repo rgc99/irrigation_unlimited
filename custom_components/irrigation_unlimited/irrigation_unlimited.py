@@ -580,6 +580,16 @@ class IURunQueue(list):
     def next_run(self) -> IURun:
         return self._next_run
 
+    @property
+    def in_sequence(self) -> bool:
+        return self._in_sequence()
+
+    def _in_sequence(self) -> bool:
+        for run in self:
+            if run.sequence_running:
+                return True
+        return False
+
     def add(
         self,
         start_time: datetime,
@@ -1196,17 +1206,6 @@ class IUZone(IUBase):
 
 class IUZoneQueue(IURunQueue):
     """Class to hold the upcoming zones to run"""
-
-    @property
-    def in_sequence(self) -> bool:
-        return self._in_sequence()
-
-    def _in_sequence(self) -> bool:
-        return (
-            self._next_run is not None
-            and self._next_run.sidx is not None
-            and self._next_run.sidx != 0
-        )
 
     def add_zone(
         self,
