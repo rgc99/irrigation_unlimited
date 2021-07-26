@@ -2331,6 +2331,7 @@ class IUCoordinator:
         self._dirty: bool = True
         self._component = None
         self._initialised: bool = False
+        self._last_tick: datetime = None
         self._last_muster: datetime = None
         self._muster_required: bool = False
         self._remove_listener: CALLBACK_TYPE = None
@@ -2467,8 +2468,7 @@ class IUCoordinator:
         return
 
     def timer(self, time: datetime) -> None:
-    async def _async_timer(self, time: datetime) -> None:
-        """Timer callback"""
+        self._last_tick = time
         if self._initialised:
             self.poll_main(time)
         else:
@@ -2520,6 +2520,13 @@ class IUCoordinator:
             zone.zone_sensor = None
         return
 
+    def service_time(self) -> datetime:
+        """Return a time midway between last and next future tick"""
+        if self._last_tick is not None:
+            return self._last_tick + self.track_interval() / 2
+        else:
+            return dt.utcnow()
+
     def service_call(
         self,
         service: str,
@@ -2528,7 +2535,7 @@ class IUCoordinator:
         data: MappingProxyType,
     ) -> None:
         """Entry point for all service calls."""
-        time = dt.utcnow()
+        time = self.service_time()
         if self._tester.is_testing:
             time = self._tester.current_test.virtual_time(time)
         time = wash_dt(time)
@@ -2569,9 +2576,10 @@ class IUCoordinator:
         return
 
     def start_test(self, test_no: int) -> datetime:
+        self._last_tick = None
         next_time = dt.utcnow()
         self._tester.start_test(test_no, next_time)
-        self.poll_main(next_time)
+        self.timer(next_time)
         return next_time
 
     def status_changed(
