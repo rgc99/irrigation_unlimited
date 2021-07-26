@@ -2466,6 +2466,7 @@ class IUCoordinator:
             self.poll(time, force)
         return
 
+    def timer(self, time: datetime) -> None:
     async def _async_timer(self, time: datetime) -> None:
         """Timer callback"""
         if self._initialised:
@@ -2475,6 +2476,11 @@ class IUCoordinator:
             if self._initialised:
                 self.request_update()
                 self.poll_main(time)
+        return
+
+    async def _async_timer(self, time: datetime) -> None:
+        """Timer callback"""
+        self.timer(time)
         return
 
     def track_interval(self) -> timedelta:
