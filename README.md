@@ -119,7 +119,18 @@ This is the controller or master object and manages a collection of zones. There
 | `enabled` | bool | true | Enable/disable the controller |
 | `preamble` | time | '00:00' | The time master turns on before any zone turns on |
 | `postamble` | time | '00:00' | The time master remains on after all zones are off |
-| `entity_id` | string | | Entity ID (`switch.my_master_valve1`). Takes a csv list for multiple id's|
+| `entity_id` | string | | Entity ID (`switch.my_master_valve1`). Takes a csv list for multiple id's |
+| `all_zones_config` | object | _[All Zones Object](#all-zone-objects)_ | Shorthand default for all zones |
+
+### All Zone Objects
+
+This object is useful when the same settings are required for each zone. It is simply a shorthand or a more concise way to specify the same settings for each zone. The parameter becomes a default which can be overridden in the actual zone.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `minimum` | time | | The minimum run time |
+| `maximum` | time | | The maximum run time |
+| `future_span` | time | | Run queue look ahead |
 
 ### Zone Objects
 
@@ -133,6 +144,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `enabled` | bool | true | Enable/disable the zone |
 | `minimum` | time | '00:01' | The minimum run time |
 | `maximum` | time | | The maximum run time |
+| `future_span` | time | | Run queue look ahead |
 | `entity_id` | string | | Entity ID (`switch.my_zone_valve1`). Takes a csv list for multiple id's |
 
 ### Schedule Objects
@@ -194,6 +206,9 @@ The testing object is useful for running through a predetermined regime. Note: t
 | ---- | ---- | ------- | ----------- |
 | `enabled` | bool | true | Enable/disable testing |
 | `speed` | number | 1.0 | Test speed. A value less than 1 will slow down the system. Values above 1 will speed up tests. A value of 2 will double the speed, 60 will turn minutes to seconds and 3600 will turn hours to seconds. Upper limit will depend on individual systems.|
+| `show_log` | bool | true | Outputs controller and zones to the log |
+| `output_events` | bool | false | Prints event information to the console. Useful for creating the _[Test Result Objects](#test-result-objects)_ |
+| `auto_play` | bool | true | Automatically start tests |
 | `times` | list | _[Test Time Objects](#test-time-objects)_ | Test run times |
 
 ### Test Time Objects
@@ -205,6 +220,29 @@ This is the test time object. Test times do _not_ alter the system clock so ther
 | `name` | string | Test *N* | Friendly name for the test |
 | `start` | datetime | | The virtual start time (YYYY-mm-dd HH:MM) |
 | `end` | datetime | | The virtual end time (YYYY-mm-dd HH:MM) |
+| `results` | list | _[Test Result Objects](#test-result-objects)_ | Expected timing results |
+
+### Test Result Objects
+
+These are the expected results from the test object. Every time a controller or zone turns on or off it is compared to the next item in this list. To aid in generating this list from scratch set `output_event` to `true` in the _[Testing Object](#testing-object)_. Events will be printed to the console which can be copied to this object.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `t` | time | required | The time of the event |
+| `c` | int | required | The controller number |
+| `z` | int | required | The zone number. Zone 0 is the master |
+| `s` | int | required | 0 = Off and 1 = On |
+
+For a more concice style, results can be on one line for example:
+~~~yaml
+results:
+  - {t: '2021-01-04 06:00:30', c: 1, z: 0, s: 1}
+  - {t: '2021-01-04 06:00:30', c: 1, z: 1, s: 1}
+  - {t: '2021-01-04 06:10:00', c: 1, z: 2, s: 1}
+  - {t: '2021-01-04 06:10:30', c: 1, z: 1, s: 0}
+  - {t: '2021-01-04 06:20:00', c: 1, z: 2, s: 0}
+  - {t: '2021-01-04 06:20:00', c: 1, z: 0, s: 0}
+~~~
 
 ## Configuration examples
 
@@ -330,7 +368,7 @@ irrigation_unlimited:
             month: [mar, apr, may, sep, oct, nov]
 ~~~
 
-This is similar to the above but using sequences in a 3 zone system. Each zone runs for 12 minutes for a total of 36 min (plus delays). In Summer the total duration is extended to 45 minutes and winter reduced to 30 minutes. When using the duration parameter in the schedule it relates to the total duration of the sequence, each zone is adjusted accordingly.
+This is similar to the above but using sequences in a 3 zone system. Each zone runs for 12 minutes for a total of 36 min (plus delays). In Summer the total duration is extended to 45 minutes and winter reduced to 30 minutes. When using the `duration` parameter in the _[Schedule](#schedule-objects)_ it relates to the total duration of the sequence, each zone is adjusted accordingly.
 
 ~~~yaml
 irrigation_unlimited:
