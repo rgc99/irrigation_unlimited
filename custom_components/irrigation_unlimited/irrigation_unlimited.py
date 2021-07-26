@@ -450,6 +450,7 @@ class IURun:
         self._end_time: datetime = self._start_time + self._duration
         self._remaining_time: timedelta = self._end_time - self._start_time
         self._percent_complete: int = 0
+        self._sequence_running = False
         return
 
     @property
@@ -498,6 +499,20 @@ class IURun:
         return self._sequence_zone
 
     @property
+    def is_sequence(self) -> bool:
+        return self._sid is not None
+
+    @property
+    def sequence_running(self) -> bool:
+        return self._sequence_running
+
+    @sequence_running.setter
+    def sequence_running(self, value: bool):
+        """Flag sequence is now running"""
+        self._sequence_running = value
+        return
+
+    @property
     def crumbs(self) -> str:
         return self._crumbs()
 
@@ -513,6 +528,10 @@ class IURun:
         else:
             sidx = 0
         return f"{get_index(self._zone)}.{get_index(self._schedule)}.{get_index(self._sequence)}.{get_index(self._sequence_zone)}.{sidx}"
+
+    def sequence_starting(self, time: datetime) -> bool:
+        """Check if sequence is about to start but not yet flagged"""
+        return self.is_sequence and self.is_running(time) and not self.sequence_running
 
     def is_manual(self) -> bool:
         """Check if this is a manual run"""
@@ -671,11 +690,33 @@ class IURunQueue(list):
                 return run
         return None
 
-    def get_running_sequences(self, time: datetime) -> set:
+    def starting_sequences(self, time: datetime) -> set:
+        """Return a list of sequences due to start"""
         result = set()
         for run in self:
-            if run.sid is not None and run.is_running(time):
+            if run.sequence_starting(time):
                 result.add(run.sid)
+        return result
+
+    def running_sequences(self) -> set:
+        """Return a list of sequences that are running"""
+        result = set()
+        for run in self:
+            if run.sequence_running:
+                result.add(run.sid)
+        return result
+
+    def start_sequences(self, sequence_sids: set) -> bool:
+        """Flag sequences that are now running, somewhere"""
+        result = False
+        for run in self:
+            if (
+                run.is_sequence
+                and not run.sequence_running
+                and run.sid in sequence_sids
+            ):
+                run.sequence_running = True
+                result = True
         return result
 
     def last_time(self, time: datetime) -> datetime:
@@ -1602,10 +1643,10 @@ class IUController(IUBase):
                 return zone
         return None
 
-    def get_running_sequences(self, time: datetime) -> set:
+    def running_sequences(self) -> set:
         result = set()
         for zone in self._zones:
-            result.update(zone.runs.get_running_sequences(time))
+            result.update(zone.runs.running_sequences())
         return result
 
     def clear(self) -> None:
@@ -1758,6 +1799,16 @@ class IUController(IUBase):
                     if sequence_status & IURunQueue.RQ_STATUS_EXTENDED == 0:
                         break
 
+        # Update starting sequences
+        sequence_sids = set()
+        self.running_sequences
+        for zone in self._zones:
+            sequence_sids.update(zone.runs.starting_sequences(time))
+        if len(sequence_sids) > 0:
+            for zone in self._zones:
+                if zone.runs.start_sequences(sequence_sids) == True:
+                    zone_status |= IURunQueue.RQ_STATUS_UPDATED
+
         # Process zone schedules
         for zone in self._zones:
             if zone.enabled:
@@ -1874,8 +1925,9 @@ class IUController(IUBase):
             )
         return
 
-    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
-        running_sids = self.get_running_sequences(time)
+    def service_adjust_time(
+        self, data: MappingProxyType, time: datetime, running_sids: set
+    ) -> None:
         zl: list[int] = data.get(CONF_ZONES, None)
         for zone in self._zones:
             if zl is None or zone.index + 1 in zl:
@@ -2561,10 +2613,11 @@ class IUCoordinator:
             else:
                 controller.service_cancel(data, time)
         elif service == SERVICE_TIME_ADJUST:
+            running_sids = controller.running_sequences()
             if zone is not None:
-                zone.service_adjust_time(data, time, None)
+                zone.service_adjust_time(data, time, running_sids)
             else:
-                controller.service_adjust_time(data, time)
+                controller.service_adjust_time(data, time, running_sids)
         elif service == SERVICE_MANUAL_RUN:
             if zone is not None:
                 zone.service_manual_run(data, time)
