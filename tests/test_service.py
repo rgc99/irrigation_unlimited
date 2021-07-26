@@ -599,12 +599,42 @@ async def test_service_adjust_time_while_running(
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
 
+    # Start a sequence
     start_time = coordinator.start_test(1)
     next_time = await begin_test(
         hass,
         coordinator,
         start_time,
-        coordinator.tester.current_test.virtual_duration / 2,
+        timedelta(minutes=28),
+        True,
+    )
+    # Hit zone 4 with adjustment midway through sequence
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_z4", "percentage": 200},
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+    # Run next test which should be 200%
+    next_time = coordinator.start_test(2)
+    await run_test(hass, coordinator, next_time, True)
+
+    # Reset adjustments
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "reset": None},
+        True,
+    )
+
+    # Start a sequence
+    start_time = coordinator.start_test(3)
+    next_time = await begin_test(
+        hass,
+        coordinator,
+        start_time,
+        timedelta(minutes=28),
         True,
     )
     # Hit controller with adjustment halfway through sequence
@@ -616,7 +646,7 @@ async def test_service_adjust_time_while_running(
     )
     await finish_test(hass, coordinator, next_time, True)
     # Run next test which should be 200%
-    next_time = coordinator.start_test(2)
+    next_time = coordinator.start_test(4)
     await run_test(hass, coordinator, next_time, True)
 
     check_summary(full_path, coordinator)
