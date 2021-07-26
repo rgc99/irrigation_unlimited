@@ -53,7 +53,7 @@ async def begin_test(
     while coordinator.tester.is_testing and (
         how_long is None or next_time - start_time < how_long
     ):
-        await coordinator._async_timer(next_time)
+        coordinator.timer(next_time)
         if block:
             await hass.async_block_till_done()
         next_time += interval
@@ -65,7 +65,7 @@ async def finish_test(
 ):
     interval = coordinator.track_interval()
     while coordinator.tester.is_testing:
-        await coordinator._async_timer(next_time)
+        coordinator.timer(next_time)
         if block:
             await hass.async_block_till_done()
         next_time += interval

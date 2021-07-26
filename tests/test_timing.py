@@ -66,7 +66,7 @@ async def test_timings(hass: ha.HomeAssistant, skip_setup):
             next_time = coordinator.start_test(t + 1)
             interval = coordinator.track_interval()
             while coordinator.tester.is_testing:
-                await coordinator._async_timer(next_time)
+                coordinator.timer(next_time)
                 next_time += interval
 
         check_summary(fname, coordinator)
