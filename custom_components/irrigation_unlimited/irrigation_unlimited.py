@@ -619,13 +619,13 @@ class IURunQueue(list):
         sidx: int,
         sequence,
         sequence_zone,
-    ):
+    ) -> IURun:
         run = IURun(
             start_time, duration, zone, schedule, sid, sidx, sequence, sequence_zone
         )
         self.append(run)
         self._sorted = False
-        return self
+        return run
 
     def cancel(self) -> None:
         """Flag the current run to be cancelled"""
@@ -849,15 +849,14 @@ class IUScheduleQueue(IURunQueue):
         sidx: int,
         sequence,
         sequence_zone,
-    ) -> timedelta:
+    ) -> IURun:
         if self._minimum is not None:
             duration = max(duration, self._minimum)
         if self._maximum is not None:
             duration = min(duration, self._maximum)
-        super().add(
+        return super().add(
             start_time, duration, zone, schedule, sid, sidx, sequence, sequence_zone
         )
-        return duration
 
     def add_schedule(
         self,
@@ -865,7 +864,7 @@ class IUScheduleQueue(IURunQueue):
         schedule: IUSchedule,
         start_time: datetime,
         adjustment: IUAdjustment,
-    ) -> timedelta:
+    ) -> IURun:
         """Add a new schedule run to the queue"""
         duration = schedule.run_time
         if adjustment is not None:
@@ -874,7 +873,7 @@ class IUScheduleQueue(IURunQueue):
 
     def add_manual(
         self, start_time: datetime, duration: timedelta, zone: IUBase
-    ) -> timedelta:
+    ) -> IURun:
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
 
@@ -1753,7 +1752,7 @@ class IUController(IUBase):
                         for j in range(  # pylint: disable=unused-variable
                             sequence_zone.repeat
                         ):
-                            duration_adjusted = zone.runs.add(
+                            run = zone.runs.add(
                                 zone_run_time,
                                 duration_adjusted,
                                 zone,
@@ -1764,7 +1763,7 @@ class IUController(IUBase):
                                 sequence_zone,
                             )
                             sidx += 1
-                            zone_run_time += duration_adjusted + delay
+                            zone_run_time += run.duration + delay
                         zone.request_update()
                         duration_max = max(duration_max, zone_run_time - next_run)
                         status |= IURunQueue.RQ_STATUS_EXTENDED
