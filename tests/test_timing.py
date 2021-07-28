@@ -1,11 +1,8 @@
 """Test irrigation_unlimited timing operations."""
-from unittest.mock import patch
 import pytest
 import glob
-import asyncio
 import logging
 import homeassistant.core as ha
-from homeassistant.util import dt as dt_util
 from homeassistant.config import (
     load_yaml_config_file,
     async_process_ha_core_config,
@@ -70,20 +67,3 @@ async def test_timings(hass: ha.HomeAssistant, skip_setup):
                 next_time += interval
 
         check_summary(fname, coordinator)
-
-
-async def test_autoplay(hass: ha.HomeAssistant, skip_dependencies, skip_history):
-    """Test autoplay feature."""
-
-    full_path = test_config_dir + "test_autoplay.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    if ha.DOMAIN in config:
-        await async_process_ha_core_config(hass, config[ha.DOMAIN])
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
-
-    duration = coordinator.tester.total_virtual_duration
-    await asyncio.sleep(duration.total_seconds())
-
-    check_summary(full_path, coordinator)
