@@ -5,6 +5,7 @@ import homeassistant.core as ha
 import homeassistant.util.dt as dt
 
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
+    reset_granularity,
     round_td,
     time_to_timedelta,
     wash_dt,
@@ -14,6 +15,8 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
 
 async def test_wash(hass: ha.HomeAssistant):
     """Test time washing routines."""
+
+    reset_granularity()
 
     # wash_dt
     dt_test = dt.as_utc(datetime.datetime(2021, 1, 4, 12, 10, 25, 123456))

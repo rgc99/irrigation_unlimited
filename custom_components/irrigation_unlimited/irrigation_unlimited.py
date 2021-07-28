@@ -100,6 +100,10 @@ def time_to_timedelta(offset: time) -> timedelta:
 # The current boundaries are whole minutes (60 seconds).
 SYSTEM_GRANULARITY: int = DEFAULT_GRANULATITY  # Granularity in seconds
 
+def reset_granularity() -> None:
+    global SYSTEM_GRANULARITY
+    SYSTEM_GRANULARITY = DEFAULT_GRANULATITY
+    return
 
 def granularity_time() -> timedelta:
     """Return the system granularity as a timedelta"""
