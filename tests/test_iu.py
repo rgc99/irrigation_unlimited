@@ -12,10 +12,6 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
     wash_td,
 )
 
-
-test_config_dir = "tests/configs/"
-
-
 async def test_wash(hass: ha.HomeAssistant):
     """Test time washing routines."""
 

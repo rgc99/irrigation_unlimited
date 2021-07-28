@@ -11,7 +11,7 @@ from tests.iu_test_support import test_config_dir, check_summary
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
 )
-from custom_components.irrigation_unlimited.const import DOMAIN, COORDINATOR
+from custom_components.irrigation_unlimited.const import DOMAIN
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 # Shh, quiet now.
