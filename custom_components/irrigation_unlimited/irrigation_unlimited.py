@@ -664,29 +664,32 @@ class IURunQueue(list):
                 self._sorted = True
         return modified
 
-    def find_last_by_id(self, id: int) -> IURun:
-        """Return the run that finishes last in the queue. This routine
-        does not require the list to be sorted."""
+    def find_last_index(self, id: int) -> int:
+        """Return the index of the run that finishes last in the queue.
+        This routine does not require the list to be sorted."""
+        result: int = None
         last_time: datetime = None
-        last_index: int = None
         for i, run in enumerate(self):
             if run.schedule is not None and run.schedule.id == id:
                 if last_time is None or run.end_time > last_time:
                     last_time = run.end_time
-                    last_index = i
-        if last_index is not None:
-            return self[last_index]
+                    result = i
+        return result
+
+    def find_last_run(self, id: int) -> IURun:
+        i = self.find_last_index(id)
+        if i is not None:
+            return self[i]
         else:
             return None
 
     def find_last_date(self, id: int) -> datetime:
         """Find the last time in the queue for the supplied id"""
-        last_time: datetime = None
-        for run in self:
-            if run.schedule is not None and run.schedule.id == id:
-                if last_time is None or run.end_time > last_time:
-                    last_time = run.end_time
-        return last_time
+        run = self.find_last_run(id)
+        if run is not None:
+            return run.end_time
+        else:
+            return None
 
     def find_manual(self) -> IURun:
         for run in self:
