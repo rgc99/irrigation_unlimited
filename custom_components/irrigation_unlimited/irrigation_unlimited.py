@@ -2172,18 +2172,8 @@ class IUTester:
     """Irrigation Unlimited testing class"""
 
     def __init__(self) -> None:
-        # Config parameters
-        self._enabled: bool = False  # Flag we are in testing mode
-        self._speed: float = 1.0
-        self._output_events: bool = False
         self._tests: list[IUTest] = []
-        self._show_log: bool = True
-        self._autoplay: bool = True
-        # Private variables
-        self._test_initialised: bool = False
-        self._running_test: int = None
-        self._last_test: int = None
-        self._autoplay_initialised: bool = False
+        self.load(None)
         return
 
     @property
@@ -2298,19 +2288,26 @@ class IUTester:
         return self._enabled and self._running_test is not None
 
     def clear(self) -> None:
+        # Private variables
         self._tests.clear()
         self._test_initialised = False
-        self._running_test = None
+        self._running_test: int = None
+        self._last_test: int = None
+        self._autoplay_initialised: bool = False
         return
 
     def load(self, config: OrderedDict):
         """Load config data for the tester"""
-        if config is not None:
-            self._enabled = config.get(CONF_ENABLED, False)
-            self._speed = config.get(CONF_SPEED, DEFAULT_TEST_SPEED)
-            self._output_events = config.get(CONF_OUTPUT_EVENTS, False)
-            self._show_log = config.get(CONF_SHOW_LOG, True)
-            self._autoplay = config.get(CONF_AUTOPLAY, True)
+        # Config parameters
+        self.clear()
+        if config is None:
+            config = {}
+        self._enabled: bool = config.get(CONF_ENABLED, False)
+        self._speed: float = config.get(CONF_SPEED, DEFAULT_TEST_SPEED)
+        self._output_events: bool = config.get(CONF_OUTPUT_EVENTS, False)
+        self._show_log: bool = config.get(CONF_SHOW_LOG, True)
+        self._autoplay: bool = config.get(CONF_AUTOPLAY, True)
+        if CONF_TIMES in config:
             for ti, test in enumerate(config[CONF_TIMES]):
                 self._tests.append(IUTest(ti, self._speed).load(test))
         return self
