@@ -1,7 +1,6 @@
-"""Test irrigation_unlimited timing operations."""
+"""Test irrigation_unlimited autoplay operations."""
 import pytest
 import asyncio
-import logging
 import homeassistant.core as ha
 from homeassistant.config import (
     load_yaml_config_file,
@@ -14,16 +13,9 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
 )
 from custom_components.irrigation_unlimited.const import DOMAIN, COORDINATOR
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
-from tests.iu_test_support import test_config_dir, check_summary
+from tests.iu_test_support import quiet_mode, test_config_dir, check_summary
 
-# Shh, quiet now.
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-logging.getLogger("homeassistant.core").setLevel(logging.WARNING)
-logging.getLogger("homeassistant.components.recorder").setLevel(logging.WARNING)
-logging.getLogger("pytest_homeassistant_custom_component.common").setLevel(
-    logging.WARNING
-)
+quiet_mode()
 
 async def test_autoplay(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test autoplay feature."""
