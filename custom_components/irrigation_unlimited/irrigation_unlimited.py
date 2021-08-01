@@ -170,6 +170,12 @@ class IUBase:
         self._index: int = index
         return
 
+    def __eq__(self, other):
+        if isinstance(other, IUBase):
+            return self.id == other.id
+        else:
+            return False
+
     @property
     def id(self) -> str:
         """Return our unique id"""
