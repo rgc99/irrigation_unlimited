@@ -157,7 +157,8 @@ class IUMasterEntity(IUEntity):
             attr["time_remaining"] = str(current.time_remaining)
             attr["percent_complete"] = current.percent_complete
         else:
-            attr["current_schedule"] = RES_NOT_RUNNING
+            attr["current_schedule"] = "deprecated (use current_zone)"
+            attr["current_zone"] = RES_NOT_RUNNING
             attr["percent_complete"] = 0
 
         next = self._controller.runs.next_run
