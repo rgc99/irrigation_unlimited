@@ -2523,13 +2523,17 @@ class IUCoordinator:
 
     def start(self) -> None:
         """Start the system up"""
-        if self._remove_listener is not None:
-            self._remove_listener()
-            self._remove_listener = None
+        self.stop()
         self._remove_listener = async_track_time_interval(
             self._hass, self._async_timer, self.track_interval()
         )
         return
+
+    def stop(self) -> None:
+        if self._remove_listener is not None:
+            self._remove_listener()
+            self._remove_listener = None
+        pass
 
     def register_entity(
         self, controller: IUController, zone: IUZone, entity: Entity
