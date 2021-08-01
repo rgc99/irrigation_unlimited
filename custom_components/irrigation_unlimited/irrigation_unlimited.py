@@ -1241,7 +1241,16 @@ class IUZoneQueue(IURunQueue):
             duration += preamble
         if postamble is not None:
             duration += postamble
-        return self.add(start_time, duration, zone, schedule, sequence_run)
+        run = self.find_run(start_time, duration, zone, schedule, sequence_run)
+        if run is None:
+            run = self.add(start_time, duration, zone, schedule, sequence_run)
+        return run
+
+    def find_run(self, start_time: datetime, duration: timedelta, zone: IUZone, schedule: IUSchedule, sequence_run: "IUSequenceRun") -> IURun:
+        for run in self:
+            if start_time == run.start_time and zone == run.zone and run.schedule is not None and schedule is not None and run.schedule == schedule:
+                return run
+        return None
 
     def rebuild_schedule(
         self,
