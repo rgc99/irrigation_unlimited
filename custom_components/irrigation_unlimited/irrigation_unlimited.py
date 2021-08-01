@@ -1546,7 +1546,7 @@ class IUController(IUBase):
         return
 
     @property
-    def zones(self) -> list:
+    def zones(self) -> "list[IUZone]":
         return self._zones
 
     @property
