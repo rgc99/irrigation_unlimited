@@ -1,0 +1,32 @@
+default_config:
+
+irrigation_unlimited:
+  granularity: 10
+  refresh_interval: 20
+  controllers:
+    - name: 'Hauptventil'
+      entity_id: 'switch.4ch_eins_1'
+      preamble: '00:01'
+      enabled: true
+      zones:
+        - name: 'Zone 1'
+          entity_id: 'switch.4ch_zwei_3'
+        - name: 'Zone 2'
+          entity_id: 'switch.4ch_zwei_4'
+        - name: 'Zone 3'
+          entity_id: 'switch.4ch_zwei_1'
+        - name: 'Zone 4'
+          entity_id: 'switch.4ch_zwei_2'
+      sequences:
+        - name: "Multi zone"
+          duration: "00:02"
+          delay: "00:01"
+          schedules:
+            - time:
+                sun: 'sunset'
+                before: '00:20'
+          zones:
+            - zone_id: 1
+            - zone_id: 2
+            - zone_id: 3
+            - zone_id: 4
