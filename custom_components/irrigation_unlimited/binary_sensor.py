@@ -69,22 +69,23 @@ def on_duration(
     current_time: datetime = None
 
     if len(history_list) > 0:
-        for item in history_list.get(entity_id):
+        if entity_id in history_list:
+            for item in history_list.get(entity_id):
 
-            # Initialise on first pass
-            if current_state is None:
+                # Initialise on first pass
+                if current_state is None:
+                    current_state = item.state
+                    current_time = item.last_changed
+                    continue
+
+                if current_state == STATE_ON and item.state != STATE_ON:
+                    elapsed += item.last_changed - current_time
+
                 current_state = item.state
                 current_time = item.last_changed
-                continue
 
-            if current_state == STATE_ON and item.state != STATE_ON:
-                elapsed += item.last_changed - current_time
-
-            current_state = item.state
-            current_time = item.last_changed
-
-        if current_state == STATE_ON:
-            elapsed += end - current_time
+            if current_state == STATE_ON:
+                elapsed += end - current_time
 
     return timedelta(seconds=round(elapsed.total_seconds()))
 
