@@ -1,0 +1,12 @@
+default_config:
+
+irrigation_unlimited:
+  controllers:
+    - name: "Test controller 1"
+      zones:
+        - schedules:
+          - time: "06:05"
+            duration: "00:10"
+        - schedules:
+          - time: "06:10"
+            duration: "00:10"
