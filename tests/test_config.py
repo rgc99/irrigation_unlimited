@@ -19,6 +19,7 @@ from tests.iu_test_support import quiet_mode, test_config_dir
 
 quiet_mode()
 
+
 @pytest.mark.skip
 async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test loading of a config."""
