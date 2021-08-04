@@ -40,7 +40,7 @@ def mock_history():
         yield
 
 
-async def test_history(hass: ha.HomeAssistant, mock_history):
+async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
 
     full_path = test_config_dir + "test_history.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
