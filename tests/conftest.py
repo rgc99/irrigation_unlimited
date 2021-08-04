@@ -56,7 +56,7 @@ def skip_dep():
         yield
 
 
-@pytest.fixture(name="skip_history", autouse=True)
+@pytest.fixture(name="skip_history")
 def skip_history():
     """Skip history calls"""
     with patch(
