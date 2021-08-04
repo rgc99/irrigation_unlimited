@@ -52,7 +52,9 @@ def mock_state_z1_disabled():
         yield
 
 
-async def test_restore_none(hass: ha.HomeAssistant, mock_state_z1_none):
+async def test_restore_none(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_z1_none
+):
 
     full_path = test_config_dir + "test_restore_entity.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
@@ -62,7 +64,9 @@ async def test_restore_none(hass: ha.HomeAssistant, mock_state_z1_none):
     assert s.attributes["enabled"] == True
 
 
-async def test_restore_enabled(hass: ha.HomeAssistant, mock_state_z1_enabled):
+async def test_restore_enabled(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_z1_enabled
+):
 
     full_path = test_config_dir + "test_restore_entity.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
@@ -72,7 +76,9 @@ async def test_restore_enabled(hass: ha.HomeAssistant, mock_state_z1_enabled):
     assert s.attributes["enabled"] == True
 
 
-async def test_restore_disabled(hass: ha.HomeAssistant, mock_state_z1_disabled):
+async def test_restore_disabled(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_z1_disabled
+):
 
     full_path = test_config_dir + "test_restore_entity.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
