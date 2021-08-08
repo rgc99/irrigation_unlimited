@@ -5,7 +5,7 @@ DOMAIN = "irrigation_unlimited"
 DOMAIN_DATA = f"{DOMAIN}_data"
 COORDINATOR = "coordinator"
 COMPONENT = "component"
-VERSION = "0.0.1"
+VERSION = "2021.7.0"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 ISSUE_URL = "https://github.com/rgc99/irrigation_unlimited/issues"
 
@@ -106,6 +106,10 @@ MONTHS = [
 ]
 
 STARTUP_MESSAGE = f"""
-{NAME} Version: {VERSION}
-If you have any issues with this you need to open an issue here: {ISSUE_URL}
+-------------------------------------------------------------------
+{NAME}
+Version: {VERSION}
+If you have any issues with this you need to open an issue here:
+{ISSUE_URL}
+-------------------------------------------------------------------
 """
