@@ -100,10 +100,12 @@ def time_to_timedelta(offset: time) -> timedelta:
 # The current boundaries are whole minutes (60 seconds).
 SYSTEM_GRANULARITY: int = DEFAULT_GRANULATITY  # Granularity in seconds
 
+
 def reset_granularity() -> None:
     global SYSTEM_GRANULARITY
     SYSTEM_GRANULARITY = DEFAULT_GRANULATITY
     return
+
 
 def granularity_time() -> timedelta:
     """Return the system granularity as a timedelta"""
@@ -170,7 +172,7 @@ class IUBase:
         self._index: int = index
         return
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, IUBase):
             return self.id == other.id
         else:
@@ -323,7 +325,7 @@ class IUSchedule(IUBase):
         self._dirty = True
         return
 
-    def load(self, config: OrderedDict):
+    def load(self, config: OrderedDict) -> "IUSchedule":
         """Load schedule data from config"""
         self.clear()
 
@@ -440,8 +442,8 @@ class IURun(IUBase):
         self,
         start_time: datetime,
         duration: timedelta,
-        zone: IUBase,
-        schedule: IUBase,
+        zone: "IUZone",
+        schedule: "IUSchedule",
         sequence_run: "IUSequenceRun",
     ) -> None:
         super().__init__(None)
@@ -466,11 +468,11 @@ class IURun(IUBase):
         return self._duration
 
     @property
-    def zone(self) -> IUBase:
+    def zone(self) -> "IUSchedule":
         return self._zone
 
     @property
-    def schedule(self) -> IUBase:
+    def schedule(self) -> "IUSchedule":
         """Return the schedule"""
         return self._schedule
 
@@ -520,7 +522,7 @@ class IURun(IUBase):
         return self.is_sequence and self._sequence_run.running
 
     @sequence_running.setter
-    def sequence_running(self, value: bool):
+    def sequence_running(self, value: bool) -> None:
         """Flag sequence is now running"""
         if self.is_sequence:
             self.sequence_run.running = value
@@ -567,7 +569,11 @@ class IURun(IUBase):
 
     def sequence_start(self, time: datetime) -> bool:
         """Check if sequence is about to start but not yet flagged"""
-        result = self.is_sequence and self.is_running(time) and not self._sequence_run.running
+        result = (
+            self.is_sequence
+            and self.is_running(time)
+            and not self._sequence_run.running
+        )
         if result:
             self._sequence_run.running = True
         return result
@@ -631,8 +637,8 @@ class IURunQueue(list):
         self,
         start_time: datetime,
         duration: timedelta,
-        zone: IUBase,
-        schedule: IUBase,
+        zone: "IUZone",
+        schedule: "IUSchedule",
         sequence_run: "IUSequenceRun",
     ) -> IURun:
         run = IURun(start_time, duration, zone, schedule, sequence_run)
@@ -661,9 +667,7 @@ class IURunQueue(list):
             while i >= 0:
                 item: IURun = self[i]
                 if not (
-                    item.is_running(time)
-                    or item.is_manual()
-                    or item.sequence_running
+                    item.is_running(time) or item.is_manual() or item.sequence_running
                 ):
                     self.pop(i)
                     modified = True
@@ -807,7 +811,7 @@ class IURunQueue(list):
 
         return status
 
-    def update_sensor(self, time) -> bool:
+    def update_sensor(self, time: datetime) -> bool:
         if self._current_run is not None:
             return self._current_run.update_time_remaining(time)
         else:
@@ -834,8 +838,8 @@ class IUScheduleQueue(IURunQueue):
         self,
         start_time: datetime,
         duration: timedelta,
-        zone: IUBase,
-        schedule: IUBase,
+        zone: "IUZone",
+        schedule: "IUSchedule",
         sequence_run: "IUSequenceRun",
     ) -> IURun:
         if self._minimum is not None:
@@ -846,7 +850,7 @@ class IUScheduleQueue(IURunQueue):
 
     def add_schedule(
         self,
-        zone: IUBase,
+        zone: "IUZone",
         schedule: IUSchedule,
         start_time: datetime,
         adjustment: IUAdjustment,
@@ -858,7 +862,7 @@ class IUScheduleQueue(IURunQueue):
         return self.add(start_time, duration, zone, schedule, None)
 
     def add_manual(
-        self, start_time: datetime, duration: timedelta, zone: IUBase
+        self, start_time: datetime, duration: timedelta, zone: "IUZone"
     ) -> IURun:
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
@@ -882,7 +886,7 @@ class IUScheduleQueue(IURunQueue):
     def merge_one(
         self,
         time: datetime,
-        zone,
+        zone: "IUZone",
         schedule: IUSchedule,
         adjustment: IUAdjustment,
     ) -> bool:
@@ -907,7 +911,7 @@ class IUScheduleQueue(IURunQueue):
     def merge_fill(
         self,
         time: datetime,
-        zone,
+        zone: "IUZone",
         schedule: IUSchedule,
         adjustment: IUAdjustment,
     ) -> bool:
@@ -920,7 +924,7 @@ class IUScheduleQueue(IURunQueue):
 
         return modified
 
-    def load(self, config: OrderedDict, all_zones: OrderedDict):
+    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUScheduleQueue":
         super().load(config, all_zones)
         if all_zones is not None:
             self._minimum = wash_td(all_zones.get(CONF_MINIMUM, self._minimum))
@@ -940,7 +944,11 @@ class IUZone(IUBase):
     """Irrigation Unlimited Zone class"""
 
     def __init__(
-        self, hass: HomeAssistant, coordinator, controller, zone_index: int
+        self,
+        hass: HomeAssistant,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        zone_index: int,
     ) -> None:
         super().__init__(zone_index)
         # Passed parameters
@@ -967,7 +975,7 @@ class IUZone(IUBase):
         return
 
     @property
-    def schedules(self) -> list:
+    def schedules(self) -> "list[IUSchedule]":
         return self._schedules
 
     @property
@@ -1003,7 +1011,7 @@ class IUZone(IUBase):
         return self._is_enabled
 
     @enabled.setter
-    def enabled(self, value: bool):
+    def enabled(self, value: bool) -> None:
         """Enable/disable zone"""
         if value != self._is_enabled:
             self._is_enabled = value
@@ -1016,7 +1024,7 @@ class IUZone(IUBase):
         return self._zone_sensor
 
     @zone_sensor.setter
-    def zone_sensor(self, value: Entity):
+    def zone_sensor(self, value: Entity) -> None:
         self._zone_sensor = value
         return
 
@@ -1084,7 +1092,9 @@ class IUZone(IUBase):
         self._schedules.append(schedule)
         return schedule
 
-    def find_add(self, coordinator, controller, index: int) -> IUSchedule:
+    def find_add(
+        self, coordinator: "IUCoordinator", controller: "IUController", index: int
+    ) -> IUSchedule:
         if index >= len(self._schedules):
             return self.add(IUSchedule(self._hass, index))
         else:
@@ -1103,8 +1113,8 @@ class IUZone(IUBase):
         self._is_on = False
         return
 
-    def load(self, config: OrderedDict, all_zones: OrderedDict):
-        """ Load zone data from the configuration"""
+    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUZone":
+        """Load zone data from the configuration"""
         self.clear()
         self._zone_id = config.get(CONF_ID, str(self.index + 1))
         self._is_enabled = config.get(CONF_ENABLED, True)
@@ -1252,9 +1262,22 @@ class IUZoneQueue(IURunQueue):
             run = self.add(start_time, duration, zone, schedule, sequence_run)
         return run
 
-    def find_run(self, start_time: datetime, duration: timedelta, zone: IUZone, schedule: IUSchedule, sequence_run: "IUSequenceRun") -> IURun:
+    def find_run(
+        self,
+        start_time: datetime,
+        duration: timedelta,
+        zone: IUZone,
+        schedule: IUSchedule,
+        sequence_run: "IUSequenceRun",
+    ) -> IURun:
         for run in self:
-            if start_time == run.start_time and zone == run.zone and run.schedule is not None and schedule is not None and run.schedule == schedule:
+            if (
+                start_time == run.start_time
+                and zone == run.zone
+                and run.schedule is not None
+                and schedule is not None
+                and run.schedule == schedule
+            ):
                 return run
         return None
 
@@ -1292,7 +1315,12 @@ class IUSequenceZone(IUBase):
     """Irrigation Unlimited Sequence Zone class"""
 
     def __init__(
-        self, hass: HomeAssistant, coordinator, controller, sequence, zone_index: int
+        self,
+        hass: HomeAssistant,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        sequence: "IUSequence",
+        zone_index: int,
     ) -> None:
         super().__init__(zone_index)
         # Passed parameters
@@ -1309,7 +1337,7 @@ class IUSequenceZone(IUBase):
         return
 
     @property
-    def zone_ids(self) -> list:
+    def zone_ids(self) -> "list[str]":
         return self._zone_ids
 
     @property
@@ -1328,8 +1356,8 @@ class IUSequenceZone(IUBase):
         """Reset this sequence zone"""
         return
 
-    def load(self, config: OrderedDict):
-        """ Load sequence zone data from the configuration"""
+    def load(self, config: OrderedDict) -> "IUSequenceZone":
+        """Load sequence zone data from the configuration"""
         self.clear()
         self._zone_ids = config[CONF_ZONE_ID]
         self._delay = wash_td(config.get(CONF_DELAY))
@@ -1342,7 +1370,11 @@ class IUSequence(IUBase):
     """Irrigation Unlimited Sequence class"""
 
     def __init__(
-        self, hass: HomeAssistant, coordinator, controller, sequence_index: int
+        self,
+        hass: HomeAssistant,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        sequence_index: int,
     ) -> None:
         super().__init__(sequence_index)
         # Passed parameters
@@ -1440,7 +1472,9 @@ class IUSequence(IUBase):
         self._schedules.append(schedule)
         return schedule
 
-    def find_add_schedule(self, coordinator, controller, index: int) -> IUSchedule:
+    def find_add_schedule(
+        self, coordinator: "IUCoordinator", controller: "IUController", index: int
+    ) -> IUSchedule:
         if index >= len(self._schedules):
             return self.add_schedule(IUSchedule(self._hass, index))
         else:
@@ -1451,7 +1485,9 @@ class IUSequence(IUBase):
         self._zones.append(zone)
         return zone
 
-    def find_add_zone(self, coordinator, controller, index: int) -> IUSequenceZone:
+    def find_add_zone(
+        self, coordinator: "IUCoordinator", controller: "IUController", index: int
+    ) -> IUSequenceZone:
         if index >= len(self._zones):
             return self.add_zone(
                 IUSequenceZone(self._hass, coordinator, controller, self, index)
@@ -1459,8 +1495,8 @@ class IUSequence(IUBase):
         else:
             return self._zones[index]
 
-    def load(self, config: OrderedDict):
-        """ Load sequence data from the configuration"""
+    def load(self, config: OrderedDict) -> "IUSequence":
+        """Load sequence data from the configuration"""
         self.clear()
         self._name = config.get(CONF_NAME, f"Run {self.index + 1}")
         self._delay = wash_td(config.get(CONF_DELAY))
@@ -1496,7 +1532,7 @@ class IUSequenceRun(IUBase):
         return
 
     @property
-    def sequence(self):
+    def sequence(self) -> IUSequence:
         return self._sequence
 
     @property
@@ -1504,7 +1540,7 @@ class IUSequenceRun(IUBase):
         return self._running
 
     @running.setter
-    def running(self, value: bool):
+    def running(self, value: bool) -> None:
         """Flag sequence is now running"""
         self._running = value
         return
@@ -1519,10 +1555,13 @@ class IUSequenceRun(IUBase):
     def sequence_zone(self, run: IURun) -> IUSequenceZone:
         return self._runs.get(run.id, None)
 
+
 class IUController(IUBase):
     """Irrigation Unlimited Controller (Master) class"""
 
-    def __init__(self, hass: HomeAssistant, coordinator, controller_index: int) -> None:
+    def __init__(
+        self, hass: HomeAssistant, coordinator: "IUCoordinator", controller_index: int
+    ) -> None:
         # Passed parameters
         super().__init__(controller_index)
         self._hass = hass
@@ -1585,7 +1624,7 @@ class IUController(IUBase):
         return self._master_sensor
 
     @master_sensor.setter
-    def master_sensor(self, value: Entity):
+    def master_sensor(self, value: Entity) -> None:
         self._master_sensor = value
         return
 
@@ -1631,7 +1670,9 @@ class IUController(IUBase):
         self._zones.append(zone)
         return zone
 
-    def find_add_zone(self, coordinator, controller, index: int) -> IUZone:
+    def find_add_zone(
+        self, coordinator: "IUCoordinator", controller: "IUController", index: int
+    ) -> IUZone:
         if index >= len(self._zones):
             return self.add_zone(IUZone(self._hass, coordinator, controller, index))
         else:
@@ -1648,7 +1689,9 @@ class IUController(IUBase):
         else:
             return None
 
-    def find_add_sequence(self, coordinator, controller, index: int) -> IUSequence:
+    def find_add_sequence(
+        self, coordinator: "IUCoordinator", controller: "IUController", index: int
+    ) -> IUSequence:
         if index >= len(self._sequences):
             return self.add_sequence(
                 IUSequence(self._hass, coordinator, controller, index)
@@ -1674,7 +1717,7 @@ class IUController(IUBase):
             zone.request_update()
         return
 
-    def load(self, config: OrderedDict):
+    def load(self, config: OrderedDict) -> "IUController":
         """Load config data for the controller"""
         self.clear()
         self._is_enabled = config.get(CONF_ENABLED, True)
@@ -1964,7 +2007,7 @@ class IUEvent:
         self._crumbs: str = None
         return
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "IUEvent") -> bool:
         return (
             self._time == other._time
             and self._controller == other.controller
@@ -1999,7 +2042,7 @@ class IUEvent:
         else:
             return f"Zone {self._zone}"
 
-    def load(self, config: OrderedDict):
+    def load(self, config: OrderedDict) -> "IUEvent":
         self._time: datetime = wash_dt(dt.as_utc(config["t"]))
         self._controller: int = config["c"]
         self._zone: int = config["z"]
@@ -2182,7 +2225,7 @@ class IUTester:
         return self._is_testing()
 
     @property
-    def tests(self):
+    def tests(self) -> "list[IUTest]":
         return self._tests
 
     @property
@@ -2289,7 +2332,7 @@ class IUTester:
         self._autoplay_initialised: bool = False
         return
 
-    def load(self, config: OrderedDict):
+    def load(self, config: OrderedDict) -> "IUTester":
         """Load config data for the tester"""
         # Config parameters
         self.clear()
@@ -2377,7 +2420,7 @@ class IUCoordinator:
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
         self._dirty: bool = True
-        self._component = None
+        self._component: Entity = None
         self._initialised: bool = False
         self._last_tick: datetime = None
         self._last_muster: datetime = None
@@ -2387,11 +2430,11 @@ class IUCoordinator:
         return
 
     @property
-    def controllers(self):
+    def controllers(self) -> "list[IUController]":
         return self._controllers
 
     @property
-    def tester(self):
+    def tester(self) -> IUTester:
         return self._tester
 
     @property
@@ -2399,11 +2442,11 @@ class IUCoordinator:
         return self._is_setup()
 
     @property
-    def component(self):
+    def component(self) -> Entity:
         return self._component
 
     @component.setter
-    def component(self, value) -> None:
+    def component(self, value: Entity) -> None:
         self._component = value
         return
 
@@ -2423,7 +2466,7 @@ class IUCoordinator:
         self._controllers.append(controller)
         return controller
 
-    def find_add(self, coordinator, index: int) -> IUController:
+    def find_add(self, coordinator: "IUCoordinator", index: int) -> IUController:
         if index >= len(self._controllers):
             return self.add(IUController(self._hass, coordinator, index))
         else:
@@ -2435,7 +2478,7 @@ class IUCoordinator:
         self._is_on: bool = False
         return
 
-    def load(self, config: OrderedDict):
+    def load(self, config: OrderedDict) -> "IUCoordinator":
         """Load config data for the system"""
         self.clear()
 
@@ -2548,7 +2591,7 @@ class IUCoordinator:
         if self._remove_listener is not None:
             self._remove_listener()
             self._remove_listener = None
-        pass
+        return
 
     def register_entity(
         self, controller: IUController, zone: IUZone, entity: Entity
