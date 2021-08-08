@@ -10,6 +10,58 @@
 
 [![Community Forum][forum-shield]][forum]
 
+<!-- TOC -->
+
+- [Irrigation Unlimited](#irrigation-unlimited)
+    - [Introduction](#introduction)
+    - [Features](#features)
+    - [Structure](#structure)
+    - [Installation](#installation)
+        - [Install from HACS](#install-from-hacs)
+        - [Manual installation](#manual-installation)
+    - [Configuration](#configuration)
+        - [Controller Objects](#controller-objects)
+        - [All Zone Objects](#all-zone-objects)
+        - [Zone Objects](#zone-objects)
+        - [Schedule Objects](#schedule-objects)
+        - [Sun Event](#sun-event)
+        - [Sequence Objects](#sequence-objects)
+        - [Sequence Zone Objects](#sequence-zone-objects)
+        - [Testing Object](#testing-object)
+        - [Test Time Objects](#test-time-objects)
+        - [Test Result Objects](#test-result-objects)
+    - [Configuration examples](#configuration-examples)
+        - [Minimal configuration](#minimal-configuration)
+        - [Sun event example](#sun-event-example)
+        - [Sequence example](#sequence-example)
+        - [Simple water saving / eco mode example](#simple-water-saving--eco-mode-example)
+        - [Every hour on the hour](#every-hour-on-the-hour)
+        - [Seasonal watering](#seasonal-watering)
+        - [Tips](#tips)
+    - [Services](#services)
+        - [Services enable, disable and toggle](#services-enable-disable-and-toggle)
+        - [Service cancel](#service-cancel)
+        - [Service manual_run](#service-manual_run)
+        - [Service adjust_time](#service-adjust_time)
+            - [Tip](#tip)
+        - [Service reload](#service-reload)
+    - [Frontend](#frontend)
+        - [Manual run card](#manual-run-card)
+    - [Automation](#automation)
+        - [ESPHome](#esphome)
+        - [HAsmartirrigation](#hasmartirrigation)
+    - [Troubleshooting](#troubleshooting)
+        - [Requirements](#requirements)
+        - [Configuration](#configuration)
+        - [Logging](#logging)
+        - [Last but not least](#last-but-not-least)
+    - [Notes](#notes)
+    - [Contributions are welcome](#contributions-are-welcome)
+    - [Credits](#credits)
+
+<!-- /TOC -->
+
+## Introduction
 This integration is for irrigation systems large and small. It can offer some complex arrangements without large and messy scripts. This integration will complement many other irrigation projects.
 
 Home Assistant makes automating switches easy with the built in tools available. So why this project? You have a system in place but now you have extended it to have a number of zones. You don't want all the zones on at once because of water pressure issues. Maybe you would like each zone to have a number of schedules say a morning and evening watering. What about water restrictions that limit irrigation systems to certain days of the week or days in the month, odd or even for example. Perhaps you would like different schedules for winter and summer. Now you would like to adjust the times based on weather conditions, past, present or future. Let's turn a zone or even a controller off for system maintenance. Starting to sound more like your system? Finally what's going on now and what's up next.
@@ -64,6 +116,8 @@ A binary sensor is associated with each controller and zone. Controller or maste
 ![entities](./examples/entities.png)
 
 ## Installation
+
+[HACS](https://hacs.xyz) is the recommended method for installation. If you are having difficulties then please see the _[troubleshooting guide](#troubleshooting)_
 
 ### Install from HACS
 
@@ -467,9 +521,9 @@ Use forecast and observation data collected by weather integrations in automatio
 | `actual` | yes | Specify a new time time. This will replace the existing duration. A time value is required '00:30'.
 | `percentage` | yes | Adjust time by a percentage. A positive float value. Values less than 1 will decrease the run time while values greater than 1 will increase the run time.
 | `increase` | yes | Increase the run time by the specified time. A value of '00:10' will increase the duration by 10 minutes. Value will be capped by the `maximum` setting.
-| `descrease` | yes | Decrease the run time by the specified time. A value of '00:05' will decrease the run time by 5 minutes. Value will be limited by the `minimum` setting.
+| `decrease` | yes | Decrease the run time by the specified time. A value of '00:05' will decrease the run time by 5 minutes. Value will be limited by the `minimum` setting.
 | `reset` | yes | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings).
-| `minimum` | yes | Set the minimum run time. Minimum run time is 1 minute and will be limited to this. Use the `disable` service to turn off.
+| `minimum` | yes | Set the minimum run time.
 | `maximum` | yes | Set the maximum run time. Note: The default is no limit.
 
 ### Service `reload`
@@ -492,7 +546,7 @@ For watering history information here is a [sample card](./lovelace/watering_his
 
 ![watering_history_card](./examples/watering_history_card.png).
 
-Note: At time of writing this requires a pre-released version of [mini-graph-card](https://github.com/kalkih/mini-graph-card/releases/tag/v0.11.0-dev.3).
+Note: At time of writing this requires a pre-released version of [mini-graph-card](https://github.com/kalkih/mini-graph-card/releases/tag/v0.11.0-dev.3). Note: If you get "NaN" displayed instead of the actual value then clear out your browsers cache.
 
 Although not really part of the integration but to get you started quickly here is a [temperature card](./lovelace/temperature_card.yaml).
 
@@ -603,7 +657,37 @@ automation:
 
 ## Troubleshooting
 
-Please set your logging for the custom_component to debug:
+There should be little trouble installing this component, please use the _[HACS](#install-from-hacs)_ method where possible. Binary sensors are created automatically. However, if you experience difficulties please check the following:
+
+### Requirements
+
+This integration depends on two other components; _[recorder](https://www.home-assistant.io/integrations/recorder/)_ and _[history](https://www.home-assistant.io/integrations/history/)_. Both of these components are part of the standard Home Assistant installation and enabled by default with the `default_config:` line in the configuration. If you have removed this line then a `history:` and `recorder:` section must be setup manually. If a mistake is made in either one of these configurations then they will not start and in turn, Irrigation Unlimited for which it depends on, will not start. Please check the log file for the following lines:
+
+~~~text
+2021-08-03 12:12:40 INFO (MainThread) [homeassistant.setup] Setting up recorder
+2021-08-03 12:12:40 INFO (MainThread) [homeassistant.setup] Setup of domain recorder took 0.1 seconds
+...
+2021-08-03 12:12:42 INFO (MainThread) [homeassistant.setup] Setting up history
+2021-08-03 12:12:42 INFO (MainThread) [homeassistant.setup] Setup of domain history took 0.0 seconds
+~~~
+
+The above shows the requirements were loaded successfully. Note: The lines may not be consecutive in the log. If you do not see these lines then go back to basics and remove any `history:` and `recorder:` sections and ensure the `default_config:` line is present. Restart HA and check you have these log entries.
+
+### Configuration
+
+There must be a `irrigation_unlimited:` section in the configuration. If the section is missing or invalid then Irrigation Unlimited will not start. Check the log file to see it successfully started up.
+
+~~~text
+2021-08-03 12:12:45 INFO (MainThread) [homeassistant.setup] Setting up irrigation_unlimited
+...
+2021-08-03 12:12:47 INFO (MainThread) [homeassistant.setup] Setup of domain irrigation_unlimited took n.n seconds
+~~~
+
+The above shows that Irrigation Unlimited loaded successfully. Note: The lines will most likely not be together so do a search. If it failed then use the minimal configuration shown _[here](#minimal-configuration)_. This is a good starting point to get aquainted with this integration.
+
+### Logging
+
+For more detailed information set your logging for the component to debug:
 
 ~~~yaml
 logger:
@@ -611,6 +695,10 @@ logger:
   logs:
     custom_components.irrigation_unlimited: debug
 ~~~
+
+### Last but not least
+
+If all else fails please open an [issue](https://github.com/rgc99/irrigation_unlimited/issues).
 
 ## Notes
 
@@ -626,7 +714,7 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 
 Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [integration_blueprint][integration_blueprint] template.
 
-Some inspiration was taken from [kloggy](https://github.com/kloggy/HA-Irrigation-Version2)'s work.
+Some inspiration was taken from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
 ***
 
