@@ -626,6 +626,11 @@ irrigation_unlimited:
                 - 1
                 - 5
                 - 10
+            - name: 'The twelfth of never'
+              time: '06:00'
+              duration: '00:05'
+              day: [30]
+              month: [feb]
         - name: 'Overlapped Zone'
           schedules:
             - name: 'Overlaps with Zone 1'
