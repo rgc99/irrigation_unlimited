@@ -285,22 +285,6 @@ class IUAdjustment:
 
         return new_time
 
-    def to_string(self) -> str:
-        """Return the adjustment as a string notation"""
-        if self._method is None:
-            s = "None"
-        elif self._method == CONF_ACTUAL:
-            s = f"={self._time_adjustment}"
-        elif self._method == CONF_PERCENTAGE:
-            s = f"%{self._time_adjustment}"
-        elif self._method == CONF_INCREASE:
-            s = f"+{self._time_adjustment}"
-        elif self._method == CONF_DECREASE:
-            s = f"-{self._time_adjustment}"
-        else:
-            s = str(self._time_adjustment)
-        return s
-
 
 class IUSchedule(IUBase):
     """Irrigation Unlimited Schedule class. Schedules are not actual
