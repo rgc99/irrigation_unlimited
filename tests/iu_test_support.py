@@ -18,7 +18,8 @@ def quiet_mode():
     logging.getLogger("homeassistant.components.recorder").setLevel(logging.WARNING)
     logging.getLogger("pytest_homeassistant_custom_component.common").setLevel(
         logging.WARNING
-)
+    )
+
 
 def check_summary(full_path: str, coordinator: IUCoordinator):
     assert (
@@ -39,28 +40,55 @@ def check_summary(full_path: str, coordinator: IUCoordinator):
     )
     return
 
-async def run_until(hass: ha.HomeAssistant, coordinator: IUCoordinator, time: datetime, stop_at: datetime, block: bool) -> datetime:
+
+async def run_until(
+    hass: ha.HomeAssistant,
+    coordinator: IUCoordinator,
+    time: datetime,
+    stop_at: datetime,
+    block: bool,
+) -> datetime:
     interval = coordinator.track_interval()
     while coordinator.tester.is_testing and (
-        stop_at is None or coordinator.tester.current_test.virtual_time(time) < stop_at):
+        stop_at is None or coordinator.tester.current_test.virtual_time(time) < stop_at
+    ):
         time += interval
         coordinator.timer(time)
         if block:
             await hass.async_block_till_done()
     return time
 
-async def run_for(hass: ha.HomeAssistant, coordinator: IUCoordinator, time: datetime, duration: timedelta, block: bool) -> datetime:
+
+async def run_for(
+    hass: ha.HomeAssistant,
+    coordinator: IUCoordinator,
+    time: datetime,
+    duration: timedelta,
+    block: bool,
+) -> datetime:
     if duration is not None:
         stop_at = coordinator.tester.current_test.virtual_time(time) + duration
     else:
         stop_at = None
     return await run_until(hass, coordinator, time, stop_at, block)
 
+
+async def run_for_1_tick(
+    hass: ha.HomeAssistant, coordinator: IUCoordinator, time: datetime, block: bool
+) -> datetime:
+    stop_at = (
+        coordinator.tester.current_test.virtual_time(time)
+        + coordinator.track_interval()
+    )
+    return await run_until(hass, coordinator, time, stop_at, block)
+
+
 async def begin_test(test_no: int, coordinator: IUCoordinator) -> datetime:
     coordinator.stop()
     start_time = coordinator.start_test(test_no)
     _LOGGER.debug("Starting test %s", coordinator.tester.current_test.name)
     return start_time
+
 
 async def finish_test(
     hass: ha.HomeAssistant, coordinator: IUCoordinator, time: datetime, block: bool
@@ -72,5 +100,3 @@ async def finish_test(
     assert test.events == test.total_results, f"Failed test {test.index + 1}"
     _LOGGER.debug("Finished test %s time: %.2fs", test.name, test.test_time)
     return
-
-
