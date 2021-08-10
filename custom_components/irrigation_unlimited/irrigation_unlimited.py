@@ -1010,7 +1010,7 @@ class IUZone(IUBase):
 
     @property
     def enabled(self) -> bool:
-        """Return true if this zone is on"""
+        """Return true if this zone is enabled"""
         return self._is_enabled
 
     @enabled.setter
