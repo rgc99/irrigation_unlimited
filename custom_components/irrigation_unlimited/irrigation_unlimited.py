@@ -222,11 +222,6 @@ class IUAdjustment:
         self._maximum: timedelta = None
         return
 
-    @property
-    def as_string(self) -> str:
-        """Return a string representation of the adjustment"""
-        return self.to_string()
-
     def load(self, data: MappingProxyType) -> bool:
         """Read the adjustment configuration. Return true if anything has changed"""
 
