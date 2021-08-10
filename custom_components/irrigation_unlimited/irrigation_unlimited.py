@@ -1392,6 +1392,7 @@ class IUSequence(IUBase):
         # Private variables
         self._schedules: list[IUSchedule] = []
         self._zones: list[IUSequenceZone] = []
+        self._adjustment = IUAdjustment()
         return
 
     @property
@@ -1413,6 +1414,10 @@ class IUSequence(IUBase):
     @property
     def repeat(self) -> int:
         return self._repeat
+
+    @property
+    def adjustment(self) -> IUAdjustment:
+        return self._adjustment
 
     def zone_duration(self, zone: IUSequenceZone) -> timedelta:
         """Return the duration for the specified zone"""
@@ -1468,6 +1473,7 @@ class IUSequence(IUBase):
         """Reset this sequence"""
         self._schedules.clear()
         self._zones.clear()
+        self._adjustment.clear()
         return
 
     def add_schedule(self, schedule: IUSchedule) -> IUSchedule:
@@ -1497,6 +1503,11 @@ class IUSequence(IUBase):
             )
         else:
             return self._zones[index]
+
+    def zone_ids(self) -> str:
+        for sequence_zone in self._zones:
+            for zone_id in sequence_zone.zone_ids:
+                yield zone_id
 
     def load(self, config: OrderedDict) -> "IUSequence":
         """Load sequence data from the configuration"""
@@ -1803,7 +1814,11 @@ class IUController(IUBase):
                             sequence_run = IUSequenceRun(sequence)
 
                         # Don't adjust manual run
-                        if schedule is not None:
+                        if schedule is None:
+                            duration_adjusted = duration
+                        elif sequence.adjustment.has_adjustment:
+                            duration_adjusted = sequence.adjustment.adjust(duration)
+                        elif zone.adjustment.has_adjustment:
                             duration_adjusted = zone.adjustment.adjust(duration)
                         else:
                             duration_adjusted = duration
@@ -1973,10 +1988,20 @@ class IUController(IUBase):
         return
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
-        zl: list[int] = data.get(CONF_ZONES, None)
-        for zone in self._zones:
-            if zl is None or zone.index + 1 in zl:
-                zone.service_adjust_time(data, time)
+        sequence_id = data.get(CONF_SEQUENCE_ID, None)
+        if sequence_id is None:
+            zl: list[int] = data.get(CONF_ZONES, None)
+            for zone in self._zones:
+                if zl is None or zone.index + 1 in zl:
+                    zone.service_adjust_time(data, time)
+        else:
+            sequence = self.find_sequence(sequence_id - 1)
+            if sequence is not None:
+                if sequence.adjustment.load(data):
+                    for zone_id in sequence.zone_ids():
+                        zone = self.find_zone_by_zone_id(zone_id)
+                        if zone is not None:
+                            zone.runs.clear(time)
         return
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:

@@ -67,6 +67,16 @@ adjust_time:
           integration: irrigation_unlimited
           domain: binary_sensor
 
+    sequence_id:
+      description: Id of the sequence to run.
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
     reset:
       description: Revert to original schedule
       example: ''

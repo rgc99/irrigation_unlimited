@@ -50,6 +50,7 @@ TIME_ADJUST_SCHEMA = vol.All(
             vol.Optional(CONF_MINIMUM): cv.positive_time_period,
             vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
             vol.Optional(CONF_ZONES): cv.ensure_list,
+            vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
         }
     ),
     cv.has_at_least_one_key(

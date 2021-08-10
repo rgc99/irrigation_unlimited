@@ -31,6 +31,9 @@ from .const import (
     ICON_ON,
     ICON_DISABLED,
     ICON_BLOCKED,
+    CONF_SCHEDULES,
+    CONF_ZONES,
+    CONF_ZONE_ID,
 )
 
 RES_MANUAL = "Manual"
@@ -39,6 +42,17 @@ RES_NONE = "none"
 RES_CONTROLLER = "Controller"
 RES_ZONE = "Zone"
 RES_MASTER = "Master"
+
+ATTR_CURRENT_SCHEDULE = "current_schedule"
+ATTR_CURRENT_NAME = "current_name"
+ATTR_CURRENT_ADJUSTMENT = "current_adjustment"
+ATTR_CURRENT_START = "current_start"
+ATTR_CURRENT_DURATION = "current_duration"
+ATTR_TIME_REMAINING = "time_remaining"
+ATTR_PERCENT_COMPLETE = "percent_complete"
+ATTR_ZONE_COUNT = "zone_count"
+ATTR_CURRENT_ZONE = "current_zone"
+ATTR_TOTAL_TODAY = "today_total"
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -147,20 +161,20 @@ class IUMasterEntity(IUEntity):
         attr[ATTR_INDEX] = self._controller.index
         attr[ATTR_ENABLED] = self._controller.enabled
         attr[ATTR_STATUS] = self._controller.status
-        attr["zone_count"] = len(self._controller._zones)
-        attr["zones"] = ""
+        attr[ATTR_ZONE_COUNT] = len(self._controller._zones)
+        attr[CONF_ZONES] = ""
         current = self._controller.runs.current_run
         if current is not None:
-            attr["current_zone"] = current.zone.index + 1
-            attr["current_name"] = current.zone.name
-            attr["current_start"] = dt.as_local(current.start_time)
-            attr["current_duration"] = str(current.duration)
-            attr["time_remaining"] = str(current.time_remaining)
-            attr["percent_complete"] = current.percent_complete
+            attr[ATTR_CURRENT_ZONE] = current.zone.index + 1
+            attr[ATTR_CURRENT_NAME] = current.zone.name
+            attr[ATTR_CURRENT_START] = dt.as_local(current.start_time)
+            attr[ATTR_CURRENT_DURATION] = str(current.duration)
+            attr[ATTR_TIME_REMAINING] = str(current.time_remaining)
+            attr[ATTR_PERCENT_COMPLETE] = current.percent_complete
         else:
             attr["current_schedule"] = "deprecated (use current_zone)"
-            attr["current_zone"] = RES_NOT_RUNNING
-            attr["percent_complete"] = 0
+            attr[ATTR_CURRENT_ZONE] = RES_NOT_RUNNING
+            attr[ATTR_PERCENT_COMPLETE] = 0
 
         next = self._controller.runs.next_run
         if next is not None:
@@ -214,27 +228,33 @@ class IUZoneEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
-        attr["zone_id"] = self._zone.zone_id
+        attr[CONF_ZONE_ID] = self._zone.zone_id
         attr[ATTR_INDEX] = self._zone.index
         attr[ATTR_ENABLED] = self._zone.enabled
         attr[ATTR_STATUS] = self._zone.status
         attr["schedule_count"] = len(self._zone.schedules)
+        attr[CONF_SCHEDULES] = ""
         attr["adjustment"] = str(self._zone.adjustment)
         current = self._zone.runs.current_run
         if current is not None:
             if current.schedule is not None:
-                attr["current_schedule"] = current.schedule.index + 1
-                attr["current_name"] = current.schedule.name
+                attr[ATTR_CURRENT_SCHEDULE] = current.schedule.index + 1
+                attr[ATTR_CURRENT_NAME] = current.schedule.name
+                if current.is_sequence and current.sequence.adjustment.has_adjustment:
+                    attr[ATTR_CURRENT_ADJUSTMENT] = str(current.sequence.adjustment)
+                else:
+                    attr[ATTR_CURRENT_ADJUSTMENT] = str(self._zone.adjustment)
             else:
-                attr["current_schedule"] = RES_MANUAL
-                attr["current_name"] = RES_MANUAL
-            attr["current_start"] = dt.as_local(current.start_time)
-            attr["current_duration"] = str(current.duration)
-            attr["time_remaining"] = str(current.time_remaining)
-            attr["percent_complete"] = current.percent_complete
+                attr[ATTR_CURRENT_SCHEDULE] = RES_MANUAL
+                attr[ATTR_CURRENT_NAME] = RES_MANUAL
+                attr[ATTR_CURRENT_ADJUSTMENT] = "None"
+            attr[ATTR_CURRENT_START] = dt.as_local(current.start_time)
+            attr[ATTR_CURRENT_DURATION] = str(current.duration)
+            attr[ATTR_TIME_REMAINING] = str(current.time_remaining)
+            attr[ATTR_PERCENT_COMPLETE] = current.percent_complete
         else:
-            attr["current_schedule"] = RES_NOT_RUNNING
-            attr["percent_complete"] = 0
+            attr[ATTR_CURRENT_SCHEDULE] = RES_NOT_RUNNING
+            attr[ATTR_PERCENT_COMPLETE] = 0
 
         next = self._zone.runs.next_run
         if next is not None:
@@ -246,9 +266,13 @@ class IUZoneEntity(IUEntity):
                 attr["next_name"] = RES_MANUAL
             attr["next_start"] = dt.as_local(next.start_time)
             attr["next_duration"] = str(next.duration)
+            if next.is_sequence and next.sequence.adjustment.has_adjustment:
+                attr["next_adjustment"] = str(next.sequence.adjustment)
+            else:
+                attr["next_adjustment"] = str(self._zone.adjustment)
         else:
             attr["next_schedule"] = RES_NONE
-        attr["today_total"] = round(
+        attr[ATTR_TOTAL_TODAY] = round(
             today_on_duration(self.hass, self.entity_id).total_seconds() / 60, 1
         )
         if self._zone.show_config:
