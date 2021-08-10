@@ -192,6 +192,30 @@ class IUAdjustment:
     """Irrigation Unlimited class to handle run time adjustment"""
 
     def __init__(self) -> None:
+        self.clear()
+        return
+
+    def __str__(self) -> str:
+        """Return the adjustment as a string notation"""
+        if self._method is None:
+            s = "None"
+        elif self._method == CONF_ACTUAL:
+            s = f"={self._time_adjustment}"
+        elif self._method == CONF_PERCENTAGE:
+            s = f"%{self._time_adjustment}"
+        elif self._method == CONF_INCREASE:
+            s = f"+{self._time_adjustment}"
+        elif self._method == CONF_DECREASE:
+            s = f"-{self._time_adjustment}"
+        else:
+            s = str(self._time_adjustment)
+        return s
+
+    @property
+    def has_adjustment(self) -> bool:
+        return self._method != None
+
+    def clear(self) -> None:
         self._method: str = None
         self._time_adjustment = None
         self._minimum: timedelta = None
