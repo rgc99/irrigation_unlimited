@@ -805,7 +805,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:07:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -815,7 +815,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:13:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:12:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -828,7 +828,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:19:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:20:30+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -851,7 +851,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:10:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:11:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -861,7 +861,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:36:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:30:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -874,7 +874,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:57:00+00:00"),
+        datetime.fromisoformat("2021-01-04 07:01:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -910,7 +910,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:20:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:07:30+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -920,7 +920,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:51:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:16:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -933,7 +933,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 07:22:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:29:30+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -956,7 +956,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:10:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:08:20+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -966,7 +966,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:30:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:19:40+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -979,7 +979,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:45:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:35:45+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -1002,7 +1002,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:07:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:07:30+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -1012,7 +1012,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:13:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:16:20+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -1025,7 +1025,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:19:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:29:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -1087,7 +1087,7 @@ async def test_service_adjust_time_sequence(
             "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
             "sequence_id": 1,
             "percentage": 100,
-            "minimum": "00:20",
+            "minimum": "00:50",
         },
         True,
     )
@@ -1095,7 +1095,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:15:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:09:10+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -1105,7 +1105,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:36:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:22:40+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -1118,7 +1118,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:57:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:49:50+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -1134,7 +1134,7 @@ async def test_service_adjust_time_sequence(
             "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
             "sequence_id": 1,
             "percentage": 100,
-            "maximum": "00:05",
+            "maximum": "00:20",
         },
         True,
     )
@@ -1142,7 +1142,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:07:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:07:40+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -1152,7 +1152,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:13:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:12:40+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -1165,7 +1165,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:19:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:22:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -1206,7 +1206,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:07:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -1216,7 +1216,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:13:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:12:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -1229,7 +1229,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:19:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:20:30+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
@@ -1262,7 +1262,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:15:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:11:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -1272,7 +1272,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:36:00+00:00"),
+        datetime.fromisoformat("2021-01-04 06:30:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -1285,7 +1285,7 @@ async def test_service_adjust_time_sequence(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:57:00+00:00"),
+        datetime.fromisoformat("2021-01-04 07:01:00+00:00"),
         True,
     )
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")

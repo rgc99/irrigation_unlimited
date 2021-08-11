@@ -269,7 +269,7 @@ class IUAdjustment:
         elif self._method == CONF_ACTUAL:
             new_time = self._time_adjustment
         elif self._method == CONF_PERCENTAGE:
-            new_time = wash_td(time * self._time_adjustment / 100)
+            new_time = round_td(time * self._time_adjustment / 100)
         elif self._method == CONF_INCREASE:
             new_time = time + self._time_adjustment
         elif self._method == CONF_DECREASE:
@@ -1784,12 +1784,18 @@ class IUController(IUBase):
                 next_run = time + granularity_time()
             return next_run
 
-        if total_duration is not None:
-            duration_multiplier = sequence.duration_multiplier(total_duration)
-        elif schedule is not None and schedule.run_time is not None:
-            duration_multiplier = sequence.duration_multiplier(schedule.run_time)
-        else:
-            duration_multiplier = 1.0
+        # Calculate multipler
+        if total_duration is None:
+            if schedule is not None and schedule.run_time is not None:
+                total_duration = schedule.run_time
+            else:
+                total_duration = sequence.total_time()
+        if schedule is not None and sequence.adjustment.has_adjustment:
+            total_duration = (
+                sequence.adjustment.adjust(total_duration - sequence.total_delay())
+                + sequence.total_delay()
+            )
+        duration_multiplier = sequence.duration_multiplier(total_duration)
 
         status: int = 0
         next_run: datetime = None
@@ -1813,12 +1819,11 @@ class IUController(IUBase):
                                 return status  # Exit if queue is full
                             sequence_run = IUSequenceRun(sequence)
 
-                        # Don't adjust manual run
-                        if schedule is None:
-                            duration_adjusted = duration
-                        elif sequence.adjustment.has_adjustment:
-                            duration_adjusted = sequence.adjustment.adjust(duration)
-                        elif zone.adjustment.has_adjustment:
+                        # Don't adjust manual run and no adjustment on adjustment
+                        if (
+                            schedule is not None
+                            and not sequence.adjustment.has_adjustment
+                        ):
                             duration_adjusted = zone.adjustment.adjust(duration)
                         else:
                             duration_adjusted = duration
