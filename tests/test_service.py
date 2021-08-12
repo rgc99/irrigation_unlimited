@@ -618,6 +618,19 @@ async def test_service_manual_run(
     )
     await finish_test(hass, coordinator, start_time, True)
 
+    start_time = await begin_test(4, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_MANUAL_RUN,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c2_m",
+            "time": "00:01",
+            "sequence_id": 1,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
     check_summary(full_path, coordinator)
 
 
