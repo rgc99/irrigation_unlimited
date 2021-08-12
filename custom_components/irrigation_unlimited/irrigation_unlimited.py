@@ -1419,6 +1419,10 @@ class IUSequence(IUBase):
     def adjustment(self) -> IUAdjustment:
         return self._adjustment
 
+    @property
+    def has_adjustment(self) -> bool:
+        return self._adjustment.has_adjustment
+
     def zone_duration(self, zone: IUSequenceZone) -> timedelta:
         """Return the duration for the specified zone"""
         if zone.duration is not None:
@@ -1464,8 +1468,9 @@ class IUSequence(IUBase):
         """Given a new total run time, calculate how much to shrink or expand each
         zone duration. Final time will be approximate as the new durations must
         be rounded to internal boundaries"""
-        if total_time is not None:
-            return (total_time - self.total_delay()) / self.total_duration()
+        total_duration = self.total_duration()
+        if total_time is not None and total_duration != 0:
+            return (total_time - self.total_delay()) / total_duration
         else:
             return 1.0
 
@@ -1784,19 +1789,26 @@ class IUController(IUBase):
                 next_run = time + granularity_time()
             return next_run
 
-        # Calculate multipler
-        if total_duration is None:
-            if schedule is not None and schedule.run_time is not None:
-                total_duration = schedule.run_time
-            else:
-                total_duration = sequence.total_time()
-        if schedule is not None and sequence.adjustment.has_adjustment:
-            total_duration = (
-                sequence.adjustment.adjust(total_duration - sequence.total_delay())
-                + sequence.total_delay()
-            )
-        duration_multiplier = sequence.duration_multiplier(total_duration)
+        def calc_multiplier(
+            total_duration: timedelta, sequence: IUSequence, schedule: IUSchedule
+        ) -> float:
+            """Calculate the multiplier"""
+            if total_duration is None:
+                if schedule is not None and schedule.run_time is not None:
+                    total_duration = schedule.run_time
+                else:
+                    total_duration = sequence.total_time()
+            if schedule is not None and sequence.has_adjustment:
+                total_delay = sequence.total_delay()
+                total_duration = (
+                    sequence.adjustment.adjust(total_duration - total_delay)
+                    + total_delay
+                )
+                if total_duration < total_delay:
+                    total_duration = total_delay  # Make run time 0
+            return sequence.duration_multiplier(total_duration)
 
+        duration_multiplier = calc_multiplier(total_duration, sequence, schedule)
         status: int = 0
         next_run: datetime = None
         sequence_run: IUSequenceRun = None
@@ -1820,10 +1832,7 @@ class IUController(IUBase):
                             sequence_run = IUSequenceRun(sequence)
 
                         # Don't adjust manual run and no adjustment on adjustment
-                        if (
-                            schedule is not None
-                            and not sequence.adjustment.has_adjustment
-                        ):
+                        if schedule is not None and not sequence.has_adjustment:
                             duration_adjusted = zone.adjustment.adjust(duration)
                         else:
                             duration_adjusted = duration
