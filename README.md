@@ -171,8 +171,8 @@ This is the controller or master object and manages a collection of zones. There
 | `sequences` | list | _[Sequence Objects](#sequence-objects)_ | Sequence details |
 | `name` | string | Controller _N_ | Friendly name for the controller |
 | `enabled` | bool | true | Enable/disable the controller |
-| `preamble` | time | '00:00' | The time master turns on before any zone turns on |
-| `postamble` | time | '00:00' | The time master remains on after all zones are off |
+| `preamble` | time | '00:00' | The time master turns on before any zone turns on. This is in effect a delay-start timer, controller will turn on before the zones |
+| `postamble` | time | '00:00' | The time master remains on after all zones are off. This is in effect a run-on timer, controller will turn off after the specified delay |
 | `entity_id` | string | | Entity ID (`switch.my_master_valve1`). Takes a csv list for multiple id's |
 | `all_zones_config` | object | _[All Zones Object](#all-zone-objects)_ | Shorthand default for all zones |
 
@@ -228,7 +228,7 @@ Leave the time value in the _[Schedule Objects](#schedule-objects)_ blank and ad
 
 ### Sequence Objects
 
-Sequences allow zones to run one at a time in a particular order with a delay in between. This is a type of watering 'playlist'.
+Sequences allow zones to run one at a time in a particular order with a delay in between. This is a type of watering 'playlist'. If a delay is specified and a pump or master valve is operated by the controller then consider the postamble setting in the _[Controller Object](#controller-objects)_. Set this to the largest delay to prevent pump on/off operations.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -509,7 +509,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 
 ### Service `adjust_time`
 
-Adjust the run times. Calling this service will override any previous adjustment i.e. it will *not* make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`.
+Adjust the run times. Calling this service will override any previous adjustment i.e. it will *not* make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
 #### Tip
 
@@ -525,6 +525,7 @@ Use forecast and observation data collected by weather integrations in automatio
 | `reset` | yes | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings).
 | `minimum` | yes | Set the minimum run time.
 | `maximum` | yes | Set the maximum run time. Note: The default is no limit.
+| `sequence_id` | yes | Sequence to run (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
 
 ### Service `reload`
 
