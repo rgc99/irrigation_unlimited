@@ -79,7 +79,7 @@ Zones also have an associated sensor which, like the master, shows on/off status
 5. Hardware independant. Use your own switches/valve controllers.
 6. Software independant. Pure play python.
 
-*Practicle limitations will depend on your hardware.
+*Practical limitations will depend on your hardware.
 
 ## Structure
 
