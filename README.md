@@ -76,8 +76,8 @@ Zones also have an associated sensor which, like the master, shows on/off status
 2. Unlimited zones.
 3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
 4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between. A 'playlist' for your zones.
-5. Hardware independant. Use your own switches/valve controllers.
-6. Software independant. Pure play python.
+5. Hardware independent. Use your own switches/valve controllers.
+6. Software independent. Pure play python.
 
 *Practical limitations will depend on your hardware.
 
