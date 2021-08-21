@@ -152,7 +152,7 @@ custom_components/irrigation_unlimited/services.yaml
 
 Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#service-reload) for details and limitations.
 
-The time type is a string in the format HH:MM. Time type must be a positive value. Seconds can be speicified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). All times will be syncronised to these boundaries.
+The time type is a string in the format HH:MM. Time type must be a positive value. Seconds can be specified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). All times will be syncronised to these boundaries.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
@@ -287,7 +287,7 @@ These are the expected results from the test object. Every time a controller or 
 | `z` | int | required | The zone number. Zone 0 is the master |
 | `s` | int | required | 0 = Off and 1 = On |
 
-For a more concice style, results can be on one line for example:
+For a more concise style, results can be on one line for example:
 ~~~yaml
 results:
   - {t: '2021-01-04 06:00:30', c: 1, z: 0, s: 1}
