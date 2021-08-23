@@ -2495,11 +2495,6 @@ class IUCoordinator:
     def component(self) -> Entity:
         return self._component
 
-    @component.setter
-    def component(self, value: Entity) -> None:
-        self._component = value
-        return
-
     @property
     def refresh_interval(self) -> timedelta:
         return self._refresh_interval
