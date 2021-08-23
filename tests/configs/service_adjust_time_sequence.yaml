@@ -215,8 +215,9 @@ irrigation_unlimited:
           duration: "0:10:00"
           delay: "0:01:00"
           schedules:
-            - time: "08:05"
+            - time: "09:25"
+              anchor: finish
           zones:
             - zone_id: 1
-            - zone_id: 2
-            - zone_id: [3, 4]
+            - zone_id: [2, 3]
+            - zone_id: 4
