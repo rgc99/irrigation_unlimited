@@ -2663,9 +2663,12 @@ class IUCoordinator:
     def service_time(self) -> datetime:
         """Return a time midway between last and next future tick"""
         if self._last_tick is not None:
-            return self._last_tick + self.track_interval() / 2
+            time = self._last_tick + self.track_interval() / 2
         else:
-            return dt.utcnow()
+            time = dt.utcnow()
+        if self._tester.is_testing:
+            time = self._tester.current_test.virtual_time(time)
+        return wash_dt(time)
 
     def service_call(
         self,
@@ -2676,9 +2679,6 @@ class IUCoordinator:
     ) -> None:
         """Entry point for all service calls."""
         time = self.service_time()
-        if self._tester.is_testing:
-            time = self._tester.current_test.virtual_time(time)
-        time = wash_dt(time)
 
         if service == SERVICE_ENABLE:
             if zone is not None:
