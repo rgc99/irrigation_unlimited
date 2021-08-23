@@ -1860,7 +1860,8 @@ class IUController(IUBase):
                         zone.request_update()
                         duration_max = max(duration_max, zone_run_time - next_run)
                         status |= IURunQueue.RQ_STATUS_EXTENDED
-                next_run += duration_max
+                if next_run is not None:
+                    next_run += duration_max
         return status
 
     def muster(self, time: datetime, force: bool) -> int:
