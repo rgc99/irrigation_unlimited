@@ -662,6 +662,23 @@ class IURunQueue(list):
             modified = True
         return modified
 
+    def clear_sequences(self, time: datetime) -> bool:
+        """Clear out sequences that are not running"""
+        modified: bool = False
+        if len(self) > 0:
+            i = len(self) - 1
+            while i >= 0:
+                item = self[i]
+                if (
+                    not (item.is_running(time) or item.is_manual())
+                    and item.is_sequence
+                    and not item.sequence_running
+                ):
+                    self.pop(i)
+                    modified = True
+                i -= 1
+        return modified
+
     def clear(self, time: datetime) -> bool:
         """Clear out the queue except for manual or running schedules"""
         modified: bool = False
@@ -1106,6 +1123,10 @@ class IUZone(IUBase):
         self.clear_run_queue()
         self._adjustment = IUAdjustment()
         self._is_on = False
+        return
+
+    def clear_sequence_runs(self, time: datetime) -> None:
+        self._run_queue.clear_sequences(time)
         return
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUZone":
@@ -1728,6 +1749,11 @@ class IUController(IUBase):
         # self._zones.clear()
         self._sequences.clear()
         self._is_on = False
+        return
+
+    def clear_sequence_runs(self, time: datetime) -> None:
+        for zone in self._zones:
+            zone.clear_sequence_runs(time)
         return
 
     def notify_children(self) -> None:
@@ -2675,16 +2701,19 @@ class IUCoordinator:
         if service == SERVICE_ENABLE:
             if zone is not None:
                 zone.enabled = True
+                controller.clear_sequence_runs(time)
             else:
                 controller.enabled = True
         elif service == SERVICE_DISABLE:
             if zone is not None:
                 zone.enabled = False
+                controller.clear_sequence_runs(time)
             else:
                 controller.enabled = False
         elif service == SERVICE_TOGGLE:
             if zone is not None:
                 zone.enabled = not zone.enabled
+                controller.clear_sequence_runs(time)
             else:
                 controller.enabled = not controller.enabled
         elif service == SERVICE_CANCEL:
