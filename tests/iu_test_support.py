@@ -10,8 +10,10 @@ _LOGGER = logging.getLogger(__name__)
 
 test_config_dir = "tests/configs/"
 
+NO_CHECK: bool = False
+
 # Shh, quiet now.
-def quiet_mode():
+def quiet_mode() -> None:
     logging.basicConfig(level=logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("homeassistant.core").setLevel(logging.WARNING)
@@ -21,14 +23,25 @@ def quiet_mode():
     )
 
 
+# Turn off checking
+def no_check(check_off: bool = True) -> None:
+    global NO_CHECK
+    NO_CHECK = check_off
+    if NO_CHECK:
+        _LOGGER.debug("WARNING: Checks are disabled===================================")
+    return
+
+
 def check_summary(full_path: str, coordinator: IUCoordinator):
-    assert (
-        coordinator.tester.total_events
-        == coordinator.tester.total_checks
-        == coordinator.tester.total_results
-    )
-    assert coordinator.tester.total_errors == 0
-    print(
+    if not NO_CHECK:
+        assert (
+            coordinator.tester.total_events
+            == coordinator.tester.total_checks
+            == coordinator.tester.total_results
+        )
+        assert coordinator.tester.total_errors == 0
+
+    _LOGGER.debug(
         "Finished: {0}; tests: {1}; events: {2}; checks: {3}; errors: {4}; time: {5:.2f}s".format(
             full_path,
             coordinator.tester.total_tests,
@@ -96,7 +109,8 @@ async def finish_test(
     await run_until(hass, coordinator, time, None, block)
 
     test = coordinator.tester.last_test
-    assert test.errors == 0, f"Failed test {test.index + 1}"
-    assert test.events == test.total_results, f"Failed test {test.index + 1}"
+    if not NO_CHECK:
+        assert test.errors == 0, f"Failed test {test.index + 1}"
+        assert test.events == test.total_results, f"Failed test {test.index + 1}"
     _LOGGER.debug("Finished test %s time: %.2fs", test.name, test.test_time)
     return
