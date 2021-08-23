@@ -1431,25 +1431,44 @@ class IUSequence(IUBase):
     def has_adjustment(self) -> bool:
         return self._adjustment.has_adjustment
 
-    def zone_duration(self, zone: IUSequenceZone) -> timedelta:
-        """Return the duration for the specified zone"""
-        if zone.duration is not None:
-            duration = zone.duration
-        else:
-            duration = self._duration
-        if duration is None:
-            duration = granularity_time()
-        return duration
+    def zone_enabled(self, sequence_zone: IUSequenceZone) -> bool:
+        """Return True if at least one real zone referenced by the
+        sequence_zone is enabled"""
+        for zone_id in sequence_zone.zone_ids:
+            zone = self._controller.find_zone_by_zone_id(zone_id)
+            if zone is not None and zone.enabled:
+                return True
+        return False
 
-    def zone_delay(self, zone: IUSequenceZone) -> timedelta:
-        """Return the delay for the specified zone"""
-        if zone.delay is not None:
-            delay = zone.delay
+    def zone_duration(self, sequence_zone: IUSequenceZone) -> timedelta:
+        """Return the duration for the specified zone"""
+        if self.zone_enabled(sequence_zone):
+            if sequence_zone.duration is not None:
+                duration = sequence_zone.duration
+            else:
+                duration = self._duration
+            if duration is None:
+                duration = granularity_time()
+            for zone_id in sequence_zone.zone_ids:
+                zone = self._controller.find_zone_by_zone_id(zone_id)
+                if zone is not None:
+                    duration = zone.runs.constrain(duration)
+            return duration
         else:
-            delay = self._delay
-        if delay is None:
-            delay = timedelta(0)
-        return delay
+            return timedelta(0)
+
+    def zone_delay(self, sequence_zone: IUSequenceZone) -> timedelta:
+        """Return the delay for the specified zone"""
+        if self.zone_enabled(sequence_zone):
+            if sequence_zone.delay is not None:
+                delay = sequence_zone.delay
+            else:
+                delay = self._delay
+            if delay is None:
+                delay = timedelta(0)
+            return delay
+        else:
+            return timedelta(0)
 
     def total_duration(self) -> timedelta:
         """Return the total duration for all the zones"""
