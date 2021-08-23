@@ -1104,9 +1104,7 @@ class IUZone(IUBase):
         self._schedules.append(schedule)
         return schedule
 
-    def find_add(
-        self, coordinator: "IUCoordinator", controller: "IUController", index: int
-    ) -> IUSchedule:
+    def find_add(self, index: int) -> IUSchedule:
         if index >= len(self._schedules):
             return self.add(IUSchedule(self._hass, index))
         else:
@@ -1149,9 +1147,7 @@ class IUZone(IUBase):
             )
         if CONF_SCHEDULES in config:
             for si, schedule_config in enumerate(config[CONF_SCHEDULES]):
-                self.find_add(self._coordinator, self._controller, si).load(
-                    schedule_config
-                )
+                self.find_add(si).load(schedule_config)
         self._dirty = True
         return self
 
@@ -1339,18 +1335,10 @@ class IUSequenceZone(IUBase):
 
     def __init__(
         self,
-        hass: HomeAssistant,
-        coordinator: "IUCoordinator",
-        controller: "IUController",
-        sequence: "IUSequence",
         zone_index: int,
     ) -> None:
         super().__init__(zone_index)
         # Passed parameters
-        self._hass = hass
-        self._coordinator = coordinator
-        self._controller = controller
-        self._sequence = sequence
         # Config parameters
         self._zone_ids: list[str] = None
         self._delay: timedelta = None
@@ -1506,9 +1494,7 @@ class IUSequence(IUBase):
         self._schedules.append(schedule)
         return schedule
 
-    def find_add_schedule(
-        self, coordinator: "IUCoordinator", controller: "IUController", index: int
-    ) -> IUSchedule:
+    def find_add_schedule(self, index: int) -> IUSchedule:
         if index >= len(self._schedules):
             return self.add_schedule(IUSchedule(self._hass, index))
         else:
@@ -1519,13 +1505,9 @@ class IUSequence(IUBase):
         self._zones.append(zone)
         return zone
 
-    def find_add_zone(
-        self, coordinator: "IUCoordinator", controller: "IUController", index: int
-    ) -> IUSequenceZone:
+    def find_add_zone(self, index: int) -> IUSequenceZone:
         if index >= len(self._zones):
-            return self.add_zone(
-                IUSequenceZone(self._hass, coordinator, controller, self, index)
-            )
+            return self.add_zone(IUSequenceZone(index))
         else:
             return self._zones[index]
 
@@ -1541,14 +1523,10 @@ class IUSequence(IUBase):
         self._delay = wash_td(config.get(CONF_DELAY))
         self._duration = wash_td(config.get(CONF_DURATION))
         self._repeat = config.get(CONF_REPEAT, 1)
-        for si, schedule_config in enumerate(config[CONF_SCHEDULES]):
-            self.find_add_schedule(self._coordinator, self._controller, si).load(
-                schedule_config
-            )
         for zi, zone_config in enumerate(config[CONF_ZONES]):
-            self.find_add_zone(self._coordinator, self._controller, zi).load(
-                zone_config
-            )
+            self.find_add_zone(zi).load(zone_config)
+        for si, schedule_config in enumerate(config[CONF_SCHEDULES]):
+            self.find_add_schedule(si).load(schedule_config)
         return self
 
     def as_dict(self) -> OrderedDict:
