@@ -1207,7 +1207,14 @@ class IUZone(IUBase):
             if do_on == False:
                 updated |= self._run_queue.update_sensor(time)
                 if not self._is_on:
-                    do_update = self._sensor_update_required
+                    # Force a refresh at midnight for the total_today attribute
+                    if (
+                        self._sensor_last_update is not None
+                        and dt.as_local(self._sensor_last_update).toordinal()
+                        != dt.as_local(time).toordinal()
+                    ):
+                        do_update = True
+                    do_update |= self._sensor_update_required
             else:
                 if self._is_on:
                     # If we are running then update sensor according to refresh_interval
@@ -1217,7 +1224,7 @@ class IUZone(IUBase):
                             or time - self._sensor_last_update
                             >= self._coordinator.refresh_interval
                         )
-                    do_update = do_update or self._sensor_update_required
+                    do_update |= self._sensor_update_required
         else:
             do_update = False
 
