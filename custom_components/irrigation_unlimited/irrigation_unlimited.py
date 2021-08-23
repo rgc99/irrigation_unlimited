@@ -1476,7 +1476,7 @@ class IUSequence(IUBase):
         zone duration. Final time will be approximate as the new durations must
         be rounded to internal boundaries"""
         total_duration = self.total_duration()
-        if total_time is not None and total_duration != 0:
+        if total_time is not None and total_duration != timedelta(0):
             return (total_time - self.total_delay()) / total_duration
         else:
             return 1.0
