@@ -34,6 +34,7 @@ from .const import (
     CONF_ALL_ZONES_CONFIG,
     CONF_DAY,
     CONF_DECREASE,
+    CONF_FINISH,
     CONF_INCREASE,
     CONF_INDEX,
     CONF_OUTPUT_EVENTS,
@@ -45,6 +46,7 @@ from .const import (
     CONF_SEQUENCE_ID,
     CONF_SHOW_LOG,
     CONF_AUTOPLAY,
+    CONF_ANCHOR,
     DEFAULT_GRANULATITY,
     DEFAULT_REFRESH_INTERVAL,
     DEFAULT_TEST_SPEED,
@@ -304,6 +306,8 @@ class IUSchedule(IUBase):
         self._name: str = None
         self._weekdays: list[int] = None
         self._months: list[int] = None
+        self._days = None
+        self._anchor: str = None
         # Private variables
         self._dirty: bool = True
         return
@@ -319,7 +323,7 @@ class IUSchedule(IUBase):
         return True
 
     @property
-    def run_time(self) -> timedelta:
+    def duration(self) -> timedelta:
         """Return the duration"""
         return self._duration
 
@@ -333,8 +337,10 @@ class IUSchedule(IUBase):
         self.clear()
 
         self._time = config[CONF_TIME]
+        self._anchor = config[CONF_ANCHOR]
         self._duration = wash_td(config.get(CONF_DURATION, None))
         self._name = config.get(CONF_NAME, f"Schedule {self.index + 1}")
+
         if CONF_WEEKDAY in config:
             self._weekdays = []
             for i in config[CONF_WEEKDAY]:
@@ -371,7 +377,9 @@ class IUSchedule(IUBase):
             dict[CONF_DAY] = self._days
         return dict
 
-    def get_next_run(self, atime: datetime, ftime: datetime) -> datetime:
+    def get_next_run(
+        self, atime: datetime, ftime: datetime, adjusted_duration: timedelta
+    ) -> datetime:
         """
         Determine the next start time. Date processing in this routine
         is done in local time and returned as UTC
@@ -382,8 +390,8 @@ class IUSchedule(IUBase):
         next_run: datetime = None
         while True:
 
-            if next_run is None:
-                next_run = local_time  # Initialise on first pass
+            if next_run is None:  # Initialise on first pass
+                next_run = local_time
             else:
                 next_run += timedelta(days=1)  # Advance to next day
 
@@ -410,6 +418,7 @@ class IUSchedule(IUBase):
                 elif next_run.day not in self._days:
                     continue
 
+            # Adjust time component
             if isinstance(self._time, time):
                 next_run = datetime.combine(
                     next_run.date(), self._time, next_run.tzinfo
@@ -428,6 +437,9 @@ class IUSchedule(IUBase):
                     next_run -= self._time[CONF_BEFORE]
             else:  # Some weird error happened
                 return None
+
+            if self._anchor == CONF_FINISH:
+                next_run -= adjusted_duration
 
             next_run = wash_dt(next_run)
             if next_run >= local_time:
@@ -912,10 +924,11 @@ class IUScheduleQueue(IURunQueue):
         else:
             next_time = time
 
-        next_run = schedule.get_next_run(next_time, self.last_time(time))
+        duration = self.constrain(adjustment.adjust(schedule.duration))
+        next_run = schedule.get_next_run(next_time, self.last_time(time), duration)
 
         if next_run is not None:
-            self.add_schedule(zone, schedule, next_run, adjustment)
+            self.add(next_run, duration, zone, schedule, None)
             modified = True
 
         return modified
@@ -1798,7 +1811,10 @@ class IUController(IUBase):
         total_duration: timedelta = None,
     ) -> int:
         def init_run_time(
-            time: datetime, schedule: IUSchedule, zone: IUZone
+            time: datetime,
+            schedule: IUSchedule,
+            zone: IUZone,
+            total_duration: timedelta,
         ) -> datetime:
             if schedule is not None:
                 next_time = zone.runs.find_last_date(schedule.id)
@@ -1806,18 +1822,20 @@ class IUController(IUBase):
                     next_time += granularity_time()
                 else:
                     next_time = time
-                next_run = schedule.get_next_run(next_time, zone.runs.last_time(time))
+                next_run = schedule.get_next_run(
+                    next_time, zone.runs.last_time(time), total_duration
+                )
             else:
                 next_run = time + granularity_time()
             return next_run
 
-        def calc_multiplier(
+        def calc_total_duration(
             total_duration: timedelta, sequence: IUSequence, schedule: IUSchedule
-        ) -> float:
-            """Calculate the multiplier"""
+        ) -> timedelta:
+            """Calculate the total duration of the sequence"""
             if total_duration is None:
-                if schedule is not None and schedule.run_time is not None:
-                    total_duration = schedule.run_time
+                if schedule is not None and schedule.duration is not None:
+                    total_duration = schedule.duration
                 else:
                     total_duration = sequence.total_time()
             if schedule is not None and sequence.has_adjustment:
@@ -1828,9 +1846,10 @@ class IUController(IUBase):
                 )
                 if total_duration < total_delay:
                     total_duration = total_delay  # Make run time 0
-            return sequence.duration_multiplier(total_duration)
+            return total_duration
 
-        duration_multiplier = calc_multiplier(total_duration, sequence, schedule)
+        total_duration = calc_total_duration(total_duration, sequence, schedule)
+        duration_multiplier = sequence.duration_multiplier(total_duration)
         status: int = 0
         next_run: datetime = None
         sequence_run: IUSequenceRun = None
@@ -1848,7 +1867,9 @@ class IUController(IUBase):
                     if zone is not None and zone.enabled:
                         # Initialise on first pass
                         if next_run is None:
-                            next_run = init_run_time(time, schedule, zone)
+                            next_run = init_run_time(
+                                time, schedule, zone, total_duration
+                            )
                             if next_run is None:
                                 return status  # Exit if queue is full
                             sequence_run = IUSequenceRun(sequence)
@@ -1858,6 +1879,7 @@ class IUController(IUBase):
                             duration_adjusted = zone.adjustment.adjust(duration)
                         else:
                             duration_adjusted = duration
+                        duration_adjusted = zone.runs.constrain(duration_adjusted)
 
                         zone_run_time = next_run
                         for j in range(  # pylint: disable=unused-variable

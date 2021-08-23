@@ -64,6 +64,9 @@ CONF_OUTPUT_EVENTS = "output_events"
 CONF_SHOW_LOG = "show_log"
 CONF_AUTOPLAY = "autoplay"
 CONF_FUTURE_SPAN = "future_span"
+CONF_ANCHOR = "anchor"
+CONF_START = "start"
+CONF_FINISH = "finish"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

@@ -27,6 +27,7 @@ from .service import register_component_services
 from .const import (
     BINARY_SENSOR,
     CONF_ENABLED,
+    CONF_FINISH,
     CONF_FUTURE_SPAN,
     CONF_MAXIMUM,
     CONF_MINIMUM,
@@ -37,6 +38,7 @@ from .const import (
     CONF_RESULTS,
     CONF_SHOW_LOG,
     CONF_AUTOPLAY,
+    CONF_ANCHOR,
     DOMAIN,
     COORDINATOR,
     COMPONENT,
@@ -91,6 +93,7 @@ SUN_SCHEMA = vol.Schema(
 )
 
 time_event = vol.Any(cv.time, SUN_SCHEMA)
+anchor_event = vol.Any(CONF_START, CONF_FINISH)
 month_event = vol.All(cv.ensure_list, [vol.In(MONTHS)])
 
 day_number = vol.All(vol.Coerce(int), vol.Range(min=0, max=31))
@@ -99,6 +102,7 @@ day_event = vol.Any(CONF_ODD, CONF_EVEN, cv.ensure_list(day_number))
 SCHEDULE_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_TIME): time_event,
+        vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
         vol.Required(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
@@ -133,6 +137,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
 SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_TIME): time_event,
+        vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
         vol.Optional(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
