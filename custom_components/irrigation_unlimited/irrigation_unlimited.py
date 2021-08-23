@@ -837,6 +837,13 @@ class IUScheduleQueue(IURunQueue):
         self._maximum: timedelta = None
         return
 
+    def constrain(self, duration: timedelta) -> timedelta:
+        if self._minimum is not None:
+            duration = max(duration, self._minimum)
+        if self._maximum is not None:
+            duration = min(duration, self._maximum)
+        return duration
+
     def add(
         self,
         start_time: datetime,
@@ -845,24 +852,9 @@ class IUScheduleQueue(IURunQueue):
         schedule: "IUSchedule",
         sequence_run: "IUSequenceRun",
     ) -> IURun:
-        if self._minimum is not None:
-            duration = max(duration, self._minimum)
-        if self._maximum is not None:
-            duration = min(duration, self._maximum)
-        return super().add(start_time, duration, zone, schedule, sequence_run)
-
-    def add_schedule(
-        self,
-        zone: "IUZone",
-        schedule: IUSchedule,
-        start_time: datetime,
-        adjustment: IUAdjustment,
-    ) -> IURun:
-        """Add a new schedule run to the queue"""
-        duration = schedule.run_time
-        if adjustment is not None:
-            duration = adjustment.adjust(duration)
-        return self.add(start_time, duration, zone, schedule, None)
+        return super().add(
+            start_time, self.constrain(duration), zone, schedule, sequence_run
+        )
 
     def add_manual(
         self, start_time: datetime, duration: timedelta, zone: "IUZone"
