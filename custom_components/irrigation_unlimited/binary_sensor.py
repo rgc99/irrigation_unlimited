@@ -78,7 +78,7 @@ def on_duration(
     """Return the total on time between start and end"""
     history_list = history.state_changes_during_period(hass, start, end, entity_id)
 
-    elapsed = timedelta()
+    elapsed = timedelta(0)
     current_state: str = None
     current_time: datetime = None
 
@@ -111,10 +111,9 @@ def midnight(utc: datetime) -> datetime:
     )
 
 
-def today_on_duration(hass: HomeAssistant, entity_id: str) -> timedelta:
-    end = dt.utcnow()
-    start = midnight(end)
-    return on_duration(hass, start, end, entity_id)
+def today_on_duration(hass: HomeAssistant, entity_id: str, time: datetime) -> timedelta:
+    start = midnight(time)
+    return on_duration(hass, start, time, entity_id)
 
 
 class IUMasterEntity(IUEntity):
@@ -273,7 +272,11 @@ class IUZoneEntity(IUEntity):
         else:
             attr["next_schedule"] = RES_NONE
         attr[ATTR_TOTAL_TODAY] = round(
-            today_on_duration(self.hass, self.entity_id).total_seconds() / 60, 1
+            today_on_duration(
+                self.hass, self.entity_id, self._coordinator.service_time()
+            ).total_seconds()
+            / 60,
+            1,
         )
         if self._zone.show_config:
             attr["configuration"] = json.dumps(self._zone.as_dict(), default=str)
