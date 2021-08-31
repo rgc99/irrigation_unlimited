@@ -37,6 +37,7 @@
         - [Simple water saving / eco mode example](#simple-water-saving--eco-mode-example)
         - [Every hour on the hour](#every-hour-on-the-hour)
         - [Seasonal watering](#seasonal-watering)
+        - [Finish at sunrise](#finish-at-sunrise)
         - [Tips](#tips)
     - [Services](#services)
         - [Services enable, disable and toggle](#services-enable-disable-and-toggle)
@@ -205,11 +206,14 @@ The zone object manages a collection of schedules. There must be at least one zo
 
 Schedules are future events, _not_ dates for example Mondays. There must be at least one schedule for each zone.
 
+The schedule can have the commencement or completion fixed to a time or event with the `anchor` parameter. Any adjustments to the duration will alter the start time if `finish` is specified or the completion time if `start` is specified. Note: If anchoring to `finish` and the schedule can not complete before the specified time then the run will defer to the following day. This is an important consideration if adjusting run times dynamically as it may lead to a 'skipping' situation. Ensure there is sufficient time to complete the run when making adjustments. See _[here](#service-adjust_time)_ for more information on adjusting runs times.
+
 The parameters `weekday`, `day` and `month` are date filters. If not specified then all dates qualify.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `time` | time/_[Sun Event](#sun-event)_ | **Required** | The start time. Either a time (07:30) or sun event |
+| `anchor` | string | start | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
 | `duration` | time | | The length of time to run. Required for zones and optional for sequences |
 | `name` | string | Schedule *N* | Friendly name for the schedule |
 | `weekday` | list | | The days of week to run [mon, tue...sun] |
@@ -456,6 +460,34 @@ irrigation_unlimited:
           - zone_id: 3
 ~~~
 
+### Finish at sunrise
+
+~~~yaml
+# Finish a watering run 10 minutes before sunrise
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: 'switch.my_switch_1'
+      - entity_id: 'switch.my_switch_2'
+      - entity_id: 'switch.my_switch_3'
+      - entity_id: 'switch.my_switch_4'
+    sequences:
+      - name: 'My watering run'
+        duration: '00:30'
+        delay: '00:01'
+        schedules:
+          - name: 'Before dawn'
+            time:
+              sun: 'sunrise'
+              before: '00:10'
+            anchor: finish
+        zones:
+          - zone_id: 1
+          - zone_id: 2
+          - zone_id: 3
+          - zone_id: 4
+~~~
+
 For a more comprehensive example refer to [here](./examples/all_the_bells_and_whistles.yaml).
 
 ### Tips
@@ -510,6 +542,8 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 ### Service `adjust_time`
 
 Adjust the run times. Calling this service will override any previous adjustment i.e. it will *not* make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
+
+A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day.
 
 #### Tip
 
@@ -626,10 +660,12 @@ automation:
 ### HAsmartirrigation
 [HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 23:30 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
 
+The example below offers two methods for a single zone or a sequence.
+
 ~~~yaml
 # Example automation for HAsmartirrigation integration (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
 automation:
-  - alias: Smart Irrigation adjustment
+  - alias: Smart Irrigation adjustment - Single zone
     description: Adjust watering times based on smart irrigation calculations
     trigger:
       - platform: time
@@ -638,6 +674,21 @@ automation:
       - service: irrigation_unlimited.adjust_time
         data:
           entity_id: binary_sensor.irrigation_unlimited_c1_z1
+          actual: >
+            {% set t = states('sensor.smart_irrigation_daily_adjusted_run_time') | int %}
+            {{ '{:02d}:{:02d}:{:02d}'.format((t // 3600) % 24, (t % 3600) // 60, (t % 3600) % 60) }}
+    mode: single
+
+  - alias: Smart Irrigation adjustment - Sequence
+    description: Adjust watering times based on smart irrigation calculations
+    trigger:
+      - platform: time
+          at: "23:30"
+    action:
+      - service: irrigation_unlimited.adjust_time
+        data:
+          entity_id: binary_sensor.irrigation_unlimited_c1_m
+          sequence_id: 1
           actual: >
             {% set t = states('sensor.smart_irrigation_daily_adjusted_run_time') | int %}
             {{ '{:02d}:{:02d}:{:02d}'.format((t // 3600) % 24, (t % 3600) // 60, (t % 3600) % 60) }}
