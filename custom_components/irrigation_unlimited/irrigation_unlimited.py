@@ -2598,12 +2598,12 @@ class IUCoordinator:
 
     def check_run(self, time: datetime) -> bool:
         """Update run status"""
-        is_running: bool = False
+        status_changed: bool = False
 
         for controller in self._controllers:
-            is_running = is_running or controller.check_run(time)
+            status_changed |= controller.check_run(time)
 
-        return is_running
+        return status_changed
 
     def request_update(self) -> None:
         """Flag the sensor needs an update. The actual update is done
