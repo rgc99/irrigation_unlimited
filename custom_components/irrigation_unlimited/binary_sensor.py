@@ -206,7 +206,7 @@ class IUZoneEntity(IUEntity):
 
     @property
     def should_poll(self):
-        """Indicate that we nee to poll data"""
+        """Indicate that we need to poll data"""
         return False
 
     @property
