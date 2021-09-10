@@ -122,7 +122,7 @@ class IUMasterEntity(IUEntity):
     @property
     def unique_id(self):
         """Return a unique ID."""
-        return f"c{self._controller.index + 1}_m"
+        return self._controller.unique_id
 
     @property
     def name(self):
@@ -192,7 +192,7 @@ class IUZoneEntity(IUEntity):
     @property
     def unique_id(self):
         """Return a unique ID."""
-        return f"c{self._controller.index + 1}_z{self._zone.index + 1}"
+        return self._zone.unique_id
 
     @property
     def name(self):

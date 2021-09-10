@@ -1000,6 +1000,10 @@ class IUZone(IUBase):
         return
 
     @property
+    def unique_id(self) -> str:
+        return f"c{self._controller.index + 1}_z{self.index + 1}"
+
+    @property
     def schedules(self) -> "list[IUSchedule]":
         return self._schedules
 
@@ -1632,6 +1636,10 @@ class IUController(IUBase):
         self._sensor_last_update: datetime = None
         self._dirty: bool = True
         return
+
+    @property
+    def unique_id(self) -> str:
+        return f"c{self.index + 1}_m"
 
     @property
     def zones(self) -> "list[IUZone]":
