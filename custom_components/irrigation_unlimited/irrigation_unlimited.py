@@ -1071,12 +1071,11 @@ class IUZone(IUBase):
 
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
-        if not self._initialised:
-            self._initialised = self._zone_sensor is not None
+        self._initialised = self._zone_sensor is not None
 
-            if self._initialised:
-                for schedule in self._schedules:
-                    self._initialised = self._initialised and schedule.is_setup
+        if self._initialised:
+            for schedule in self._schedules:
+                self._initialised = self._initialised and schedule.is_setup
         return self._initialised
 
     def _status(self) -> str:
@@ -1714,12 +1713,11 @@ class IUController(IUBase):
             return STATUS_INITIALISING
 
     def _is_setup(self) -> bool:
-        if not self._initialised:
-            self._initialised = self._master_sensor is not None
+        self._initialised = self._master_sensor is not None
 
-            if self._initialised:
-                for zone in self._zones:
-                    self._initialised = self._initialised and zone.is_setup
+        if self._initialised:
+            for zone in self._zones:
+                self._initialised = self._initialised and zone.is_setup
         return self._initialised
 
     def add_zone(self, zone: IUZone) -> IUZone:
@@ -1790,6 +1788,9 @@ class IUController(IUBase):
         all_zones = config.get(CONF_ALL_ZONES_CONFIG)
         for zi, zone_config in enumerate(config[CONF_ZONES]):
             self.find_add_zone(self._coordinator, self, zi).load(zone_config, all_zones)
+        while zi < len(self._zones) - 1:
+            self._zones.pop()
+
         if CONF_SEQUENCES in config:
             for qi, sequence_config in enumerate(config[CONF_SEQUENCES]):
                 self.find_add_sequence(self._coordinator, self, qi).load(
@@ -2551,6 +2552,11 @@ class IUCoordinator:
             all_setup = all_setup and controller.is_setup
         return all_setup
 
+    def initialise(self) -> None:
+        """Flag we need to re-initialise"""
+        self._initialised = False
+        return
+
     def add(self, controller: IUController) -> IUController:
         """Add a new controller to the system"""
         self._controllers.append(controller)
@@ -2580,6 +2586,8 @@ class IUCoordinator:
 
         for ci, controller_config in enumerate(config[CONF_CONTROLLERS]):
             self.find_add(self, ci).load(controller_config)
+        while ci < len(self._controllers) - 1:
+            self._controllers.pop()
 
         self._tester = IUTester().load(config.get(CONF_TESTING))
 

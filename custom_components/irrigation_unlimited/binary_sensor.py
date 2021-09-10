@@ -1,6 +1,12 @@
 """Binary sensor platform for irrigation_unlimited."""
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_platform
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity_component import EntityComponent
+from homeassistant.helpers.entity_platform import (
+    EntityPlatform,
+    current_platform,
+    async_get_platforms,
+)
 import homeassistant.util.dt as dt
 from datetime import datetime, timedelta
 from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
@@ -23,6 +29,7 @@ from .const import (
     ATTR_ENABLED,
     ATTR_STATUS,
     ATTR_INDEX,
+    BINARY_SENSOR,
     DOMAIN,
     COORDINATOR,
     ICON_CONTROLLER_OFF,
@@ -67,9 +74,45 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             entities.append(IUZoneEntity(coordinator, controller, zone))
     async_add_entities(entities)
 
-    platform = entity_platform.current_platform.get()
+    platform = current_platform.get()
     register_platform_services(platform)
 
+    return
+
+
+async def async_reload_platform(
+    component: EntityComponent, coordinator: IUCoordinator
+) -> None:
+    def find_platform(hass: HomeAssistant, name: str) -> EntityPlatform:
+        platforms = async_get_platforms(hass, DOMAIN)
+        for platform in platforms:
+            if platform.domain == name:
+                return platform
+        return None
+
+    def remove_entity(entities: dict[Entity], entity_id: str) -> bool:
+        entity_id = f"{BINARY_SENSOR}.{DOMAIN}_{entity_id}"
+        if entity_id in entities:
+            entities.pop(entity_id)
+            return True
+        return False
+
+    platform = find_platform(component.hass, BINARY_SENSOR)
+    if platform is not None:
+        old_entities: dict[Entity] = platform.entities.copy()
+        new_entities: list[Entity] = []
+
+        for controller in coordinator.controllers:
+            if not remove_entity(old_entities, controller.unique_id):
+                new_entities.append(IUMasterEntity(coordinator, controller, None))
+            for zone in controller.zones:
+                if not remove_entity(old_entities, zone.unique_id):
+                    new_entities.append(IUZoneEntity(coordinator, controller, zone))
+        if len(new_entities) > 0:
+            await platform.async_add_entities(new_entities)
+            coordinator.initialise()
+        for entity in old_entities:
+            await platform.async_remove_entity(entity)
     return
 
 
