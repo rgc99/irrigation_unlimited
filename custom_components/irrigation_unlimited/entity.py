@@ -65,14 +65,6 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         self._coordinator.service_call(service, self._controller, self._zone, call.data)
         return
 
-    @property
-    def controller(self) -> IUController:
-        return self._controller
-
-    @property
-    def zone(self) -> IUZone:
-        return self._zone
-
 
 class IUComponent(RestoreEntity):
     """Representation of IrrigationUnlimitedCoordinator"""
