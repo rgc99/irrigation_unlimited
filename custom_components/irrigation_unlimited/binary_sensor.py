@@ -16,6 +16,7 @@ from homeassistant.const import (
     STATE_ON,
 )
 
+from .irrigation_unlimited import IUCoordinator
 from .entity import IUEntity
 from .service import register_platform_services
 from .const import (
@@ -58,7 +59,7 @@ ATTR_TOTAL_TODAY = "today_total"
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup binary_sensor platform."""
 
-    coordinator = hass.data[DOMAIN][COORDINATOR]
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
     entities = []
     for controller in coordinator._controllers:
         entities.append(IUMasterEntity(coordinator, controller, None))
