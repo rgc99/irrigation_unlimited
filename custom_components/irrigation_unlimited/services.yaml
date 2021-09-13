@@ -39,7 +39,6 @@ toggle:
           integration: irrigation_unlimited
           domain: binary_sensor
 
-
 cancel:
   name: Cancel
   description: Cancel the current run.
@@ -52,7 +51,6 @@ cancel:
         entity:
           integration: irrigation_unlimited
           domain: binary_sensor
-
 
 adjust_time:
   name: Adjust time
@@ -74,6 +72,16 @@ adjust_time:
       selector:
         number:
           min: 1
+          max: 9999
+          mode: box
+
+    zones:
+      description: Id of the zone
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 0
           max: 9999
           mode: box
 

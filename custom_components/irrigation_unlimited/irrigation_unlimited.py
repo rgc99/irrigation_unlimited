@@ -560,6 +560,22 @@ class IURun(IUBase):
             sidx = 0
         return f"{get_index(self._zone)}.{get_index(self._schedule)}.{get_index(self.sequence)}.{get_index(self.sequence_zone)}.{sidx}"
 
+    def sequence_has_adjustment(self, deep: bool) -> bool:
+        if self.is_sequence:
+            return self.sequence.has_adjustment(deep)
+        else:
+            return False
+
+    def sequence_adjustment(self) -> str:
+        if self.is_sequence:
+            result = str(self._sequence_run.sequence.adjustment)
+            sequence_zone = self._sequence_run.sequence_zone(self)
+            if sequence_zone.has_adjustment:
+                result = f"{result},{str(sequence_zone.adjustment)}"
+            return result
+        else:
+            return None
+
     def is_manual(self) -> bool:
         """Check if this is a manual run"""
         return self._schedule is None
@@ -674,30 +690,13 @@ class IURunQueue(list):
             modified = True
         return modified
 
-    def clear_sequences(self, time: datetime) -> bool:
-        """Clear out sequences that are not running"""
-        modified: bool = False
-        if len(self) > 0:
-            i = len(self) - 1
-            while i >= 0:
-                item = self[i]
-                if (
-                    not (item.is_running(time) or item.is_manual())
-                    and item.is_sequence
-                    and not item.sequence_running
-                ):
-                    self.pop(i)
-                    modified = True
-                i -= 1
-        return modified
-
     def clear(self, time: datetime) -> bool:
         """Clear out the queue except for manual or running schedules"""
         modified: bool = False
         if len(self) > 0:
             i = len(self) - 1
             while i >= 0:
-                item: IURun = self[i]
+                item = self[i]
                 if not (
                     item.is_running(time) or item.is_manual() or item.sequence_running
                 ):
@@ -1126,11 +1125,6 @@ class IUZone(IUBase):
         else:
             return self._schedules[index]
 
-    def clear_run_queue(self) -> None:
-        """Clear out the run queue"""
-        self._run_queue.clear_all()
-        return
-
     def clear(self) -> None:
         """Reset this zone"""
         self._schedules.clear()
@@ -1139,8 +1133,13 @@ class IUZone(IUBase):
         self._is_on = False
         return
 
-    def clear_sequence_runs(self, time: datetime) -> None:
-        self._run_queue.clear_sequences(time)
+    def clear_runs(self, time: datetime) -> None:
+        self._run_queue.clear(time)
+        return
+
+    def clear_run_queue(self) -> None:
+        """Clear out the run queue"""
+        self._run_queue.clear_all()
         return
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUZone":
@@ -1361,6 +1360,7 @@ class IUSequenceZone(IUBase):
         self._duration: timedelta = None
         self._repeat: int = None
         # Private variables
+        self.clear()
         return
 
     @property
@@ -1379,8 +1379,17 @@ class IUSequenceZone(IUBase):
     def repeat(self) -> int:
         return self._repeat
 
+    @property
+    def adjustment(self) -> IUAdjustment:
+        return self._adjustment
+
+    @property
+    def has_adjustment(self) -> bool:
+        return self._adjustment.has_adjustment
+
     def clear(self) -> None:
         """Reset this sequence zone"""
+        self._adjustment = IUAdjustment()
         return
 
     def load(self, config: OrderedDict) -> "IUSequenceZone":
@@ -1443,9 +1452,14 @@ class IUSequence(IUBase):
     def adjustment(self) -> IUAdjustment:
         return self._adjustment
 
-    @property
-    def has_adjustment(self) -> bool:
-        return self._adjustment.has_adjustment
+    def has_adjustment(self, deep: bool) -> bool:
+        if self._adjustment.has_adjustment:
+            return True
+        elif deep:
+            for sequence_zone in self._zones:
+                if sequence_zone.adjustment.has_adjustment:
+                    return True
+        return False
 
     def zone_enabled(self, sequence_zone: IUSequenceZone) -> bool:
         """Return True if at least one real zone referenced by the
@@ -1465,6 +1479,7 @@ class IUSequence(IUBase):
                 duration = self._duration
             if duration is None:
                 duration = granularity_time()
+            duration = sequence_zone.adjustment.adjust(duration)
             for zone_id in sequence_zone.zone_ids:
                 zone = self._controller.find_zone_by_zone_id(zone_id)
                 if zone is not None:
@@ -1535,21 +1550,30 @@ class IUSequence(IUBase):
         else:
             return self._schedules[index]
 
+    def find_zone(self, index: int) -> IUSequenceZone:
+        if index >= 0 and index < len(self._zones):
+            return self._zones[index]
+        else:
+            return None
+
     def add_zone(self, zone: IUSequenceZone) -> IUSequenceZone:
         """Add a new zone to the sequence"""
         self._zones.append(zone)
         return zone
 
     def find_add_zone(self, index: int) -> IUSequenceZone:
-        if index >= len(self._zones):
-            return self.add_zone(IUSequenceZone(index))
-        else:
-            return self._zones[index]
+        result = self.find_zone(index)
+        if result is None:
+            result = self.add_zone(IUSequenceZone(index))
+        return result
 
     def zone_ids(self) -> str:
+        result = set()
         for sequence_zone in self._zones:
             for zone_id in sequence_zone.zone_ids:
-                yield zone_id
+                result.add(zone_id)
+        for zone_id in result:
+            yield zone_id
 
     def load(self, config: OrderedDict) -> "IUSequence":
         """Load sequence data from the configuration"""
@@ -1767,9 +1791,16 @@ class IUController(IUBase):
         self._is_on = False
         return
 
-    def clear_sequence_runs(self, time: datetime) -> None:
-        for zone in self._zones:
-            zone.clear_sequence_runs(time)
+    def clear_sequence_runs(self, time: datetime, zone_ids: list[str] = None) -> None:
+        """Clear out zone run queue from supplied list or the lot if None"""
+        if zone_ids is None:
+            for zone in self._zones:
+                zone.clear_runs(time)
+        else:
+            for zone_id in zone_ids:
+                zone = self.find_zone_by_zone_id(zone_id)
+                if zone is not None:
+                    zone.clear_runs(time)
         return
 
     def notify_children(self) -> None:
@@ -1847,7 +1878,7 @@ class IUController(IUBase):
                     total_duration = schedule.duration
                 else:
                     total_duration = sequence.total_time()
-            if schedule is not None and sequence.has_adjustment:
+            if schedule is not None and sequence.has_adjustment(False):
                 total_delay = sequence.total_delay()
                 total_duration = (
                     sequence.adjustment.adjust(total_duration - total_delay)
@@ -1884,7 +1915,7 @@ class IUController(IUBase):
                             sequence_run = IUSequenceRun(sequence)
 
                         # Don't adjust manual run and no adjustment on adjustment
-                        if schedule is not None and not sequence.has_adjustment:
+                        if schedule is not None and not sequence.has_adjustment(True):
                             duration_adjusted = zone.adjustment.adjust(duration)
                         else:
                             duration_adjusted = duration
@@ -2056,20 +2087,29 @@ class IUController(IUBase):
         return
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
-        sequence_id = data.get(CONF_SEQUENCE_ID, None)
+        def check_item(index: int, items: list[int]) -> bool:
+            return (
+                items is None
+                or (items is not None and items == [0])
+                or index + 1 in items
+            )
+
+        zl: list[int] = data.get(CONF_ZONES)
+        sequence_id = data.get(CONF_SEQUENCE_ID)
         if sequence_id is None:
-            zl: list[int] = data.get(CONF_ZONES, None)
             for zone in self._zones:
-                if zl is None or zone.index + 1 in zl:
+                if check_item(zone.index, zl):
                     zone.service_adjust_time(data, time)
         else:
             sequence = self.find_sequence(sequence_id - 1)
             if sequence is not None:
-                if sequence.adjustment.load(data):
-                    for zone_id in sequence.zone_ids():
-                        zone = self.find_zone_by_zone_id(zone_id)
-                        if zone is not None:
-                            zone.runs.clear(time)
+                if zl is None:
+                    sequence.adjustment.load(data)
+                else:
+                    for sequence_zone in sequence.zones:
+                        if check_item(sequence_zone.index, zl):
+                            sequence_zone.adjustment.load(data)
+                self.clear_sequence_runs(time, sequence.zone_ids())
         return
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:

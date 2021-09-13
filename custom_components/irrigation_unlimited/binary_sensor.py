@@ -283,8 +283,8 @@ class IUZoneEntity(IUEntity):
             if current.schedule is not None:
                 attr[ATTR_CURRENT_SCHEDULE] = current.schedule.index + 1
                 attr[ATTR_CURRENT_NAME] = current.schedule.name
-                if current.is_sequence and current.sequence.adjustment.has_adjustment:
-                    attr[ATTR_CURRENT_ADJUSTMENT] = str(current.sequence.adjustment)
+                if current.sequence_has_adjustment(True):
+                    attr[ATTR_CURRENT_ADJUSTMENT] = current.sequence_adjustment()
                 else:
                     attr[ATTR_CURRENT_ADJUSTMENT] = str(self._zone.adjustment)
             else:
@@ -309,8 +309,8 @@ class IUZoneEntity(IUEntity):
                 attr["next_name"] = RES_MANUAL
             attr["next_start"] = dt.as_local(next.start_time)
             attr["next_duration"] = str(next.duration)
-            if next.is_sequence and next.sequence.adjustment.has_adjustment:
-                attr["next_adjustment"] = str(next.sequence.adjustment)
+            if next.sequence_has_adjustment(True):
+                attr["next_adjustment"] = next.sequence_adjustment()
             else:
                 attr["next_adjustment"] = str(self._zone.adjustment)
         else:

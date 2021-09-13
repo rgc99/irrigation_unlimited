@@ -1669,3 +1669,180 @@ async def test_service_adjust_time_finish(
     await finish_test(hass, coordinator, next_time, True)
 
     check_summary(full_path, coordinator)
+
+
+async def test_service_adjust_time_sequence_zone(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
+    """Test adjust_time service call on a sequence zone."""
+
+    full_path = test_config_dir + "service_adjust_time_sequence_zone.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    next_time = await begin_test(1, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": 1,
+            "percentage": 50,
+        },
+        True,
+    )
+    next_time = await run_until(
+        hass,
+        coordinator,
+        next_time,
+        datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
+        True,
+    )
+    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert s.attributes["current_adjustment"] == "None,%50.0"
+    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert s.attributes["next_adjustment"] == "None"
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(2, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": [2, 3],
+            "percentage": 50,
+        },
+        True,
+    )
+    next_time = await run_until(
+        hass,
+        coordinator,
+        next_time,
+        datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
+        True,
+    )
+    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert s.attributes["current_adjustment"] == "None,%50.0"
+    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert s.attributes["next_adjustment"] == "None,%50.0"
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(3, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "percentage": 200,
+        },
+        True,
+    )
+    next_time = await run_until(
+        hass,
+        coordinator,
+        next_time,
+        datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
+        True,
+    )
+    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert s.attributes["current_adjustment"] == "%200.0,%50.0"
+    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert s.attributes["next_adjustment"] == "%200.0,%50.0"
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(4, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "reset": None,
+        },
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": 0,
+            "reset": None,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(5, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "zones": 1,
+            "percentage": 50,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(6, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "zones": [2, 3],
+            "percentage": 50,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(7, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "percentage": 200,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(8, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "reset": None,
+        },
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "zones": 0,
+            "reset": None,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    check_summary(full_path, coordinator)
