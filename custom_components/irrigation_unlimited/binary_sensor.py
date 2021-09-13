@@ -90,7 +90,7 @@ async def async_reload_platform(
                 return platform
         return None
 
-    def remove_entity(entities: dict[Entity], entity_id: str) -> bool:
+    def remove_entity(entities: "dict[Entity]", entity_id: str) -> bool:
         entity_id = f"{BINARY_SENSOR}.{DOMAIN}_{entity_id}"
         if entity_id in entities:
             entities.pop(entity_id)
