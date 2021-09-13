@@ -1791,7 +1791,7 @@ class IUController(IUBase):
         self._is_on = False
         return
 
-    def clear_sequence_runs(self, time: datetime, zone_ids: list[str] = None) -> None:
+    def clear_sequence_runs(self, time: datetime, zone_ids: "list[str]" = None) -> None:
         """Clear out zone run queue from supplied list or the lot if None"""
         if zone_ids is None:
             for zone in self._zones:
@@ -2087,7 +2087,7 @@ class IUController(IUBase):
         return
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
-        def check_item(index: int, items: list[int]) -> bool:
+        def check_item(index: int, items: "list[int]") -> bool:
             return (
                 items is None
                 or (items is not None and items == [0])
