@@ -11,6 +11,7 @@ import homeassistant.util.dt as dt
 import logging
 import uuid
 import time as tm
+import json
 
 from homeassistant.const import (
     CONF_AFTER,
@@ -37,6 +38,7 @@ from .const import (
     CONF_FINISH,
     CONF_INCREASE,
     CONF_INDEX,
+    CONF_LOGGING,
     CONF_OUTPUT_EVENTS,
     CONF_PERCENTAGE,
     CONF_REFRESH_INTERVAL,
@@ -94,6 +96,13 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 def time_to_timedelta(offset: time) -> timedelta:
     """Create a timedelta from a time object"""
     return datetime.combine(datetime.min, offset) - datetime.min
+
+
+def dt2lstr(time: datetime) -> str:
+    """Format the passed UTC datetime into a local date time string. The result
+    is formatted to ISO 8601 date and 24 hour time notation (YYYY-MM-DD HH:MM:SS).
+    Example 2021-12-25 17:00:00 for 5pm on December 25 2021."""
+    return datetime.strftime(dt.as_local(time), "%F %T")
 
 
 # These routines truncate dates, times and deltas to the internal
@@ -2086,7 +2095,7 @@ class IUController(IUBase):
             )
         return
 
-    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> None:
+    def service_adjust_time(self, data: MappingProxyType, time: datetime) -> bool:
         def check_item(index: int, items: "list[int]") -> bool:
             return (
                 items is None
@@ -2094,23 +2103,24 @@ class IUController(IUBase):
                 or index + 1 in items
             )
 
+        result = False
         zl: list[int] = data.get(CONF_ZONES)
         sequence_id = data.get(CONF_SEQUENCE_ID)
         if sequence_id is None:
             for zone in self._zones:
                 if check_item(zone.index, zl):
-                    zone.service_adjust_time(data, time)
+                    result |= zone.service_adjust_time(data, time)
         else:
             sequence = self.find_sequence(sequence_id - 1)
             if sequence is not None:
                 if zl is None:
-                    sequence.adjustment.load(data)
+                    result = sequence.adjustment.load(data)
                 else:
                     for sequence_zone in sequence.zones:
                         if check_item(sequence_zone.index, zl):
-                            sequence_zone.adjustment.load(data)
+                            result |= sequence_zone.adjustment.load(data)
                 self.clear_sequence_runs(time, sequence.zone_ids())
-        return
+        return result
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
         sequence_id = data.get(CONF_SEQUENCE_ID, None)
@@ -2169,7 +2179,7 @@ class IUEvent:
 
     @property
     def time_local(self) -> str:
-        return self.dt2lstr()
+        return dt2lstr(self._time)
 
     @property
     def zone_name(self) -> str:
@@ -2194,10 +2204,6 @@ class IUEvent:
         self._state = state
         self._crumbs = crumbs
         return self
-
-    def dt2lstr(self) -> str:
-        """Format the passed datetime into local time"""
-        return datetime.strftime(dt.as_local(self._time), "%Y-%m-%d %H:%M:%S")
 
     def as_str(self) -> str:
         return f"{{t: '{self.time_local}', c: {self._controller}, z: {self._zone}, s: {1 if self._state else 0}}}"
@@ -2343,7 +2349,10 @@ class IUTest(IUBase):
 class IUTester:
     """Irrigation Unlimited testing class"""
 
-    def __init__(self) -> None:
+    def __init__(self, coordinator: "IUCoordinator") -> None:
+        # Passed parameters
+        self._coordinator = coordinator
+        # Private variables
         self._tests: list[IUTest] = []
         self.load(None)
         return
@@ -2437,6 +2446,7 @@ class IUTester:
                     dt.as_local(ct._end).strftime("%c"),
                 )
             self._test_initialised = False
+            self._coordinator.logger.log_test_start(time, ct)
         else:
             self._running_test = None
         return self.current_test
@@ -2447,6 +2457,7 @@ class IUTester:
             ct.end()
             if self._show_log:
                 _LOGGER.info("Test %d completed", self._running_test + 1)
+            self._coordinator.logger.log_test_end(time, ct)
         self._last_test = self._running_test
         self._running_test = None
         return
@@ -2542,6 +2553,136 @@ class IUTester:
         return
 
 
+class IULogger:
+    """Irrigation Unlimited logger class"""
+
+    def __init__(self, logger: logging.Logger) -> None:
+        # Passed parameters
+        self._logger = logger
+        # Config parameters
+        self._log_events = True
+        self._log_calls = True
+        # Private variables
+        return
+
+    def clear(self) -> None:
+        return
+
+    def load(self, config: OrderedDict) -> "IULogger":
+        """Load config data for the tester"""
+        self.clear()
+        if config is None:
+            config = {}
+        return self
+
+    def controller_index(self, controller: IUController) -> str:
+        if controller is not None:
+            return str(controller.index + 1)
+        else:
+            return 0
+
+    def zone_index(self, zone: IUZone) -> str:
+        if zone is not None:
+            return str(zone.index + 1)
+        else:
+            return "0"
+
+    def log_start(self) -> None:
+        self._logger.debug("START")
+        return
+
+    def log_stop(self) -> None:
+        self._logger.debug("STOP")
+        return
+
+    def log_load(self, data: OrderedDict) -> None:
+        self._logger.debug("LOAD")
+        return
+
+    def log_initialised(self, time: datetime) -> None:
+        self._logger.debug("INITIALISED [%s]", dt2lstr(time))
+        return
+
+    def log_event(
+        self,
+        time: datetime,
+        controller: IUController,
+        zone: IUZone,
+        state: bool,
+        data: str,
+    ) -> None:
+        if self._log_events:
+            if len(data) != 0:
+                self._logger.debug(
+                    "EVENT [%s] controller: %s, zone: %s, state: %s, data: %s",
+                    dt2lstr(time),
+                    self.controller_index(controller),
+                    self.zone_index(zone),
+                    str(int(state)),
+                    data,
+                )
+            else:
+                self._logger.debug(
+                    "EVENT [%s] controller: %s, zone: %s, state: %s",
+                    dt2lstr(time),
+                    self.controller_index(controller),
+                    self.zone_index(zone),
+                    str(int(state)),
+                )
+        return
+
+    def log_service_call(
+        self,
+        service: str,
+        time: datetime,
+        controller: IUController,
+        zone: IUZone,
+        data: MappingProxyType,
+    ) -> None:
+        if self._log_calls:
+            self._logger.debug(
+                "CALL [%s] service: %s, controller: %s, zone: %s, data: %s",
+                dt2lstr(time),
+                service,
+                self.controller_index(controller),
+                self.zone_index(zone),
+                json.dumps(data, default=str),
+            )
+        return
+
+    def log_register_entity(
+        self, time: datetime, controller: IUController, zone: IUZone, entity: Entity
+    ) -> None:
+        self._logger.debug(
+            "REGISTER [%s] controller: %s, zone: %s, entity: %s",
+            dt2lstr(time),
+            self.controller_index(controller),
+            self.zone_index(zone),
+            entity.entity_id,
+        )
+        return
+
+    def log_deregister_entity(
+        self, time: datetime, controller: IUController, zone: IUZone, entity: Entity
+    ) -> None:
+        self._logger.debug(
+            "DEREGISTER [%s] controller: %s, zone: %s, entity: %s",
+            dt2lstr(time),
+            self.controller_index(controller),
+            self.zone_index(zone),
+            entity.entity_id,
+        )
+        return
+
+    def log_test_start(self, time: datetime, test: IUTest) -> None:
+        self._logger.debug("TEST_START [%s] test: %d", dt2lstr(time), test.index + 1)
+        return
+
+    def log_test_end(self, time: datetime, test: IUTest) -> None:
+        self._logger.debug("TEST_END [%s] test: %d", dt2lstr(time), test.index + 1)
+        return
+
+
 class IUCoordinator:
     """Irrigation Unimited Coordinator class"""
 
@@ -2562,7 +2703,8 @@ class IUCoordinator:
         self._last_muster: datetime = None
         self._muster_required: bool = False
         self._remove_listener: CALLBACK_TYPE = None
-        self._tester = IUTester()
+        self._tester = IUTester(self)
+        self._logger = IULogger(_LOGGER)
         return
 
     @property
@@ -2572,6 +2714,10 @@ class IUCoordinator:
     @property
     def tester(self) -> IUTester:
         return self._tester
+
+    @property
+    def logger(self) -> IULogger:
+        return self._logger
 
     @property
     def is_setup(self) -> bool:
@@ -2629,10 +2775,12 @@ class IUCoordinator:
         while ci < len(self._controllers) - 1:
             self._controllers.pop()
 
-        self._tester = IUTester().load(config.get(CONF_TESTING))
+        self._tester = IUTester(self).load(config.get(CONF_TESTING))
+        self._logger = IULogger(_LOGGER).load(config.get(CONF_LOGGING))
 
         self._dirty = True
         self._muster_required = True
+        self._logger.log_load(config)
         return self
 
     def as_dict(self) -> OrderedDict:
@@ -2703,6 +2851,7 @@ class IUCoordinator:
         else:
             self._initialised = self.is_setup
             if self._initialised:
+                self._logger.log_initialised(time)
                 self.request_update()
                 self.poll_main(time)
         return
@@ -2723,12 +2872,14 @@ class IUCoordinator:
         self._remove_listener = async_track_time_interval(
             self._hass, self._async_timer, self.track_interval()
         )
+        self._logger.log_start()
         return
 
     def stop(self) -> None:
         if self._remove_listener is not None:
             self._remove_listener()
             self._remove_listener = None
+            self._logger.log_stop()
         return
 
     def register_entity(
@@ -2740,6 +2891,7 @@ class IUCoordinator:
             controller.master_sensor = entity
         else:
             zone.zone_sensor = entity
+        self._logger.log_register_entity(self.service_time(), controller, zone, entity)
         return
 
     def deregister_entity(
@@ -2751,6 +2903,9 @@ class IUCoordinator:
             controller.master_sensor = None
         else:
             zone.zone_sensor = None
+        self._logger.log_deregister_entity(
+            self.service_time(), controller, zone, entity
+        )
         return
 
     def service_time(self) -> datetime:
@@ -2771,6 +2926,7 @@ class IUCoordinator:
         data: MappingProxyType,
     ) -> None:
         """Entry point for all service calls."""
+        changed = True
         time = self.service_time()
 
         if service == SERVICE_ENABLE:
@@ -2798,17 +2954,17 @@ class IUCoordinator:
                 controller.service_cancel(data, time)
         elif service == SERVICE_TIME_ADJUST:
             if zone is not None:
-                zone.service_adjust_time(data, time)
+                changed = zone.service_adjust_time(data, time)
             else:
-                controller.service_adjust_time(data, time)
+                changed = controller.service_adjust_time(data, time)
         elif service == SERVICE_MANUAL_RUN:
             if zone is not None:
                 zone.service_manual_run(data, time)
             else:
                 controller.service_manual_run(data, time)
-        else:
-            return
         self._muster_required = True
+        if changed:
+            self._logger.log_service_call(service, time, controller, zone, data)
         return
 
     def start_test(self, test_no: int) -> datetime:
@@ -2830,4 +2986,5 @@ class IUCoordinator:
             zone_id = 0
         e = IUEvent().load2(time, controller.index + 1, zone_id, state, crumbs)
         self._tester.entity_state_changed(e)
+        self._logger.log_event(time, controller, zone, state, crumbs)
         return
