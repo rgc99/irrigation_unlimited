@@ -534,23 +534,23 @@ class IURun(IUBase):
         else:
             return None
 
-    @property
-    def sequence_id(self) -> int:
-        if self.is_sequence:
-            return self._sequence_run._id
-        else:
-            return None
+    # @property
+    # def sequence_id(self) -> int:
+    #     if self.is_sequence:
+    #         return self._sequence_run._id
+    #     else:
+    #         return None
 
     @property
     def sequence_running(self) -> bool:
         return self.is_sequence and self._sequence_run.running
 
-    @sequence_running.setter
-    def sequence_running(self, value: bool) -> None:
-        """Flag sequence is now running"""
-        if self.is_sequence:
-            self.sequence_run.running = value
-        return
+    # @sequence_running.setter
+    # def sequence_running(self, value: bool) -> None:
+    #     """Flag sequence is now running"""
+    #     if self.is_sequence:
+    #         self.sequence_run.running = value
+    #     return
 
     @property
     def crumbs(self) -> str:
@@ -597,15 +597,15 @@ class IURun(IUBase):
         """Check if this schedule is expired"""
         return time >= self._end_time
 
-    def is_future(self, time: datetime) -> bool:
-        """Check schedule is in the future"""
-        return self._start_time > time
+    # def is_future(self, time: datetime) -> bool:
+    #     """Check schedule is in the future"""
+    #     return self._start_time > time
 
-    def is_valid(self, time: datetime) -> bool:
-        """Return true if run is valid. Should be
-        running or in the future.
-        """
-        return self.is_running(time) and not self.is_future(time)
+    # def is_valid(self, time: datetime) -> bool:
+    #     """Return true if run is valid. Should be
+    #     running or in the future.
+    #     """
+    #     return self.is_running(time) and not self.is_future(time)
 
     def sequence_start(self, time: datetime) -> bool:
         """Check if sequence is about to start but not yet flagged"""
