@@ -2143,8 +2143,8 @@ class IUEvent:
     def __init__(self) -> None:
         # Private variables
         self._time: datetime = None
-        self._controller: IUController = None
-        self._zone: IUZone = None
+        self._controller: int = None
+        self._zone: int = None
         self._state: bool = None
         self._crumbs: str = None
         return
@@ -2162,11 +2162,11 @@ class IUEvent:
         return self._time
 
     @property
-    def controller(self) -> IUController:
+    def controller(self) -> int:
         return self._controller
 
     @property
-    def zone(self) -> IUZone:
+    def zone(self) -> int:
         return self._zone
 
     @property
