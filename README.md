@@ -46,6 +46,7 @@
         - [Service adjust_time](#service-adjust_time)
             - [Tip](#tip)
         - [Service reload](#service-reload)
+        - [Service call access roadmap](#service-call-access-roadmap)
     - [Frontend](#frontend)
         - [Manual run card](#manual-run-card)
     - [Automation](#automation)
@@ -98,6 +99,18 @@ Irrigation Unlimited is comprised of controllers, zones and schedules in a tree 
         ...
     └── Zone N -> binary_sensor.irrigation_unlimited_c1_zN
         ...
+    └── Sequence 1
+      └── Schedule 1
+      └── Schedule 2
+        ...
+      └── Schedule N
+      └── Zone 1
+      └── Zone 2
+        ...
+      └── Zone N
+    └── Sequence 2
+      ...
+    └── Sequence N
   └── Controller 2 -> binary_sensor.irrigation_unlimited_c2_m
       ...
   └── Controller N -> binary_sensor.irrigation_unlimited_cN_m
@@ -233,6 +246,23 @@ Leave the time value in the _[Schedule Objects](#schedule-objects)_ blank and ad
 ### Sequence Objects
 
 Sequences allow zones to run one at a time in a particular order with a delay in between. This is a type of watering 'playlist'. If a delay is specified and a pump or master valve is operated by the controller then consider the postamble setting in the _[Controller Object](#controller-objects)_. Set this to the largest delay to prevent pump on/off operations.
+
+Sequences directly descend from a controller and are loosely connected to a zone entity via the `zone_id` parameter. The `zone_id` may point to one or many (a list) zone entities. A zone may be referenced more than once in a sequence.
+
+~~~text
+└── Irrigation Unlimited
+      └──> Controller
+            ├──> Zones
+            │     ├──> Zone 1 <────┐
+            │     ├──> Zone 2 <────┤
+            │     │     ...        │
+            │     └──> Zone N <────┤
+            └──> Sequence          │
+                  ├──> zone_id >───┤
+                  ├──> zone_id >───┤
+                  │      ...       │
+                  └──> zone_id >───┘
+~~~
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -560,10 +590,214 @@ Use forecast and observation data collected by weather integrations in automatio
 | `minimum` | yes | Set the minimum run time.
 | `maximum` | yes | Set the maximum run time. Note: The default is no limit.
 | `sequence_id` | yes | Sequence to run (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
+| `zones` | yes | Zones to adjust (1, 2..N). Within a sequence, zones are numbered by their position starting a 1. A value of 0 means all zones.
 
 ### Service `reload`
 
 Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading.
+
+### Service call access roadmap
+
+A reminder that sequences directly descend from a controller. Therefore service calls that manipulate a sequence should address the parent controller. An entity_id of a zone when trying to adjust a sequence will most likely not have the desired effect.
+
+The combination of three key parameters `entity_id`, `sequence_id` and `zones` will target the various sections of the configuration.
+
+* `entity_id:` This will be either the controller or zone entity.
+* `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on.
+* `zones:` This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zone references in the sequence. May also take a list `zones: [1,3,5]`
+
+The following is a valid irrigation unlimited configuration. It shows how various points can be changed using the service calls above. Example numbers are coded C.Z.S.R = Controller.Zone.Sequence.zoneReference. If Z is zero then the `entity_id` must be the controller/master i.e. binary_sensor.irrigation_unlimited_cN_m. If Z is not zero then then entity_id is the zone i.e. binary_sensor.irrigation_unlimited_cN_zN.
+
+~~~yaml
+irrigation_unlimited:
+  controllers:
+    - name: "Controller 1"
+      enabled: true # <= See example 1.0
+      zones:
+        - name: "Controller 1, Zone 1"
+          enabled: true # <= See example 1.1
+          - schedules:
+              - time: "04:00"
+                duration: "00:10" # <= See example 1.1.1
+        - name: "Controller 1, Zone 2"
+          enabled: true # <= See example 1.2
+          - schedules:
+              - time: "05:00"
+                duration: "00:10" # <= See example 1.2.1
+      sequences:
+        - name: "Controller 1, Sequence 1"
+          duration: "01:00" #  <= See example 1.0.1
+          schedules:
+            - time: "06:00"
+          zones:
+            - zone_id: [1, 2] # This is controller 1, sequence 1, zone reference 1
+              duration: "00:10" # <= See example 1.0.1.1
+            - zone_id: 2  # This is controller 1, sequence 1, zone reference 2
+              duration: "00:10" # <= See example 1.0.1.2
+        - name: "Controller 1, Sequence 2"
+          duration: "01:00" # <= See example 1.0.2
+          schedules:
+            - time: "07:00"
+          zones:
+            - zone_id: 1 # This is controller 1, sequence 2, zone reference 1
+              duration: "00:10" # <= See example 1.0.2.1
+    - name: "Controller 2"
+      enabled: true # <= See example 2.0
+      zones:
+        - name: "Controller 2, Zone 1"
+          enabled: true # <= See example 2.1
+        - name: "Controller 2, Zone 2"
+          enabled: true # <= See example 2.2
+      sequences:
+        - name: "Controller 2, Sequence 1"
+          duration: "01:00" # <= See example 2.0.1
+          schedules:
+            - time: "09:00"
+          zones:
+            - zone_id: 1 # This is controller 2, sequence 1, zone reference 1
+              duration: "00:10" # <= See example 2.0.1.1
+            - zone_id: 2 # This is controller 2, sequence 1, zone reference 2
+              duration: "00:10" # <= See example 2.0.1.2
+        - name: "Controller 2, Sequence 2"
+          duration: "01:00" # <= See example 2.0.2
+          schedules:
+            - time: "09:00"
+          zones:
+            - zone_id: 1 # This is controller 2, sequence 2, zone reference 1
+              duration: "00:10" # <= See example 2.0.2.1
+            - zone_id: 2 # This is controller 2, sequence 2, zone reference 2
+              duration: "00:10" # <= See example 2.0.2.2
+~~~
+
+Notes:
+1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplisity however all methods are available as described _[above](#service-adjust_time)_.
+2. The `enable` service call can also be `disable` or `toggle`.
+
+~~~yaml
+# Example 1.0 -> controller 1 -> enabled. This will alter the enabled status for the controller.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+
+# Example 1.1 -> controller 1 -> zone 1 -> enabled. This will alter the enabled status for zone 1.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_z1
+
+# Example 1.1.1 -> controller 1 -> zone 1 -> duration. This will alter the duration for zone 1.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_z1
+
+# Example 1.2 -> controller 1 -> zone 2 -> enabled. This will alter the enabled status of zone 2.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_z2
+
+# Example 1.2.1 -> controller 1 -> zone 1 -> duration. This will alter the duration for zone 2.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_z2
+
+# Example 1.0.1 -> controller 1 -> sequence 1 -> duration. This will proportionaly alter the duration
+# for all zone references in the first sequence.
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 1
+    actual: "00:20"
+
+# Example 1.0.1.1 -> controller 1 -> cequence 1 -> zone reference 1 -> duration. This will alter the duration
+# for the first zone reference in the first sequence.
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 1
+    zones: 1
+    actual: "00:20"
+
+# Example 1.0.1.2 - controller 1 -> sequence 1 -> zone reference 2 -> duration. This will alter the duration
+# for the second zone reference in the first sequence.
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 1
+    zones: 2
+    actual: "00:20"
+
+# Example 1.0.2 - controller 1 -> sequence 2 -> duration. This will proportionaly alter the duration
+# for all zone references in the second sequence.
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 2
+    actual: "00:20"
+
+# Example 1.0.2.1 - controller 1 -> sequence 2 -> zone reference 1 -> duration
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 2
+    zones: 1
+    actual: "00:20"
+
+# Example 2.0 -> controller 2 -> enabled. This will alter the enabled status for the controller.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+
+# Example 2.1 -> controller 2 -> zone 1 -> enabled. This will alter the enabled status for zone 1.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_z1
+
+# Example 2.2 -> controller 2 -> zone 2 -> enabled. This will alter the enabled status of zone 2.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_z2
+
+# Example 2.0.1 - controller 2 -> sequence 1 -> duration. This will proportionaly alter the duration
+# for all zone references in the first sequence.
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 1
+    actual: "00:20"
+
+# Example 2.0.1.1 - controller 2 -> sequence 1 -> zone reference 1 -> duration. This will alter the duration
+# for the first zone reference in the first sequence.
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 1
+    zones: 1
+    actual: "00:20"
+
+# Example 2.0.1.2 - controller 2 -> sequence 1 -> zone reference 2 -> duration. This will alter the duration
+# for the second zone reference in the first sequence.
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 1
+    zones: 2
+    actual: "00:20"
+
+# Example 2.0.2 - controller 2 -> sequence 2 -> duration
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 2
+    actual: "00:20"
+
+# Example 2.0.2.2 - controller 2 -> sequence 2 -> zone reference 2 -> duration
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 2
+    zones: 2
+    actual: "00:20"
+
+~~~
 
 ## Frontend
 
