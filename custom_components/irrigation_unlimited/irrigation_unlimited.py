@@ -2317,8 +2317,8 @@ class IUTest(IUBase):
                 self._results.append(IUEvent().load(r))
         return self
 
-    def begin(self, time: datetime) -> None:
-        self._delta = time - self._start
+    def begin_test(self, atime: datetime) -> None:
+        self._delta = atime - self._start
         self._perf_mon = tm.perf_counter()
         self._current_result = 0
         self._events = 0
@@ -2327,7 +2327,7 @@ class IUTest(IUBase):
         self._test_time = 0
         return
 
-    def end(self) -> None:
+    def end_test(self) -> None:
         self._test_time = tm.perf_counter() - self._perf_mon
         return
 
@@ -2450,7 +2450,7 @@ class IUTester:
     def end_test(self, time: datetime) -> None:
         ct = self.current_test
         if ct is not None:
-            ct.end()
+            ct.end_test()
             if self._show_log:
                 _LOGGER.info("Test %d completed", self._running_test + 1)
             self._coordinator.logger.log_test_end(time, ct)
@@ -2460,8 +2460,8 @@ class IUTester:
 
     def next_test(self, time: datetime) -> IUTest:
         current = self._running_test  # This is 0-based
-        self.end_test(time)
-        return self.start_test(current + 2, time)  # This takes 1-based
+        self.end_test(atime)
+        return self.start_test(current + 2, atime)  # This takes 1-based
 
     def _is_testing(self) -> bool:
         return self._enabled and self._running_test is not None
