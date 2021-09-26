@@ -1101,6 +1101,9 @@ class IUZone(IUBase):
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> bool:
         """Adjust the scheduled run times. Return true if adjustment changed"""
+        sequence_id = data.get(CONF_SEQUENCE_ID)
+        if sequence_id is not None:
+            self._coordinator.logger.log_sequence_entity(time)
         result = self._adjustment.load(data)
         if result:
             self._run_queue.clear(time)
@@ -2689,8 +2692,13 @@ class IULogger:
         )
         return
 
-    def log_test_end(self, time: datetime, test: IUTest) -> None:
-        self._logger.debug("TEST_END [%s] test: %d", dt2lstr(time), test.index + 1)
+    def log_sequence_entity(self, vtime: datetime, level=WARNING) -> None:
+        self.output(
+            level,
+            "ENTITY [{0}] Sequence specified but entity_id is zone".format(
+                dt2lstr(vtime)
+            ),
+        )
         return
 
 
