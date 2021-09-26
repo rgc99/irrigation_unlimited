@@ -1266,7 +1266,7 @@ class IUZone(IUBase):
 
         return updated
 
-    def call_switch(self, service_type: str) -> None:
+    def call_switch(self, time: datetime, service_type: str) -> None:
         if self._switch_entity_id is not None:
             self._hass.async_create_task(
                 self._hass.services.async_call(
@@ -1275,6 +1275,7 @@ class IUZone(IUBase):
                     {ATTR_ENTITY_ID: self._switch_entity_id},
                 )
             )
+        self._coordinator.status_changed(time, self._controller, self, self._is_on)
         return
 
 
@@ -2026,8 +2027,7 @@ class IUController(IUBase):
         # Handle off zones before master
         for zone in (self._zones[i] for i in zones_changed):
             if not zone.is_on:
-                zone.call_switch(SERVICE_TURN_OFF)
-                self._coordinator.status_changed(time, self, zone, zone.is_on)
+                zone.call_switch(time, SERVICE_TURN_OFF)
 
         # Check if master has changed and update
         is_running = self._is_enabled and self._run_queue.current_run is not None
@@ -2035,14 +2035,12 @@ class IUController(IUBase):
         if state_changed:
             self._is_on = not self._is_on
             self.request_update()
-            self.call_switch(SERVICE_TURN_ON if self._is_on else SERVICE_TURN_OFF)
-            self._coordinator.status_changed(time, self, None, self._is_on)
+            self.call_switch(time, SERVICE_TURN_ON if self._is_on else SERVICE_TURN_OFF)
 
         # Handle on zones after master
         for zone in (self._zones[i] for i in zones_changed):
             if zone.is_on:
-                zone.call_switch(SERVICE_TURN_ON)
-                self._coordinator.status_changed(time, self, zone, zone.is_on)
+                zone.call_switch(time, SERVICE_TURN_ON)
 
         return state_changed
 
@@ -2080,7 +2078,7 @@ class IUController(IUBase):
             zone.update_sensor(time, True)
         return
 
-    def call_switch(self, service_type: str) -> None:
+    def call_switch(self, time: datetime, service_type: str) -> None:
         """Update the linked entity if enabled"""
         if self._switch_entity_id is not None:
             self._hass.async_create_task(
@@ -2090,6 +2088,7 @@ class IUController(IUBase):
                     {ATTR_ENTITY_ID: self._switch_entity_id},
                 )
             )
+        self._coordinator.status_changed(time, self, None, self._is_on)
         return
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> bool:
