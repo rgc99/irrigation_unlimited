@@ -1846,3 +1846,28 @@ async def test_service_adjust_time_sequence_zone(
     await finish_test(hass, coordinator, next_time, True)
 
     check_summary(full_path, coordinator)
+
+
+async def test_service_adjust_time_sequence_bad(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
+    """Test adjust_time service call on a zone entity with a sequence."""
+
+    full_path = test_config_dir + "service_adjust_time_sequence_bad.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    next_time = await begin_test(1, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+            "sequence_id": 1,
+            "reset": None,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
