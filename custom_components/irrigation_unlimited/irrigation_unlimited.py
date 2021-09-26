@@ -2254,6 +2254,10 @@ class IUTest(IUBase):
         return self._start
 
     @property
+    def end(self) -> datetime:
+        return self._end
+
+    @property
     def events(self) -> int:
         return self._events
 
