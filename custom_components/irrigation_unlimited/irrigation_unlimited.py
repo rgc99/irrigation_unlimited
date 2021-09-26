@@ -2193,7 +2193,7 @@ class IUEvent:
 
     def load2(
         self, time: datetime, controller: int, zone: int, state: bool, crumbs: str
-    ):
+    ) -> "IUEvent":
         self._time = time
         self._controller = controller
         self._zone = zone
