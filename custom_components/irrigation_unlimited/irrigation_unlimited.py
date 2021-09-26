@@ -2433,11 +2433,11 @@ class IUTester:
             result += test.total_results
         return result
 
-    def start_test(self, test_no: int, time: datetime) -> IUTest:
+    def start_test(self, test_no: int, atime: datetime) -> IUTest:
         if test_no > 0 and test_no <= len(self._tests):
             self._running_test = test_no - 1  # 0-based
             ct = self._tests[self._running_test]
-            ct.begin(time)
+            ct.begin_test(atime)
             if self._show_log:
                 _LOGGER.info(
                     "Running test %d from %s to %s",
@@ -2462,7 +2462,7 @@ class IUTester:
         self._running_test = None
         return
 
-    def next_test(self, time: datetime) -> IUTest:
+    def next_test(self, atime: datetime) -> IUTest:
         current = self._running_test  # This is 0-based
         self.end_test(atime)
         return self.start_test(current + 2, atime)  # This takes 1-based
@@ -2495,9 +2495,9 @@ class IUTester:
                 self._tests.append(IUTest(ti, self._speed).load(test))
         return self
 
-    def poll_test(self, time: datetime, poll_func) -> None:
+    def poll_test(self, atime: datetime, poll_func) -> None:
         if self._autoplay and not self._autoplay_initialised:
-            self.start_test(1, time)
+            self.start_test(1, atime)
             self._autoplay_initialised = True
 
         ct = self.current_test
@@ -2505,9 +2505,9 @@ class IUTester:
             if not self._test_initialised:
                 poll_func(ct._start, True)
                 self._test_initialised = True
-            elif ct.is_finished(time):  # End of current test
+            elif ct.is_finished(atime):  # End of current test
                 if self._autoplay:
-                    ct = self.next_test(time)
+                    ct = self.next_test(atime)
                     if ct is not None:
                         poll_func(ct.start, True)
                     else:  # All tests finished
@@ -2519,12 +2519,12 @@ class IUTester:
                             )
                         poll_func(time, True)
                 else:  # End single test
-                    self.end_test(time)
-                    poll_func(time, True)
+                    self.end_test(atime)
+                    poll_func(atime, True)
             else:  # Continue existing test
-                poll_func(ct.virtual_time(time))
+                poll_func(ct.virtual_time(atime))
         else:  # Out of tests to run
-            poll_func(time)
+            poll_func(atime)
         return
 
     def entity_state_changed(self, event: IUEvent) -> None:
@@ -2826,34 +2826,34 @@ class IUCoordinator:
             self._sensor_last_update = time
         return
 
-    def poll(self, time: datetime, force: bool = False) -> None:
+    def poll(self, vtime: datetime, force: bool = False) -> None:
         """Poll the system for changes, updates and refreshes"""
-        wtime: datetime = wash_dt(time)
+        wtime: datetime = wash_dt(vtime)
         if (wtime != self._last_muster) or self._muster_required:
             if self.muster(wtime, force) != 0:
                 self.check_run(wtime)
             self._muster_required = False
             self._last_muster = wtime
-        self.update_sensor(wash_dt(time, 1))
+        self.update_sensor(wash_dt(vtime, 1))
         return
 
-    def poll_main(self, time: datetime, force: bool = False) -> None:
+    def poll_main(self, atime: datetime, force: bool = False) -> None:
         if self._tester.enabled:
-            self._tester.poll_test(time, self.poll)
+            self._tester.poll_test(atime, self.poll)
         else:
-            self.poll(time, force)
+            self.poll(atime, force)
         return
 
-    def timer(self, time: datetime) -> None:
-        self._last_tick = time
+    def timer(self, atime: datetime) -> None:
+        self._last_tick = atime
         if self._initialised:
-            self.poll_main(time)
+            self.poll_main(atime)
         else:
             self._initialised = self.is_setup
             if self._initialised:
-                self._logger.log_initialised(time)
+                self._logger.log_initialised()
                 self.request_update()
-                self.poll_main(time)
+                self.poll_main(atime)
         return
 
     async def _async_timer(self, time: datetime) -> None:
