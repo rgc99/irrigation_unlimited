@@ -1,14 +1,3 @@
-# Filename: irrigation_unlimited_adjustment.yaml
-#
-# This file is a package and should be located in the config/packages
-# folder. If you do not have a packages folder then create it and add
-# the following to configuration.yaml
-#
-# homeassistant:
-#  packages: !include_dir_named packages
-#
-# More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
-#
 # Set up some observation sensors.
 # This uses the Weather Underground (WUnderground) https://www.home-assistant.io/integrations/wunderground/ integration.
 # Rain information (wupws_preciptotal) is a daily accumulation total. So we want to grab the
@@ -16,6 +5,7 @@
 # because the reset from WU may take a few minutes to come through, currently 10 min. Increase this
 # if data is unreliable.
 # Note: Requires the ha-average integration to be installed https://github.com/Limych/ha-average
+
 sensor:
   - platform: average
     name: irrigation_unlimited_rain_0
@@ -24,6 +14,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}'
     end: '{{ now() }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_rain_1
@@ -32,6 +23,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_rain_2
@@ -40,6 +32,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_rain_3
@@ -48,6 +41,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_rain_4
@@ -56,6 +50,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_temperature_0
@@ -64,6 +59,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}'
     end: '{{ now() }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_temperature_1
@@ -72,6 +68,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_temperature_2
@@ -80,6 +77,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_temperature_3
@@ -88,6 +86,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_temperature_4
@@ -96,6 +95,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
     end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
+    scan_interval: 600
 
   - platform: average
     name: irrigation_unlimited_temperature_5_day_moving_average
@@ -104,6 +104,7 @@ sensor:
     precision: 1
     start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
     end: '{{ now() }}'
+    scan_interval: 600
 
   # Five day weighted rain total sensor.
   # Adjust the weight values (0.7, 0.3, 0.15, 0.05) to suit your needs (0.0 = ignore that day).
@@ -120,6 +121,7 @@ sensor:
           {% set rain_total = rain_total + state_attr('sensor.irrigation_unlimited_rain_3','max_value') | float * 0.15 %}
           {% set rain_total = rain_total + state_attr('sensor.irrigation_unlimited_rain_4','max_value') | float * 0.05 %}
           {{ rain_total | round(1) }}
+    scan_interval: 600
 
 # Automation to adjust the run times for Irrigation Unlimited.
 # It uses the 5 day weighted rain total and the moving 5 day average temperature sensors
