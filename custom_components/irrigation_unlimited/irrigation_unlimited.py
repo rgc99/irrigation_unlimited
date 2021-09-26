@@ -102,7 +102,7 @@ def dt2lstr(time: datetime) -> str:
     """Format the passed UTC datetime into a local date time string. The result
     is formatted to ISO 8601 date and 24 hour time notation (YYYY-MM-DD HH:MM:SS).
     Example 2021-12-25 17:00:00 for 5pm on December 25 2021."""
-    return datetime.strftime(dt.as_local(time), "%F %T")
+    return datetime.strftime(dt.as_local(time), "%Y-%m-%d %H:%M:%S")
 
 
 # These routines truncate dates, times and deltas to the internal
