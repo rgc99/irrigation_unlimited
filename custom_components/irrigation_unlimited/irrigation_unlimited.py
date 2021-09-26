@@ -184,10 +184,7 @@ class IUBase:
         return
 
     def __eq__(self, other) -> bool:
-        if isinstance(other, IUBase):
-            return self.id == other.id
-        else:
-            return False
+        return isinstance(other, IUBase) and self.id == other.id
 
     @property
     def id(self) -> str:
