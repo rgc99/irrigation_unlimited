@@ -2157,6 +2157,9 @@ class IUEvent:
             and self._state == other.state
         )
 
+    def __str__(self) -> str:
+        return f"{{t: '{dt2lstr(self._time)}', c: {self._controller}, z: {self._zone}, s: {str(int(self._state))}}}"
+
     @property
     def time(self) -> datetime:
         return self._time
@@ -2201,10 +2204,7 @@ class IUEvent:
         self._crumbs = crumbs
         return self
 
-    def as_str(self) -> str:
-        return f"{{t: '{self.time_local}', c: {self._controller}, z: {self._zone}, s: {1 if self._state else 0}}}"
-
-    def as_dict(self):
+    def as_dict(self) -> dict:
         return {
             "t": self._time,
             "c": self._controller,
