@@ -1,3 +1,14 @@
+# Filename: irrigation_unlimited_adjustment.yaml
+#
+# This file is a package and should be located in the config/packages
+# folder. If you do not have a packages folder then create it and add
+# the following to configuration.yaml
+#
+# homeassistant:
+#  packages: !include_dir_named packages
+#
+# More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
+#
 # Set up some observation sensors.
 # This uses the Weather Underground (WUnderground) https://www.home-assistant.io/integrations/wunderground/ integration.
 # Rain information (wupws_preciptotal) is a daily accumulation total. So we want to grab the
@@ -12,8 +23,8 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}'
-    end: '{{ now() }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}"
+    end: "{{ now() }}"
     scan_interval: 600
 
   - platform: average
@@ -21,8 +32,8 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}"
     scan_interval: 600
 
   - platform: average
@@ -30,8 +41,8 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}"
     scan_interval: 600
 
   - platform: average
@@ -39,8 +50,8 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}"
     scan_interval: 600
 
   - platform: average
@@ -48,8 +59,8 @@ sensor:
     entities:
       - sensor.wupws_preciptotal
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}"
     scan_interval: 600
 
   - platform: average
@@ -57,8 +68,8 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}'
-    end: '{{ now() }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) }}"
+    end: "{{ now() }}"
     scan_interval: 600
 
   - platform: average
@@ -66,8 +77,8 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=1) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=1) }}"
     scan_interval: 600
 
   - platform: average
@@ -75,8 +86,8 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=2) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=2) }}"
     scan_interval: 600
 
   - platform: average
@@ -84,8 +95,8 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=3) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=3) }}"
     scan_interval: 600
 
   - platform: average
@@ -93,8 +104,8 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
-    end: '{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}"
+    end: "{{ now().replace(hour=23).replace(minute=59).replace(second=0) - timedelta(days=4) }}"
     scan_interval: 600
 
   - platform: average
@@ -102,8 +113,8 @@ sensor:
     entities:
       - sensor.wupws_temp
     precision: 1
-    start: '{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}'
-    end: '{{ now() }}'
+    start: "{{ now().replace(hour=0).replace(minute=30).replace(second=0) - timedelta(days=4) }}"
+    end: "{{ now() }}"
     scan_interval: 600
 
   # Five day weighted rain total sensor.
@@ -112,8 +123,8 @@ sensor:
     sensors:
       irrigation_unlimited_rain_weighted_total:
         friendly_name: "Irrigation Unlimited Rain Weighted Total"
-        unit_of_measurement: 'mm'
-        icon_template: 'mdi:umbrella'
+        unit_of_measurement: "mm"
+        icon_template: "mdi:umbrella"
         value_template: >
           {% set rain_total = state_attr('sensor.irrigation_unlimited_rain_0','max_value') | float %}
           {% set rain_total = rain_total + state_attr('sensor.irrigation_unlimited_rain_1','max_value') | float * 0.7 %}
