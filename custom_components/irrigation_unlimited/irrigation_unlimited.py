@@ -2,8 +2,7 @@
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
 from typing import OrderedDict
-import homeassistant
-from homeassistant.core import HomeAssistant, CALLBACK_TYPE
+from homeassistant.core import HomeAssistant, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
 import homeassistant.helpers.sun as sun
@@ -1269,16 +1268,16 @@ class IUZone(IUBase):
 
         return updated
 
-    def call_switch(self, time: datetime, service_type: str) -> None:
+    def call_switch(self, time: datetime, state: bool) -> None:
         if self._switch_entity_id is not None:
             self._hass.async_create_task(
                 self._hass.services.async_call(
-                    homeassistant.core.DOMAIN,
-                    service_type,
+                    HADOMAIN,
+                    SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
                     {ATTR_ENTITY_ID: self._switch_entity_id},
                 )
             )
-        self._coordinator.status_changed(time, self._controller, self, self._is_on)
+        self._coordinator.status_changed(time, self._controller, self, state)
         return
 
 
@@ -2030,7 +2029,7 @@ class IUController(IUBase):
         # Handle off zones before master
         for zone in (self._zones[i] for i in zones_changed):
             if not zone.is_on:
-                zone.call_switch(time, SERVICE_TURN_OFF)
+                zone.call_switch(time, zone.is_on)
 
         # Check if master has changed and update
         is_running = self._is_enabled and self._run_queue.current_run is not None
@@ -2038,12 +2037,12 @@ class IUController(IUBase):
         if state_changed:
             self._is_on = not self._is_on
             self.request_update()
-            self.call_switch(time, SERVICE_TURN_ON if self._is_on else SERVICE_TURN_OFF)
+            self.call_switch(time, self._is_on)
 
         # Handle on zones after master
         for zone in (self._zones[i] for i in zones_changed):
             if zone.is_on:
-                zone.call_switch(time, SERVICE_TURN_ON)
+                zone.call_switch(time, zone.is_on)
 
         return state_changed
 
@@ -2081,17 +2080,17 @@ class IUController(IUBase):
             zone.update_sensor(time, True)
         return
 
-    def call_switch(self, time: datetime, service_type: str) -> None:
+    def call_switch(self, time: datetime, state: bool) -> None:
         """Update the linked entity if enabled"""
         if self._switch_entity_id is not None:
             self._hass.async_create_task(
                 self._hass.services.async_call(
-                    homeassistant.core.DOMAIN,
-                    service_type,
+                    HADOMAIN,
+                    SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
                     {ATTR_ENTITY_ID: self._switch_entity_id},
                 )
             )
-        self._coordinator.status_changed(time, self, None, self._is_on)
+        self._coordinator.status_changed(time, self, None, state)
         return
 
     def service_adjust_time(self, data: MappingProxyType, time: datetime) -> bool:
