@@ -99,6 +99,7 @@ async def run_for_1_tick(
 async def begin_test(test_no: int, coordinator: IUCoordinator) -> datetime:
     coordinator.stop()
     start_time = coordinator.start_test(test_no)
+    assert start_time != None, f"Invalid test {test_no}"
     _LOGGER.debug("Starting test: %s", coordinator.tester.current_test.name)
     return start_time
 

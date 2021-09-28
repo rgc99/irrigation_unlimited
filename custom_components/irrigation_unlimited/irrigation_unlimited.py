@@ -2989,9 +2989,11 @@ class IUCoordinator:
     def start_test(self, test_no: int) -> datetime:
         self._last_tick = None
         next_time = dt.utcnow()
-        self._tester.start_test(test_no, next_time)
-        self.timer(next_time)
-        return next_time
+        if self._tester.start_test(test_no, next_time) is not None:
+            self.timer(next_time)
+            return next_time
+        else:
+            return None
 
     def status_changed(
         self, time: datetime, controller: IUController, zone: IUZone, state: bool

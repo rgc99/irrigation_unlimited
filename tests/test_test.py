@@ -37,6 +37,9 @@ async def test_test_1(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
 
+    with pytest.raises(AssertionError, match="Invalid test 999"):
+        start_time = await begin_test(999, coordinator)
+
     start_time = await begin_test(1, coordinator)
     with pytest.raises(AssertionError, match="Failed test 1, errors not zero"):
         await finish_test(hass, coordinator, start_time, True)
@@ -63,6 +66,9 @@ async def test_test_2(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    with pytest.raises(AssertionError, match="Invalid test 999"):
+        start_time = await begin_test(999, coordinator)
 
     start_time = await begin_test(1, coordinator)
     with pytest.raises(AssertionError, match="Failed test 1, errors not zero"):
