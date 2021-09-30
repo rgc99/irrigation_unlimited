@@ -1859,6 +1859,7 @@ async def test_service_adjust_time_sequence_bad(
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
 
+    # Service call for sequence but targetting a zone entity
     next_time = await begin_test(1, coordinator)
     await hass.services.async_call(
         DOMAIN,
@@ -1866,6 +1867,20 @@ async def test_service_adjust_time_sequence_bad(
         {
             "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
             "sequence_id": 1,
+            "reset": None,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    # Service call for sequence with a bad sequence_id
+    next_time = await begin_test(1, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 999,
             "reset": None,
         },
         True,
