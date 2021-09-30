@@ -4,7 +4,7 @@ from types import MappingProxyType
 from typing import OrderedDict
 from homeassistant.core import HomeAssistant, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.event import async_track_time_interval, Event as HAEvent
 import homeassistant.helpers.sun as sun
 import homeassistant.util.dt as dt
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
@@ -21,6 +21,7 @@ from homeassistant.const import (
     CONF_REPEAT,
     CONF_WEEKDAY,
     CONF_ID,
+    EVENT_HOMEASSISTANT_STOP,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
     STATE_OFF,
@@ -2731,6 +2732,7 @@ class IUCoordinator:
         self._last_muster: datetime = None
         self._muster_required: bool = False
         self._remove_timer_listener: CALLBACK_TYPE = None
+        self._remove_shutdown_listener: CALLBACK_TYPE = None
         self._tester = IUTester(self)
         self._logger = IULogger(_LOGGER)
         return
@@ -2923,6 +2925,24 @@ class IUCoordinator:
         """Tear down the system and cleanup"""
         for controller in self._controllers:
             controller.finalise(turn_off)
+        return
+
+    async def _async_shutdown_listener(self, event: HAEvent) -> None:
+        """Home Assistant is shutting down. Attempting to turn off any running
+        valves is unlikely to work as the underlying libraries are also in a
+        state of shutdown (zwave, zigbee, WiFi). Should this situation change
+        then set the following to True."""
+        self.finalise(False)
+        return
+
+    def listen(self) -> None:
+        """Listen for events. This appears to be the earliest signal HA
+        sends to tell us we are going down. It would be nice to have some sort
+        of heads up while everything is still running. This would enable us to
+        tidy up."""
+        self._remove_shutdown_listener = self._hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_STOP, self._async_shutdown_listener
+        )
         return
 
     def register_entity(

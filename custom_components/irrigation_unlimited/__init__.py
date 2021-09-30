@@ -250,6 +250,7 @@ async def async_setup(hass: HomeAssistant, config: Config):
 
     register_component_services(component, coordinator)
 
+    coordinator.listen()
     coordinator.start()
 
     return True
