@@ -2,7 +2,7 @@
    but a place to check if configuration files are valid and possibly
    debug them."""
 import pytest
-from datetime import timedelta
+from datetime import timedelta, datetime
 import json
 import homeassistant.core as ha
 from homeassistant.config import (
@@ -27,6 +27,7 @@ from tests.iu_test_support import (
     no_check,
     quiet_mode,
     run_for,
+    run_until,
     test_config_dir,
 )
 
@@ -72,6 +73,17 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     #     True,
     # )
     # await finish_test(hass, coordinator, start_time, True)
+
+    """Run to a point in time"""
+    # start_time = await begin_test(1, coordinator)
+    # next_time = await run_until(
+    #     hass,
+    #     coordinator,
+    #     start_time,
+    #     datetime.fromisoformat("2021-01-04 06:02:00+00:00"),
+    #     True,
+    # )
+    # await finish_test(hass, coordinator, next_time, True)
 
     """Run for a period of time"""
     # start_time = await begin_test(1, coordinator)
