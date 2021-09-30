@@ -2892,9 +2892,9 @@ class IUCoordinator:
                 self.poll_main(atime)
         return
 
-    async def _async_timer(self, time: datetime) -> None:
+    async def _async_timer(self, atime: datetime) -> None:
         """Timer callback"""
-        self.timer(time)
+        self.timer(atime)
         return
 
     def track_interval(self) -> timedelta:
