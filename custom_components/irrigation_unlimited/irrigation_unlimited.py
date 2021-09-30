@@ -613,6 +613,7 @@ class IURun(IUBase):
 
 class IURunQueue(list):
     """Irrigation Unlimited class to hold the upcomming runs"""
+
     DAYS_SPAN: int = 3
 
     RQ_STATUS_CLEARED: int = 0x01
@@ -2144,6 +2145,7 @@ class IUController(IUBase):
 
 class IUEvent:
     """This class represents a single event"""
+
     def __init__(self) -> None:
         # Private variables
         self._time: datetime = None
@@ -2213,6 +2215,7 @@ class IUEvent:
 class IUTest(IUBase):
     """This class represents a single test. Contains a list of
     expected results."""
+
     def __init__(self, test_index: int, speed: float) -> None:
         # Passed parameters
         super().__init__(test_index)
