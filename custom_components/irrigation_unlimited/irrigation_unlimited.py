@@ -1789,6 +1789,7 @@ class IUController(IUBase):
     def clear(self) -> None:
         # Don't clear zones
         # self._zones.clear()
+        self._run_queue.clear_all()
         self._sequences.clear()
         self._is_on = False
         return
