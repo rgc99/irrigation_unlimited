@@ -1273,7 +1273,7 @@ class IUZone(IUBase):
 
         return updated
 
-    def call_switch(self, time: datetime, state: bool) -> None:
+    def call_switch(self, state: bool, time: datetime = None) -> None:
         if self._switch_entity_id is not None:
             self._hass.async_create_task(
                 self._hass.services.async_call(
@@ -2034,7 +2034,7 @@ class IUController(IUBase):
         # Handle off zones before master
         for zone in (self._zones[i] for i in zones_changed):
             if not zone.is_on:
-                zone.call_switch(time, zone.is_on)
+                zone.call_switch(zone.is_on, time)
 
         # Check if master has changed and update
         is_running = self._is_enabled and self._run_queue.current_run is not None
@@ -2042,12 +2042,12 @@ class IUController(IUBase):
         if state_changed:
             self._is_on = not self._is_on
             self.request_update()
-            self.call_switch(time, self._is_on)
+            self.call_switch(self._is_on, time)
 
         # Handle on zones after master
         for zone in (self._zones[i] for i in zones_changed):
             if zone.is_on:
-                zone.call_switch(time, zone.is_on)
+                zone.call_switch(zone.is_on, time)
 
         return state_changed
 
@@ -2085,7 +2085,7 @@ class IUController(IUBase):
             zone.update_sensor(time, True)
         return
 
-    def call_switch(self, time: datetime, state: bool) -> None:
+    def call_switch(self, state: bool, time: datetime = None) -> None:
         """Update the linked entity if enabled"""
         if self._switch_entity_id is not None:
             self._hass.async_create_task(
