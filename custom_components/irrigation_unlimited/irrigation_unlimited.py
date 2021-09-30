@@ -295,7 +295,8 @@ class IUAdjustment:
 
 class IUSchedule(IUBase):
     """Irrigation Unlimited Schedule class. Schedules are not actual
-    points in time but describe a future event i.e. next Monday"""
+    points in time but describe a future event i.e. next Monday at
+    sunrise"""
 
     def __init__(
         self,
@@ -387,7 +388,10 @@ class IUSchedule(IUBase):
     ) -> datetime:
         """
         Determine the next start time. Date processing in this routine
-        is done in local time and returned as UTC
+        is done in local time and returned as UTC. atime is the current time
+        and ftime is the farthest time we are interested in. adjusted_duration
+        is the total time this schedule will run for, used to work backwards when
+        the anchor is finish
         """
         local_time = dt.as_local(atime)
         final_time = dt.as_local(ftime)
@@ -632,6 +636,7 @@ class IURun(IUBase):
 
 
 class IURunQueue(list):
+    """Irrigation Unlimited class to hold the upcomming runs"""
     DAYS_SPAN: int = 3
 
     RQ_STATUS_CLEARED: int = 0x01
@@ -2142,6 +2147,7 @@ class IUController(IUBase):
 
 
 class IUEvent:
+    """This class represents a single event"""
     def __init__(self) -> None:
         # Private variables
         self._time: datetime = None
@@ -2209,6 +2215,8 @@ class IUEvent:
 
 
 class IUTest(IUBase):
+    """This class represents a single test. Contains a list of
+    expected results."""
     def __init__(self, test_index: int, speed: float) -> None:
         # Passed parameters
         super().__init__(test_index)
@@ -2478,6 +2486,9 @@ class IUTester:
         return self
 
     def poll_test(self, atime: datetime, poll_func) -> None:
+        """Polling is diverted here when testing is enabled. atime is the actual time
+        but is converted to a virtual time for testing. The main polling function
+        is then called with the modified time"""
         if self._autoplay and not self._autoplay_initialised:
             self.start_test(1, atime)
             self._autoplay_initialised = True
@@ -2757,7 +2768,8 @@ class IUCoordinator:
         return all_setup
 
     def initialise(self) -> None:
-        """Flag we need to re-initialise"""
+        """Flag we need to re-initialise. Called by the testing unit when
+        starting a new test"""
         self._initialised = False
         return
 
@@ -2819,7 +2831,8 @@ class IUCoordinator:
         return status
 
     def check_run(self, time: datetime) -> bool:
-        """Update run status"""
+        """Update run status. Return True if any entities in
+        the tree have changed."""
         status_changed: bool = False
 
         for controller in self._controllers:
@@ -2845,7 +2858,9 @@ class IUCoordinator:
         return
 
     def poll(self, vtime: datetime, force: bool = False) -> None:
-        """Poll the system for changes, updates and refreshes"""
+        """Poll the system for changes, updates and refreshes.
+        vtime is the virtual time if in testing mode, if not then
+        it is the actual time"""
         wtime: datetime = wash_dt(vtime)
         if (wtime != self._last_muster) or self._muster_required:
             if self.muster(wtime, force) != 0:
@@ -2856,6 +2871,8 @@ class IUCoordinator:
         return
 
     def poll_main(self, atime: datetime, force: bool = False) -> None:
+        """Post initialisation worker. Divert to testing unit if
+        enabled. atime (actual time) is the real world clock"""
         if self._tester.enabled:
             self._tester.poll_test(atime, self.poll)
         else:
@@ -2863,6 +2880,7 @@ class IUCoordinator:
         return
 
     def timer(self, atime: datetime) -> None:
+        """System clock entry point"""
         self._last_tick = atime
         if self._initialised:
             self.poll_main(atime)
@@ -2880,6 +2898,7 @@ class IUCoordinator:
         return
 
     def track_interval(self) -> timedelta:
+        """Returns the system clock time interval"""
         track_time = SYSTEM_GRANULARITY / self._tester.speed
         track_time *= 0.95  # Run clock slightly ahead of required to avoid skipping
         return min(timedelta(seconds=track_time), self._refresh_interval)
@@ -2986,6 +3005,7 @@ class IUCoordinator:
         return
 
     def start_test(self, test_no: int) -> datetime:
+        """Main entry to start a test"""
         self._last_tick = None
         next_time = dt.utcnow()
         if self._tester.start_test(test_no, next_time) is not None:
