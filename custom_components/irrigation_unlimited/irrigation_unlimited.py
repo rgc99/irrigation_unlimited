@@ -2122,6 +2122,8 @@ class IUController(IUBase):
                         if check_item(sequence_zone.index, zl):
                             result |= sequence_zone.adjustment.load(data)
                 self.clear_sequence_runs(time, sequence.zone_ids())
+            else:
+                self._coordinator.logger.log_invalid_sequence(time, self, sequence_id)
         return result
 
     def service_manual_run(self, data: MappingProxyType, time: datetime) -> None:
@@ -2135,6 +2137,8 @@ class IUController(IUBase):
             sequence = self.find_sequence(sequence_id - 1)
             if sequence is not None:
                 self.muster_sequence(time, sequence, None, wash_td(data[CONF_TIME]))
+            else:
+                self._coordinator.logger.log_invalid_sequence(time, self, sequence_id)
         return
 
     def service_cancel(self, data: MappingProxyType, time: datetime) -> None:
@@ -2708,6 +2712,19 @@ class IULogger:
             level,
             "ENTITY [{0}] Sequence specified but entity_id is zone".format(
                 dt2lstr(vtime)
+            ),
+        )
+        return
+
+    def log_invalid_sequence(
+        self, vtime: datetime, controller: IUController, sequence_id: int, level=WARNING
+    ) -> None:
+        self.output(
+            level,
+            "SEQUENCE_ID [{0}] Invalid sequence id: controller: {1}, sequence: {2}".format(
+                dt2lstr(vtime),
+                self.controller_index(controller),
+                sequence_id,
             ),
         )
         return
