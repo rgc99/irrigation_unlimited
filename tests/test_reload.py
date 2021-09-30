@@ -2,6 +2,7 @@
 from unittest.mock import patch
 
 import pytest
+from datetime import datetime
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
@@ -143,3 +144,53 @@ async def test_service_reload_extend_shrink(
     start_time = await begin_test(1, coordinator)
     await finish_test(hass, coordinator, start_time, True)
     check_summary(full_path, coordinator)
+
+
+async def test_service_reload_shrink_while_on(
+    hass: ha.HomeAssistant,
+    skip_start,
+    skip_dependencies,
+    skip_history,
+):
+    """Test reload service call reducing entities while on."""
+
+    await async_setup_component(hass, DOMAIN, CONFIG_SCHEMA(MOCK_CONFIG))
+    await hass.async_block_till_done()
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    full_path = test_config_dir + "service_reload_while_on.yaml"
+    with patch(
+        "homeassistant.core.Config.path",
+        return_value=full_path,
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_RELOAD,
+            None,
+            True,
+        )
+    # Reload while entities are on.
+    start_time = await begin_test(1, coordinator)
+    await run_until(
+        hass,
+        coordinator,
+        start_time,
+        datetime.fromisoformat("2021-01-04 06:16:00+00:00"),
+        True,
+    )
+    full_path = test_config_dir + "service_reload_1.yaml"
+    with patch(
+        "homeassistant.core.Config.path",
+        return_value=full_path,
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_RELOAD,
+            None,
+            True,
+        )
+
+    # The reload mid stream has blown away our test and results. So
+    # don't attempt to finish or check results, there are none.
+    # await finish_test(hass, coordinator, start_time, True)
+    # check_summary(full_path, coordinator)
