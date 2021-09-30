@@ -594,7 +594,7 @@ Use forecast and observation data collected by weather integrations in automatio
 
 ### Service `reload`
 
-Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading.
+Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading. Note: since version 2021.10.0 all settings can be changed including new controllers and zones.
 
 ### Service call access roadmap
 
@@ -606,7 +606,7 @@ The combination of three key parameters `entity_id`, `sequence_id` and `zones` w
 * `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on.
 * `zones:` This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zone references in the sequence. May also take a list `zones: [1,3,5]`
 
-The following is a valid irrigation unlimited configuration. It shows how various points can be changed using the service calls above. Example numbers are coded C.Z.S.R = Controller.Zone.Sequence.zoneReference. If Z is zero then the `entity_id` must be the controller/master i.e. binary_sensor.irrigation_unlimited_cN_m. If Z is not zero then then entity_id is the zone i.e. binary_sensor.irrigation_unlimited_cN_zN.
+The following is a valid irrigation unlimited configuration. It shows how various points can be changed using the service calls above. Example numbers have the nomenclature C.Z.S.R = Controller.Zone.Sequence.zoneReference. If Z is zero then the `entity_id` must be the controller/master i.e. binary_sensor.irrigation_unlimited_cN_m. If Z is not zero then then entity_id is the zone i.e. binary_sensor.irrigation_unlimited_cN_zN.
 
 ~~~yaml
 irrigation_unlimited:
@@ -626,18 +626,18 @@ irrigation_unlimited:
                 duration: "00:10" # <= See example 1.2.1
       sequences:
         - name: "Controller 1, Sequence 1"
-          duration: "01:00" #  <= See example 1.0.1
           schedules:
             - time: "06:00"
+              duration: "01:00" #  <= See example 1.0.1
           zones:
             - zone_id: [1, 2] # This is controller 1, sequence 1, zone reference 1
               duration: "00:10" # <= See example 1.0.1.1
             - zone_id: 2  # This is controller 1, sequence 1, zone reference 2
               duration: "00:10" # <= See example 1.0.1.2
         - name: "Controller 1, Sequence 2"
-          duration: "01:00" # <= See example 1.0.2
           schedules:
             - time: "07:00"
+              duration: "01:00" # <= See example 1.0.2
           zones:
             - zone_id: 1 # This is controller 1, sequence 2, zone reference 1
               duration: "00:10" # <= See example 1.0.2.1
@@ -650,18 +650,18 @@ irrigation_unlimited:
           enabled: true # <= See example 2.2
       sequences:
         - name: "Controller 2, Sequence 1"
-          duration: "01:00" # <= See example 2.0.1
           schedules:
             - time: "09:00"
+              duration: "01:00" # <= See example 2.0.1
           zones:
             - zone_id: 1 # This is controller 2, sequence 1, zone reference 1
               duration: "00:10" # <= See example 2.0.1.1
             - zone_id: 2 # This is controller 2, sequence 1, zone reference 2
               duration: "00:10" # <= See example 2.0.1.2
         - name: "Controller 2, Sequence 2"
-          duration: "01:00" # <= See example 2.0.2
           schedules:
             - time: "09:00"
+              duration: "01:00" # <= See example 2.0.2
           zones:
             - zone_id: 1 # This is controller 2, sequence 2, zone reference 1
               duration: "00:10" # <= See example 2.0.2.1
