@@ -974,6 +974,7 @@ class IUZone(IUBase):
         self._show_timeline: bool = False
         # Private variables
         self._initialised: bool = False
+        self._finalised: bool = False
         self._schedules: list[IUSchedule] = []
         self._run_queue = IUScheduleQueue()
         self._adjustment = IUAdjustment()
@@ -1154,6 +1155,14 @@ class IUZone(IUBase):
                 self.find_add(si).load(schedule_config)
         self._dirty = True
         return self
+
+    def finalise(self, turn_off: bool) -> None:
+        if not self._finalised:
+            if turn_off and self._is_on:
+                self.call_switch(False)
+            self.clear()
+            self._finalised = True
+        return
 
     def as_dict(self) -> OrderedDict:
         dict = OrderedDict()
@@ -1640,6 +1649,7 @@ class IUController(IUBase):
         self._postamble: timedelta = None
         # Private variables
         self._initialised: bool = False
+        self._finalised: bool = False
         self._zones: list[IUZone] = []
         self._sequences: list[IUSequence] = []
         self._run_queue = IUZoneQueue()
@@ -1810,7 +1820,7 @@ class IUController(IUBase):
         for zi, zone_config in enumerate(config[CONF_ZONES]):
             self.find_add_zone(self._coordinator, self, zi).load(zone_config, all_zones)
         while zi < len(self._zones) - 1:
-            self._zones.pop()
+            self._zones.pop().finalise(True)
 
         if CONF_SEQUENCES in config:
             for qi, sequence_config in enumerate(config[CONF_SEQUENCES]):
@@ -1820,6 +1830,16 @@ class IUController(IUBase):
 
         self._dirty = True
         return self
+
+    def finalise(self, turn_off: bool) -> None:
+        if not self._finalised:
+            for zone in self._zones:
+                zone.finalise(turn_off)
+            if turn_off and self._is_on:
+                self.call_switch(False)
+            self.clear()
+            self._finalised = True
+        return
 
     def as_dict(self) -> OrderedDict:
         dict = OrderedDict()
@@ -2779,7 +2799,7 @@ class IUCoordinator:
         for ci, controller_config in enumerate(config[CONF_CONTROLLERS]):
             self.find_add(self, ci).load(controller_config)
         while ci < len(self._controllers) - 1:
-            self._controllers.pop()
+            self._controllers.pop().finalise(True)
 
         self._tester = IUTester(self).load(config.get(CONF_TESTING))
         self._logger = IULogger(_LOGGER).load(config.get(CONF_LOGGING))
@@ -2896,6 +2916,12 @@ class IUCoordinator:
             self._logger.log_stop()
         return
 
+    def finalise(self, turn_off: bool) -> None:
+        """Tear down the system and cleanup"""
+        for controller in self._controllers:
+            controller.finalise(turn_off)
+        return
+
     def register_entity(
         self, controller: IUController, zone: IUZone, entity: Entity
     ) -> None:
@@ -2914,10 +2940,13 @@ class IUCoordinator:
     ) -> None:
         time = self.service_time()
         if controller is None:
+            self.finalise(True)
             self._component = None
         elif zone is None:
+            controller.finalise(True)
             controller.master_sensor = None
         else:
+            zone.finalise(True)
             zone.zone_sensor = None
         self._logger.log_deregister_entity(time, controller, zone, entity)
         return
