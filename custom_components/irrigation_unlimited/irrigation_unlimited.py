@@ -2731,7 +2731,7 @@ class IUCoordinator:
         self._last_tick: datetime = None
         self._last_muster: datetime = None
         self._muster_required: bool = False
-        self._remove_listener: CALLBACK_TYPE = None
+        self._remove_timer_listener: CALLBACK_TYPE = None
         self._tester = IUTester(self)
         self._logger = IULogger(_LOGGER)
         return
@@ -2904,18 +2904,19 @@ class IUCoordinator:
         return min(timedelta(seconds=track_time), self._refresh_interval)
 
     def start(self) -> None:
-        """Start the system up"""
+        """Start the system clock"""
         self.stop()
-        self._remove_listener = async_track_time_interval(
+        self._remove_timer_listener = async_track_time_interval(
             self._hass, self._async_timer, self.track_interval()
         )
         self._logger.log_start()
         return
 
     def stop(self) -> None:
-        if self._remove_listener is not None:
-            self._remove_listener()
-            self._remove_listener = None
+        """Stop the system clock"""
+        if self._remove_timer_listener is not None:
+            self._remove_timer_listener()
+            self._remove_timer_listener = None
             self._logger.log_stop()
         return
 
