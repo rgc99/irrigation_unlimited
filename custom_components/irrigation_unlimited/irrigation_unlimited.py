@@ -3017,6 +3017,9 @@ class IUCoordinator:
     def status_changed(
         self, time: datetime, controller: IUController, zone: IUZone, state: bool
     ) -> None:
+        """Collection point for entities that have changed state"""
+        if time is None:
+            time = self.service_time()
         crumbs: str = ""
         if zone is not None:
             zone_id = zone.index + 1
