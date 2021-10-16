@@ -6,7 +6,7 @@ enable:
   fields:
     entity_id:
       description: Name of the Irrigation Unlimited entity.
-      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+      example: "binary_sensor.irrigation_unlimited_c1_z1"
       required: true
       selector:
         entity:
@@ -19,7 +19,7 @@ disable:
   fields:
     entity_id:
       description: Name of the Irrigation Unlimited entity.
-      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+      example: "binary_sensor.irrigation_unlimited_c1_z1"
       required: true
       selector:
         entity:
@@ -32,7 +32,7 @@ toggle:
   fields:
     entity_id:
       description: Name of the Irrigation Unlimited entity.
-      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+      example: "binary_sensor.irrigation_unlimited_c1_z1"
       required: true
       selector:
         entity:
@@ -45,7 +45,7 @@ cancel:
   fields:
     entity_id:
       description: Name of the Irrigation Unlimited entity.
-      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+      example: "binary_sensor.irrigation_unlimited_c1_z1"
       required: true
       selector:
         entity:
@@ -58,7 +58,7 @@ adjust_time:
   fields:
     entity_id:
       description: Name of the Irrigation Unlimited entity.
-      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+      example: "binary_sensor.irrigation_unlimited_c1_z1"
       required: true
       selector:
         entity:
@@ -66,7 +66,7 @@ adjust_time:
           domain: binary_sensor
 
     sequence_id:
-      description: Id of the sequence to run.
+      description: Id of the sequence to run (entity_id should be the controller).
       example: 1
       required: false
       selector:
@@ -87,12 +87,12 @@ adjust_time:
 
     reset:
       description: Revert to original schedule
-      example: ''
+      example: ""
       required: false
 
     percentage:
       description: Adjust the run time by a percentage.
-      example: '150'
+      example: "150"
       required: false
       selector:
         number:
@@ -102,35 +102,35 @@ adjust_time:
 
     actual:
       description: Set a new run time.
-      example: '00:15'
+      example: "00:15"
       required: false
       selector:
         time:
 
     increase:
       description: Increase the run time.
-      example: '00:02'
+      example: "00:02"
       required: false
       selector:
         time:
 
     descrease:
       description: Decrease the run time.
-      example: '00:02'
+      example: "00:02"
       required: false
       selector:
-       time:
+        time:
 
     minimum:
       description: Minimum run time.
-      example: '00:01'
+      example: "00:01"
       required: false
       selector:
         time:
 
     maximum:
       description: Maximum run time.
-      example: '01:00'
+      example: "01:00"
       required: false
       selector:
         time:
@@ -141,7 +141,7 @@ manual_run:
   fields:
     entity_id:
       description: Name of the Irrigation Unlimited entity.
-      example: 'binary_sensor.irrigation_unlimited_c1_z1'
+      example: "binary_sensor.irrigation_unlimited_c1_z1"
       required: true
       selector:
         entity:
@@ -150,7 +150,7 @@ manual_run:
 
     time:
       description: The amount of time to run.
-      example: '00:10'
+      example: "00:10"
       required: true
       selector:
         time:
