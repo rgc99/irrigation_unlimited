@@ -707,7 +707,7 @@ Notes:
     sequence_id: 1
     actual: "00:20"
 
-# Example 1.0.1.1 -> controller 1 -> cequence 1 -> zone reference 1 -> duration. This will alter the duration
+# Example 1.0.1.1 -> controller 1 -> sequence 1 -> zone reference 1 -> duration. This will alter the duration
 # for the first zone reference in the first sequence.
 - service: irrigation_unlimited.adjust_time
   data:
