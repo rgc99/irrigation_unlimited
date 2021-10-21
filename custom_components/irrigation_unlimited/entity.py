@@ -1,7 +1,8 @@
+"""HA entity classes"""
+import json
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import ServiceCall
 from homeassistant.helpers.restore_state import RestoreEntity
-import json
 
 from homeassistant.const import (
     STATE_OK,
@@ -25,12 +26,15 @@ from .const import (
 
 
 class IUEntity(BinarySensorEntity, RestoreEntity):
+    """Base class for entities"""
+
     def __init__(
         self,
         coordinator: IUCoordinator,
         controller: IUController,
         zone: IUZone,
     ):
+        """Base entity class"""
         self._coordinator = coordinator
         self._controller = controller
         self._zone = zone  # This will be None if it belongs to a Master/Controller
@@ -39,7 +43,6 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
             self.entity_id = self.entity_id + "_m"
         else:
             self.entity_id = self.entity_id + f"_z{self._zone.index + 1}"
-        return
 
     async def async_added_to_hass(self):
         self._coordinator.register_entity(self._controller, self._zone, self)
@@ -62,8 +65,8 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         return
 
     def dispatch(self, service: str, call: ServiceCall) -> None:
+        """Dispatcher for service calls"""
         self._coordinator.service_call(service, self._controller, self._zone, call.data)
-        return
 
 
 class IUComponent(RestoreEntity):
@@ -72,7 +75,6 @@ class IUComponent(RestoreEntity):
     def __init__(self, coordinator: IUCoordinator):
         self._coordinator = coordinator
         self.entity_id = f"{DOMAIN}.{COORDINATOR}"
-        return
 
     async def async_added_to_hass(self):
         self._coordinator.register_entity(None, None, self)
@@ -83,8 +85,8 @@ class IUComponent(RestoreEntity):
         return
 
     def dispatch(self, service: str, call: ServiceCall) -> None:
+        """Service call dispatcher"""
         self._coordinator.service_call(service, None, None, call.data)
-        return
 
     @property
     def should_poll(self):

@@ -1,10 +1,10 @@
-from typing import Optional
+"""This module handles the HA service call interface"""
+import voluptuous as vol
 from homeassistant.core import ServiceCall, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_register_admin_service
-import voluptuous as vol
 from homeassistant.const import (
     CONF_ENTITY_ID,
     SERVICE_RELOAD,
@@ -14,12 +14,6 @@ from .irrigation_unlimited import IUCoordinator
 from .entity import IUEntity
 from .const import (
     DOMAIN,
-    SERVICE_CANCEL,
-    SERVICE_ENABLE,
-    SERVICE_DISABLE,
-    SERVICE_TOGGLE,
-    SERVICE_TIME_ADJUST,
-    SERVICE_MANUAL_RUN,
     CONF_PERCENTAGE,
     CONF_ACTUAL,
     CONF_INCREASE,
@@ -30,10 +24,12 @@ from .const import (
     CONF_MAXIMUM,
     CONF_ZONES,
     CONF_SEQUENCE_ID,
+    SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
+    SERVICE_TOGGLE,
 )
 
 ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
@@ -70,10 +66,12 @@ RELOAD_SERVICE_SCHEMA = vol.Schema({})
 
 @callback
 async def async_entity_service_handler(entity: IUEntity, call: ServiceCall) -> None:
+    """Dispatch the service call"""
     entity.dispatch(call.service, call)
 
 
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
+    """Register all the available service calls for the intities"""
     platform.async_register_entity_service(
         SERVICE_ENABLE, ENTITY_SCHEMA, async_entity_service_handler
     )
@@ -92,15 +90,18 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
     platform.async_register_entity_service(
         SERVICE_MANUAL_RUN, MANUAL_RUN_SCHEMA, async_entity_service_handler
     )
-    return
 
 
 def register_component_services(
     component: EntityComponent, coordinator: IUCoordinator
 ) -> None:
+    """Register the component"""
+
     @callback
     async def reload_service_handler(call: ServiceCall) -> None:
         """Reload yaml entities."""
+        # pylint: disable=unused-argument
+        # pylint: disable=import-outside-toplevel
         from .binary_sensor import async_reload_platform
 
         conf = await component.async_prepare_reload(skip_reset=True)
@@ -109,7 +110,6 @@ def register_component_services(
         coordinator.load(conf[DOMAIN])
         await async_reload_platform(component, coordinator)
         coordinator.start()
-        return
 
     async_register_admin_service(
         component.hass,
@@ -118,4 +118,3 @@ def register_component_services(
         reload_service_handler,
         schema=RELOAD_SERVICE_SCHEMA,
     )
-    return

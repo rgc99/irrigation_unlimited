@@ -1,4 +1,7 @@
 """Binary sensor platform for irrigation_unlimited."""
+from datetime import datetime, timedelta
+import json
+from homeassistant.const import STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_component import EntityComponent
@@ -8,19 +11,7 @@ from homeassistant.helpers.entity_platform import (
     async_get_platforms,
 )
 import homeassistant.util.dt as dt
-from datetime import datetime, timedelta
 from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
-
-if MAJOR_VERSION >= 2021 and MINOR_VERSION >= 6:
-    from homeassistant.components.recorder import history
-else:
-    from homeassistant.components import history
-
-import json
-
-from homeassistant.const import (
-    STATE_ON,
-)
 
 from .irrigation_unlimited import IUCoordinator
 from .entity import IUEntity
@@ -44,6 +35,11 @@ from .const import (
     CONF_ZONE_ID,
 )
 
+if MAJOR_VERSION >= 2021 and MINOR_VERSION >= 6:
+    from homeassistant.components.recorder import history
+else:
+    from homeassistant.components import history
+
 RES_MANUAL = "Manual"
 RES_NOT_RUNNING = "not running"
 RES_NONE = "none"
@@ -63,12 +59,15 @@ ATTR_CURRENT_ZONE = "current_zone"
 ATTR_TOTAL_TODAY = "today_total"
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(
+    hass, config, async_add_entities, discovery_info=None
+) -> None:
     """Setup binary_sensor platform."""
+    # pylint: disable=unused-argument
 
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
     entities = []
-    for controller in coordinator._controllers:
+    for controller in coordinator.controllers:
         entities.append(IUMasterEntity(coordinator, controller, None))
         for zone in controller.zones:
             entities.append(IUZoneEntity(coordinator, controller, zone))
@@ -83,6 +82,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 async def async_reload_platform(
     component: EntityComponent, coordinator: IUCoordinator
 ) -> None:
+    """Handle the reloading of this platform"""
+
     def find_platform(hass: HomeAssistant, name: str) -> EntityPlatform:
         platforms = async_get_platforms(hass, DOMAIN)
         for platform in platforms:
@@ -156,6 +157,7 @@ def midnight(utc: datetime) -> datetime:
 
 
 def today_on_duration(hass: HomeAssistant, entity_id: str, time: datetime) -> timedelta:
+    """Return the total on time for today"""
     start = midnight(time)
     return on_duration(hass, start, time, entity_id)
 
@@ -204,7 +206,7 @@ class IUMasterEntity(IUEntity):
         attr[ATTR_INDEX] = self._controller.index
         attr[ATTR_ENABLED] = self._controller.enabled
         attr[ATTR_STATUS] = self._controller.status
-        attr[ATTR_ZONE_COUNT] = len(self._controller._zones)
+        attr[ATTR_ZONE_COUNT] = len(self._controller.zones)
         attr[CONF_ZONES] = ""
         current = self._controller.runs.current_run
         if current is not None:
@@ -219,12 +221,12 @@ class IUMasterEntity(IUEntity):
             attr[ATTR_CURRENT_ZONE] = RES_NOT_RUNNING
             attr[ATTR_PERCENT_COMPLETE] = 0
 
-        next = self._controller.runs.next_run
-        if next is not None:
-            attr["next_zone"] = next.zone.index + 1
-            attr["next_name"] = next.zone.name
-            attr["next_start"] = dt.as_local(next.start_time)
-            attr["next_duration"] = str(next.duration)
+        next_run = self._controller.runs.next_run
+        if next_run is not None:
+            attr["next_zone"] = next_run.zone.index + 1
+            attr["next_name"] = next_run.zone.name
+            attr["next_start"] = dt.as_local(next_run.start_time)
+            attr["next_duration"] = str(next_run.duration)
         else:
             attr["next_schedule"] = RES_NONE
         return attr
@@ -260,16 +262,14 @@ class IUZoneEntity(IUEntity):
             if self._zone.enabled:
                 if self._zone.is_on:
                     return ICON_ON
-                else:
-                    return ICON_OFF
-            else:
-                return ICON_DISABLED
-        else:
-            return ICON_BLOCKED
+                return ICON_OFF
+            return ICON_DISABLED
+        return ICON_BLOCKED
 
     @property
     def device_state_attributes(self):
         """Return the state attributes of the device."""
+        # pylint: disable=too-many-branches
         attr = {}
         attr[CONF_ZONE_ID] = self._zone.zone_id
         attr[ATTR_INDEX] = self._zone.index
@@ -299,18 +299,18 @@ class IUZoneEntity(IUEntity):
             attr[ATTR_CURRENT_SCHEDULE] = RES_NOT_RUNNING
             attr[ATTR_PERCENT_COMPLETE] = 0
 
-        next = self._zone.runs.next_run
-        if next is not None:
-            if next.schedule is not None:
-                attr["next_schedule"] = next.schedule.index + 1
-                attr["next_name"] = next.schedule.name
+        next_run = self._zone.runs.next_run
+        if next_run is not None:
+            if next_run.schedule is not None:
+                attr["next_schedule"] = next_run.schedule.index + 1
+                attr["next_name"] = next_run.schedule.name
             else:
                 attr["next_schedule"] = RES_MANUAL
                 attr["next_name"] = RES_MANUAL
-            attr["next_start"] = dt.as_local(next.start_time)
-            attr["next_duration"] = str(next.duration)
-            if next.sequence_has_adjustment(True):
-                attr["next_adjustment"] = next.sequence_adjustment()
+            attr["next_start"] = dt.as_local(next_run.start_time)
+            attr["next_duration"] = str(next_run.duration)
+            if next_run.sequence_has_adjustment(True):
+                attr["next_adjustment"] = next_run.sequence_adjustment()
             else:
                 attr["next_adjustment"] = str(self._zone.adjustment)
         else:
