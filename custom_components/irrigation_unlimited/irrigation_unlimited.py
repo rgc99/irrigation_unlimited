@@ -1,5 +1,6 @@
 """Irrigation Unlimited Coordinator and sub classes"""
 # pylint: disable=too-many-lines
+import typing
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
 from typing import OrderedDict
@@ -632,7 +633,8 @@ class IURun(IUBase):
         return result
 
 
-class IURunQueue(list[IURun]):
+# class IURunQueue(list[IURun]): # python 3.9
+class IURunQueue(typing.List[IURun]):
     """Irrigation Unlimited class to hold the upcomming runs"""
 
     DAYS_SPAN: int = 3
