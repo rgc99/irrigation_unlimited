@@ -1,9 +1,10 @@
 """Test irrigation_unlimited user configurations. Not exactly a test
    but a place to check if configuration files are valid and possibly
    debug them."""
-import pytest
+# pylint: disable=unused-import
 from datetime import timedelta, datetime
 import json
+import pytest
 import homeassistant.core as ha
 from homeassistant.config import (
     load_yaml_config_file,
@@ -33,12 +34,13 @@ from tests.iu_test_support import (
 
 quiet_mode()
 
-
+# Remove the following decorator to run test
 @pytest.mark.skip
 async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test loading of a config."""
+    # pylint: disable=unused-argument
 
-    """Prevent checking results. Helpful for just outputting results"""
+    # """Prevent checking results. Helpful for just outputting results"""
     # no_check()
 
     full_path = test_config_dir + "test_config.yaml"
@@ -49,17 +51,17 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
 
-    """Run a single test"""
+    # Run a single test
     # start_time = await begin_test(1, coordinator)
     # print(json.dumps(coordinator.as_dict(), default=str))
     # await finish_test(hass, coordinator, start_time, True)
 
-    """Run all tests"""
+    # Run all tests
     # for t in range(coordinator.tester.total_tests):
     #     start_time = await begin_test(t + 1, coordinator)
     #     await finish_test(hass, coordinator, start_time, True)
 
-    """Run a test with a service call"""
+    # Run a test with a service call
     # start_time = await begin_test(1, coordinator)
     # await hass.services.async_call(
     #     DOMAIN,
@@ -74,7 +76,7 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     # )
     # await finish_test(hass, coordinator, start_time, True)
 
-    """Run to a point in time"""
+    # Run to a point in time
     # start_time = await begin_test(1, coordinator)
     # next_time = await run_until(
     #     hass,
@@ -85,7 +87,7 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     # )
     # await finish_test(hass, coordinator, next_time, True)
 
-    """Run for a period of time"""
+    # Run for a period of time
     # start_time = await begin_test(1, coordinator)
     # next_time = await run_for(
     #     hass, coordinator, start_time, timedelta(minutes=15), True
