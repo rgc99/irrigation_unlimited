@@ -52,11 +52,21 @@ ATTR_CURRENT_NAME = "current_name"
 ATTR_CURRENT_ADJUSTMENT = "current_adjustment"
 ATTR_CURRENT_START = "current_start"
 ATTR_CURRENT_DURATION = "current_duration"
+ATTR_NEXT_SCHEDULE = "next_schedule"
+ATTR_NEXT_ZONE = "next_zone"
+ATTR_NEXT_NAME = "next_name"
+ATTR_NEXT_ADJUSTMENT = "next_adjustment"
+ATTR_NEXT_START = "next_start"
+ATTR_NEXT_DURATION = "next_duration"
 ATTR_TIME_REMAINING = "time_remaining"
 ATTR_PERCENT_COMPLETE = "percent_complete"
 ATTR_ZONE_COUNT = "zone_count"
 ATTR_CURRENT_ZONE = "current_zone"
 ATTR_TOTAL_TODAY = "today_total"
+ATTR_SCHEDULE_COUNT = "schedule_count"
+ATTR_ADJUSTMENT = "adjustment"
+ATTR_CONFIGURATION = "configuration"
+ATTR_TIMELINE = "timeline"
 
 
 async def async_setup_platform(
@@ -191,13 +201,10 @@ class IUMasterEntity(IUEntity):
         if self._controller.enabled:
             if self._controller.is_on:
                 return ICON_CONTROLLER_ON
-            else:
-                if self._controller.is_paused:
-                    return ICON_CONTROLLER_PAUSED
-                else:
-                    return ICON_CONTROLLER_OFF
-        else:
-            return ICON_DISABLED
+            if self._controller.is_paused:
+                return ICON_CONTROLLER_PAUSED
+            return ICON_CONTROLLER_OFF
+        return ICON_DISABLED
 
     @property
     def device_state_attributes(self):
@@ -217,18 +224,19 @@ class IUMasterEntity(IUEntity):
             attr[ATTR_TIME_REMAINING] = str(current.time_remaining)
             attr[ATTR_PERCENT_COMPLETE] = current.percent_complete
         else:
-            attr["current_schedule"] = "deprecated (use current_zone)"
+            attr[ATTR_CURRENT_SCHEDULE] = "deprecated (use current_zone)"
             attr[ATTR_CURRENT_ZONE] = RES_NOT_RUNNING
             attr[ATTR_PERCENT_COMPLETE] = 0
 
         next_run = self._controller.runs.next_run
         if next_run is not None:
-            attr["next_zone"] = next_run.zone.index + 1
-            attr["next_name"] = next_run.zone.name
-            attr["next_start"] = dt.as_local(next_run.start_time)
-            attr["next_duration"] = str(next_run.duration)
+            attr[ATTR_NEXT_ZONE] = next_run.zone.index + 1
+            attr[ATTR_NEXT_NAME] = next_run.zone.name
+            attr[ATTR_NEXT_START] = dt.as_local(next_run.start_time)
+            attr[ATTR_NEXT_DURATION] = str(next_run.duration)
         else:
-            attr["next_schedule"] = RES_NONE
+            attr[ATTR_NEXT_SCHEDULE] = "deprecated (use next_zone)"
+            attr[ATTR_NEXT_ZONE] = RES_NONE
         return attr
 
 
@@ -275,9 +283,9 @@ class IUZoneEntity(IUEntity):
         attr[ATTR_INDEX] = self._zone.index
         attr[ATTR_ENABLED] = self._zone.enabled
         attr[ATTR_STATUS] = self._zone.status
-        attr["schedule_count"] = len(self._zone.schedules)
+        attr[ATTR_SCHEDULE_COUNT] = len(self._zone.schedules)
         attr[CONF_SCHEDULES] = ""
-        attr["adjustment"] = str(self._zone.adjustment)
+        attr[ATTR_ADJUSTMENT] = str(self._zone.adjustment)
         current = self._zone.runs.current_run
         if current is not None:
             if current.schedule is not None:
@@ -290,7 +298,7 @@ class IUZoneEntity(IUEntity):
             else:
                 attr[ATTR_CURRENT_SCHEDULE] = RES_MANUAL
                 attr[ATTR_CURRENT_NAME] = RES_MANUAL
-                attr[ATTR_CURRENT_ADJUSTMENT] = "None"
+                attr[ATTR_CURRENT_ADJUSTMENT] = RES_NONE
             attr[ATTR_CURRENT_START] = dt.as_local(current.start_time)
             attr[ATTR_CURRENT_DURATION] = str(current.duration)
             attr[ATTR_TIME_REMAINING] = str(current.time_remaining)
@@ -302,19 +310,19 @@ class IUZoneEntity(IUEntity):
         next_run = self._zone.runs.next_run
         if next_run is not None:
             if next_run.schedule is not None:
-                attr["next_schedule"] = next_run.schedule.index + 1
-                attr["next_name"] = next_run.schedule.name
+                attr[ATTR_NEXT_SCHEDULE] = next_run.schedule.index + 1
+                attr[ATTR_NEXT_NAME] = next_run.schedule.name
             else:
-                attr["next_schedule"] = RES_MANUAL
-                attr["next_name"] = RES_MANUAL
-            attr["next_start"] = dt.as_local(next_run.start_time)
-            attr["next_duration"] = str(next_run.duration)
+                attr[ATTR_NEXT_SCHEDULE] = RES_MANUAL
+                attr[ATTR_NEXT_NAME] = RES_MANUAL
+            attr[ATTR_NEXT_START] = dt.as_local(next_run.start_time)
+            attr[ATTR_NEXT_DURATION] = str(next_run.duration)
             if next_run.sequence_has_adjustment(True):
-                attr["next_adjustment"] = next_run.sequence_adjustment()
+                attr[ATTR_NEXT_ADJUSTMENT] = next_run.sequence_adjustment()
             else:
-                attr["next_adjustment"] = str(self._zone.adjustment)
+                attr[ATTR_NEXT_ADJUSTMENT] = str(self._zone.adjustment)
         else:
-            attr["next_schedule"] = RES_NONE
+            attr[ATTR_NEXT_SCHEDULE] = RES_NONE
         attr[ATTR_TOTAL_TODAY] = round(
             today_on_duration(
                 self.hass, self.entity_id, self._coordinator.service_time()
@@ -323,7 +331,7 @@ class IUZoneEntity(IUEntity):
             1,
         )
         if self._zone.show_config:
-            attr["configuration"] = json.dumps(self._zone.as_dict(), default=str)
+            attr[ATTR_CONFIGURATION] = json.dumps(self._zone.as_dict(), default=str)
         if self._zone.show_timeline:
-            attr["timeline"] = json.dumps(self._zone.runs.as_list(), default=str)
+            attr[ATTR_TIMELINE] = json.dumps(self._zone.runs.as_list(), default=str)
         return attr

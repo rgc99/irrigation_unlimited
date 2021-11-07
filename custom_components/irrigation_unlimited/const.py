@@ -10,7 +10,7 @@ ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 ISSUE_URL = "https://github.com/rgc99/irrigation_unlimited/issues"
 
 # Icons
-ICON = "mdi:valve"
+ICON = "mdi:zodiac-aquarius"
 ICON_ON = "mdi:valve-open"
 ICON_OFF = "mdi:valve-closed"
 ICON_DISABLED = "mdi:circle-off-outline"

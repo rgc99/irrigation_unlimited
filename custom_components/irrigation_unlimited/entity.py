@@ -22,6 +22,7 @@ from .const import (
     ICON,
     SERVICE_ENABLE,
     SERVICE_DISABLE,
+    STATUS_INITIALISING,
 )
 
 
@@ -96,7 +97,7 @@ class IUComponent(RestoreEntity):
     @property
     def unique_id(self):
         """Return a unique ID."""
-        return "coordinator"
+        return COORDINATOR
 
     @property
     def name(self):
@@ -106,6 +107,8 @@ class IUComponent(RestoreEntity):
     @property
     def state(self):
         """Return the state of the entity."""
+        if not self._coordinator.initialised:
+            return STATUS_INITIALISING
         return STATE_OK
 
     @property

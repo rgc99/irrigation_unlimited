@@ -2903,6 +2903,11 @@ class IUCoordinator:
         """Returns the refresh_interval property"""
         return self._refresh_interval
 
+    @property
+    def initialised(self) -> bool:
+        """Return True if we are initialised"""
+        return self._initialised
+
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
         all_setup: bool = self._hass.is_running and self._component is not None
