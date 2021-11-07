@@ -2,7 +2,7 @@
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true,
     "files.associations": {
-        "*.yaml": "home-assistant"
+        "*.yaml": "yaml"
     },
     "python.testing.pytestArgs": [
         "custom_components"
