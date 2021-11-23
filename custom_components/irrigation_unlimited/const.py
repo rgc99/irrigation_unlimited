@@ -64,6 +64,8 @@ CONF_OUTPUT_EVENTS = "output_events"
 CONF_SHOW_LOG = "show_log"
 CONF_AUTOPLAY = "autoplay"
 CONF_FUTURE_SPAN = "future_span"
+CONF_HISTORY_SPAN = "history_span"
+CONF_HISTORY_REFRESH = "history_refresh"
 CONF_ANCHOR = "anchor"
 CONF_START = "start"
 CONF_FINISH = "finish"
@@ -88,6 +90,10 @@ STATUS_DISABLED = "disabled"
 STATUS_BLOCKED = "blocked"
 STATUS_INITIALISING = "initialising"
 STATUS_PAUSED = "paused"
+
+# JSON labels
+JSON_START = "start"
+JSON_END = "end"
 
 # Attributes
 ATTR_ENABLED = "enabled"

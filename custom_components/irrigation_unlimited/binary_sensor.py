@@ -1,7 +1,4 @@
 """Binary sensor platform for irrigation_unlimited."""
-from datetime import datetime, timedelta
-import json
-from homeassistant.const import STATE_ON
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_component import EntityComponent
@@ -11,7 +8,6 @@ from homeassistant.helpers.entity_platform import (
     async_get_platforms,
 )
 import homeassistant.util.dt as dt
-from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
 
 from .irrigation_unlimited import IUCoordinator
 from .entity import IUEntity
@@ -34,11 +30,6 @@ from .const import (
     CONF_ZONES,
     CONF_ZONE_ID,
 )
-
-if MAJOR_VERSION >= 2021 and MINOR_VERSION >= 6:
-    from homeassistant.components.recorder import history
-else:
-    from homeassistant.components import history
 
 RES_MANUAL = "Manual"
 RES_NOT_RUNNING = "not running"
@@ -125,51 +116,6 @@ async def async_reload_platform(
         for entity in old_entities:
             await platform.async_remove_entity(entity)
     return
-
-
-def on_duration(
-    hass: HomeAssistant, start: datetime, end: datetime, entity_id: str
-) -> timedelta:
-    """Return the total on time between start and end"""
-    history_list = history.state_changes_during_period(hass, start, end, entity_id)
-
-    elapsed = timedelta(0)
-    current_state: str = None
-    current_time: datetime = None
-
-    if len(history_list) > 0:
-        if entity_id in history_list:
-            for item in history_list.get(entity_id):
-
-                # Initialise on first pass
-                if current_state is None:
-                    current_state = item.state
-                    current_time = item.last_changed
-                    continue
-
-                if current_state == STATE_ON and item.state != STATE_ON:
-                    elapsed += item.last_changed - current_time
-
-                current_state = item.state
-                current_time = item.last_changed
-
-            if current_state == STATE_ON:
-                elapsed += end - current_time
-
-    return timedelta(seconds=round(elapsed.total_seconds()))
-
-
-def midnight(utc: datetime) -> datetime:
-    """Accept a UTC time and return midnight for that day"""
-    return dt.as_utc(
-        dt.as_local(utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    )
-
-
-def today_on_duration(hass: HomeAssistant, entity_id: str, time: datetime) -> timedelta:
-    """Return the total on time for today"""
-    start = midnight(time)
-    return on_duration(hass, start, time, entity_id)
 
 
 class IUMasterEntity(IUEntity):
@@ -278,6 +224,7 @@ class IUZoneEntity(IUEntity):
     def device_state_attributes(self):
         """Return the state attributes of the device."""
         # pylint: disable=too-many-branches
+
         attr = {}
         attr[CONF_ZONE_ID] = self._zone.zone_id
         attr[ATTR_INDEX] = self._zone.index
@@ -324,14 +271,11 @@ class IUZoneEntity(IUEntity):
         else:
             attr[ATTR_NEXT_SCHEDULE] = RES_NONE
         attr[ATTR_TOTAL_TODAY] = round(
-            today_on_duration(
-                self.hass, self.entity_id, self._coordinator.service_time()
-            ).total_seconds()
-            / 60,
+            self._zone.today_total.total_seconds() / 60,
             1,
         )
         if self._zone.show_config:
-            attr[ATTR_CONFIGURATION] = json.dumps(self._zone.as_dict(), default=str)
+            attr[ATTR_CONFIGURATION] = self._zone.configuration
         if self._zone.show_timeline:
-            attr[ATTR_TIMELINE] = json.dumps(self._zone.runs.as_list(), default=str)
+            attr[ATTR_TIMELINE] = self._zone.timeline
         return attr

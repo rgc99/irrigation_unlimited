@@ -22,7 +22,7 @@ from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 quiet_mode()
 
 
-async def test_timings(hass: ha.HomeAssistant, skip_setup):
+async def test_timings(hass: ha.HomeAssistant, skip_setup, skip_history):
     """Test timings. Process all the configuration files in the
     test_config directory matching timing_*.yaml and check the results."""
 

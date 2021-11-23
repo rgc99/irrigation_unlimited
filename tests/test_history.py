@@ -2,6 +2,7 @@
 from unittest.mock import patch
 from datetime import datetime
 import pytest
+import json
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
@@ -25,38 +26,45 @@ quiet_mode()
 @pytest.fixture(name="mock_history")
 def mock_history():
     with patch(
-        "homeassistant.components.recorder.history.state_changes_during_period"
+        "homeassistant.components.recorder.history.get_significant_states"
     ) as mock:
         mock.side_effect = hist_data
         yield
 
 
-def hist_data(hass, start_time: datetime, end_time: datetime, entity_id: str):
+def hist_data(
+    hass,
+    start_time: datetime,
+    end_time: datetime,
+    entity_ids: list[str],
+    significant_changes_only: bool,
+):
     def s2dt(adate: str) -> datetime:
         return datetime.fromisoformat(adate + "+00:00")
 
     result = {}
     id = "binary_sensor.irrigation_unlimited_c1_z1"
-    if entity_id == id:
+    if id in entity_ids:
         result[id] = []
-        if start_time >= s2dt("2021-01-04 00:00:00") and end_time <= s2dt(
+        if start_time >= s2dt("2020-12-28 00:00:00") and end_time <= s2dt(
             "2021-01-04 23:59:59"
         ):
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04 04:30:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04 04:32:00")))
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04 05:30:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04 05:32:00")))
+            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T04:30:00")))
+            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T04:32:00")))
+            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T05:30:00")))
+            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T05:32:00")))
     id = "binary_sensor.irrigation_unlimited_c1_z2"
-    if entity_id == id:
+    if id in entity_ids:
         result[id] = []
-        if start_time >= s2dt("2021-01-04 00:00:00") and end_time <= s2dt(
+        if start_time >= s2dt("2020-12-28 00:00:00") and end_time <= s2dt(
             "2021-01-04 23:59:59"
         ):
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04 04:35:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04 04:38:00")))
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04 05:35:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04 05:38:00")))
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04 05:40:00")))
+            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T04:35:00")))
+            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T04:38:00")))
+            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T05:35:00")))
+            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T05:38:00")))
+            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T05:40:00")))
+            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T05:45:00")))
     return result
 
 
@@ -70,24 +78,102 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
 
     start_time = await begin_test(1, coordinator)
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["today_total"] == 4.0
+
+    state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert state.attributes["today_total"] == 4.0
+    timeline = json.dumps(
+        [
+            {"start": "2021-01-04T04:30:00+00:00", "end": "2021-01-04T04:32:00+00:00"},
+            {"start": "2021-01-04T05:30:00+00:00", "end": "2021-01-04T05:32:00+00:00"},
+            {"start": "2021-01-04T06:05:00+00:00", "end": "2021-01-04T06:15:00+00:00"},
+            {"start": "2021-01-05T06:05:00+00:00", "end": "2021-01-05T06:15:00+00:00"},
+            {"start": "2021-01-06T06:05:00+00:00", "end": "2021-01-06T06:15:00+00:00"},
+        ],
+        default=str,
+    )
+    assert state.attributes["timeline"] == timeline
+
+    state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert state.attributes["today_total"] == 11.0
+    timeline = json.dumps(
+        [
+            {"start": "2021-01-04T04:35:00+00:00", "end": "2021-01-04T04:38:00+00:00"},
+            {"start": "2021-01-04T05:35:00+00:00", "end": "2021-01-04T05:38:00+00:00"},
+            {"start": "2021-01-04T05:40:00+00:00", "end": "2021-01-04T05:45:00+00:00"},
+            {"start": "2021-01-04T06:10:00+00:00", "end": "2021-01-04T06:20:00+00:00"},
+            {"start": "2021-01-05T06:10:00+00:00", "end": "2021-01-05T06:20:00+00:00"},
+            {"start": "2021-01-06T06:10:00+00:00", "end": "2021-01-06T06:20:00+00:00"},
+        ],
+        default=str,
+    )
+    assert state.attributes["timeline"] == timeline
+
     await finish_test(hass, coordinator, start_time, True)
 
     # Midnight rollover
     start_time = await begin_test(2, coordinator)
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["today_total"] == 4.0
+
+    state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert state.attributes["today_total"] == 4.0
+    timeline = json.dumps(
+        [
+            {"start": "2021-01-04T04:30:00+00:00", "end": "2021-01-04T04:32:00+00:00"},
+            {"start": "2021-01-04T05:30:00+00:00", "end": "2021-01-04T05:32:00+00:00"},
+            {"start": "2021-01-05T06:05:00+00:00", "end": "2021-01-05T06:15:00+00:00"},
+            {"start": "2021-01-06T06:05:00+00:00", "end": "2021-01-06T06:15:00+00:00"},
+            {"start": "2021-01-07T06:05:00+00:00", "end": "2021-01-07T06:15:00+00:00"},
+        ],
+        default=str,
+    )
+    assert state.attributes["timeline"] == timeline
+
+    state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert state.attributes["today_total"] == 11.0
+    timeline = json.dumps(
+        [
+            {"start": "2021-01-04T04:35:00+00:00", "end": "2021-01-04T04:38:00+00:00"},
+            {"start": "2021-01-04T05:35:00+00:00", "end": "2021-01-04T05:38:00+00:00"},
+            {"start": "2021-01-04T05:40:00+00:00", "end": "2021-01-04T05:45:00+00:00"},
+            {"start": "2021-01-05T06:10:00+00:00", "end": "2021-01-05T06:20:00+00:00"},
+            {"start": "2021-01-06T06:10:00+00:00", "end": "2021-01-06T06:20:00+00:00"},
+            {"start": "2021-01-07T06:10:00+00:00", "end": "2021-01-07T06:20:00+00:00"},
+        ],
+        default=str,
+    )
+    assert state.attributes["timeline"] == timeline
+
     start_time = await run_until(
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-05 00:00:00+00:00"),
+        datetime.fromisoformat("2021-01-05T00:00:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["today_total"] == 0.0
+    state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert state.attributes["today_total"] == 0.0
+    timeline = json.dumps(
+        [
+            {"start": "2021-01-05T06:05:00+00:00", "end": "2021-01-05T06:15:00+00:00"},
+            {"start": "2021-01-06T06:05:00+00:00", "end": "2021-01-06T06:15:00+00:00"},
+            {"start": "2021-01-07T06:05:00+00:00", "end": "2021-01-07T06:15:00+00:00"},
+        ],
+        default=str,
+    )
+    assert state.attributes["timeline"] == timeline
+
+    state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert state.attributes["today_total"] == 0.0
+    timeline = json.dumps(
+        [
+            {"start": "2021-01-05T06:10:00+00:00", "end": "2021-01-05T06:20:00+00:00"},
+            {"start": "2021-01-06T06:10:00+00:00", "end": "2021-01-06T06:20:00+00:00"},
+            {"start": "2021-01-07T06:10:00+00:00", "end": "2021-01-07T06:20:00+00:00"},
+        ],
+        default=str,
+    )
+    assert state.attributes["timeline"] == timeline
+
     await finish_test(hass, coordinator, start_time, True)
 
     check_summary(full_path, coordinator)

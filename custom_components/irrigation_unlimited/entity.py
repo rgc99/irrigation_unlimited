@@ -16,8 +16,6 @@ from .irrigation_unlimited import (
 
 from .const import (
     ATTR_ENABLED,
-    BINARY_SENSOR,
-    DOMAIN,
     COORDINATOR,
     ICON,
     SERVICE_ENABLE,
@@ -39,11 +37,10 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         self._coordinator = coordinator
         self._controller = controller
         self._zone = zone  # This will be None if it belongs to a Master/Controller
-        self.entity_id = f"{BINARY_SENSOR}.{DOMAIN}_c{self._controller.index + 1}"
         if self._zone is None:
-            self.entity_id = self.entity_id + "_m"
+            self.entity_id = self._controller.entity_id
         else:
-            self.entity_id = self.entity_id + f"_z{self._zone.index + 1}"
+            self.entity_id = self._zone.entity_id
 
     async def async_added_to_hass(self):
         self._coordinator.register_entity(self._controller, self._zone, self)
@@ -75,7 +72,7 @@ class IUComponent(RestoreEntity):
 
     def __init__(self, coordinator: IUCoordinator):
         self._coordinator = coordinator
-        self.entity_id = f"{DOMAIN}.{COORDINATOR}"
+        self.entity_id = self._coordinator.entity_id
 
     async def async_added_to_hass(self):
         self._coordinator.register_entity(None, None, self)

@@ -29,6 +29,8 @@ from .const import (
     CONF_ENABLED,
     CONF_FINISH,
     CONF_FUTURE_SPAN,
+    CONF_HISTORY_REFRESH,
+    CONF_HISTORY_SPAN,
     CONF_MAXIMUM,
     CONF_MINIMUM,
     CONF_MONTH,
@@ -223,6 +225,8 @@ IRRIGATION_SCHEMA = vol.Schema(
         ),
         vol.Optional(CONF_GRANULARITY): cv.positive_int,
         vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
+        vol.Optional(CONF_HISTORY_SPAN): cv.positive_time_period,
+        vol.Optional(CONF_HISTORY_REFRESH): cv.positive_int,
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
     }
 )

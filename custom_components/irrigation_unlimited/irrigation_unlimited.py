@@ -3,7 +3,7 @@
 import typing
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
-from typing import OrderedDict
+from typing import OrderedDict, List
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
@@ -32,7 +32,10 @@ from homeassistant.const import (
     ATTR_ENTITY_ID,
 )
 
+from .history import IUHistory
+
 from .const import (
+    BINARY_SENSOR,
     CONF_ACTUAL,
     CONF_ALL_ZONES_CONFIG,
     CONF_DAY,
@@ -51,6 +54,7 @@ from .const import (
     CONF_SHOW_LOG,
     CONF_AUTOPLAY,
     CONF_ANCHOR,
+    COORDINATOR,
     DEFAULT_GRANULATITY,
     DEFAULT_REFRESH_INTERVAL,
     DEFAULT_TEST_SPEED,
@@ -72,6 +76,9 @@ from .const import (
     CONF_MINIMUM,
     CONF_MAXIMUM,
     CONF_MONTH,
+    DOMAIN,
+    JSON_END,
+    JSON_START,
     MONTHS,
     CONF_ODD,
     CONF_EVEN,
@@ -102,7 +109,7 @@ def time_to_timedelta(offset: time) -> timedelta:
 
 def dt2lstr(stime: datetime) -> str:
     """Format the passed UTC datetime into a local date time string. The result
-    is formatted to ISO 8601 date and 24 hour time notation (YYYY-MM-DD HH:MM:SS).
+    is formatted to 24 hour time notation (YYYY-MM-DD HH:MM:SS).
     Example 2021-12-25 17:00:00 for 5pm on December 25 2021."""
     return datetime.strftime(dt.as_local(stime), "%Y-%m-%d %H:%M:%S")
 
@@ -168,6 +175,15 @@ def round_td(delta: timedelta, granularity: int = None) -> timedelta:
         )
         return timedelta(seconds=rounded_seconds)
     return None
+
+
+class IUDateTimeEncoder(json.JSONEncoder):
+    """JSON serialiser to handle ISO datetime output"""
+
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return o.__str__()
 
 
 class IUBase:
@@ -628,8 +644,8 @@ class IURun(IUBase):
     def as_dict(self) -> OrderedDict:
         """Return this object as a dict"""
         result = OrderedDict()
-        result["start"] = self._start_time
-        result["end"] = self._end_time
+        result[JSON_START] = self._start_time
+        result[JSON_END] = self._end_time
         return result
 
 
@@ -820,7 +836,8 @@ class IURunQueue(typing.List[IURun]):
 
     def update_queue(self, stime: datetime) -> int:
         """Update the run queue. Sort the queue, remove expired runs
-        and set current and next runs.
+        and set current and next runs. This is the final operation after
+        all additions and deletions.
 
         Returns a bit field of changes to queue.
         """
@@ -1023,6 +1040,11 @@ class IUZone(IUBase):
         return f"c{self._controller.index + 1}_z{self.index + 1}"
 
     @property
+    def entity_id(self) -> str:
+        """Return the HA entity_id for the zone"""
+        return f"{BINARY_SENSOR}.{DOMAIN}_{self.unique_id}"
+
+    @property
     def schedules(self) -> "list[IUSchedule]":
         """Return a list of schedules associated with this zone"""
         return self._schedules
@@ -1095,6 +1117,23 @@ class IUZone(IUBase):
     def show_timeline(self) -> bool:
         """Indicate if the timeline (run queue) should be shown as an attribute"""
         return self._show_timeline
+
+    @property
+    def timeline(self) -> str:
+        """Return the on/off timeline as JSON"""
+        run_list = self._coordinator.history.timeline(self.entity_id)
+        run_list.extend(self._run_queue.as_list())
+        return json.dumps(run_list, cls=IUDateTimeEncoder)
+
+    @property
+    def today_total(self) -> timedelta:
+        """Return the total on time for today"""
+        return self._coordinator.history.today_total(self.entity_id)
+
+    @property
+    def configuration(self) -> str:
+        """Return this zone as JSON"""
+        return json.dumps(self.as_dict(), cls=IUDateTimeEncoder)
 
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
@@ -1723,6 +1762,11 @@ class IUController(IUBase):
     def unique_id(self) -> str:
         """Return the HA unique_id for the controller entity"""
         return f"c{self.index + 1}_m"
+
+    @property
+    def entity_id(self) -> str:
+        """Return the HA entity_id for the controller entity"""
+        return f"{BINARY_SENSOR}.{DOMAIN}_{self.unique_id}"
 
     @property
     def zones(self) -> "list[IUZone]":
@@ -2872,6 +2916,12 @@ class IUCoordinator:
         self._remove_shutdown_listener: CALLBACK_TYPE = None
         self._tester = IUTester(self)
         self._logger = IULogger(_LOGGER)
+        self._history = IUHistory(self._hass)
+
+    @property
+    def entity_id(self) -> str:
+        """Return the entity_id for the coordinator"""
+        return f"{DOMAIN}.{COORDINATOR}"
 
     @property
     def controllers(self) -> "list[IUController]":
@@ -2887,6 +2937,11 @@ class IUCoordinator:
     def logger(self) -> IULogger:
         """Return the logger object"""
         return self._logger
+
+    @property
+    def history(self) -> IUHistory:
+        """Return the history object"""
+        return self._history
 
     @property
     def is_setup(self) -> bool:
@@ -2959,6 +3014,7 @@ class IUCoordinator:
         self._dirty = True
         self._muster_required = True
         self._logger.log_load(config)
+        self._history.load(config)
         return self
 
     def as_dict(self) -> OrderedDict:
@@ -2972,6 +3028,12 @@ class IUCoordinator:
     def muster(self, stime: datetime, force: bool) -> int:
         """Calculate run times for system"""
         status: int = 0
+
+        entity_ids: List[str] = []
+        for controller in self._controllers:
+            for zone in controller.zones:
+                entity_ids.append(zone.entity_id)
+        self._history.muster(stime, entity_ids, force)
 
         for controller in self._controllers:
             status |= controller.muster(stime, force)

@@ -60,7 +60,7 @@ def skip_dep():
 def skip_history():
     """Skip history calls"""
     with patch(
-        "homeassistant.components.recorder.history.state_changes_during_period",
+        "homeassistant.components.recorder.history.get_significant_states",
         return_value=[],
     ):
         yield
