@@ -1,8 +1,9 @@
 """Test irrigation_unlimited history."""
 from unittest.mock import patch
 from datetime import datetime
-import pytest
+from typing import List
 import json
+import pytest
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
@@ -22,9 +23,48 @@ from tests.iu_test_support import (
 
 quiet_mode()
 
+# pylint: disable=unused-argument
+def hist_data(
+    hass,
+    start_time: datetime,
+    end_time: datetime,
+    entity_ids: List[str],
+    significant_changes_only: bool,
+) -> dict:
+    """Return dummy history data"""
+
+    def s2dt(adate: str) -> datetime:
+        return datetime.fromisoformat(adate + "+00:00")
+
+    result = {}
+    idx = "binary_sensor.irrigation_unlimited_c1_z1"
+    if idx in entity_ids:
+        result[idx] = []
+        if start_time >= s2dt("2020-12-28 00:00:00") and end_time <= s2dt(
+            "2021-01-04 23:59:59"
+        ):
+            result[idx].append(ha.State(idx, "on", None, s2dt("2021-01-04T04:30:00")))
+            result[idx].append(ha.State(idx, "off", None, s2dt("2021-01-04T04:32:00")))
+            result[idx].append(ha.State(idx, "on", None, s2dt("2021-01-04T05:30:00")))
+            result[idx].append(ha.State(idx, "off", None, s2dt("2021-01-04T05:32:00")))
+    idx = "binary_sensor.irrigation_unlimited_c1_z2"
+    if idx in entity_ids:
+        result[idx] = []
+        if start_time >= s2dt("2020-12-28 00:00:00") and end_time <= s2dt(
+            "2021-01-04 23:59:59"
+        ):
+            result[idx].append(ha.State(idx, "on", None, s2dt("2021-01-04T04:35:00")))
+            result[idx].append(ha.State(idx, "off", None, s2dt("2021-01-04T04:38:00")))
+            result[idx].append(ha.State(idx, "on", None, s2dt("2021-01-04T05:35:00")))
+            result[idx].append(ha.State(idx, "off", None, s2dt("2021-01-04T05:38:00")))
+            result[idx].append(ha.State(idx, "on", None, s2dt("2021-01-04T05:40:00")))
+            result[idx].append(ha.State(idx, "off", None, s2dt("2021-01-04T05:45:00")))
+    return result
+
 
 @pytest.fixture(name="mock_history")
 def mock_history():
+    """Patch HA history and return dummy data"""
     with patch(
         "homeassistant.components.recorder.history.get_significant_states"
     ) as mock:
@@ -32,43 +72,9 @@ def mock_history():
         yield
 
 
-def hist_data(
-    hass,
-    start_time: datetime,
-    end_time: datetime,
-    entity_ids: list[str],
-    significant_changes_only: bool,
-):
-    def s2dt(adate: str) -> datetime:
-        return datetime.fromisoformat(adate + "+00:00")
-
-    result = {}
-    id = "binary_sensor.irrigation_unlimited_c1_z1"
-    if id in entity_ids:
-        result[id] = []
-        if start_time >= s2dt("2020-12-28 00:00:00") and end_time <= s2dt(
-            "2021-01-04 23:59:59"
-        ):
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T04:30:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T04:32:00")))
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T05:30:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T05:32:00")))
-    id = "binary_sensor.irrigation_unlimited_c1_z2"
-    if id in entity_ids:
-        result[id] = []
-        if start_time >= s2dt("2020-12-28 00:00:00") and end_time <= s2dt(
-            "2021-01-04 23:59:59"
-        ):
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T04:35:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T04:38:00")))
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T05:35:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T05:38:00")))
-            result[id].append(ha.State(id, "on", None, s2dt("2021-01-04T05:40:00")))
-            result[id].append(ha.State(id, "off", None, s2dt("2021-01-04T05:45:00")))
-    return result
-
-
 async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
+    """Test out the history caching and timeline"""
+    # pylint: disable=redefined-outer-name
 
     full_path = test_config_dir + "test_history.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
