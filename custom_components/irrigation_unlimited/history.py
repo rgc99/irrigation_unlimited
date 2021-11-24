@@ -1,6 +1,6 @@
 """History access and caching"""
 from datetime import datetime, timedelta
-from typing import OrderedDict
+from typing import OrderedDict, List
 import homeassistant.util.dt as dt
 from homeassistant.components.recorder import history
 from homeassistant.const import STATE_ON
@@ -121,7 +121,7 @@ class IUHistory:
         self._history_refresh = timedelta(seconds=config.get(CONF_HISTORY_REFRESH, 120))
         return self
 
-    def muster(self, stime: datetime, entity_ids: list[str], force: bool) -> None:
+    def muster(self, stime: datetime, entity_ids: List[str], force: bool) -> None:
         """Check and update history as required"""
         if not (
             force
@@ -164,6 +164,3 @@ class IUHistory:
         if entity_id in self._cache:
             return self._cache[entity_id][TIMELINE]
         return []
-
-    def dummy(self):
-        return None
