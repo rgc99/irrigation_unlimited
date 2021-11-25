@@ -20,16 +20,17 @@ from tests.iu_test_support import (
     check_summary,
     finish_test,
     quiet_mode,
-    test_config_dir,
+    TEST_CONFIG_DIR,
 )
 
 quiet_mode()
 
 
+# pylint: disable=unused-argument
 async def test_test_1(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test the testing unit. Parameter show_log=False"""
 
-    full_path = test_config_dir + "test_test_1.yaml"
+    full_path = TEST_CONFIG_DIR + "test_test_1.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     if ha.DOMAIN in config:
         await async_process_ha_core_config(hass, config[ha.DOMAIN])
@@ -59,7 +60,7 @@ async def test_test_1(hass: ha.HomeAssistant, skip_dependencies, skip_history):
 async def test_test_2(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test the testing unit. Parameter show_log=True"""
 
-    full_path = test_config_dir + "test_test_2.yaml"
+    full_path = TEST_CONFIG_DIR + "test_test_2.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     if ha.DOMAIN in config:
         await async_process_ha_core_config(hass, config[ha.DOMAIN])

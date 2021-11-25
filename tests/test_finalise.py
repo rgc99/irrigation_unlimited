@@ -1,5 +1,4 @@
 """Test irrigation_unlimited finalise"""
-import pytest
 from datetime import timedelta
 import homeassistant.core as ha
 from homeassistant.config import (
@@ -22,16 +21,16 @@ from tests.iu_test_support import (
     finish_test,
     quiet_mode,
     run_for,
-    test_config_dir,
+    TEST_CONFIG_DIR,
 )
 
 quiet_mode()
 
-
+# pylint: disable=unused-argument
 async def test_finalise(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test finialise."""
 
-    full_path = test_config_dir + "test_finalise.yaml"
+    full_path = TEST_CONFIG_DIR + "test_finalise.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     if ha.DOMAIN in config:
         await async_process_ha_core_config(hass, config[ha.DOMAIN])

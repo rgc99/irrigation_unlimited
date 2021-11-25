@@ -1,4 +1,5 @@
 """Test integration_unlimited service calls."""
+# pylint: disable=too-many-lines
 from unittest.mock import patch
 
 import pytest
@@ -14,7 +15,7 @@ from tests.iu_test_support import (
     run_for_1_tick,
     run_until,
     finish_test,
-    test_config_dir,
+    TEST_CONFIG_DIR,
     check_summary,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
@@ -34,13 +35,14 @@ from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 quiet_mode()
 
-
+# pylint: disable=unused-argument
+# pylint: disable=too-many-statements
 async def test_service_adjust_time(
     hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
 ):
     """Test adjust_time service call."""
 
-    full_path = test_config_dir + "service_adjust_time.yaml"
+    full_path = TEST_CONFIG_DIR + "service_adjust_time.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -322,7 +324,7 @@ async def test_service_enable_disable(
 ):
     """Test enable/disable service call."""
 
-    full_path = test_config_dir + "service_enable_disable.yaml"
+    full_path = TEST_CONFIG_DIR + "service_enable_disable.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -339,13 +341,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Zone 1 on
@@ -359,13 +361,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Zone 1 off, zone 2 on
@@ -379,13 +381,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Double toggle: zone 1 on, zone 2 off
@@ -405,13 +407,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # All off
@@ -425,13 +427,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # All back on
@@ -451,13 +453,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Controller 1 off
@@ -471,13 +473,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Controller 1 off, zone 1 on, zone 2 off
@@ -497,13 +499,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # Controller 1 on, zone 1 still on, zone 2 still off
@@ -517,13 +519,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # Toggle controller 1
@@ -537,13 +539,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] == False
+    assert s.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # Toggle controller 1 & zone 2 (All back on)
@@ -563,13 +565,13 @@ async def test_service_enable_disable(
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] == True
+    assert s.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Seq 1 zone 1 off
@@ -716,7 +718,7 @@ async def test_service_manual_run(
 ):
     """Test manual_run service call."""
 
-    full_path = test_config_dir + "service_manual_run.yaml"
+    full_path = TEST_CONFIG_DIR + "service_manual_run.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -774,7 +776,7 @@ async def test_service_cancel(
 ):
     """Test cancel service call."""
 
-    full_path = test_config_dir + "service_cancel.yaml"
+    full_path = TEST_CONFIG_DIR + "service_cancel.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -820,7 +822,7 @@ async def test_service_adjust_time_while_running(
 ):
     """Test adjust_time service call while sequence is running."""
 
-    full_path = test_config_dir + "service_adjust_time_while_running.yaml"
+    full_path = TEST_CONFIG_DIR + "service_adjust_time_while_running.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -876,7 +878,7 @@ async def test_service_adjust_time_sequence(
 ):
     """Test adjust_time service call on a sequence."""
 
-    full_path = test_config_dir + "service_adjust_time_sequence.yaml"
+    full_path = TEST_CONFIG_DIR + "service_adjust_time_sequence.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -1393,7 +1395,7 @@ async def test_service_adjust_time_finish(
 ):
     """Test adjust_time service call on a schedules with finish anchor."""
 
-    full_path = test_config_dir + "service_adjust_time_finish.yaml"
+    full_path = TEST_CONFIG_DIR + "service_adjust_time_finish.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -1676,7 +1678,7 @@ async def test_service_adjust_time_sequence_zone(
 ):
     """Test adjust_time service call on a sequence zone."""
 
-    full_path = test_config_dir + "service_adjust_time_sequence_zone.yaml"
+    full_path = TEST_CONFIG_DIR + "service_adjust_time_sequence_zone.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
@@ -1853,7 +1855,7 @@ async def test_service_adjust_time_sequence_bad(
 ):
     """Test adjust_time service call on a zone entity with a sequence."""
 
-    full_path = test_config_dir + "service_adjust_time_sequence_bad.yaml"
+    full_path = TEST_CONFIG_DIR + "service_adjust_time_sequence_bad.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()

@@ -29,7 +29,7 @@ from tests.iu_test_support import (
     quiet_mode,
     run_for,
     run_until,
-    test_config_dir,
+    TEST_CONFIG_DIR,
 )
 
 quiet_mode()
@@ -43,7 +43,7 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     # """Prevent checking results. Helpful for just outputting results"""
     # no_check()
 
-    full_path = test_config_dir + "test_config.yaml"
+    full_path = TEST_CONFIG_DIR + "test_config.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     if ha.DOMAIN in config:
         await async_process_ha_core_config(hass, config[ha.DOMAIN])

@@ -14,7 +14,7 @@ from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 MOCK_CONFIG_BAD_1 = {DOMAIN: {CONF_CONTROLLERS: []}}
 MOCK_CONFIG_BAD_2 = {DOMAIN: {CONF_CONTROLLERS: [{CONF_ZONES: []}]}}
 
-
+# pylint: disable=unused-argument
 async def test_init(hass: ha.HomeAssistant):
     """Test init module."""
 

@@ -1,6 +1,7 @@
 """Test irrigation_unlimited timing operations."""
-import pytest
+# pylint: disable=unused-import
 import glob
+import pytest
 import homeassistant.core as ha
 from homeassistant.config import (
     load_yaml_config_file,
@@ -10,7 +11,7 @@ from tests.iu_test_support import (
     begin_test,
     finish_test,
     quiet_mode,
-    test_config_dir,
+    TEST_CONFIG_DIR,
     check_summary,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
@@ -23,18 +24,19 @@ quiet_mode()
 
 
 async def test_timings(hass: ha.HomeAssistant, skip_setup, skip_history):
+    # pylint: disable=unused-argument
     """Test timings. Process all the configuration files in the
     test_config directory matching timing_*.yaml and check the results."""
 
-    for fname in glob.glob(test_config_dir + "timing_*.yaml"):
+    for fname in glob.glob(TEST_CONFIG_DIR + "timing_*.yaml"):
         print(f"Processing: {fname}")
         config = CONFIG_SCHEMA(load_yaml_config_file(fname))
         if ha.DOMAIN in config:
             await async_process_ha_core_config(hass, config[ha.DOMAIN])
         coordinator = IUCoordinator(hass).load(config[DOMAIN])
 
-        for t in range(coordinator.tester.total_tests):
-            next_time = await begin_test(t + 1, coordinator)
+        for test in range(coordinator.tester.total_tests):
+            next_time = await begin_test(test + 1, coordinator)
             await finish_test(hass, coordinator, next_time, True)
 
         check_summary(fname, coordinator)

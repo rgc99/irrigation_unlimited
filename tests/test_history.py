@@ -18,7 +18,7 @@ from tests.iu_test_support import (
     quiet_mode,
     run_for_1_tick,
     run_until,
-    test_config_dir,
+    TEST_CONFIG_DIR,
 )
 
 quiet_mode()
@@ -76,7 +76,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
     """Test out the history caching and timeline"""
     # pylint: disable=redefined-outer-name
 
-    full_path = test_config_dir + "test_history.yaml"
+    full_path = TEST_CONFIG_DIR + "test_history.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()

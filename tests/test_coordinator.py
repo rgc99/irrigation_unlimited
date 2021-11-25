@@ -21,7 +21,7 @@ from tests.iu_test_support import (
     check_summary,
     finish_test,
     quiet_mode,
-    test_config_dir,
+    TEST_CONFIG_DIR,
 )
 
 quiet_mode()
@@ -31,7 +31,7 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test out coordinator functionality."""
     # pylint: disable=unused-argument
 
-    full_path = test_config_dir + "test_coordinator.yaml"
+    full_path = TEST_CONFIG_DIR + "test_coordinator.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     if ha.DOMAIN in config:
         await async_process_ha_core_config(hass, config[ha.DOMAIN])
