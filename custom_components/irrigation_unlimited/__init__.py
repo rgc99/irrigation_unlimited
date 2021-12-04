@@ -122,7 +122,7 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_MINIMUM): cv.positive_time_period,
         vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
-        vol.Optional(CONF_FUTURE_SPAN): cv.positive_time_period,
+        vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
         vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
     }
 )
@@ -132,7 +132,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
         vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
         vol.Optional(CONF_MINIMUM): cv.positive_time_period,
         vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
-        vol.Optional(CONF_FUTURE_SPAN): cv.positive_time_period,
+        vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
     }
 )
 
@@ -225,7 +225,7 @@ IRRIGATION_SCHEMA = vol.Schema(
         ),
         vol.Optional(CONF_GRANULARITY): cv.positive_int,
         vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
-        vol.Optional(CONF_HISTORY_SPAN): cv.positive_time_period,
+        vol.Optional(CONF_HISTORY_SPAN): cv.positive_int,
         vol.Optional(CONF_HISTORY_REFRESH): cv.positive_int,
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
     }

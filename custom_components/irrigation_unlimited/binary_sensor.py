@@ -16,6 +16,26 @@ from .const import (
     ATTR_ENABLED,
     ATTR_STATUS,
     ATTR_INDEX,
+    ATTR_CURRENT_SCHEDULE,
+    ATTR_CURRENT_NAME,
+    ATTR_CURRENT_ADJUSTMENT,
+    ATTR_CURRENT_START,
+    ATTR_CURRENT_DURATION,
+    ATTR_NEXT_SCHEDULE,
+    ATTR_NEXT_ZONE,
+    ATTR_NEXT_NAME,
+    ATTR_NEXT_ADJUSTMENT,
+    ATTR_NEXT_START,
+    ATTR_NEXT_DURATION,
+    ATTR_TIME_REMAINING,
+    ATTR_PERCENT_COMPLETE,
+    ATTR_ZONE_COUNT,
+    ATTR_CURRENT_ZONE,
+    ATTR_TOTAL_TODAY,
+    ATTR_SCHEDULE_COUNT,
+    ATTR_ADJUSTMENT,
+    ATTR_CONFIGURATION,
+    ATTR_TIMELINE,
     BINARY_SENSOR,
     DOMAIN,
     COORDINATOR,
@@ -29,35 +49,10 @@ from .const import (
     CONF_SCHEDULES,
     CONF_ZONES,
     CONF_ZONE_ID,
+    RES_MANUAL,
+    RES_NOT_RUNNING,
+    RES_NONE,
 )
-
-RES_MANUAL = "Manual"
-RES_NOT_RUNNING = "not running"
-RES_NONE = "none"
-RES_CONTROLLER = "Controller"
-RES_ZONE = "Zone"
-RES_MASTER = "Master"
-
-ATTR_CURRENT_SCHEDULE = "current_schedule"
-ATTR_CURRENT_NAME = "current_name"
-ATTR_CURRENT_ADJUSTMENT = "current_adjustment"
-ATTR_CURRENT_START = "current_start"
-ATTR_CURRENT_DURATION = "current_duration"
-ATTR_NEXT_SCHEDULE = "next_schedule"
-ATTR_NEXT_ZONE = "next_zone"
-ATTR_NEXT_NAME = "next_name"
-ATTR_NEXT_ADJUSTMENT = "next_adjustment"
-ATTR_NEXT_START = "next_start"
-ATTR_NEXT_DURATION = "next_duration"
-ATTR_TIME_REMAINING = "time_remaining"
-ATTR_PERCENT_COMPLETE = "percent_complete"
-ATTR_ZONE_COUNT = "zone_count"
-ATTR_CURRENT_ZONE = "current_zone"
-ATTR_TOTAL_TODAY = "today_total"
-ATTR_SCHEDULE_COUNT = "schedule_count"
-ATTR_ADJUSTMENT = "adjustment"
-ATTR_CONFIGURATION = "configuration"
-ATTR_TIMELINE = "timeline"
 
 
 async def async_setup_platform(
@@ -235,17 +230,13 @@ class IUZoneEntity(IUEntity):
         attr[ATTR_ADJUSTMENT] = str(self._zone.adjustment)
         current = self._zone.runs.current_run
         if current is not None:
+            attr[ATTR_CURRENT_ADJUSTMENT] = current.adjustment
             if current.schedule is not None:
                 attr[ATTR_CURRENT_SCHEDULE] = current.schedule.index + 1
                 attr[ATTR_CURRENT_NAME] = current.schedule.name
-                if current.sequence_has_adjustment(True):
-                    attr[ATTR_CURRENT_ADJUSTMENT] = current.sequence_adjustment()
-                else:
-                    attr[ATTR_CURRENT_ADJUSTMENT] = str(self._zone.adjustment)
             else:
                 attr[ATTR_CURRENT_SCHEDULE] = RES_MANUAL
                 attr[ATTR_CURRENT_NAME] = RES_MANUAL
-                attr[ATTR_CURRENT_ADJUSTMENT] = RES_NONE
             attr[ATTR_CURRENT_START] = dt.as_local(current.start_time)
             attr[ATTR_CURRENT_DURATION] = str(current.duration)
             attr[ATTR_TIME_REMAINING] = str(current.time_remaining)
@@ -256,6 +247,7 @@ class IUZoneEntity(IUEntity):
 
         next_run = self._zone.runs.next_run
         if next_run is not None:
+            attr[ATTR_NEXT_ADJUSTMENT] = next_run.adjustment
             if next_run.schedule is not None:
                 attr[ATTR_NEXT_SCHEDULE] = next_run.schedule.index + 1
                 attr[ATTR_NEXT_NAME] = next_run.schedule.name
@@ -264,10 +256,6 @@ class IUZoneEntity(IUEntity):
                 attr[ATTR_NEXT_NAME] = RES_MANUAL
             attr[ATTR_NEXT_START] = dt.as_local(next_run.start_time)
             attr[ATTR_NEXT_DURATION] = str(next_run.duration)
-            if next_run.sequence_has_adjustment(True):
-                attr[ATTR_NEXT_ADJUSTMENT] = next_run.sequence_adjustment()
-            else:
-                attr[ATTR_NEXT_ADJUSTMENT] = str(self._zone.adjustment)
         else:
             attr[ATTR_NEXT_SCHEDULE] = RES_NONE
         attr[ATTR_TOTAL_TODAY] = round(
@@ -277,5 +265,5 @@ class IUZoneEntity(IUEntity):
         if self._zone.show_config:
             attr[ATTR_CONFIGURATION] = self._zone.configuration
         if self._zone.show_timeline:
-            attr[ATTR_TIMELINE] = self._zone.timeline
+            attr[ATTR_TIMELINE] = self._zone.timeline()
         return attr

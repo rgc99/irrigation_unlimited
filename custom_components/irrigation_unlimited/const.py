@@ -91,14 +91,49 @@ STATUS_BLOCKED = "blocked"
 STATUS_INITIALISING = "initialising"
 STATUS_PAUSED = "paused"
 
-# JSON labels
-JSON_START = "start"
-JSON_END = "end"
+# Timeline labels
+TIMELINE_STATUS = "status"
+TIMELINE_START = "start"
+TIMELINE_END = "end"
+TIMELINE_SCHEDULE_NAME = "schedule_name"
+TIMELINE_ADJUSTMENT = "adjustment"
 
 # Attributes
 ATTR_ENABLED = "enabled"
 ATTR_STATUS = "status"
 ATTR_INDEX = "index"
+ATTR_CURRENT_SCHEDULE = "current_schedule"
+ATTR_CURRENT_NAME = "current_name"
+ATTR_CURRENT_ADJUSTMENT = "current_adjustment"
+ATTR_CURRENT_START = "current_start"
+ATTR_CURRENT_DURATION = "current_duration"
+ATTR_NEXT_SCHEDULE = "next_schedule"
+ATTR_NEXT_ZONE = "next_zone"
+ATTR_NEXT_NAME = "next_name"
+ATTR_NEXT_ADJUSTMENT = "next_adjustment"
+ATTR_NEXT_START = "next_start"
+ATTR_NEXT_DURATION = "next_duration"
+ATTR_TIME_REMAINING = "time_remaining"
+ATTR_PERCENT_COMPLETE = "percent_complete"
+ATTR_ZONE_COUNT = "zone_count"
+ATTR_CURRENT_ZONE = "current_zone"
+ATTR_TOTAL_TODAY = "today_total"
+ATTR_SCHEDULE_COUNT = "schedule_count"
+ATTR_ADJUSTMENT = "adjustment"
+ATTR_CONFIGURATION = "configuration"
+ATTR_TIMELINE = "timeline"
+
+# Resources
+RES_MANUAL = "Manual"
+RES_NOT_RUNNING = "not running"
+RES_NONE = "none"
+RES_CONTROLLER = "Controller"
+RES_ZONE = "Zone"
+RES_MASTER = "Master"
+RES_TIMELINE_RUNNING = "running"
+RES_TIMELINE_SCHEDULED = "scheduled"
+RES_TIMELINE_NEXT = "next"
+RES_TIMELINE_HISTORY = "history"
 
 MONTHS = [
     "jan",

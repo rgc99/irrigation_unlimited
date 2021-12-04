@@ -77,8 +77,16 @@ from .const import (
     CONF_MAXIMUM,
     CONF_MONTH,
     DOMAIN,
-    JSON_END,
-    JSON_START,
+    RES_MANUAL,
+    RES_NONE,
+    RES_TIMELINE_HISTORY,
+    RES_TIMELINE_NEXT,
+    RES_TIMELINE_RUNNING,
+    RES_TIMELINE_SCHEDULED,
+    TIMELINE_ADJUSTMENT,
+    TIMELINE_END,
+    TIMELINE_SCHEDULE_NAME,
+    TIMELINE_START,
     MONTHS,
     CONF_ODD,
     CONF_EVEN,
@@ -97,6 +105,7 @@ from .const import (
     STATUS_PAUSED,
     STATUS_DISABLED,
     STATUS_INITIALISING,
+    TIMELINE_STATUS,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -177,7 +186,7 @@ def round_td(delta: timedelta, granularity: int = None) -> timedelta:
     return None
 
 
-class IUDateTimeEncoder(json.JSONEncoder):
+class IUJSONEncoder(json.JSONEncoder):
     """JSON serialiser to handle ISO datetime output"""
 
     def default(self, o):
@@ -525,6 +534,22 @@ class IURun(IUBase):
         return self._schedule
 
     @property
+    def schedule_name(self) -> str:
+        """Return the name of the schedule"""
+        if self._schedule is not None:
+            return self._schedule.name
+        return RES_MANUAL
+
+    @property
+    def adjustment(self) -> str:
+        """Return the adjustment in play"""
+        if self._schedule is None:
+            return RES_NONE
+        if self.sequence_has_adjustment(True):
+            return self.sequence_adjustment()
+        return str(self._zone.adjustment)
+
+    @property
     def end_time(self) -> datetime:
         """Return the finish time"""
         return self._end_time
@@ -644,8 +669,10 @@ class IURun(IUBase):
     def as_dict(self) -> OrderedDict:
         """Return this object as a dict"""
         result = OrderedDict()
-        result[JSON_START] = self._start_time
-        result[JSON_END] = self._end_time
+        result[TIMELINE_START] = self._start_time
+        result[TIMELINE_END] = self._end_time
+        result[TIMELINE_SCHEDULE_NAME] = self.schedule_name
+        result[TIMELINE_ADJUSTMENT] = self.adjustment
         return result
 
 
@@ -778,12 +805,11 @@ class IURunQueue(typing.List[IURun]):
 
     def load(self, config: OrderedDict, all_zones: OrderedDict):
         """Load the config settings"""
+        fsd = IURunQueue.DAYS_SPAN
         if all_zones is not None:
-            self._future_span = wash_td(
-                all_zones.get(CONF_FUTURE_SPAN, self._future_span)
-            )
-        self._future_span = wash_td(config.get(CONF_FUTURE_SPAN, self._future_span))
-        self._future_span = max(self._future_span, timedelta(hours=12))
+            fsd = all_zones.get(CONF_FUTURE_SPAN, fsd)
+        fsd = max(config.get(CONF_FUTURE_SPAN, fsd), 1)
+        self._future_span = wash_td(timedelta(days=fsd))
         return self
 
     def sort(self) -> bool:
@@ -1119,13 +1145,6 @@ class IUZone(IUBase):
         return self._show_timeline
 
     @property
-    def timeline(self) -> str:
-        """Return the on/off timeline as JSON"""
-        run_list = self._coordinator.history.timeline(self.entity_id)
-        run_list.extend(self._run_queue.as_list())
-        return json.dumps(run_list, cls=IUDateTimeEncoder)
-
-    @property
     def today_total(self) -> timedelta:
         """Return the total on time for today"""
         return self._coordinator.history.today_total(self.entity_id)
@@ -1133,7 +1152,7 @@ class IUZone(IUBase):
     @property
     def configuration(self) -> str:
         """Return this zone as JSON"""
-        return json.dumps(self.as_dict(), cls=IUDateTimeEncoder)
+        return json.dumps(self.as_dict(), cls=IUJSONEncoder)
 
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
@@ -1246,6 +1265,26 @@ class IUZone(IUBase):
         for schedule in self._schedules:
             result[CONF_SCHEDULES].append(schedule.as_dict())
         return result
+
+    def timeline(self) -> list:
+        """Return the on/off timeline. Merge history and future and add
+        the status"""
+        run_list = self._coordinator.history.timeline(self.entity_id)
+        for run in run_list:
+            run[TIMELINE_STATUS] = RES_TIMELINE_HISTORY
+
+        stime = self._coordinator.service_time()
+        for run in self._run_queue:
+            dct = run.as_dict()
+            if run.is_running(stime):
+                dct[TIMELINE_STATUS] = RES_TIMELINE_RUNNING
+            elif run == self._run_queue.next_run:
+                dct[TIMELINE_STATUS] = RES_TIMELINE_NEXT
+            else:
+                dct[TIMELINE_STATUS] = RES_TIMELINE_SCHEDULED
+            run_list.append(dct)
+        run_list.reverse()
+        return run_list
 
     def muster(self, stime: datetime) -> int:
         """Muster this zone"""
@@ -1713,7 +1752,6 @@ class IUSequenceRun(IUBase):
     def running(self, value: bool) -> None:
         """Flag sequence is now running"""
         self._running = value
-        return
 
     def add(self, run: IURun, sequence_zone: IUSequenceZone) -> None:
         """Adds a sequence zone to the group"""

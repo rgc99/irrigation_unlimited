@@ -6,10 +6,14 @@ from homeassistant.components.recorder import history
 from homeassistant.const import STATE_ON
 
 from .const import (
+    ATTR_CURRENT_ADJUSTMENT,
+    ATTR_CURRENT_NAME,
     CONF_HISTORY_REFRESH,
     CONF_HISTORY_SPAN,
-    JSON_START,
-    JSON_END,
+    TIMELINE_ADJUSTMENT,
+    TIMELINE_SCHEDULE_NAME,
+    TIMELINE_START,
+    TIMELINE_END,
 )
 
 TIMELINE = "timeline"
@@ -52,8 +56,7 @@ class IUHistory:
         """Return the total on time"""
         # pylint: disable=no-self-use
         elapsed = timedelta(0)
-        current_state: str = None
-        current_time: datetime = None
+        front_marker: dict = None
         start = midnight(stime)
 
         for item in data:
@@ -64,52 +67,52 @@ class IUHistory:
             if item.last_changed > stime:
                 break
 
-            # Initialise on first pass
-            if current_state is None:
-                current_state = item.state
-                current_time = item.last_changed
+            # Look for an on state
+            if front_marker is None:
+                if item.state == STATE_ON:
+                    front_marker = item
                 continue
 
-            if current_state == STATE_ON and item.state != STATE_ON:
-                elapsed += item.last_changed - current_time
+            # Now look for an off state
+            if item.state != STATE_ON:
+                elapsed += item.last_changed - front_marker.last_changed
+                front_marker = None
 
-            current_state = item.state
-            current_time = item.last_changed
-
-        if current_state == STATE_ON:
-            elapsed += stime - current_time
+        if front_marker is not None:
+            elapsed += stime - front_marker.last_changed
 
         return timedelta(seconds=round(elapsed.total_seconds()))
 
     def _run_history(self, stime: datetime, data: list) -> list:
         """Return the on/off series"""
         # pylint: disable=no-self-use
-        current_state: str = None
-        current_time: datetime = None
+
+        def create_record(item: dict, end: datetime) -> dict:
+            result = OrderedDict()
+            result[TIMELINE_START] = round_seconds_dt(item.last_changed)
+            result[TIMELINE_END] = round_seconds_dt(end)
+            result[TIMELINE_SCHEDULE_NAME] = item.attributes.get(ATTR_CURRENT_NAME)
+            result[TIMELINE_ADJUSTMENT] = item.attributes.get(ATTR_CURRENT_ADJUSTMENT)
+            return result
+
         run_history = []
+        front_marker: dict = None
 
         for item in data:
 
-            # Initialise on first pass
-            if current_state is None:
-                current_state = item.state
-                current_time = item.last_changed
+            # Look for an on state
+            if front_marker is None:
+                if item.state == STATE_ON:
+                    front_marker = item
                 continue
 
-            if current_state == STATE_ON and item.state != STATE_ON:
-                hist = OrderedDict()
-                hist[JSON_START] = round_seconds_dt(current_time)
-                hist[JSON_END] = round_seconds_dt(item.last_changed)
-                run_history.append(hist)
+            # Now look for an off state
+            if item.state != STATE_ON:
+                run_history.append(create_record(front_marker, item.last_changed))
+                front_marker = None
 
-            current_state = item.state
-            current_time = item.last_changed
-
-        if current_state == STATE_ON:
-            hist = OrderedDict()
-            hist[JSON_START] = round_seconds_dt(current_time)
-            hist[JSON_END] = round_seconds_dt(stime)
-            run_history.append(hist)
+        if front_marker is not None:
+            run_history.append(create_record(front_marker, stime))
 
         return run_history
 
