@@ -5,10 +5,20 @@ entities:
     name: Controller/Zone
   - entity: input_select.irrigation_unlimited_sequences
     name: Controller/Sequence
-  - entity: input_datetime.irrigation_unlimited_run_time
-    name: Time
+  - type: custom:time-picker-card
+    entity: input_datetime.irrigation_unlimited_run_time
+    hour_mode: 24
+    hour_step: 1
+    minute_step: 1
+    second_step: 5
+    name: ''
+    layout:
+      embedded: true
+    link_values: false
+    hide:
+      seconds: true
   - type: divider
-  - type: 'custom:paper-buttons-row'
+  - type: custom:paper-buttons-row
     buttons:
       - name: Go
         tap_action:
