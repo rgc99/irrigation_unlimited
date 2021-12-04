@@ -1,8 +1,7 @@
 """Test irrigation_unlimited history."""
 from unittest.mock import patch
 from datetime import datetime
-from typing import List
-import json
+from typing import OrderedDict, List
 import pytest
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
@@ -76,6 +75,9 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
     """Test out the history caching and timeline"""
     # pylint: disable=redefined-outer-name
 
+    def mk_dt(date: str) -> datetime:
+        return datetime.strptime(date + "+0000", "%Y-%m-%d %H:%M%z")
+
     full_path = TEST_CONFIG_DIR + "test_history.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
@@ -87,31 +89,114 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
 
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert state.attributes["today_total"] == 4.0
-    timeline = json.dumps(
-        [
-            {"start": "2021-01-04T04:30:00+00:00", "end": "2021-01-04T04:32:00+00:00"},
-            {"start": "2021-01-04T05:30:00+00:00", "end": "2021-01-04T05:32:00+00:00"},
-            {"start": "2021-01-04T06:05:00+00:00", "end": "2021-01-04T06:15:00+00:00"},
-            {"start": "2021-01-05T06:05:00+00:00", "end": "2021-01-05T06:15:00+00:00"},
-            {"start": "2021-01-06T06:05:00+00:00", "end": "2021-01-06T06:15:00+00:00"},
-        ],
-        default=str,
-    )
+    timeline = [
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-06 06:05")),
+                ("end", mk_dt("2021-01-06 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-05 06:05")),
+                ("end", mk_dt("2021-01-05 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 06:05")),
+                ("end", mk_dt("2021-01-04 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "next"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 05:30")),
+                ("end", mk_dt("2021-01-04 05:32")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 04:30")),
+                ("end", mk_dt("2021-01-04 04:32")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+    ]
     assert state.attributes["timeline"] == timeline
 
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert state.attributes["today_total"] == 11.0
-    timeline = json.dumps(
-        [
-            {"start": "2021-01-04T04:35:00+00:00", "end": "2021-01-04T04:38:00+00:00"},
-            {"start": "2021-01-04T05:35:00+00:00", "end": "2021-01-04T05:38:00+00:00"},
-            {"start": "2021-01-04T05:40:00+00:00", "end": "2021-01-04T05:45:00+00:00"},
-            {"start": "2021-01-04T06:10:00+00:00", "end": "2021-01-04T06:20:00+00:00"},
-            {"start": "2021-01-05T06:10:00+00:00", "end": "2021-01-05T06:20:00+00:00"},
-            {"start": "2021-01-06T06:10:00+00:00", "end": "2021-01-06T06:20:00+00:00"},
-        ],
-        default=str,
-    )
+
+    timeline = [
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-06 06:10")),
+                ("end", mk_dt("2021-01-06 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-05 06:10")),
+                ("end", mk_dt("2021-01-05 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 06:10")),
+                ("end", mk_dt("2021-01-04 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "next"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 05:40")),
+                ("end", mk_dt("2021-01-04 05:45")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 05:35")),
+                ("end", mk_dt("2021-01-04 05:38")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 04:35")),
+                ("end", mk_dt("2021-01-04 04:38")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+    ]
     assert state.attributes["timeline"] == timeline
 
     await finish_test(hass, coordinator, start_time, True)
@@ -122,31 +207,115 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
 
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert state.attributes["today_total"] == 4.0
-    timeline = json.dumps(
-        [
-            {"start": "2021-01-04T04:30:00+00:00", "end": "2021-01-04T04:32:00+00:00"},
-            {"start": "2021-01-04T05:30:00+00:00", "end": "2021-01-04T05:32:00+00:00"},
-            {"start": "2021-01-05T06:05:00+00:00", "end": "2021-01-05T06:15:00+00:00"},
-            {"start": "2021-01-06T06:05:00+00:00", "end": "2021-01-06T06:15:00+00:00"},
-            {"start": "2021-01-07T06:05:00+00:00", "end": "2021-01-07T06:15:00+00:00"},
-        ],
-        default=str,
-    )
+
+    timeline = [
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-07 06:05")),
+                ("end", mk_dt("2021-01-07 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-06 06:05")),
+                ("end", mk_dt("2021-01-06 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-05 06:05")),
+                ("end", mk_dt("2021-01-05 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "next"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 05:30")),
+                ("end", mk_dt("2021-01-04 05:32")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 04:30")),
+                ("end", mk_dt("2021-01-04 04:32")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+    ]
     assert state.attributes["timeline"] == timeline
 
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert state.attributes["today_total"] == 11.0
-    timeline = json.dumps(
-        [
-            {"start": "2021-01-04T04:35:00+00:00", "end": "2021-01-04T04:38:00+00:00"},
-            {"start": "2021-01-04T05:35:00+00:00", "end": "2021-01-04T05:38:00+00:00"},
-            {"start": "2021-01-04T05:40:00+00:00", "end": "2021-01-04T05:45:00+00:00"},
-            {"start": "2021-01-05T06:10:00+00:00", "end": "2021-01-05T06:20:00+00:00"},
-            {"start": "2021-01-06T06:10:00+00:00", "end": "2021-01-06T06:20:00+00:00"},
-            {"start": "2021-01-07T06:10:00+00:00", "end": "2021-01-07T06:20:00+00:00"},
-        ],
-        default=str,
-    )
+
+    timeline = [
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-07 06:10")),
+                ("end", mk_dt("2021-01-07 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-06 06:10")),
+                ("end", mk_dt("2021-01-06 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-05 06:10")),
+                ("end", mk_dt("2021-01-05 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "next"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 05:40")),
+                ("end", mk_dt("2021-01-04 05:45")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 05:35")),
+                ("end", mk_dt("2021-01-04 05:38")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-04 04:35")),
+                ("end", mk_dt("2021-01-04 04:38")),
+                ("schedule_name", None),
+                ("adjustment", None),
+                ("status", "history"),
+            ]
+        ),
+    ]
     assert state.attributes["timeline"] == timeline
 
     start_time = await run_until(
@@ -158,26 +327,70 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
     )
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert state.attributes["today_total"] == 0.0
-    timeline = json.dumps(
-        [
-            {"start": "2021-01-05T06:05:00+00:00", "end": "2021-01-05T06:15:00+00:00"},
-            {"start": "2021-01-06T06:05:00+00:00", "end": "2021-01-06T06:15:00+00:00"},
-            {"start": "2021-01-07T06:05:00+00:00", "end": "2021-01-07T06:15:00+00:00"},
-        ],
-        default=str,
-    )
+
+    timeline = [
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-07 06:05")),
+                ("end", mk_dt("2021-01-07 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-06 06:05")),
+                ("end", mk_dt("2021-01-06 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-05 06:05")),
+                ("end", mk_dt("2021-01-05 06:15")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "next"),
+            ]
+        ),
+    ]
     assert state.attributes["timeline"] == timeline
 
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
     assert state.attributes["today_total"] == 0.0
-    timeline = json.dumps(
-        [
-            {"start": "2021-01-05T06:10:00+00:00", "end": "2021-01-05T06:20:00+00:00"},
-            {"start": "2021-01-06T06:10:00+00:00", "end": "2021-01-06T06:20:00+00:00"},
-            {"start": "2021-01-07T06:10:00+00:00", "end": "2021-01-07T06:20:00+00:00"},
-        ],
-        default=str,
-    )
+
+    timeline = [
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-07 06:10")),
+                ("end", mk_dt("2021-01-07 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-06 06:10")),
+                ("end", mk_dt("2021-01-06 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "scheduled"),
+            ]
+        ),
+        OrderedDict(
+            [
+                ("start", mk_dt("2021-01-05 06:10")),
+                ("end", mk_dt("2021-01-05 06:20")),
+                ("schedule_name", "Schedule 1"),
+                ("adjustment", "None"),
+                ("status", "next"),
+            ]
+        ),
+    ]
     assert state.attributes["timeline"] == timeline
 
     await finish_test(hass, coordinator, start_time, True)
