@@ -1,0 +1,45 @@
+type: custom:apexcharts-card
+header:
+  show: true
+  title: Watering timeline
+  show_states: false
+graph_span: 10d
+span:
+  start: day
+  offset: '-7day'
+all_series_config:
+  type: column
+  group_by:
+    duration: 1d
+    func: sum
+    fill: 'null'
+  show:
+    as_duration: minute
+now:
+  show: true
+  label: Today
+series:
+  - entity: binary_sensor.irrigation_unlimited_c1_z1
+    data_generator: |
+      return entity.attributes.timeline.map((item) => {
+        const sd = new Date(item.start);
+        const ed = new Date(item.end);
+        return [sd, (ed - sd) / 60000];
+      });
+  - entity: binary_sensor.irrigation_unlimited_c1_z2
+    data_generator: |
+      return entity.attributes.timeline.map((item) => {
+        const sd = new Date(item.start);
+        const ed = new Date(item.end);
+        return [sd, (ed - sd) / 60000];
+      });
+yaxis:
+  - decimals: 0
+    apex_config:
+      title:
+        text: minutes
+apex_config:
+  tooltip:
+    enabled: true
+    x:
+      format: dd MMM

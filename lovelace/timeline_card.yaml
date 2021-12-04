@@ -1,0 +1,23 @@
+type: markdown
+content: >
+  {% set entity = 'binary_sensor.irrigation_unlimited_c1_z1' %}
+
+  <ha-icon icon={{ state_attr(entity,'icon') -}}></ha-icon> **{{
+  state_attr(entity,'friendly_name') }}**
+
+
+  | Status &nbsp; &nbsp;&nbsp; &nbsp;| Start time | Duration | Schedule |
+  Adjustment |
+
+  |:--- | ---:| :--- | --- | --- |
+
+  {% for item in state_attr(entity,'timeline') -%}
+    {% set st = as_timestamp(item.start) -%}
+    {% set et = as_timestamp(item.end) -%}
+    | {{ item.status -}}
+    | {{ st | timestamp_custom('%a %H:%M') -}}
+    | {{ timedelta(seconds= et - st) -}}
+    | {{ item.schedule_name -}}
+    | {{ item.adjustment -}}
+    |
+  {% endfor %}
