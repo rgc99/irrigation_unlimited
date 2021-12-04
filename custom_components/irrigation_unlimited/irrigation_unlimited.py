@@ -2718,7 +2718,7 @@ class IUTester:
                         poll_func(atime, True)
                 else:  # End single test
                     self.end_test(atime)
-                    poll_func(atime, True)
+                    # poll_func(atime, True)
             else:  # Continue existing test
                 poll_func(test.virtual_time(atime))
         else:  # Out of tests to run
