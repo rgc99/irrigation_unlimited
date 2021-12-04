@@ -1,0 +1,20 @@
+type: entities
+title: Enable/Disable Controller
+entities:
+  - entity: input_select.irrigation_unlimited_entities
+    name: Controller/Zone
+  - type: divider
+  - type: custom:paper-buttons-row
+    buttons:
+      - name: Enable
+        tap_action:
+          action: call-service
+          service: irrigation_unlimited.shim_enable
+          service_data:
+            controller_zone_entity: input_select.irrigation_unlimited_entities
+      - name: Disable
+        tap_action:
+          action: call-service
+          service: irrigation_unlimited.shim_disable
+          service_data:
+            controller_zone_entity: input_select.irrigation_unlimited_entities
