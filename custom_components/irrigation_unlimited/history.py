@@ -165,5 +165,5 @@ class IUHistory:
     def timeline(self, entity_id: str) -> list:
         """Return the timeline history"""
         if entity_id in self._cache:
-            return self._cache[entity_id][TIMELINE]
+            return self._cache[entity_id][TIMELINE].copy()
         return []
