@@ -23,6 +23,7 @@
         - [Controller Objects](#controller-objects)
         - [All Zone Objects](#all-zone-objects)
         - [Zone Objects](#zone-objects)
+        - [Zone Show Object](#zone-show-object)
         - [Schedule Objects](#schedule-objects)
         - [Sun Event](#sun-event)
         - [Sequence Objects](#sequence-objects)
@@ -48,7 +49,11 @@
         - [Service reload](#service-reload)
         - [Service call access roadmap](#service-call-access-roadmap)
     - [Frontend](#frontend)
+        - [Generic Cards](#generic-cards)
+        - [Timeline](#timeline)
+        - [Frontend Requirements](#frontend-requirements)
         - [Manual run card](#manual-run-card)
+        - [Enable-disable card](#enable-disable-card)
     - [Automation](#automation)
         - [ESPHome](#esphome)
         - [HAsmartirrigation](#hasmartirrigation)
@@ -173,6 +178,8 @@ The time type is a string in the format HH:MM. Time type must be a positive valu
 | `controllers` | list | _[Controller Objects](#controller-objects)_ | Controller details (Must have at least one) |
 | `granularity` | number | 60 | System time boundaries in seconds |
 | `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more repsonsive display. Increase this number to conserve resources.
+| `history_span` | number | 7 | Number of days of history data to fetch |
+| `history_refresh` | number | 120 | History refresh interval in seconds |
 | `testing` | object | _[Testing Object](#testing-object)_ | Used for testing setup |
 
 ### Controller Objects
@@ -199,6 +206,7 @@ This object is useful when the same settings are required for each zone. It is s
 | `minimum` | time | | The minimum run time |
 | `maximum` | time | | The maximum run time |
 | `future_span` | time | | Run queue look ahead |
+| `show` | object | | See _[Zone Show Object](#zone-show-object)_ |
 
 ### Zone Objects
 
@@ -212,8 +220,17 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `enabled` | bool | true | Enable/disable the zone |
 | `minimum` | time | '00:01' | The minimum run time |
 | `maximum` | time | | The maximum run time |
-| `future_span` | time | | Run queue look ahead |
+| `future_span` | number | 3 | Number of days to look ahead |
 | `entity_id` | string | | Entity ID (`switch.my_zone_valve1`). Takes a csv list for multiple id's |
+| `show` | object | | See _[Zone Show Object](#zone-show-object)_ |
+
+### Zone Show Object
+
+These are various options to reveal attributes on the zone entity (only one for now).
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `timeline` | bool | false | Show the zone timeline. This will expose an attribute called `timeline` on the zone entity |
 
 ### Schedule Objects
 
@@ -573,7 +590,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 
 Adjust the run times. Calling this service will override any previous adjustment i.e. it will *not* make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
-A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day.
+A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day. Adjustments must be made *before* the scheduled start time. Running schedules will be not affected.
 
 #### Tip
 
@@ -589,7 +606,7 @@ Use forecast and observation data collected by weather integrations in automatio
 | `reset` | yes | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings).
 | `minimum` | yes | Set the minimum run time.
 | `maximum` | yes | Set the maximum run time. Note: The default is no limit.
-| `sequence_id` | yes | Sequence to run (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
+| `sequence_id` | yes | Sequence to adjust (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
 | `zones` | yes | Zones to adjust (1, 2..N). Within a sequence, zones are numbered by their position starting a 1. A value of 0 means all zones.
 
 ### Service `reload`
@@ -801,7 +818,11 @@ Notes:
 
 ## Frontend
 
-Because this is an integration there is no frontend. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on. However, for some inspiration and a compact card try [this](./lovelace/card.yaml).
+Because this is an integration there is no integrated frontend so there is a clean separation between the irrigation engine and the display. It allows for a great deal of flexibility in the final appearance. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on.
+
+### Generic Cards
+
+For some inspiration and a compact card try [this](./lovelace/card.yaml).
 
 ![Collapsed](./examples/card_collapsed.png)
 
@@ -815,7 +836,7 @@ For watering history information here is a [sample card](./lovelace/watering_his
 
 ![watering_history_card](./examples/watering_history_card.png).
 
-Note: At time of writing this requires a pre-released version of [mini-graph-card](https://github.com/kalkih/mini-graph-card/releases/tag/v0.11.0-dev.3). Note: If you get "NaN" displayed instead of the actual value then clear out your browsers cache.
+Note: At time of writing this requires a pre-released version of [mini-graph-card](https://github.com/kalkih/mini-graph-card/releases/tag/v0.11.0-dev.3). Note: If you get "NaN" displayed instead of the actual value then clear out your browsers cache and make sure the development release is installed.
 
 Although not really part of the integration but to get you started quickly here is a [temperature card](./lovelace/temperature_card.yaml).
 
@@ -835,19 +856,60 @@ Putting it all together, here is the [complete picture](./lovelace/my_dashboard.
 
 This configuration is three vertical stacks and works well on mobile devices.
 
-### Manual run card
+### Timeline
 
-Here is a card for manual runs. You can find the code [here](./lovelace/card_manual_run.yaml). Note: This card uses [paper-buttons-row](https://github.com/jcwillox/lovelace-paper-buttons-row) because it can create a button without the need for an actual entity.
+Minimum version 2021.12.0 of Irrigation Unlimited is required for this feature. First up, enable the timeline in the [zone show object](#zone-show-object).
 
-![manual_run_card](./examples/card_manual_run.png)
+~~~yaml
+irrigation_unlimited:
+  controllers:
+    zones:
+      entity_id: 'switch.my_switch'
+      show:             # <= Add these two lines to the configuration
+        timeline: true  # <= And this one
+      schedules:
+        - time: '06:00'
+          duration: '00:20'
+~~~
 
-There is a support file [packages/irrigation_unlimited_controls.yaml](./packages/irrigation_unlimited_controls.yaml) which should go in the config/packages directory. Also required is a [pyscript](./pyscript/irrigation_unlimited_service_shim.py) which is called from the above automation to populate the input_select with all the irrigation unlimited controllers and zones. The script should go in the config/pyscript directory. If you don't have a packages or pyscript folder then create them and add the following to your configuration.yaml. Minimun version 2021.6.3 for Irrigation Unlimited is required.
+Like the watering history card above it also shows the upcoming schedule for a complete overview of your irrigation. Find the code [here](./lovelace/timeline_chart.yaml). Requires [apexcharts-card](https://github.com/RomRider/apexcharts-card).
+
+![timeline_chart](./examples/timeline_chart.png)
+
+If you prefer something akin to a airport departure board then try [this](./lovelace/timeline_card.yaml). Uses Markdown card which is built into Home Assistant so will work straight out of the box.
+
+![timeline_card](./examples/timeline_card.png)
+
+
+### Frontend Requirements
+
+The [manual_run](#manual-run-card) and [enable/disable](#enable-disable-card) cards require additional support files. Minimun version 2021.6.3 of Irrigation Unlimited is required. There is a support file [packages/irrigation_unlimited_controls.yaml](./packages/irrigation_unlimited_controls.yaml) which should go in the config/packages directory. Also required is a [pyscript](./pyscript/irrigation_unlimited_service_shim.py) which is called from the above automation to populate the input_select with all the irrigation unlimited controllers and zones. The script should go in the **config/pyscript directory**. If you don't have a packages and a pyscript folder then create them and add the following to your configuration.yaml.
 
 ```yaml
 homeassistant:
   packages: !include_dir_named packages
 ```
-More information on packages can be found [here](https://www.home-assistant.io/docs/configuration/packages) and pyscript can be found [here](https://github.com/custom-components/pyscript), don't worry about the Jupyter kernel unless you are really keen. Hint: A pyscript is used instead of Jinja2 as it produces a list which Jinja2 is not capable of, many have tried...
+
+Using your HA configuration directory (folder) as a starting point you should now also have this:
+
+~~~text
+pyscript/irrigation_unlimited_service_shim.py
+packages/irrigation_unlimited_controls.yaml
+~~~
+
+More information on packages can be found [here](https://www.home-assistant.io/docs/configuration/packages) and pyscript can be found [here](https://github.com/custom-components/pyscript), don't worry about the Jupyter kernel unless you are really keen. Hint: A pyscript is used instead of Jinja2 as it produces a list which Jinja2 is not capable of, many have tried... The pyscript is a small piece of code that convert for example ‘1.1 Zone1’ inside an input_select control into ‘binary_sensor.irrigation_unlimited_c1_z1’ and then call the actual service. They are just helpers sitting between the lovelace card and the integration. It's a great way to add some additional capabilities to lovelace cards.
+
+### Manual run card
+
+Here is a card for manual runs, see [requirements](#frontend-requirements) above. You can find the code [here](./lovelace/card_manual_run.yaml). Note: This card uses [paper-buttons-row](https://github.com/jcwillox/lovelace-paper-buttons-row) and [time-picker-card](https://github.com/GeorgeSG/lovelace-time-picker-card).
+
+![manual_run_card](./examples/card_manual_run.png)
+
+### Enable-disable card
+
+This card will enable or disable a zone from a dropdown list, see [requirements](#frontend-requirements) above. The code is [here](./lovelace/card_enable_disable.yaml). Like the manual run card it requires [paper-buttons-row](https://github.com/jcwillox/lovelace-paper-buttons-row).
+
+![enable_disable_card](./examples/card_enable_disable.png)
 
 ## Automation
 
@@ -1013,7 +1075,7 @@ Some inspiration was taken from [kloggy's](https://github.com/kloggy/HA-Irrigati
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
 [exampleimg]: example.png
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
-[forum]: https://community.home-assistant.io/
+[forum]: https://community.home-assistant.io/t/irrigation-unlimited-integration/
 [license-shield]: https://img.shields.io/github/license/rgc99/irrigation_unlimited.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Robert%20Cook%20%40rgc99-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/rgc99/irrigation_unlimited.svg?style=for-the-badge
