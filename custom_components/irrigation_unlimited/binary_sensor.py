@@ -148,7 +148,7 @@ class IUMasterEntity(IUEntity):
         return ICON_DISABLED
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return the state attributes of the device."""
         attr = {}
         attr[ATTR_INDEX] = self._controller.index
@@ -216,7 +216,7 @@ class IUZoneEntity(IUEntity):
         return ICON_BLOCKED
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return the state attributes of the device."""
         # pylint: disable=too-many-branches
 
