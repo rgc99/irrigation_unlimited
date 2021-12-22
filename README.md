@@ -702,9 +702,10 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c1_z1
 
 # Example 1.1.1 -> controller 1 -> zone 1 -> duration. This will alter the duration for zone 1.
-- service: irrigation_unlimited.enable
+- service: irrigation_unlimited.adjust_time
   data:
     entity_id: binary_sensor.irrigation_unlimited_c1_z1
+    actual: "00:20"
 
 # Example 1.2 -> controller 1 -> zone 2 -> enabled. This will alter the enabled status of zone 2.
 - service: irrigation_unlimited.enable
@@ -712,9 +713,10 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c1_z2
 
 # Example 1.2.1 -> controller 1 -> zone 1 -> duration. This will alter the duration for zone 2.
-- service: irrigation_unlimited.enable
+- service: irrigation_unlimited.adjust_time
   data:
     entity_id: binary_sensor.irrigation_unlimited_c1_z2
+    actual: "00:20"
 
 # Example 1.0.1 -> controller 1 -> sequence 1 -> duration. This will proportionaly alter the duration
 # for all zone references in the first sequence.
