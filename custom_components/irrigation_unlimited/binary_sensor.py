@@ -178,6 +178,7 @@ class IUMasterEntity(IUEntity):
         else:
             attr[ATTR_NEXT_SCHEDULE] = "deprecated (use next_zone)"
             attr[ATTR_NEXT_ZONE] = RES_NONE
+        attr[ATTR_CONFIGURATION] = self._controller.configuration
         return attr
 
 

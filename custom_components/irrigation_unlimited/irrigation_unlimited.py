@@ -49,6 +49,7 @@ from .const import (
     CONF_REFRESH_INTERVAL,
     CONF_RESET,
     CONF_RESULTS,
+    CONF_SEQUENCE_ZONES,
     CONF_SEQUENCES,
     CONF_SEQUENCE_ID,
     CONF_SHOW_LOG,
@@ -1175,6 +1176,24 @@ class IUZone(IUBase):
             return STATUS_BLOCKED
         return STATUS_INITIALISING
 
+    def service_enable(
+        self, data: MappingProxyType, stime: datetime, service: str
+    ) -> bool:
+        """Handler for enable/disable/toggle service call"""
+        # pylint: disable=unused-argument
+
+        if service == SERVICE_ENABLE:
+            new_state = True
+        elif service == SERVICE_DISABLE:
+            new_state = False
+        else:
+            new_state = not self.enabled  # Must be SERVICE_TOGGLE
+
+        result = self.enabled != new_state
+        if result:
+            self.enabled = new_state
+        return result
+
     def service_adjust_time(self, data: MappingProxyType, stime: datetime) -> bool:
         """Adjust the scheduled run times. Return true if adjustment changed"""
         sequence_id = data.get(CONF_SEQUENCE_ID)
@@ -1477,6 +1496,7 @@ class IUSequenceZone(IUBase):
         self._delay: timedelta = None
         self._duration: timedelta = None
         self._repeat: int = None
+        self._enabled: bool = True
         # Private variables
         self.clear()
 
@@ -1501,6 +1521,16 @@ class IUSequenceZone(IUBase):
         return self._repeat
 
     @property
+    def enabled(self) -> bool:
+        """Return if this sequence zone is enabled"""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Set the enabled state"""
+        self._enabled = value
+
+    @property
     def adjustment(self) -> IUAdjustment:
         """Returns the adjustment for this sequence"""
         return self._adjustment
@@ -1521,7 +1551,15 @@ class IUSequenceZone(IUBase):
         self._delay = wash_td(config.get(CONF_DELAY))
         self._duration = wash_td(config.get(CONF_DURATION))
         self._repeat = config.get(CONF_REPEAT, 1)
+        self._enabled = config.get(CONF_ENABLED, self._enabled)
         return self
+
+    def as_dict(self) -> dict:
+        """Return this sequence zone as a dict"""
+        result = OrderedDict()
+        result[CONF_INDEX] = self._index
+        result[CONF_ENABLED] = self._enabled
+        return result
 
 
 class IUSequence(IUBase):
@@ -1547,6 +1585,7 @@ class IUSequence(IUBase):
         self._delay: timedelta = None
         self._duration: timedelta = None
         self._repeat: int = None
+        self._enabled: bool = True
         # Private variables
         self._schedules: list[IUSchedule] = []
         self._zones: list[IUSequenceZone] = []
@@ -1578,6 +1617,16 @@ class IUSequence(IUBase):
         return self._repeat
 
     @property
+    def enabled(self) -> bool:
+        """Return if this sequence is enabled"""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Set the enabled state"""
+        self._enabled = value
+
+    @property
     def adjustment(self) -> IUAdjustment:
         """Returns the sequence adjustment"""
         return self._adjustment
@@ -1588,7 +1637,7 @@ class IUSequence(IUBase):
             return True
         if deep:
             for sequence_zone in self._zones:
-                if sequence_zone.adjustment.has_adjustment:
+                if sequence_zone.enabled and sequence_zone.adjustment.has_adjustment:
                     return True
         return False
 
@@ -1634,18 +1683,23 @@ class IUSequence(IUBase):
         """Return the total duration for all the zones"""
         duration = timedelta(0)
         for zone in self._zones:
-            duration += self.zone_duration(zone) * zone.repeat
+            if zone.enabled:
+                duration += self.zone_duration(zone) * zone.repeat
         duration *= self._repeat
         return duration
 
     def total_delay(self) -> timedelta:
         """Return the total delay for all the zones"""
         delay = timedelta(0)
+        last_zone: IUSequenceZone = None
         if len(self._zones) > 0:
             for zone in self._zones:
-                delay += self.zone_delay(zone) * zone.repeat
+                if zone.enabled:
+                    delay += self.zone_delay(zone) * zone.repeat
+                    last_zone = zone
             delay *= self._repeat
-            delay -= self.zone_delay(zone)  # pylint: disable=undefined-loop-variable
+            if last_zone is not None:
+                delay -= self.zone_delay(last_zone)
         return delay
 
     def total_time(self) -> timedelta:
@@ -1712,6 +1766,7 @@ class IUSequence(IUBase):
         self._delay = wash_td(config.get(CONF_DELAY))
         self._duration = wash_td(config.get(CONF_DURATION))
         self._repeat = config.get(CONF_REPEAT, 1)
+        self._enabled = config.get(CONF_ENABLED, self._enabled)
         for zidx, zone_config in enumerate(config[CONF_ZONES]):
             self.find_add_zone(zidx).load(zone_config)
         for sidx, schedule_config in enumerate(config[CONF_SCHEDULES]):
@@ -1723,6 +1778,10 @@ class IUSequence(IUBase):
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
+        result[CONF_ENABLED] = self._enabled
+        result[CONF_SEQUENCE_ZONES] = []
+        for sequence_zone in self._zones:
+            result[CONF_SEQUENCE_ZONES].append(sequence_zone.as_dict())
         return result
 
 
@@ -1833,7 +1892,7 @@ class IUController(IUBase):
 
     @property
     def enabled(self) -> bool:
-        """Return true is this zone is enabled"""
+        """Return true is this controller is enabled"""
         return self._is_enabled
 
     @enabled.setter
@@ -1842,8 +1901,7 @@ class IUController(IUBase):
         if value != self._is_enabled:
             self._is_enabled = value
             self._dirty = True
-            self.request_update()
-            self.notify_children()
+            self.request_update(True)
 
     @property
     def master_sensor(self) -> Entity:
@@ -1869,6 +1927,11 @@ class IUController(IUBase):
         """Returns True if the controller is running a sequence. The
         controller may be off because of a delay between sequence zones"""
         return self._run_queue.in_sequence
+
+    @property
+    def configuration(self) -> str:
+        """Return this controller as JSON"""
+        return json.dumps(self.as_dict(), cls=IUJSONEncoder)
 
     def _status(self) -> str:
         """Return status of the controller"""
@@ -1951,11 +2014,6 @@ class IUController(IUBase):
                 zone = self.find_zone_by_zone_id(zone_id)
                 if zone is not None:
                     zone.clear_runs(stime)
-
-    def notify_children(self) -> None:
-        """Update all the child zones"""
-        for zone in self._zones:
-            zone.request_update()
 
     def load(self, config: OrderedDict) -> "IUController":
         """Load config data for the controller"""
@@ -2063,6 +2121,8 @@ class IUController(IUBase):
         # pylint: disable=too-many-nested-blocks
         for i in range(sequence.repeat):  # pylint: disable=unused-variable
             for sequence_zone in sequence.zones:
+                if not sequence_zone.enabled:
+                    continue
                 duration = round_td(
                     sequence.zone_duration(sequence_zone) * duration_multiplier
                 )
@@ -2129,14 +2189,15 @@ class IUController(IUBase):
 
         # Process sequence schedules
         for sequence in self._sequences:
-            for schedule in sequence.schedules:
-                while True:
-                    sequence_status = self.muster_sequence(
-                        stime, sequence, schedule, None
-                    )
-                    zone_status |= sequence_status
-                    if sequence_status & IURunQueue.RQ_STATUS_EXTENDED == 0:
-                        break
+            if sequence.enabled:
+                for schedule in sequence.schedules:
+                    while True:
+                        sequence_status = self.muster_sequence(
+                            stime, sequence, schedule, None
+                        )
+                        zone_status |= sequence_status
+                        if sequence_status & IURunQueue.RQ_STATUS_EXTENDED == 0:
+                            break
 
         # Process zone schedules
         for zone in self._zones:
@@ -2169,7 +2230,7 @@ class IUController(IUBase):
             status |= self._run_queue.update_queue(stime)
 
         if status != 0:
-            self.request_update()
+            self.request_update(False)
 
         self._dirty = False
         return status | zone_status
@@ -2196,7 +2257,7 @@ class IUController(IUBase):
         state_changed = is_running ^ self._is_on
         if state_changed:
             self._is_on = not self._is_on
-            self.request_update()
+            self.request_update(False)
             self.call_switch(self._is_on, stime)
 
         # Handle on zones after master
@@ -2206,10 +2267,13 @@ class IUController(IUBase):
 
         return state_changed
 
-    def request_update(self) -> None:
+    def request_update(self, deep: bool) -> None:
         """Flag the sensor needs an update. The actual update is done
         in update_sensor"""
         self._sensor_update_required = True
+        if deep:
+            for zone in self._zones:
+                zone.request_update()
 
     def update_sensor(self, stime: datetime) -> None:
         """Lazy sensor updater."""
@@ -2250,22 +2314,66 @@ class IUController(IUBase):
             )
         self._coordinator.status_changed(stime, self, None, state)
 
-    def service_adjust_time(self, data: MappingProxyType, stime: datetime) -> bool:
-        """Handler for the adjust_time service call"""
+    def check_item(self, index: int, items: "list[int]") -> bool:
+        """If items is None or contains only a 0 (match all) then
+        return True. Otherwise check if index + 1 is in the list"""
+        # pylint: disable=no-self-use
+        return (
+            items is None or (items is not None and items == [0]) or index + 1 in items
+        )
 
-        def check_item(index: int, items: "list[int]") -> bool:
-            return (
-                items is None
-                or (items is not None and items == [0])
-                or index + 1 in items
-            )
+    def service_enable(
+        self, data: MappingProxyType, stime: datetime, service: str
+    ) -> bool:
+        """Handler for enable/disable/toggle service call"""
+        # pylint: disable=too-many-nested-blocks
+
+        def s2b(test: bool, service: str) -> bool:
+            """Convert the service code to bool"""
+            if service == SERVICE_ENABLE:
+                return True
+            if service == SERVICE_DISABLE:
+                return False
+            return not test  # Must be SERVICE_TOGGLE
 
         result = False
         zone_list: list[int] = data.get(CONF_ZONES)
         sequence_id = data.get(CONF_SEQUENCE_ID)
         if sequence_id is None:
+            new_state = s2b(self.enabled, service)
+            if self.enabled != new_state:
+                self.enabled = new_state
+                result = True
+        else:
+            sequence = self.find_sequence(sequence_id - 1)
+            if sequence is not None:
+                if zone_list is None:
+                    new_state = s2b(sequence.enabled, service)
+                    if sequence.enabled != new_state:
+                        sequence.enabled = new_state
+                        result = True
+                else:
+                    for sequence_zone in sequence.zones:
+                        if self.check_item(sequence_zone.index, zone_list):
+                            new_state = s2b(sequence_zone.enabled, service)
+                            if sequence_zone.enabled != new_state:
+                                sequence_zone.enabled = new_state
+                                result = True
+                if result:
+                    self.clear_sequence_runs(stime, sequence.zone_ids())
+                    self._run_queue.clear(stime)
+            else:
+                self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
+        return result
+
+    def service_adjust_time(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Handler for the adjust_time service call"""
+        result = False
+        zone_list: list[int] = data.get(CONF_ZONES)
+        sequence_id = data.get(CONF_SEQUENCE_ID)
+        if sequence_id is None:
             for zone in self._zones:
-                if check_item(zone.index, zone_list):
+                if self.check_item(zone.index, zone_list):
                     result |= zone.service_adjust_time(data, stime)
         else:
             sequence = self.find_sequence(sequence_id - 1)
@@ -2274,9 +2382,10 @@ class IUController(IUBase):
                     result = sequence.adjustment.load(data)
                 else:
                     for sequence_zone in sequence.zones:
-                        if check_item(sequence_zone.index, zone_list):
+                        if self.check_item(sequence_zone.index, zone_list):
                             result |= sequence_zone.adjustment.load(data)
-                self.clear_sequence_runs(stime, sequence.zone_ids())
+                if result:
+                    self.clear_sequence_runs(stime, sequence.zone_ids())
             else:
                 self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
         return result
@@ -3089,10 +3198,13 @@ class IUCoordinator:
 
         return status_changed
 
-    def request_update(self) -> None:
+    def request_update(self, deep: bool) -> None:
         """Flag the sensor needs an update. The actual update is done
         in update_sensor"""
         self._sensor_update_required = True
+        if deep:
+            for controller in self._controllers:
+                controller.request_update(True)
 
     def update_sensor(self, stime: datetime) -> None:
         """Update home assistant sensors if required"""
@@ -3133,7 +3245,7 @@ class IUCoordinator:
             self._initialised = self.is_setup
             if self._initialised:
                 self._logger.log_initialised()
-                self.request_update()
+                self.request_update(True)
                 self.poll_main(atime)
 
     async def _async_timer(self, atime: datetime) -> None:
@@ -3234,24 +3346,12 @@ class IUCoordinator:
         changed = True
         stime = self.service_time()
 
-        if service == SERVICE_ENABLE:
+        if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
             if zone is not None:
-                zone.enabled = True
-                controller.clear_sequence_runs(stime)
+                if changed := zone.service_enable(data, stime, service):
+                    controller.clear_sequence_runs(stime)
             else:
-                controller.enabled = True
-        elif service == SERVICE_DISABLE:
-            if zone is not None:
-                zone.enabled = False
-                controller.clear_sequence_runs(stime)
-            else:
-                controller.enabled = False
-        elif service == SERVICE_TOGGLE:
-            if zone is not None:
-                zone.enabled = not zone.enabled
-                controller.clear_sequence_runs(stime)
-            else:
-                controller.enabled = not controller.enabled
+                changed = controller.service_enable(data, stime, service)
         elif service == SERVICE_CANCEL:
             if zone is not None:
                 zone.service_cancel(data, stime)
@@ -3267,8 +3367,8 @@ class IUCoordinator:
                 zone.service_manual_run(data, stime)
             else:
                 controller.service_manual_run(data, stime)
-        self._muster_required = True
         if changed:
+            self._muster_required = True
             self._logger.log_service_call(service, stime, controller, zone, data)
 
     def start_test(self, test_no: int) -> datetime:

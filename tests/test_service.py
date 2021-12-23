@@ -1,14 +1,10 @@
 """Test integration_unlimited service calls."""
 # pylint: disable=too-many-lines
-from unittest.mock import patch
-
-import pytest
 from datetime import datetime, timedelta
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
 from tests.iu_test_support import (
-    no_check,
     quiet_mode,
     begin_test,
     run_for,
@@ -56,10 +52,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%50.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(2, coordinator)
@@ -70,10 +66,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(3, coordinator)
@@ -84,10 +80,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%0.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%0.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(4, coordinator)
@@ -98,10 +94,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "=0:30:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "=0:30:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(5, coordinator)
@@ -112,10 +108,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "+0:05:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "+0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(6, coordinator)
@@ -126,10 +122,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "-0:05:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "-0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(7, coordinator)
@@ -140,10 +136,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(8, coordinator)
@@ -158,10 +154,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%100.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(9, coordinator)
@@ -176,10 +172,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%100.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(10, coordinator)
@@ -190,10 +186,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%50.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%50.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(11, coordinator)
@@ -204,10 +200,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%200.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(12, coordinator)
@@ -218,10 +214,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%0.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%0.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%0.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%0.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(13, coordinator)
@@ -232,10 +228,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "=0:30:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "=0:30:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "=0:30:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "=0:30:00"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(14, coordinator)
@@ -246,10 +242,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "+0:05:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "+0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "+0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "+0:05:00"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(15, coordinator)
@@ -260,10 +256,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "-0:05:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "-0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "-0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "-0:05:00"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(16, coordinator)
@@ -274,10 +270,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(17, coordinator)
@@ -292,10 +288,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%100.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%100.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(18, coordinator)
@@ -310,10 +306,10 @@ async def test_service_adjust_time(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%100.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%100.0"
     await finish_test(hass, coordinator, start_time, True)
 
     check_summary(full_path, coordinator)
@@ -339,15 +335,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Zone 1 on
@@ -359,15 +355,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Zone 1 off, zone 2 on
@@ -379,15 +375,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Double toggle: zone 1 on, zone 2 off
@@ -405,15 +401,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # All off
@@ -425,15 +421,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # All back on
@@ -451,15 +447,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Controller 1 off
@@ -471,15 +467,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "blocked"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "blocked"
+    assert sta.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Controller 1 off, zone 1 on, zone 2 off
@@ -497,15 +493,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "blocked"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "blocked"
+    assert sta.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # Controller 1 on, zone 1 still on, zone 2 still off
@@ -517,15 +513,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # Toggle controller 1
@@ -537,15 +533,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "disabled"
-    assert s.attributes["enabled"] is False
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "blocked"
-    assert s.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "disabled"
+    assert sta.attributes["enabled"] is False
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "blocked"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "blocked"
+    assert sta.attributes["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # Toggle controller 1 & zone 2 (All back on)
@@ -563,15 +559,15 @@ async def test_service_enable_disable(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["status"] == "off"
-    assert s.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["status"] == "off"
+    assert sta.attributes["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     # Seq 1 zone 1 off
@@ -902,9 +898,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%50.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -912,12 +908,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:12:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%50.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%50.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -925,9 +921,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:20:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%50.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(2, coordinator)
@@ -948,9 +944,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:11:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%200.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -958,12 +954,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:30:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%200.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -971,9 +967,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 07:01:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%200.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(3, coordinator)
@@ -1007,9 +1003,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:07:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "=0:30:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "=0:30:00"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1017,12 +1013,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:16:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "=0:30:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "=0:30:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "=0:30:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "=0:30:00"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1030,9 +1026,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:29:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "=0:30:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "=0:30:00"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(5, coordinator)
@@ -1053,9 +1049,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:08:20+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "+0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "+0:05:00"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1063,12 +1059,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:19:40+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "+0:05:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "+0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "+0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "+0:05:00"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1076,9 +1072,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:35:45+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "+0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "+0:05:00"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(6, coordinator)
@@ -1099,9 +1095,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:07:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "-0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "-0:05:00"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1109,12 +1105,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:16:20+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "-0:05:00"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "-0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "-0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "-0:05:00"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1122,9 +1118,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:29:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "-0:05:00"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "-0:05:00"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(7, coordinator)
@@ -1145,9 +1141,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:10:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "None"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1155,12 +1151,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:21:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "None"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "None"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1168,9 +1164,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:32:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "None"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(8, coordinator)
@@ -1192,9 +1188,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:09:10+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1202,12 +1198,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:22:40+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1215,9 +1211,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:49:50+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(9, coordinator)
@@ -1239,9 +1235,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:07:40+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1249,12 +1245,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:12:40+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1262,9 +1258,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:22:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "None"
-    assert s.attributes["current_adjustment"] == "%100.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "None"
+    assert sta.attributes["current_adjustment"] == "%100.0"
     await finish_test(hass, coordinator, start_time, True)
 
     start_time = await begin_test(10, coordinator)
@@ -1288,14 +1284,14 @@ async def test_service_adjust_time_sequence(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "%200.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1303,9 +1299,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%50.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1313,12 +1309,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:12:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%50.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%50.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1326,9 +1322,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:20:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%50.0"
     await finish_test(hass, coordinator, start_time, True)
 
     # Test follows on from above. Timing should be 200% after sequence reset
@@ -1344,14 +1340,14 @@ async def test_service_adjust_time_sequence(
         True,
     )
     start_time = await run_for_1_tick(hass, coordinator, start_time, True)
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "%200.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1359,9 +1355,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:11:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%200.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1369,12 +1365,12 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 06:30:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%200.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z3")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%200.0"
     start_time = await run_until(
         hass,
         coordinator,
@@ -1382,9 +1378,9 @@ async def test_service_adjust_time_sequence(
         datetime.fromisoformat("2021-01-04 07:01:00+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert s.attributes["adjustment"] == "%200.0"
-    assert s.attributes["current_adjustment"] == "%200.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+    assert sta.attributes["adjustment"] == "%200.0"
+    assert sta.attributes["current_adjustment"] == "%200.0"
     await finish_test(hass, coordinator, start_time, True)
 
     check_summary(full_path, coordinator)
@@ -1703,10 +1699,10 @@ async def test_service_adjust_time_sequence_zone(
         datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["current_adjustment"] == "None,%50.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["next_adjustment"] == "None"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["current_adjustment"] == "None,%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["next_adjustment"] == "None"
     await finish_test(hass, coordinator, next_time, True)
 
     next_time = await begin_test(2, coordinator)
@@ -1728,10 +1724,10 @@ async def test_service_adjust_time_sequence_zone(
         datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["current_adjustment"] == "None,%50.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["next_adjustment"] == "None,%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["current_adjustment"] == "None,%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["next_adjustment"] == "None,%50.0"
     await finish_test(hass, coordinator, next_time, True)
 
     next_time = await begin_test(3, coordinator)
@@ -1752,10 +1748,10 @@ async def test_service_adjust_time_sequence_zone(
         datetime.fromisoformat("2021-01-04 06:06:30+00:00"),
         True,
     )
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert s.attributes["current_adjustment"] == "%200.0,%50.0"
-    s = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
-    assert s.attributes["next_adjustment"] == "%200.0,%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+    assert sta.attributes["current_adjustment"] == "%200.0,%50.0"
+    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+    assert sta.attributes["next_adjustment"] == "%200.0,%50.0"
     await finish_test(hass, coordinator, next_time, True)
 
     next_time = await begin_test(4, coordinator)
@@ -1888,3 +1884,207 @@ async def test_service_adjust_time_sequence_bad(
         True,
     )
     await finish_test(hass, coordinator, next_time, True)
+
+
+async def test_service_enable_disable_sequence(
+    hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
+):
+    """Test enable/disable on sequence service call."""
+
+    full_path = TEST_CONFIG_DIR + "service_enable_disable_sequence.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+
+    # Sequence 1 off
+    start_time = await begin_test(1, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Sequence 1 on
+    start_time = await begin_test(2, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_ENABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Sequence 1 off, sequence 2 on
+    start_time = await begin_test(3, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Double toggle: sequence 1 on, sequence 2 off
+    start_time = await begin_test(4, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+        },
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # All off
+    start_time = await begin_test(5, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # All back on
+    start_time = await begin_test(6, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+        },
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Disable sequence 1, zone 1
+    start_time = await begin_test(7, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": 1,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Disable sequence 1, zone 2
+    start_time = await begin_test(8, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": 2,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Disable sequence 1, zone 3
+    start_time = await begin_test(9, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": 3,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Disable sequence 2, all zones (All off)
+    start_time = await begin_test(10, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "zones": 0,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Toggle sequence 1 zones 1 and 3
+    start_time = await begin_test(11, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TOGGLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": [1, 3],
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Enable sequence 1 zone 2 and sequence 2
+    start_time = await begin_test(12, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_ENABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
+            "zones": 2,
+        },
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_ENABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "zones": [1, 2, 3],
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    check_summary(full_path, coordinator)

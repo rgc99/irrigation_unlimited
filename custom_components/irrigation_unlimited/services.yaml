@@ -13,6 +13,26 @@ enable:
           integration: irrigation_unlimited
           domain: binary_sensor
 
+    sequence_id:
+      description: Id of the sequence to run (entity_id should be the controller).
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
+    zones:
+      description: Id(s) of the zone
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+          mode: box
+
 disable:
   name: Disable
   description: Disable the controller or zone
@@ -26,6 +46,26 @@ disable:
           integration: irrigation_unlimited
           domain: binary_sensor
 
+    sequence_id:
+      description: Id of the sequence to run (entity_id should be the controller).
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
+    zones:
+      description: Id(s) of the zone
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+          mode: box
+
 toggle:
   name: Toggle
   description: Toggle the enable/disable status of controller or zone.
@@ -38,6 +78,26 @@ toggle:
         entity:
           integration: irrigation_unlimited
           domain: binary_sensor
+
+    sequence_id:
+      description: Id of the sequence to run (entity_id should be the controller).
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
+    zones:
+      description: Id(s) of the zone
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+          mode: box
 
 cancel:
   name: Cancel

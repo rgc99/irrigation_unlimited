@@ -15,7 +15,14 @@ from .irrigation_unlimited import (
 )
 
 from .const import (
+    ATTR_CONFIGURATION,
     ATTR_ENABLED,
+    CONF_ENABLED,
+    CONF_INDEX,
+    CONF_SEQUENCE_ID,
+    CONF_SEQUENCE_ZONES,
+    CONF_SEQUENCES,
+    CONF_ZONES,
     COORDINATOR,
     ICON,
     SERVICE_ENABLE,
@@ -45,17 +52,46 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
     async def async_added_to_hass(self):
         self._coordinator.register_entity(self._controller, self._zone, self)
         state = await self.async_get_last_state()
-        if state is not None:
-            if ATTR_ENABLED in state.attributes:
-                if state.attributes[ATTR_ENABLED]:
-                    self._coordinator.service_call(
-                        SERVICE_ENABLE, self._controller, self._zone, None
-                    )
-                else:
-                    self._coordinator.service_call(
-                        SERVICE_DISABLE, self._controller, self._zone, None
-                    )
+        if state is None:
             return
+
+        service = (
+            SERVICE_ENABLE
+            if state.attributes.get(ATTR_ENABLED, True)
+            else SERVICE_DISABLE
+        )
+        self._coordinator.service_call(service, self._controller, self._zone, {})
+
+        if self._zone is None and ATTR_CONFIGURATION in state.attributes:
+            data = json.loads(state.attributes[ATTR_CONFIGURATION])
+            for sequence in data[CONF_SEQUENCES]:
+                service = (
+                    SERVICE_ENABLE
+                    if sequence.get(CONF_ENABLED, True)
+                    else SERVICE_DISABLE
+                )
+                self._coordinator.service_call(
+                    service,
+                    self._controller,
+                    self._zone,
+                    {CONF_SEQUENCE_ID: sequence[CONF_INDEX] + 1},
+                )
+
+                for sequence_zone in sequence[CONF_SEQUENCE_ZONES]:
+                    service = (
+                        SERVICE_ENABLE
+                        if sequence_zone.get(CONF_ENABLED, True)
+                        else SERVICE_DISABLE
+                    )
+                    self._coordinator.service_call(
+                        service,
+                        self._controller,
+                        self._zone,
+                        {
+                            CONF_SEQUENCE_ID: sequence[CONF_INDEX] + 1,
+                            CONF_ZONES: [sequence_zone[CONF_INDEX] + 1],
+                        },
+                    )
         return
 
     async def async_will_remove_from_hass(self):

@@ -34,6 +34,12 @@ from .const import (
 
 ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
 
+ENABLE_DISABLE_SCHEMA = {
+    vol.Required(CONF_ENTITY_ID): cv.entity_id,
+    vol.Optional(CONF_ZONES): cv.ensure_list,
+    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+}
+
 TIME_ADJUST_SCHEMA = vol.All(
     vol.Schema(
         {
@@ -73,13 +79,13 @@ async def async_entity_service_handler(entity: IUEntity, call: ServiceCall) -> N
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
     """Register all the available service calls for the intities"""
     platform.async_register_entity_service(
-        SERVICE_ENABLE, ENTITY_SCHEMA, async_entity_service_handler
+        SERVICE_ENABLE, ENABLE_DISABLE_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
-        SERVICE_DISABLE, ENTITY_SCHEMA, async_entity_service_handler
+        SERVICE_DISABLE, ENABLE_DISABLE_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
-        SERVICE_TOGGLE, ENTITY_SCHEMA, async_entity_service_handler
+        SERVICE_TOGGLE, ENABLE_DISABLE_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
         SERVICE_CANCEL, ENTITY_SCHEMA, async_entity_service_handler
