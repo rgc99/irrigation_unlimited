@@ -15,12 +15,15 @@ import homeassistant.helpers.sun as sun
 import homeassistant.util.dt as dt
 
 from homeassistant.const import (
+    ATTR_ICON,
     CONF_AFTER,
     CONF_BEFORE,
     CONF_DELAY,
     CONF_ENTITY_ID,
+    CONF_ICON,
     CONF_NAME,
     CONF_REPEAT,
+    CONF_STATE,
     CONF_WEEKDAY,
     CONF_ID,
     EVENT_HOMEASSISTANT_STOP,
@@ -35,6 +38,17 @@ from homeassistant.const import (
 from .history import IUHistory
 
 from .const import (
+    ATTR_ADJUSTED_DURATION,
+    ATTR_ADJUSTMENT,
+    ATTR_BASE_DURATION,
+    ATTR_CURRENT_DURATION,
+    ATTR_DEFAULT_DELAY,
+    ATTR_DEFAULT_DURATION,
+    ATTR_DURATION_FACTOR,
+    ATTR_FINAL_DURATION,
+    ATTR_STATUS,
+    ATTR_TOTAL_DELAY,
+    ATTR_TOTAL_DURATION,
     BINARY_SENSOR,
     CONF_ACTUAL,
     CONF_ALL_ZONES_CONFIG,
@@ -78,6 +92,17 @@ from .const import (
     CONF_MAXIMUM,
     CONF_MONTH,
     DOMAIN,
+    ICON_BLOCKED,
+    ICON_CONTROLLER_OFF,
+    ICON_CONTROLLER_ON,
+    ICON_CONTROLLER_PAUSED,
+    ICON_DISABLED,
+    ICON_SEQUENCE_ZONE_OFF,
+    ICON_SEQUENCE_ZONE_ON,
+    ICON_ZONE_OFF,
+    ICON_ZONE_ON,
+    ICON_SEQUENCE_OFF,
+    ICON_SEQUENCE_ON,
     RES_MANUAL,
     RES_NONE,
     RES_TIMELINE_HISTORY,
@@ -193,6 +218,10 @@ class IUJSONEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, datetime):
             return o.isoformat()
+        if isinstance(o, timedelta):
+            if o != timedelta(0):
+                return str(round(o.total_seconds()))
+            return ""
         return o.__str__()
 
 
@@ -229,19 +258,15 @@ class IUAdjustment:
 
     def __str__(self) -> str:
         """Return the adjustment as a string notation"""
-        if self._method is None:
-            result = "None"
-        elif self._method == CONF_ACTUAL:
-            result = f"={self._time_adjustment}"
-        elif self._method == CONF_PERCENTAGE:
-            result = f"%{self._time_adjustment}"
-        elif self._method == CONF_INCREASE:
-            result = f"+{self._time_adjustment}"
-        elif self._method == CONF_DECREASE:
-            result = f"-{self._time_adjustment}"
-        else:
-            result = str(self._time_adjustment)
-        return result
+        if self._method == CONF_ACTUAL:
+            return f"={self._time_adjustment}"
+        if self._method == CONF_PERCENTAGE:
+            return f"%{self._time_adjustment}"
+        if self._method == CONF_INCREASE:
+            return f"+{self._time_adjustment}"
+        if self._method == CONF_DECREASE:
+            return f"-{self._time_adjustment}"
+        return "None"
 
     @property
     def has_adjustment(self) -> bool:
@@ -317,6 +342,12 @@ class IUAdjustment:
             new_time = min(new_time, self._maximum)
 
         return new_time
+
+    def to_str(self):
+        """Return this adjustment as string or empty if None"""
+        if self._method is not None:
+            return str(self)
+        return ""
 
 
 class IUSchedule(IUBase):
@@ -500,6 +531,7 @@ class IURun(IUBase):
         zone: "IUZone",
         schedule: "IUSchedule",
         sequence_run: "IUSequenceRun",
+        zone_run: "IURun",
     ) -> None:
         # pylint: disable=too-many-arguments
         super().__init__(None)
@@ -509,6 +541,7 @@ class IURun(IUBase):
         self._zone = zone
         self._schedule = schedule
         self._sequence_run = sequence_run
+        self._zone_run = zone_run
         # Private variables
         self._end_time: datetime = self._start_time + self._duration
         self._remaining_time: timedelta = self._end_time - self._start_time
@@ -586,6 +619,8 @@ class IURun(IUBase):
     def sequence_zone(self) -> "IUSequenceZone":
         """Return the sequence zone for this run"""
         if self.is_sequence:
+            if self._zone_run is not None:
+                return self._zone_run.sequence_zone
             return self._sequence_run.sequence_zone(self)
         return None
 
@@ -646,16 +681,11 @@ class IURun(IUBase):
         """Check if this schedule is expired"""
         return stime >= self._end_time
 
-    def sequence_start(self, stime: datetime) -> bool:
-        """Check if sequence is about to start but not yet flagged"""
-        result = (
-            self.is_sequence
-            and self.is_running(stime)
-            and not self._sequence_run.running
-        )
-        if result:
-            self._sequence_run.running = True
-        return result
+    def sequence_update(self, stime: datetime) -> bool:
+        """Update the status of the sequence"""
+        if self._zone_run is not None or not self.is_sequence:
+            return False
+        return self._sequence_run.update(stime, self)
 
     def update_time_remaining(self, stime: datetime) -> bool:
         """Update the count down timers"""
@@ -668,7 +698,7 @@ class IURun(IUBase):
         return False
 
     def as_dict(self) -> OrderedDict:
-        """Return this object as a dict"""
+        """Return this run as a dict"""
         result = OrderedDict()
         result[TIMELINE_START] = self._start_time
         result[TIMELINE_END] = self._end_time
@@ -680,6 +710,8 @@ class IURun(IUBase):
 # class IURunQueue(list[IURun]): # python 3.9
 class IURunQueue(typing.List[IURun]):
     """Irrigation Unlimited class to hold the upcomming runs"""
+
+    # pylint: disable=too-many-public-methods
 
     DAYS_SPAN: int = 3
 
@@ -713,13 +745,42 @@ class IURunQueue(typing.List[IURun]):
     @property
     def in_sequence(self) -> bool:
         """Return True if this run is part of a sequence"""
-        return self._in_sequence()
-
-    def _in_sequence(self) -> bool:
         for run in self:
             if run.sequence_running:
                 return True
         return False
+
+    def is_sequence_running(self, sequence: "IUSequence") -> bool:
+        """Check if the sequence is currently running"""
+        for run in self:
+            if run.sequence_running and run.sequence == sequence:
+                return True
+        return False
+
+    def sequence_duration(self, sequence: "IUSequence") -> timedelta:
+        """If sequence is running then return the duration"""
+        for run in self:
+            if run.sequence_running and run.sequence == sequence:
+                return run.sequence_run.total_time
+        return timedelta(0)
+
+    def find_active_sequence_zone(self, sequence_zone: "IUSequenceZone") -> IURun:
+        """Find the running sequence zone"""
+        for run in self:
+            if run.sequence_running and run.sequence_run.active_zone == sequence_zone:
+                return run
+        return None
+
+    def is_sequence_zone_running(self, sequence_zone: "IUSequenceZone") -> bool:
+        """Check if the sequence zone is running"""
+        return self.find_active_sequence_zone(sequence_zone) is not None
+
+    def sequence_zone_duration(self, sequence_zone: "IUSequenceZone") -> timedelta:
+        """Return the duration of the running sequence zone"""
+        run = self.find_active_sequence_zone(sequence_zone)
+        if run is not None:
+            return run.duration
+        return timedelta(0)
 
     def add(
         self,
@@ -728,10 +789,11 @@ class IURunQueue(typing.List[IURun]):
         zone: "IUZone",
         schedule: "IUSchedule",
         sequence_run: "IUSequenceRun",
+        zone_run: IURun,
     ) -> IURun:
         # pylint: disable=too-many-arguments
         """Add a run to the queue"""
-        run = IURun(start_time, duration, zone, schedule, sequence_run)
+        run = IURun(start_time, duration, zone, schedule, sequence_run, zone_run)
         self.append(run)
         self._sorted = False
         return run
@@ -873,6 +935,10 @@ class IURunQueue(typing.List[IURun]):
         if self.sort():
             status |= self.RQ_STATUS_SORTED
 
+        for run in self:
+            if run.sequence_update(stime):
+                status |= self.RQ_STATUS_CHANGED
+
         if self._cancel_request:
             if self.remove_current():
                 status |= self.RQ_STATUS_CANCELED
@@ -897,10 +963,6 @@ class IURunQueue(typing.List[IURun]):
                 if len(self) >= 2:
                     self._next_run = self[1]
                     status |= self.RQ_STATUS_UPDATED
-
-        for run in self:
-            if run.sequence_start(stime):
-                status |= self.RQ_STATUS_CHANGED
 
         return status
 
@@ -944,9 +1006,10 @@ class IUScheduleQueue(IURunQueue):
         sequence_run: "IUSequenceRun",
     ) -> IURun:
         """Add a new run to the queue"""
+        # pylint: disable=arguments-differ
         # pylint: disable=too-many-arguments
         return super().add(
-            start_time, self.constrain(duration), zone, schedule, sequence_run
+            start_time, self.constrain(duration), zone, schedule, sequence_run, None
         )
 
     def add_manual(
@@ -1151,6 +1214,17 @@ class IUZone(IUBase):
         return self._coordinator.history.today_total(self.entity_id)
 
     @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        if self._controller.enabled:
+            if self.enabled:
+                if self.is_on:
+                    return ICON_ZONE_ON
+                return ICON_ZONE_OFF
+            return ICON_DISABLED
+        return ICON_BLOCKED
+
+    @property
     def configuration(self) -> str:
         """Return this zone as JSON"""
         return json.dumps(self.as_dict(), cls=IUJSONEncoder)
@@ -1277,9 +1351,19 @@ class IUZone(IUBase):
 
     def as_dict(self) -> OrderedDict:
         """Return this zone as a dict"""
+        if self.runs.current_run is not None:
+            current_duration = self.runs.current_run.duration
+        else:
+            current_duration = timedelta(0)
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self.name
+        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
+        result[CONF_ENABLED] = self.enabled
+        result[CONF_ICON] = self.icon
+        result[ATTR_STATUS] = self.status
+        result[ATTR_ADJUSTMENT] = self._adjustment.to_str()
+        result[ATTR_CURRENT_DURATION] = current_duration
         result[CONF_SCHEDULES] = []
         for schedule in self._schedules:
             result[CONF_SCHEDULES].append(schedule.as_dict())
@@ -1407,49 +1491,48 @@ class IUZone(IUBase):
 class IUZoneQueue(IURunQueue):
     """Class to hold the upcoming zones to run"""
 
-    def add_zone(
+    def find_run(
         self,
         start_time: datetime,
-        duration: timedelta,
-        zone: IUZone,
-        schedule: IUSchedule,
-        sequence_run: "IUSequenceRun",
+        zone_run: IURun,
+    ) -> IURun:
+        """Find the specified run in the queue"""
+        for run in self:
+            if (
+                start_time == run.start_time
+                and zone_run.zone == run.zone
+                and run.schedule is not None
+                and zone_run.schedule is not None
+                and run.schedule == zone_run.schedule
+            ):
+                return run
+        return None
+
+    def add_zone(
+        self,
+        zone_run: IURun,
         preamble: timedelta,
         postamble: timedelta,
     ) -> IURun:
         """Add a new master run to the queue"""
-        # pylint: disable=too-many-arguments
+        start_time = zone_run.start_time
+        duration = zone_run.duration
         if preamble is not None:
             start_time -= preamble
             duration += preamble
         if postamble is not None:
             duration += postamble
-        run = self.find_run(start_time, duration, zone, schedule, sequence_run)
+        run = self.find_run(start_time, zone_run)
         if run is None:
-            run = self.add(start_time, duration, zone, schedule, sequence_run)
+            run = self.add(
+                start_time,
+                duration,
+                zone_run.zone,
+                zone_run.schedule,
+                zone_run.sequence_run,
+                zone_run,
+            )
         return run
-
-    def find_run(
-        self,
-        start_time: datetime,
-        duration: timedelta,
-        zone: IUZone,
-        schedule: IUSchedule,
-        sequence_run: "IUSequenceRun",
-    ) -> IURun:
-        """Find the specified run in the queue"""
-        # pylint: disable=too-many-arguments
-        # pylint: disable=unused-argument
-        for run in self:
-            if (
-                start_time == run.start_time
-                and zone == run.zone
-                and run.schedule is not None
-                and schedule is not None
-                and run.schedule == schedule
-            ):
-                return run
-        return None
 
     def rebuild_schedule(
         self,
@@ -1468,15 +1551,7 @@ class IUZoneQueue(IURunQueue):
             self.clear(stime)
         for zone in zones:
             for run in zone.runs:
-                self.add_zone(
-                    run.start_time,
-                    run.duration,
-                    run.zone,
-                    run.schedule,
-                    run.sequence_run,
-                    preamble,
-                    postamble,
-                )
+                self.add_zone(run, preamble, postamble)
         status |= IURunQueue.RQ_STATUS_EXTENDED | IURunQueue.RQ_STATUS_REDUCED
         status |= self.update_queue(stime)
         return status
@@ -1485,12 +1560,18 @@ class IUZoneQueue(IURunQueue):
 class IUSequenceZone(IUBase):
     """Irrigation Unlimited Sequence Zone class"""
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(
         self,
+        controller: "IUController",
+        sequence: "IUSequence",
         zone_index: int,
     ) -> None:
         super().__init__(zone_index)
         # Passed parameters
+        self._controller = controller
+        self._sequence = sequence
         # Config parameters
         self._zone_ids: list[str] = None
         self._delay: timedelta = None
@@ -1540,6 +1621,35 @@ class IUSequenceZone(IUBase):
         """Returns True if this sequence has an active adjustment"""
         return self._adjustment.has_adjustment
 
+    @property
+    def is_on(self) -> bool:
+        """Return if this sequence zone is running"""
+        return self._controller.runs.is_sequence_zone_running(self)
+
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        if self._controller.enabled:
+            if self._sequence.enabled:
+                if self._sequence.zone_enabled(self):
+                    if self.is_on:
+                        return ICON_SEQUENCE_ZONE_ON
+                    return ICON_SEQUENCE_ZONE_OFF
+                return ICON_DISABLED
+        return ICON_BLOCKED
+
+    @property
+    def status(self) -> str:
+        """Return status of the sequence zone"""
+        if self._controller.enabled:
+            if self._sequence.enabled:
+                if self._sequence.zone_enabled(self):
+                    if self.is_on:
+                        return STATE_ON
+                    return STATE_OFF
+                return STATUS_DISABLED
+        return STATUS_BLOCKED
+
     def clear(self) -> None:
         """Reset this sequence zone"""
         self._adjustment = IUAdjustment()
@@ -1554,11 +1664,32 @@ class IUSequenceZone(IUBase):
         self._enabled = config.get(CONF_ENABLED, self._enabled)
         return self
 
-    def as_dict(self) -> dict:
+    def zone_indexes(self) -> int:
+        """Generator to list zone indexes"""
+        for zone_id in self.zone_ids:
+            zone = self._controller.find_zone_by_zone_id(zone_id)
+            if zone is not None:
+                yield zone.index
+
+    def as_dict(self, duration_factor: float) -> dict:
         """Return this sequence zone as a dict"""
         result = OrderedDict()
         result[CONF_INDEX] = self._index
+        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
+        result[ATTR_ICON] = self.icon
+        result[ATTR_STATUS] = self.status
+        result[CONF_DELAY] = self._sequence.zone_delay(self)
+        result[ATTR_BASE_DURATION] = self._sequence.zone_duration_base(self)
+        result[ATTR_ADJUSTED_DURATION] = self._sequence.zone_duration(self)
+        result[ATTR_FINAL_DURATION] = self._sequence.zone_duration_final(
+            self, duration_factor
+        )
+        result[CONF_ZONES] = ",".join(str(idx + 1) for idx in self.zone_indexes())
+        result[ATTR_CURRENT_DURATION] = self._controller.runs.sequence_zone_duration(
+            self
+        )
+        result[ATTR_ADJUSTMENT] = self._adjustment.to_str()
         return result
 
 
@@ -1631,6 +1762,33 @@ class IUSequence(IUBase):
         """Returns the sequence adjustment"""
         return self._adjustment
 
+    @property
+    def is_on(self) -> bool:
+        """Return if the sequence is on or off"""
+        return self._controller.runs.is_sequence_running(self)
+
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        if self._controller.enabled:
+            if self.enabled:
+                if self.is_on:
+                    return ICON_SEQUENCE_ON
+                return ICON_SEQUENCE_OFF
+            return ICON_DISABLED
+        return ICON_BLOCKED
+
+    @property
+    def status(self) -> str:
+        """Return status of the sequence"""
+        if self._controller.enabled:
+            if self._enabled:
+                if self.is_on:
+                    return STATE_ON
+                return STATE_OFF
+            return STATUS_DISABLED
+        return STATUS_BLOCKED
+
     def has_adjustment(self, deep: bool) -> bool:
         """Indicates if this sequence has an active adjustment"""
         if self._adjustment.has_adjustment:
@@ -1644,28 +1802,22 @@ class IUSequence(IUBase):
     def zone_enabled(self, sequence_zone: IUSequenceZone) -> bool:
         """Return True if at least one real zone referenced by the
         sequence_zone is enabled"""
-        for zone_id in sequence_zone.zone_ids:
-            zone = self._controller.find_zone_by_zone_id(zone_id)
-            if zone is not None and zone.enabled:
-                return True
-        return False
-
-    def zone_duration(self, sequence_zone: IUSequenceZone) -> timedelta:
-        """Return the duration for the specified zone"""
-        if self.zone_enabled(sequence_zone):
-            if sequence_zone.duration is not None:
-                duration = sequence_zone.duration
-            else:
-                duration = self._duration
-            if duration is None:
-                duration = granularity_time()
-            duration = sequence_zone.adjustment.adjust(duration)
+        if self._controller.enabled and self.enabled and sequence_zone.enabled:
             for zone_id in sequence_zone.zone_ids:
                 zone = self._controller.find_zone_by_zone_id(zone_id)
-                if zone is not None:
-                    duration = zone.runs.constrain(duration)
-            return duration
-        return timedelta(0)
+                if zone is not None and zone.enabled:
+                    return True
+        return False
+
+    def constrain(
+        self, sequence_zone: IUSequenceZone, duration: timedelta
+    ) -> timedelta:
+        """Apply the zone entity constraints"""
+        for zone_id in sequence_zone.zone_ids:
+            zone = self._controller.find_zone_by_zone_id(zone_id)
+            if zone is not None:
+                duration = zone.runs.constrain(duration)
+        return duration
 
     def zone_delay(self, sequence_zone: IUSequenceZone) -> timedelta:
         """Return the delay for the specified zone"""
@@ -1679,34 +1831,78 @@ class IUSequence(IUBase):
             return delay
         return timedelta(0)
 
-    def total_duration(self) -> timedelta:
-        """Return the total duration for all the zones"""
-        duration = timedelta(0)
-        for zone in self._zones:
-            if zone.enabled:
-                duration += self.zone_duration(zone) * zone.repeat
-        duration *= self._repeat
-        return duration
-
     def total_delay(self) -> timedelta:
         """Return the total delay for all the zones"""
         delay = timedelta(0)
         last_zone: IUSequenceZone = None
         if len(self._zones) > 0:
             for zone in self._zones:
-                if zone.enabled:
-                    delay += self.zone_delay(zone) * zone.repeat
-                    last_zone = zone
+                delay += self.zone_delay(zone) * zone.repeat
+                last_zone = zone
             delay *= self._repeat
             if last_zone is not None:
                 delay -= self.zone_delay(last_zone)
         return delay
 
-    def total_time(self) -> timedelta:
-        """Return the total time for the sequence"""
-        return self.total_duration() + self.total_delay()
+    def zone_duration_base(self, sequence_zone: IUSequenceZone) -> timedelta:
+        """Return the base duration for the specified zone"""
+        if self.zone_enabled(sequence_zone):
+            if sequence_zone.duration is not None:
+                duration = sequence_zone.duration
+            else:
+                duration = self._duration
+            if duration is None:
+                duration = granularity_time()
+            return duration
+        return timedelta(0)
 
-    def duration_multiplier(self, total_time: timedelta) -> float:
+    def zone_duration(self, sequence_zone: IUSequenceZone) -> timedelta:
+        """Return the duration for the specified zone including adjustments
+        and constraints"""
+        if self.zone_enabled(sequence_zone):
+            duration = self.zone_duration_base(sequence_zone)
+            duration = sequence_zone.adjustment.adjust(duration)
+            return self.constrain(sequence_zone, duration)
+        return timedelta(0)
+
+    def zone_duration_final(
+        self, sequence_zone: IUSequenceZone, duration_factor: float
+    ) -> timedelta:
+        """Return the final zone time after the factor has been applied"""
+        duration = self.zone_duration(sequence_zone) * duration_factor
+        duration = self.constrain(sequence_zone, duration)
+        return round_td(duration)
+
+    def total_duration(self) -> timedelta:
+        """Return the total duration for all the zones"""
+        duration = timedelta(0)
+        for zone in self._zones:
+            duration += self.zone_duration(zone) * zone.repeat
+        duration *= self._repeat
+        return duration
+
+    def total_duration_adjusted(self, total_duration) -> timedelta:
+        """Return the adjusted duration"""
+        if total_duration is None:
+            total_duration = self.total_duration()
+        if self.has_adjustment(False):
+            total_duration = self.adjustment.adjust(total_duration)
+            total_duration = max(total_duration, timedelta(0))
+        return total_duration
+
+    def total_time_final(self, total_time: timedelta) -> timedelta:
+        """Return the adjusted total time for the sequence"""
+        if total_time is not None and self.has_adjustment(False):
+            total_delay = self.total_delay()
+            total_duration = self.total_duration_adjusted(total_time - total_delay)
+            return total_duration + total_delay
+
+        if total_time is None:
+            return self.total_duration_adjusted(None) + self.total_delay()
+
+        return total_time
+
+    def duration_factor(self, total_time: timedelta) -> float:
         """Given a new total run time, calculate how much to shrink or expand each
         zone duration. Final time will be approximate as the new durations must
         be rounded to internal boundaries"""
@@ -1747,7 +1943,7 @@ class IUSequence(IUBase):
         """Look for and create if required a zone"""
         result = self.find_zone(index)
         if result is None:
-            result = self.add_zone(IUSequenceZone(index))
+            result = self.add_zone(IUSequenceZone(self._controller, self, index))
         return result
 
     def zone_ids(self) -> str:
@@ -1774,14 +1970,29 @@ class IUSequence(IUBase):
         return self
 
     def as_dict(self) -> OrderedDict:
-        """Return this object as a dict"""
+        """Return this sequence as a dict"""
+        total_delay = self.total_delay()
+        total_duration = self.total_duration()
+        total_duration_adjusted = self.total_duration_adjusted(total_duration)
+        duration_factor = self.duration_factor(total_duration_adjusted + total_delay)
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
+        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
+        result[ATTR_ICON] = self.icon
+        result[ATTR_STATUS] = self.status
+        result[ATTR_DEFAULT_DURATION] = self._duration
+        result[ATTR_DEFAULT_DELAY] = self._delay
+        result[ATTR_DURATION_FACTOR] = duration_factor
+        result[ATTR_TOTAL_DELAY] = total_delay
+        result[ATTR_TOTAL_DURATION] = total_duration
+        result[ATTR_ADJUSTED_DURATION] = total_duration_adjusted
+        result[ATTR_CURRENT_DURATION] = self._controller.runs.sequence_duration(self)
+        result[ATTR_ADJUSTMENT] = self._adjustment.to_str()
         result[CONF_SEQUENCE_ZONES] = []
         for sequence_zone in self._zones:
-            result[CONF_SEQUENCE_ZONES].append(sequence_zone.as_dict())
+            result[CONF_SEQUENCE_ZONES].append(sequence_zone.as_dict(duration_factor))
         return result
 
 
@@ -1789,12 +2000,14 @@ class IUSequenceRun(IUBase):
     """Irrigation Unlimited sequence run manager class. Ties together the
     individual sequence zones"""
 
-    def __init__(self, sequence: IUSequence) -> None:
+    def __init__(self, sequence: IUSequence, total_time: timedelta) -> None:
         super().__init__(None)
         # Passed parameters
         self._sequence = sequence
+        self._total_time = total_time
         # Private variables
         self._runs: OrderedDict = {}
+        self._active_zone: IUSequenceZone = None
         self._running = False
 
     @property
@@ -1803,14 +2016,19 @@ class IUSequenceRun(IUBase):
         return self._sequence
 
     @property
+    def total_time(self) -> timedelta:
+        """Return the total run time for this sequence"""
+        return self._total_time
+
+    @property
     def running(self) -> bool:
         """Indicate if this sequence is running"""
         return self._running
 
-    @running.setter
-    def running(self, value: bool) -> None:
-        """Flag sequence is now running"""
-        self._running = value
+    @property
+    def active_zone(self) -> bool:
+        """Return the active zone in the sequence"""
+        return self._active_zone
 
     def add(self, run: IURun, sequence_zone: IUSequenceZone) -> None:
         """Adds a sequence zone to the group"""
@@ -1823,6 +2041,25 @@ class IUSequenceRun(IUBase):
     def sequence_zone(self, run: IURun) -> IUSequenceZone:
         """Extract the sequence zone from the run"""
         return self._runs.get(run.uid, None)
+
+    def update(self, stime: datetime, run: IURun) -> bool:
+        """Update the status of the sequence"""
+        is_running = run.is_running(stime)
+        sequence_zone = self.sequence_zone(run)
+        if is_running and not self._running:
+            self._running = True
+            self._active_zone = sequence_zone
+            return True
+
+        if is_running and sequence_zone != self._active_zone:
+            self._active_zone = sequence_zone
+            return True
+
+        if not is_running and sequence_zone == self._active_zone:
+            self._active_zone = None
+            return True
+
+        return False
 
 
 class IUController(IUBase):
@@ -1927,6 +2164,17 @@ class IUController(IUBase):
         """Returns True if the controller is running a sequence. The
         controller may be off because of a delay between sequence zones"""
         return self._run_queue.in_sequence
+
+    @property
+    def icon(self) -> str:
+        """Return the icon to use in the frontend."""
+        if self.enabled:
+            if self.is_on:
+                return ICON_CONTROLLER_ON
+            if self.is_paused:
+                return ICON_CONTROLLER_PAUSED
+            return ICON_CONTROLLER_OFF
+        return ICON_DISABLED
 
     @property
     def configuration(self) -> str:
@@ -2056,6 +2304,10 @@ class IUController(IUBase):
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
+        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
+        result[CONF_ENABLED] = self._is_enabled
+        result[CONF_ICON] = self.icon
+        result[ATTR_STATUS] = self.status
         result[CONF_ZONES] = []
         for zone in self._zones:
             result[CONF_ZONES].append(zone.as_dict())
@@ -2069,7 +2321,7 @@ class IUController(IUBase):
         stime: datetime,
         sequence: IUSequence,
         schedule: IUSchedule,
-        total_duration: timedelta = None,
+        total_time: timedelta = None,
     ) -> int:
         # pylint: disable=too-many-locals
         """Muster the sequences for the controller"""
@@ -2093,28 +2345,22 @@ class IUController(IUBase):
                 next_run = stime + granularity_time()
             return next_run
 
-        def calc_total_duration(
-            total_duration: timedelta, sequence: IUSequence, schedule: IUSchedule
+        def calc_total_time(
+            total_time: timedelta, sequence: IUSequence, schedule: IUSchedule
         ) -> timedelta:
             """Calculate the total duration of the sequence"""
-            if total_duration is None:
-                if schedule is not None and schedule.duration is not None:
-                    total_duration = schedule.duration
-                else:
-                    total_duration = sequence.total_time()
-            if schedule is not None and sequence.has_adjustment(False):
-                total_delay = sequence.total_delay()
-                total_duration = (
-                    sequence.adjustment.adjust(total_duration - total_delay)
-                    + total_delay
-                )
-                # pylint: disable=consider-using-max-builtin
-                if total_duration < total_delay:
-                    total_duration = total_delay  # Make run time 0
-            return total_duration
 
-        total_duration = calc_total_duration(total_duration, sequence, schedule)
-        duration_multiplier = sequence.duration_multiplier(total_duration)
+            if total_time is None:
+                if schedule is not None and schedule.duration is not None:
+                    return sequence.total_time_final(schedule.duration)
+                return sequence.total_time_final(None)
+
+            if schedule is not None:
+                return sequence.total_time_final(total_time)
+            return total_time
+
+        total_time = calc_total_time(total_time, sequence, schedule)
+        duration_factor = sequence.duration_factor(total_time)
         status: int = 0
         next_run: datetime = None
         sequence_run: IUSequenceRun = None
@@ -2123,9 +2369,7 @@ class IUController(IUBase):
             for sequence_zone in sequence.zones:
                 if not sequence_zone.enabled:
                     continue
-                duration = round_td(
-                    sequence.zone_duration(sequence_zone) * duration_multiplier
-                )
+                duration = sequence.zone_duration_final(sequence_zone, duration_factor)
                 duration_max = timedelta(0)
                 delay = sequence.zone_delay(sequence_zone)
                 for zone in (
@@ -2135,19 +2379,19 @@ class IUController(IUBase):
                     if zone is not None and zone.enabled:
                         # Initialise on first pass
                         if next_run is None:
-                            next_run = init_run_time(
-                                stime, schedule, zone, total_duration
-                            )
+                            next_run = init_run_time(stime, schedule, zone, total_time)
                             if next_run is None:
                                 return status  # Exit if queue is full
-                            sequence_run = IUSequenceRun(sequence)
+                            sequence_run = IUSequenceRun(sequence, total_time)
 
                         # Don't adjust manual run and no adjustment on adjustment
+                        # This code should not really be here. It would be a breaking
+                        # change if removed.
                         if schedule is not None and not sequence.has_adjustment(True):
                             duration_adjusted = zone.adjustment.adjust(duration)
+                            duration_adjusted = zone.runs.constrain(duration_adjusted)
                         else:
                             duration_adjusted = duration
-                        duration_adjusted = zone.runs.constrain(duration_adjusted)
 
                         zone_run_time = next_run
                         for j in range(  # pylint: disable=unused-variable
@@ -3110,6 +3354,11 @@ class IUCoordinator:
         """Return True if we are initialised"""
         return self._initialised
 
+    @property
+    def configuration(self) -> str:
+        """Return the system configuration as JSON"""
+        return json.dumps(self.as_dict(), cls=IUJSONEncoder)
+
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
         all_setup: bool = self._hass.is_running and self._component is not None
@@ -3368,6 +3617,7 @@ class IUCoordinator:
             else:
                 controller.service_manual_run(data, stime)
         if changed:
+            self.request_update(False)
             self._muster_required = True
             self._logger.log_service_call(service, stime, controller, zone, data)
 
@@ -3395,3 +3645,4 @@ class IUCoordinator:
             zone_id = 0
         event = IUEvent().load2(stime, controller.index + 1, zone_id, state, crumbs)
         self._tester.entity_state_changed(event)
+        self.request_update(False)

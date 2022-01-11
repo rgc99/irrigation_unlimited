@@ -17,6 +17,7 @@ from .irrigation_unlimited import (
 from .const import (
     ATTR_CONFIGURATION,
     ATTR_ENABLED,
+    CONF_CONTROLLERS,
     CONF_ENABLED,
     CONF_INDEX,
     CONF_SEQUENCE_ID,
@@ -51,47 +52,17 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
 
     async def async_added_to_hass(self):
         self._coordinator.register_entity(self._controller, self._zone, self)
+
+        # Remove this code in future update. Moved to coordinator JSON configuration.
         state = await self.async_get_last_state()
         if state is None:
             return
-
         service = (
             SERVICE_ENABLE
             if state.attributes.get(ATTR_ENABLED, True)
             else SERVICE_DISABLE
         )
         self._coordinator.service_call(service, self._controller, self._zone, {})
-
-        if self._zone is None and ATTR_CONFIGURATION in state.attributes:
-            data = json.loads(state.attributes[ATTR_CONFIGURATION])
-            for sequence in data[CONF_SEQUENCES]:
-                service = (
-                    SERVICE_ENABLE
-                    if sequence.get(CONF_ENABLED, True)
-                    else SERVICE_DISABLE
-                )
-                self._coordinator.service_call(
-                    service,
-                    self._controller,
-                    self._zone,
-                    {CONF_SEQUENCE_ID: sequence[CONF_INDEX] + 1},
-                )
-
-                for sequence_zone in sequence[CONF_SEQUENCE_ZONES]:
-                    service = (
-                        SERVICE_ENABLE
-                        if sequence_zone.get(CONF_ENABLED, True)
-                        else SERVICE_DISABLE
-                    )
-                    self._coordinator.service_call(
-                        service,
-                        self._controller,
-                        self._zone,
-                        {
-                            CONF_SEQUENCE_ID: sequence[CONF_INDEX] + 1,
-                            CONF_ZONES: [sequence_zone[CONF_INDEX] + 1],
-                        },
-                    )
         return
 
     async def async_will_remove_from_hass(self):
@@ -112,6 +83,55 @@ class IUComponent(RestoreEntity):
 
     async def async_added_to_hass(self):
         self._coordinator.register_entity(None, None, self)
+        state = await self.async_get_last_state()
+        if state is None:
+            return
+        if ATTR_CONFIGURATION in state.attributes:
+            data = json.loads(state.attributes[ATTR_CONFIGURATION])
+            for ctrl in data[CONF_CONTROLLERS]:
+                controller = self._coordinator.controllers[ctrl[CONF_INDEX]]
+                service = (
+                    SERVICE_ENABLE if ctrl.get(CONF_ENABLED, True) else SERVICE_DISABLE
+                )
+                self._coordinator.service_call(service, controller, None, {})
+
+                for zne in ctrl[CONF_ZONES]:
+                    zone = controller.zones[zne[CONF_INDEX]]
+                    service = (
+                        SERVICE_ENABLE
+                        if zne.get(CONF_ENABLED, True)
+                        else SERVICE_DISABLE
+                    )
+                    self._coordinator.service_call(service, controller, zone, {})
+
+                for sequence in ctrl[CONF_SEQUENCES]:
+                    service = (
+                        SERVICE_ENABLE
+                        if sequence.get(CONF_ENABLED, True)
+                        else SERVICE_DISABLE
+                    )
+                    self._coordinator.service_call(
+                        service,
+                        controller,
+                        zone,
+                        {CONF_SEQUENCE_ID: sequence[CONF_INDEX] + 1},
+                    )
+
+                    for sequence_zone in sequence[CONF_SEQUENCE_ZONES]:
+                        service = (
+                            SERVICE_ENABLE
+                            if sequence_zone.get(CONF_ENABLED, True)
+                            else SERVICE_DISABLE
+                        )
+                        self._coordinator.service_call(
+                            service,
+                            controller,
+                            zone,
+                            {
+                                CONF_SEQUENCE_ID: sequence[CONF_INDEX] + 1,
+                                CONF_ZONES: [sequence_zone[CONF_INDEX] + 1],
+                            },
+                        )
         return
 
     async def async_will_remove_from_hass(self):
@@ -153,5 +173,5 @@ class IUComponent(RestoreEntity):
     def state_attributes(self):
         """Return the state attributes."""
         attr = {}
-        attr["configuration"] = json.dumps(self._coordinator.as_dict(), default=str)
+        attr[ATTR_CONFIGURATION] = self._coordinator.configuration
         return attr

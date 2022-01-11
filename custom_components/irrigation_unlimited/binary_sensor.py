@@ -39,13 +39,6 @@ from .const import (
     BINARY_SENSOR,
     DOMAIN,
     COORDINATOR,
-    ICON_CONTROLLER_OFF,
-    ICON_CONTROLLER_ON,
-    ICON_CONTROLLER_PAUSED,
-    ICON_OFF,
-    ICON_ON,
-    ICON_DISABLED,
-    ICON_BLOCKED,
     CONF_SCHEDULES,
     CONF_ZONES,
     CONF_ZONE_ID,
@@ -139,13 +132,7 @@ class IUMasterEntity(IUEntity):
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
-        if self._controller.enabled:
-            if self._controller.is_on:
-                return ICON_CONTROLLER_ON
-            if self._controller.is_paused:
-                return ICON_CONTROLLER_PAUSED
-            return ICON_CONTROLLER_OFF
-        return ICON_DISABLED
+        return self._controller.icon
 
     @property
     def extra_state_attributes(self):
@@ -178,7 +165,6 @@ class IUMasterEntity(IUEntity):
         else:
             attr[ATTR_NEXT_SCHEDULE] = "deprecated (use next_zone)"
             attr[ATTR_NEXT_ZONE] = RES_NONE
-        attr[ATTR_CONFIGURATION] = self._controller.configuration
         return attr
 
 
@@ -208,13 +194,7 @@ class IUZoneEntity(IUEntity):
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
-        if self._controller.enabled:
-            if self._zone.enabled:
-                if self._zone.is_on:
-                    return ICON_ON
-                return ICON_OFF
-            return ICON_DISABLED
-        return ICON_BLOCKED
+        return self._zone.icon
 
     @property
     def extra_state_attributes(self):
