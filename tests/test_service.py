@@ -869,7 +869,7 @@ async def test_service_adjust_time_while_running(
     check_summary(full_path, coordinator)
 
 
-async def test_service_adjust_time_sequence(
+async def test_service_adjust_time_sequence_run(
     hass: ha.HomeAssistant, skip_start, skip_dependencies, skip_history
 ):
     """Test adjust_time service call on a sequence."""
