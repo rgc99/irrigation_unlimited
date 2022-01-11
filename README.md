@@ -507,6 +507,50 @@ irrigation_unlimited:
           - zone_id: 3
 ~~~
 
+Just in case this does not go far enough then create three sequences with one schedule each. This will allow *complete* control over *all* aspects of the sequence including which zones to run, order, durations, delays, repeats etc. Still want more then create a sequence for each month of the year. This example reverses the order in Spring/Autumn for no good reason and excludes a zone in Winter.
+
+~~~yaml
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: 'switch.my_switch_1'
+      - entity_id: 'switch.my_switch_2'
+      - entity_id: 'switch.my_switch_3'
+    sequences:
+      - name: 'Summer'
+        duration: '00:15'
+        delay: '00:01'
+        schedules:
+          - time: '05:30'
+            weekday: [mon, wed, fri]
+            month: [dec, jan, feb]
+        zones:
+          - zone_id: 1
+          - zone_id: 2
+          - zone_id: 3
+      - name: 'Winter'
+        duration: '00:10'
+        delay: '00:01'
+        schedules:
+          - time: '07:30'
+            weekday: [sun]
+            month: [jun, jul, aug]
+        zones:
+          - zone_id: 1
+          - zone_id: 3
+      - name: 'Spring and Autumn'
+        duration: '00:12'
+        delay: '00:01'
+        schedules:
+          - time: '06:30'
+            weekday: [mon, thu]
+            month: [mar, apr, may, sep, oct, nov]
+        zones:
+          - zone_id: 3
+          - zone_id: 2
+          - zone_id: 1
+~~~
+
 ### Finish at sunrise
 
 ~~~yaml
