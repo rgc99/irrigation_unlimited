@@ -212,6 +212,12 @@ def round_td(delta: timedelta, granularity: int = None) -> timedelta:
     return None
 
 
+def str_to_td(atime: str) -> timedelta:
+    """Convert a string in 0:00:00 format to timedelta"""
+    dur = datetime.strptime(atime, "%H:%M:%S")
+    return timedelta(hours=dur.hour, minutes=dur.minute, seconds=dur.second)
+
+
 class IUJSONEncoder(json.JSONEncoder):
     """JSON serialiser to handle ISO datetime output"""
 
@@ -250,11 +256,30 @@ class IUBase:
 class IUAdjustment:
     """Irrigation Unlimited class to handle run time adjustment"""
 
-    def __init__(self) -> None:
+    def __init__(self, adjustment: str = None) -> None:
         self._method: str = None
         self._time_adjustment = None
         self._minimum: timedelta = None
         self._maximum: timedelta = None
+        if (
+            adjustment is not None
+            and isinstance(adjustment, str)
+            and len(adjustment) >= 2
+        ):
+            method = adjustment[0]
+            adj = adjustment[1:]
+            if method == "=":
+                self._method = CONF_ACTUAL
+                self._time_adjustment = wash_td(str_to_td(adj))
+            elif method == "%":
+                self._method = CONF_PERCENTAGE
+                self._time_adjustment = float(adj)
+            elif method == "+":
+                self._method = CONF_INCREASE
+                self._time_adjustment = wash_td(str_to_td(adj))
+            elif method == "-":
+                self._method = CONF_DECREASE
+                self._time_adjustment = wash_td(str_to_td(adj))
 
     def __str__(self) -> str:
         """Return the adjustment as a string notation"""
@@ -266,7 +291,7 @@ class IUAdjustment:
             return f"+{self._time_adjustment}"
         if self._method == CONF_DECREASE:
             return f"-{self._time_adjustment}"
-        return "None"
+        return ""
 
     @property
     def has_adjustment(self) -> bool:
@@ -343,11 +368,22 @@ class IUAdjustment:
 
         return new_time
 
-    def to_str(self):
-        """Return this adjustment as string or empty if None"""
+    def to_str(self) -> str:
+        """Return this adjustment as string or None if empty"""
         if self._method is not None:
             return str(self)
-        return ""
+        return "None"
+
+    def to_dict(self) -> dict:
+        """Return this adjustment as a dict"""
+        result = {}
+        if self._method is not None:
+            result[self._method] = self._time_adjustment
+        if self._minimum is not None:
+            result[CONF_MINIMUM] = self._minimum
+        if self._maximum is not None:
+            result[CONF_MAXIMUM] = self._maximum
+        return result
 
 
 class IUSchedule(IUBase):
@@ -581,7 +617,7 @@ class IURun(IUBase):
             return RES_NONE
         if self.sequence_has_adjustment(True):
             return self.sequence_adjustment()
-        return str(self._zone.adjustment)
+        return self._zone.adjustment.to_str()
 
     @property
     def end_time(self) -> datetime:
@@ -662,10 +698,10 @@ class IURun(IUBase):
     def sequence_adjustment(self) -> str:
         """Return the adjustment for the sequence"""
         if self.is_sequence:
-            result = str(self._sequence_run.sequence.adjustment)
+            result = self._sequence_run.sequence.adjustment.to_str()
             sequence_zone = self._sequence_run.sequence_zone(self)
             if sequence_zone.has_adjustment:
-                result = f"{result},{str(sequence_zone.adjustment)}"
+                result = f"{result},{sequence_zone.adjustment.to_str()}"
             return result
         return None
 
@@ -1361,8 +1397,9 @@ class IUZone(IUBase):
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self.enabled
         result[CONF_ICON] = self.icon
+        result[CONF_ZONE_ID] = self._zone_id
         result[ATTR_STATUS] = self.status
-        result[ATTR_ADJUSTMENT] = self._adjustment.to_str()
+        result[ATTR_ADJUSTMENT] = str(self._adjustment)
         result[ATTR_CURRENT_DURATION] = current_duration
         result[CONF_SCHEDULES] = []
         for schedule in self._schedules:
@@ -1677,7 +1714,7 @@ class IUSequenceZone(IUBase):
         result[CONF_INDEX] = self._index
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
-        result[ATTR_ICON] = self.icon
+        result[CONF_ICON] = self.icon
         result[ATTR_STATUS] = self.status
         result[CONF_DELAY] = self._sequence.zone_delay(self)
         result[ATTR_BASE_DURATION] = self._sequence.zone_duration_base(self)
@@ -1689,7 +1726,7 @@ class IUSequenceZone(IUBase):
         result[ATTR_CURRENT_DURATION] = self._controller.runs.sequence_zone_duration(
             self
         )
-        result[ATTR_ADJUSTMENT] = self._adjustment.to_str()
+        result[ATTR_ADJUSTMENT] = str(self._adjustment)
         return result
 
 
@@ -1989,7 +2026,7 @@ class IUSequence(IUBase):
         result[ATTR_TOTAL_DURATION] = total_duration
         result[ATTR_ADJUSTED_DURATION] = total_duration_adjusted
         result[ATTR_CURRENT_DURATION] = self._controller.runs.sequence_duration(self)
-        result[ATTR_ADJUSTMENT] = self._adjustment.to_str()
+        result[ATTR_ADJUSTMENT] = str(self._adjustment)
         result[CONF_SEQUENCE_ZONES] = []
         for sequence_zone in self._zones:
             result[CONF_SEQUENCE_ZONES].append(sequence_zone.as_dict(duration_factor))
@@ -2106,6 +2143,11 @@ class IUController(IUBase):
     def zones(self) -> "list[IUZone]":
         """Return a list of childen zones"""
         return self._zones
+
+    @property
+    def sequences(self) -> "list[IUSequence]":
+        """Return a list of children sequences"""
+        return self._sequences
 
     @property
     def runs(self) -> IUZoneQueue:
@@ -3308,6 +3350,7 @@ class IUCoordinator:
         self._tester = IUTester(self)
         self._logger = IULogger(_LOGGER)
         self._history = IUHistory(self._hass)
+        self._restored_from_configutation: bool = False
 
     @property
     def entity_id(self) -> str:
@@ -3358,6 +3401,16 @@ class IUCoordinator:
     def configuration(self) -> str:
         """Return the system configuration as JSON"""
         return json.dumps(self.as_dict(), cls=IUJSONEncoder)
+
+    @property
+    def restored_from_configuration(self) -> bool:
+        """Return if the system has been restored from coordinator date"""
+        return self._restored_from_configutation
+
+    @restored_from_configuration.setter
+    def restored_from_configuration(self, value: bool) -> None:
+        """Flas the system has been restored from coordinator data"""
+        self._restored_from_configutation = value
 
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
