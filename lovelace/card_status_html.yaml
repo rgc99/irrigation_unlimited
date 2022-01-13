@@ -1,0 +1,49 @@
+type: custom:html-template-card
+title: Irrigation Status
+ignore_line_breaks: true
+content: >
+  {% set data =
+  state_attr('irrigation_unlimited.coordinator','configuration')|from_json %} {%
+  for controller in data.controllers %}
+    <h1 style="line-height:0"><ha-icon{% if controller.state == 'on' %} style="color:yellow"{% endif %} icon={{ controller.icon }}></ha-icon> {{ controller.name }}</h1>
+    <table>
+      <tr>
+        <th style="text-align:left"><h2 style="line-height:0">Zones</h2></th>
+        <th>Adjustment</th>
+        <th>Current</th>
+      </tr>
+    {% for zone in controller.zones %}
+      <tr>
+        <td style="padding-left:20px">{{ zone.zone_id }} <ha-icon{% if zone.state == 'on' %} style="color:yellow"{% endif %} icon={{ zone.icon }}></ha-icon> <b>{{ zone.name }}</b></td>
+        <td style="text-align:right">{{ zone.adjustment }}</td>
+        <td style="color: yellow">{% if zone.current_duration %} {{ timedelta(seconds=zone.current_duration | int) }} {% endif %}</td>
+      </tr>
+    {% endfor %}
+    </table>
+    <table>
+      <tr>
+        <th style="text-align:left"><h2 style="line-height:0">Sequences</h2></th>
+        <th>Adjustment</th>
+        <th>Duration</th>
+        <th>Current</th>
+        <th>Zones</th>
+      </tr>
+    {% for sq in controller.sequences %}
+      <tr style="font-weight:bold">
+        <td style="padding-left:20px">{{ sq.index + 1 }} <ha-icon{% if sq.state == 'on' %} style="color:yellow"{% endif %} icon={{ sq.icon }}></ha-icon> {{ sq.name }}</td>
+        <td style="text-align:right">{{ sq.adjustment }}</td>
+        <td>{{ timedelta(seconds=sq.adjusted_duration | int) }}</td>
+        <td style="color: yellow">{% if sq.current_duration %} {{ timedelta(seconds=sq.current_duration | int) }}</span> {% endif %}</td>
+      </tr>
+      {% for sz in sq.sequence_zones -%}
+      <tr>
+        <td style="padding-left:40px">{{ sz.index + 1 }} <ha-icon{% if sz.state == 'on' %} style="color:yellow"{% endif %} icon={{ sz.icon }}></ha-icon></td>
+        <td style="text-align:right">{{ sz.adjustment }} </td>
+        <td>{% if sz.final_duration %} {{ timedelta(seconds=sz.final_duration | int) }} {% else %} - {% endif %}</td>
+        <td style="color: yellow">{% if sz.current_duration %} {{ timedelta(seconds=sz.current_duration | int) }} {% endif %}</td>
+        <td style="text-align:right">{{ sz.zones }}</td>
+      </tr>
+      {% endfor -%}
+    {% endfor -%}
+    </table>
+  {% endfor -%}

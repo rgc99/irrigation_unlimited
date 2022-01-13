@@ -1,0 +1,40 @@
+type: markdown
+title: Irrigation Status
+content: >
+  {% set data =
+  state_attr('irrigation_unlimited.coordinator','configuration')|from_json %}
+
+  {% for controller in data.controllers %}
+
+  # <ha-icon icon={{ controller.icon }}></ha-icon> {{ controller.name }}
+
+  ## Zones
+    {% for zone in controller.zones %}
+  1. <ha-icon icon={{ zone.icon }}></ha-icon> **{{ zone.name }}** {% if
+  zone.adjustment %} ({{ zone.adjustment }}) {% endif %} {% if
+  zone.current_duration %} {{ timedelta(seconds=zone.current_duration | int) }}
+  {% endif %}
+    {% endfor %}
+  ## Sequences
+    {% for sq in controller.sequences %}
+  1. <ha-icon icon={{ sq.icon }}></ha-icon>&nbsp;**{{ sq.name }}** {% if
+  sq.adjustment %} ({{ sq.adjustment }}) {% endif %} {% if sq.adjusted_duration
+  %} {{ timedelta(seconds=sq.adjusted_duration | int) }} {% endif %} {% if
+  sq.current_duration %} / {{ timedelta(seconds=sq.current_duration | int) }} {%
+  endif %}
+
+  |  |  | Adjustment | Duration | Current | Zones |
+
+  |:---:|:---:| ---:| ---:| ---:| ---:|
+
+  {% for sz in sq.sequence_zones -%}
+
+  | {{ sz.index + 1 }}. | <ha-icon icon={{ sz.icon }}></ha-icon> | {{
+  sz.adjustment }} | {% if sz.final_duration %} {{
+  timedelta(seconds=sz.final_duration | int) }} {% endif %} | {% if
+  sz.current_duration %} <span style="color:yellow"> {{
+  timedelta(seconds=sz.current_duration | int) }} </span> {% endif %} | {{
+  sz.zones }}
+      {% endfor -%}
+    {% endfor -%}
+  {% endfor -%}
