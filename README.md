@@ -49,6 +49,7 @@
         - [Service reload](#service-reload)
         - [Service call access roadmap](#service-call-access-roadmap)
     - [Frontend](#frontend)
+        - [Quick Start](#quick-start)
         - [Generic Cards](#generic-cards)
         - [Timeline](#timeline)
         - [Frontend Requirements](#frontend-requirements)
@@ -69,6 +70,7 @@
 <!-- /TOC -->
 
 ## Introduction
+
 This integration is for irrigation systems large and small. It can offer some complex arrangements without large and messy scripts. This integration will complement many other irrigation projects.
 
 Home Assistant makes automating switches easy with the built in tools available. So why this project? You have a system in place but now you have extended it to have a number of zones. You don't want all the zones on at once because of water pressure issues. Maybe you would like each zone to have a number of schedules say a morning and evening watering. What about water restrictions that limit irrigation systems to certain days of the week or days in the month, odd or even for example. Perhaps you would like different schedules for winter and summer. Now you would like to adjust the times based on weather conditions, past, present or future. Let's turn a zone or even a controller off for system maintenance. Starting to sound more like your system? Finally what's going on now and what's up next.
@@ -86,13 +88,13 @@ Zones also have an associated sensor which, like the master, shows on/off status
 5. Hardware independent. Use your own switches/valve controllers.
 6. Software independent. Pure play python.
 
-*Practical limitations will depend on your hardware.
+\*Practical limitations will depend on your hardware.
 
 ## Structure
 
 Irrigation Unlimited is comprised of controllers, zones and schedules in a tree like formation. Each controller has one or more zones and each zone has one or more schedules. Controllers and zones will have a binary sensor associated with each one so they can be intregrated with Home Assistant.
 
-~~~text
+```text
 └── Irrigation Unlimited
   └── Controller 1 -> binary_sensor.irrigation_unlimited_c1_m
     └── Zone 1 -> binary_sensor.irrigation_unlimited_c1_z1
@@ -120,7 +122,7 @@ Irrigation Unlimited is comprised of controllers, zones and schedules in a tree 
       ...
   └── Controller N -> binary_sensor.irrigation_unlimited_cN_m
       ...
-~~~
+```
 
 Controllers and zones can specify an entity such as a switch or light, basically anything that turns on or off the system can control it. This is the irrigation valve. If this does not go far enough for your purposes then track the state of the binary sensors in an automation and do your own thing like run a script or scene.
 
@@ -156,7 +158,7 @@ A binary sensor is associated with each controller and zone. Controller or maste
 
 Using your HA configuration directory (folder) as a starting point you should now also have this:
 
-~~~text
+```text
 custom_components/irrigation_unlimited/__init__.py
 custom_components/irrigation_unlimited/binary_sensor.py
 custom_components/irrigation_unlimited/const.py
@@ -165,7 +167,7 @@ custom_components/irrigation_unlilmited/irrigation_unlimited.py
 custom_components/irrigation_unlimited/manifest.json
 custom_components/irrigation_unlimited/service.py
 custom_components/irrigation_unlimited/services.yaml
-~~~
+```
 
 ## Configuration
 
@@ -266,7 +268,7 @@ Sequences allow zones to run one at a time in a particular order with a delay in
 
 Sequences directly descend from a controller and are loosely connected to a zone entity via the `zone_id` parameter. The `zone_id` may point to one or many (a list) zone entities. A zone may be referenced more than once in a sequence.
 
-~~~text
+```text
 └── Irrigation Unlimited
       └──> Controller
             ├──> Zones
@@ -279,7 +281,7 @@ Sequences directly descend from a controller and are loosely connected to a zone
                   ├──> zone_id >───┤
                   │      ...       │
                   └──> zone_id >───┘
-~~~
+```
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -289,6 +291,7 @@ Sequences directly descend from a controller and are loosely connected to a zone
 | `duration` | time | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
 | `name` | string | Run _N_ | Friendly name for the sequence |
+| `enabled` | bool | true | Enable/disable the sequence |
 
 ### Sequence Zone Objects
 
@@ -300,6 +303,7 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#sequence-objects)_ |
 | `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#sequence-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat this zone |
+| `enabled` | bool | true | Enable/disable the sequence zone |
 
 Special note for [schedules](#schedule-objects) and the `duration` parameter contained within when used with sequences. Each zone in the sequence will be proportionaly adjusted to fit the specified duration. For example, if 3 zones were to each run for 10, 20 and 30 minutes respectively (total 1 hour) and the `schedule.duration` parameter specified 30 minutes then each zone would be adjusted to 5, 10 and 15 minutes. Likewise if `schedule.duration` specified 1.5 hours then the zones would be 15, 30 and 45 minutes. Some variation may occur due to rounding of the times to the system boundaries (granularity). This parameter influences the durations specified in the sequence and sequence zone objects.
 
@@ -339,34 +343,35 @@ These are the expected results from the test object. Every time a controller or 
 | `s` | int | required | 0 = Off and 1 = On |
 
 For a more concise style, results can be on one line for example:
-~~~yaml
+
+```yaml
 results:
-  - {t: '2021-01-04 06:00:30', c: 1, z: 0, s: 1}
-  - {t: '2021-01-04 06:00:30', c: 1, z: 1, s: 1}
-  - {t: '2021-01-04 06:10:00', c: 1, z: 2, s: 1}
-  - {t: '2021-01-04 06:10:30', c: 1, z: 1, s: 0}
-  - {t: '2021-01-04 06:20:00', c: 1, z: 2, s: 0}
-  - {t: '2021-01-04 06:20:00', c: 1, z: 0, s: 0}
-~~~
+  - { t: "2021-01-04 06:00:30", c: 1, z: 0, s: 1 }
+  - { t: "2021-01-04 06:00:30", c: 1, z: 1, s: 1 }
+  - { t: "2021-01-04 06:10:00", c: 1, z: 2, s: 1 }
+  - { t: "2021-01-04 06:10:30", c: 1, z: 1, s: 0 }
+  - { t: "2021-01-04 06:20:00", c: 1, z: 2, s: 0 }
+  - { t: "2021-01-04 06:20:00", c: 1, z: 0, s: 0 }
+```
 
 ## Configuration examples
 
 ### Minimal configuration
 
-~~~yaml
+```yaml
 # Example configuration.yaml entry
 irrigation_unlimited:
   controllers:
     zones:
-      entity_id: 'switch.my_switch'
+      entity_id: "switch.my_switch"
       schedules:
-        - time: '06:00'
-          duration: '00:20'
-~~~
+        - time: "06:00"
+          duration: "00:20"
+```
 
 ### Sun event example
 
-~~~yaml
+```yaml
 # Example configuration.yaml entry
 # Run 20 minutes before sunrise for 30 minutes
 irrigation_unlimited:
@@ -374,210 +379,210 @@ irrigation_unlimited:
     zones:
       entity_id: "switch.my_switch_1"
       schedules:
-        - name: 'Before sunrise'
+        - name: "Before sunrise"
           time:
-            sun: 'sunrise'
-            before: '00:20'
-          duration: '00:30'
-~~~
+            sun: "sunrise"
+            before: "00:20"
+          duration: "00:30"
+```
 
 ### Sequence example
 
-~~~yaml
+```yaml
 # Example configuration.yaml entry
 irrigation_unlimited:
   controllers:
     zones:
-      - name: 'Front lawn'
-        entity_id: 'switch.my_switch_1'
-      - name: 'Vege patch'
-        entity_id: 'switch.my_switch_2'
-      - name: 'Flower bed'
-        entity_id: 'switch.my_switch_3'
+      - name: "Front lawn"
+        entity_id: "switch.my_switch_1"
+      - name: "Vege patch"
+        entity_id: "switch.my_switch_2"
+      - name: "Flower bed"
+        entity_id: "switch.my_switch_3"
     sequences:
-      - delay: '00:01'
+      - delay: "00:01"
         schedules:
-          - name: 'Sunrise'
+          - name: "Sunrise"
             time:
-              sun: 'sunrise'
-          - name: 'After sunset'
+              sun: "sunrise"
+          - name: "After sunset"
             time:
-              sun: 'sunset'
-              after: '00:30'
+              sun: "sunset"
+              after: "00:30"
         zones:
           - zone_id: 1
-            duration: '00:10'
+            duration: "00:10"
           - zone_id: 2
-            duration: '00:02'
+            duration: "00:02"
           - zone_id: 3
-            duration: '00:01'
-~~~
+            duration: "00:01"
+```
 
 ### Simple water saving / eco mode example
 
-~~~yaml
+```yaml
 # Example water saver. Run for 5 min on 2 off repeat 3 times
 irrigation_unlimited:
   controllers:
     zones:
-      - entity_id: 'switch.my_switch_1'
+      - entity_id: "switch.my_switch_1"
     sequences:
-      - duration: '00:05'
-        delay: '00:02'
+      - duration: "00:05"
+        delay: "00:02"
         repeat: 3
         schedules:
-          - time: '05:00'
+          - time: "05:00"
         zones:
           - zone_id: 1
-~~~
+```
 
 ### Every hour on the hour
 
-~~~yaml
+```yaml
 # Example to run for 5 min every hour on the hour from 5am to 5pm
 irrigation_unlimited:
   controllers:
     zones:
-      - entity_id: 'switch.my_switch_1'
+      - entity_id: "switch.my_switch_1"
     sequences:
-      - name: 'On the hour from 5am to 5pm'
-        duration: '00:05'
-        delay: '00:55'
+      - name: "On the hour from 5am to 5pm"
+        duration: "00:05"
+        delay: "00:55"
         repeat: 12
         schedules:
-          - time: '05:00'
+          - time: "05:00"
         zones:
           - zone_id: 1
-~~~
+```
 
 ### Seasonal watering
 
-~~~yaml
+```yaml
 # Run 15 min 3 times a week in summer, 10 min once a week in winter and twice a week in spring/autumn
 irrigation_unlimited:
   controllers:
     zones:
-      - entity_id: 'switch.my_switch_1'
+      - entity_id: "switch.my_switch_1"
         schedules:
-          - time: '05:30'
-            duration: '00:15'
+          - time: "05:30"
+            duration: "00:15"
             weekday: [mon, wed, fri]
             month: [dec, jan, feb]
-          - time: '05:30'
-            duration: '00:10'
+          - time: "05:30"
+            duration: "00:10"
             weekday: [sun]
             month: [jun, jul, aug]
-          - time: '05:30'
-            duration: '00:12'
+          - time: "05:30"
+            duration: "00:12"
             weekday: [mon, thu]
             month: [mar, apr, may, sep, oct, nov]
-~~~
+```
 
 This is similar to the above but using sequences in a 3 zone system. Each zone runs for 12 minutes for a total of 36 min (plus delays). In Summer the total duration is extended to 45 minutes and winter reduced to 30 minutes. When using the `duration` parameter in the _[Schedule](#schedule-objects)_ it relates to the total duration of the sequence, each zone is adjusted accordingly.
 
-~~~yaml
+```yaml
 irrigation_unlimited:
   controllers:
     zones:
-      - entity_id: 'switch.my_switch_1'
-      - entity_id: 'switch.my_switch_2'
-      - entity_id: 'switch.my_switch_3'
+      - entity_id: "switch.my_switch_1"
+      - entity_id: "switch.my_switch_2"
+      - entity_id: "switch.my_switch_3"
     sequences:
-      - name: 'Run 1'
-        duration: '00:12'
-        delay: '00:01'
+      - name: "Run 1"
+        duration: "00:12"
+        delay: "00:01"
         schedules:
-          - name: 'Summer'
-            time: '05:30'
+          - name: "Summer"
+            time: "05:30"
             weekday: [mon, wed, fri]
             month: [dec, jan, feb]
-            duration: '00:45'
-          - name: 'Winter'
-            time: '05:30'
+            duration: "00:45"
+          - name: "Winter"
+            time: "05:30"
             weekday: [sun]
             month: [jun, jul, aug]
-            duration: '00:30'
-          - name: 'Spring and Autumn'
-            time: '05:30'
+            duration: "00:30"
+          - name: "Spring and Autumn"
+            time: "05:30"
             weekday: [mon, thu]
             month: [mar, apr, may, sep, oct, nov]
         zones:
           - zone_id: 1
           - zone_id: 2
           - zone_id: 3
-~~~
+```
 
-Just in case this does not go far enough then create three sequences with one schedule each. This will allow *complete* control over *all* aspects of the sequence including which zones to run, order, durations, delays, repeats etc. Still want more then create a sequence for each month of the year. This example reverses the order in Spring/Autumn for no good reason and excludes a zone in Winter.
+Just in case this does not go far enough then create three sequences with one schedule each. This will allow _complete_ control over _all_ aspects of the sequence including which zones to run, order, durations, delays, repeats etc. Still want more then create a sequence for each month of the year. This example reverses the order in Spring/Autumn for no good reason and excludes a zone in Winter.
 
-~~~yaml
+```yaml
 irrigation_unlimited:
   controllers:
     zones:
-      - entity_id: 'switch.my_switch_1'
-      - entity_id: 'switch.my_switch_2'
-      - entity_id: 'switch.my_switch_3'
+      - entity_id: "switch.my_switch_1"
+      - entity_id: "switch.my_switch_2"
+      - entity_id: "switch.my_switch_3"
     sequences:
-      - name: 'Summer'
-        duration: '00:15'
-        delay: '00:01'
+      - name: "Summer"
+        duration: "00:15"
+        delay: "00:01"
         schedules:
-          - time: '05:30'
+          - time: "05:30"
             weekday: [mon, wed, fri]
             month: [dec, jan, feb]
         zones:
           - zone_id: 1
           - zone_id: 2
           - zone_id: 3
-      - name: 'Winter'
-        duration: '00:10'
-        delay: '00:01'
+      - name: "Winter"
+        duration: "00:10"
+        delay: "00:01"
         schedules:
-          - time: '07:30'
+          - time: "07:30"
             weekday: [sun]
             month: [jun, jul, aug]
         zones:
           - zone_id: 1
           - zone_id: 3
-      - name: 'Spring and Autumn'
-        duration: '00:12'
-        delay: '00:01'
+      - name: "Spring and Autumn"
+        duration: "00:12"
+        delay: "00:01"
         schedules:
-          - time: '06:30'
+          - time: "06:30"
             weekday: [mon, thu]
             month: [mar, apr, may, sep, oct, nov]
         zones:
           - zone_id: 3
           - zone_id: 2
           - zone_id: 1
-~~~
+```
 
 ### Finish at sunrise
 
-~~~yaml
+```yaml
 # Finish a watering run 10 minutes before sunrise
 irrigation_unlimited:
   controllers:
     zones:
-      - entity_id: 'switch.my_switch_1'
-      - entity_id: 'switch.my_switch_2'
-      - entity_id: 'switch.my_switch_3'
-      - entity_id: 'switch.my_switch_4'
+      - entity_id: "switch.my_switch_1"
+      - entity_id: "switch.my_switch_2"
+      - entity_id: "switch.my_switch_3"
+      - entity_id: "switch.my_switch_4"
     sequences:
-      - name: 'My watering run'
-        duration: '00:30'
-        delay: '00:01'
+      - name: "My watering run"
+        duration: "00:30"
+        delay: "00:01"
         schedules:
-          - name: 'Before dawn'
+          - name: "Before dawn"
             time:
-              sun: 'sunrise'
-              before: '00:10'
+              sun: "sunrise"
+              before: "00:10"
             anchor: finish
         zones:
           - zone_id: 1
           - zone_id: 2
           - zone_id: 3
           - zone_id: 4
-~~~
+```
 
 For a more comprehensive example refer to [here](./examples/all_the_bells_and_whistles.yaml).
 
@@ -606,11 +611,13 @@ If a controller sensor is targetted then it will effect all its children zones.
 
 ### Services `enable`, `disable` and `toggle`
 
-Enables/disables/toggles the controller or zone respectively.
+Enables/disables/toggles the controller, zone, sequence or sequence zone respectively.
 
 | Service data attribute | Optional | Description |
 | ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to enable/disable/toggle.
+| `entity_id` | no | Controller or zone to enable/disable/toggle. |
+| `sequence_id` | yes | Sequence to enable/disable/toggle (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. |
+| `zones` | yes | Zones to enable/disable/toggle (1, 2..N). Within a sequence, zones are numbered by their position starting a 1. A value of 0 means all zones. |
 
 ### Service `cancel`
 
@@ -632,9 +639,9 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 
 ### Service `adjust_time`
 
-Adjust the run times. Calling this service will override any previous adjustment i.e. it will *not* make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
+Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
-A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day. Adjustments must be made *before* the scheduled start time. Running schedules will be not affected.
+A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day. Adjustments must be made _before_ the scheduled start time. Running schedules will be not affected.
 
 #### Tip
 
@@ -663,13 +670,13 @@ A reminder that sequences directly descend from a controller. Therefore service 
 
 The combination of three key parameters `entity_id`, `sequence_id` and `zones` will target the various sections of the configuration.
 
-* `entity_id:` This will be either the controller or zone entity.
-* `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on.
-* `zones:` This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zone references in the sequence. May also take a list `zones: [1,3,5]`
+- `entity_id:` This will be either the controller or zone entity.
+- `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on.
+- `zones:` This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zone references in the sequence. May also take a list `zones: [1,3,5]`
 
 The following is a valid irrigation unlimited configuration. It shows how various points can be changed using the service calls above. Example numbers have the nomenclature C.Z.S.R = Controller.Zone.Sequence.zoneReference. If Z is zero then the `entity_id` must be the controller/master i.e. binary_sensor.irrigation_unlimited_cN_m. If Z is not zero then then entity_id is the zone i.e. binary_sensor.irrigation_unlimited_cN_zN.
 
-~~~yaml
+```yaml
 irrigation_unlimited:
   controllers:
     - name: "Controller 1"
@@ -687,20 +694,25 @@ irrigation_unlimited:
                 duration: "00:10" # <= See example 1.2.1
       sequences:
         - name: "Controller 1, Sequence 1"
+          enabled: true # <= See example 1.0.1e
           schedules:
             - time: "06:00"
-              duration: "01:00" #  <= See example 1.0.1
+              duration: "01:00" # <= See example 1.0.1
           zones:
             - zone_id: [1, 2] # This is controller 1, sequence 1, zone reference 1
+              enabled: true # <= See example 1.0.1.1e
               duration: "00:10" # <= See example 1.0.1.1
             - zone_id: 2  # This is controller 1, sequence 1, zone reference 2
+              enabled: true # <= See example 1.0.1.2e
               duration: "00:10" # <= See example 1.0.1.2
         - name: "Controller 1, Sequence 2"
+          enabled: true # <= See example 1.0.2e
           schedules:
             - time: "07:00"
               duration: "01:00" # <= See example 1.0.2
           zones:
             - zone_id: 1 # This is controller 1, sequence 2, zone reference 1
+              enabled: true # <= See example 1.0.2.1e
               duration: "00:10" # <= See example 1.0.2.1
     - name: "Controller 2"
       enabled: true # <= See example 2.0
@@ -711,30 +723,37 @@ irrigation_unlimited:
           enabled: true # <= See example 2.2
       sequences:
         - name: "Controller 2, Sequence 1"
+          enabled: true # <= See example 2.0.1e
           schedules:
             - time: "09:00"
               duration: "01:00" # <= See example 2.0.1
           zones:
             - zone_id: 1 # This is controller 2, sequence 1, zone reference 1
+              enabled: true # <= See example 2.0.1.1e
               duration: "00:10" # <= See example 2.0.1.1
             - zone_id: 2 # This is controller 2, sequence 1, zone reference 2
+              enabled: true # <= See example 2.0.1.2e
               duration: "00:10" # <= See example 2.0.1.2
         - name: "Controller 2, Sequence 2"
+          enabled: true # <= See example 2.0.2e
           schedules:
             - time: "09:00"
               duration: "01:00" # <= See example 2.0.2
           zones:
             - zone_id: 1 # This is controller 2, sequence 2, zone reference 1
+              enabled: true # <= See example 2.0.2.1e
               duration: "00:10" # <= See example 2.0.2.1
             - zone_id: 2 # This is controller 2, sequence 2, zone reference 2
+              enabled: true # <= See example 2.0.2.2e
               duration: "00:10" # <= See example 2.0.2.2
-~~~
+```
 
 Notes:
+
 1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplisity however all methods are available as described _[above](#service-adjust_time)_.
 2. The `enable` service call can also be `disable` or `toggle`.
 
-~~~yaml
+```yaml
 # Example 1.0 -> controller 1 -> enabled. This will alter the enabled status for the controller.
 - service: irrigation_unlimited.enable
   data:
@@ -762,6 +781,12 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c1_z2
     actual: "00:20"
 
+# Example 1.0.1e -> controller 1 -> sequence 1 -> enabled. This will alter the enabled status of sequence 1.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 1
+
 # Example 1.0.1 -> controller 1 -> sequence 1 -> duration. This will proportionaly alter the duration
 # for all zone references in the first sequence.
 - service: irrigation_unlimited.adjust_time
@@ -769,6 +794,14 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c1_m
     sequence_id: 1
     actual: "00:20"
+
+# Example 1.0.1.1e -> controller 1 -> sequence 1 -> zone reference 1 -> enabled. This will alter the enabled
+# status of the first zone reference in the first sequence.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 1
+    zones: 1
 
 # Example 1.0.1.1 -> controller 1 -> sequence 1 -> zone reference 1 -> duration. This will alter the duration
 # for the first zone reference in the first sequence.
@@ -779,6 +812,14 @@ Notes:
     zones: 1
     actual: "00:20"
 
+# Example 1.0.1.2 - controller 1 -> sequence 1 -> zone reference 2 -> enabled. This will alter the enabled
+# status of the second zone reference in the first sequence.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 1
+    zones: 2
+
 # Example 1.0.1.2 - controller 1 -> sequence 1 -> zone reference 2 -> duration. This will alter the duration
 # for the second zone reference in the first sequence.
 - service: irrigation_unlimited.adjust_time
@@ -788,6 +829,13 @@ Notes:
     zones: 2
     actual: "00:20"
 
+# Example 1.0.2e - controller 1 -> sequence 2 -> enabled. This will alter the enabled
+# status of the second sequence.
+- service: irrigation_unlimited.enabled
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 2
+
 # Example 1.0.2 - controller 1 -> sequence 2 -> duration. This will proportionaly alter the duration
 # for all zone references in the second sequence.
 - service: irrigation_unlimited.adjust_time
@@ -795,6 +843,13 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c1_m
     sequence_id: 2
     actual: "00:20"
+
+# Example 1.0.2.1e - controller 1 -> sequence 2 -> zone reference 1 -> enabled
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c1_m
+    sequence_id: 2
+    zones: 1
 
 # Example 1.0.2.1 - controller 1 -> sequence 2 -> zone reference 1 -> duration
 - service: irrigation_unlimited.adjust_time
@@ -819,6 +874,13 @@ Notes:
   data:
     entity_id: binary_sensor.irrigation_unlimited_c2_z2
 
+# Example 2.0.1e - controller 2 -> sequence 1 -> enabled. This will alter the enabled status
+# for the first sequence.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 1
+
 # Example 2.0.1 - controller 2 -> sequence 1 -> duration. This will proportionaly alter the duration
 # for all zone references in the first sequence.
 - service: irrigation_unlimited.adjust_time
@@ -826,6 +888,14 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c2_m
     sequence_id: 1
     actual: "00:20"
+
+# Example 2.0.1.1e - controller 2 -> sequence 1 -> zone reference 1 -> enabled. This will alter the enabled
+# status for the first zone reference in the first sequence.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 1
+    zones: 1
 
 # Example 2.0.1.1 - controller 2 -> sequence 1 -> zone reference 1 -> duration. This will alter the duration
 # for the first zone reference in the first sequence.
@@ -836,6 +906,14 @@ Notes:
     zones: 1
     actual: "00:20"
 
+# Example 2.0.1.2e - controller 2 -> sequence 1 -> zone reference 2 -> enabled. This will alter the enabled
+# status for the second zone reference in the first sequence.
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 1
+    zones: 2
+
 # Example 2.0.1.2 - controller 2 -> sequence 1 -> zone reference 2 -> duration. This will alter the duration
 # for the second zone reference in the first sequence.
 - service: irrigation_unlimited.adjust_time
@@ -845,12 +923,40 @@ Notes:
     zones: 2
     actual: "00:20"
 
+# Example 2.0.2e - controller 2 -> sequence 2 -> enabled
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 2
+
 # Example 2.0.2 - controller 2 -> sequence 2 -> duration
 - service: irrigation_unlimited.adjust_time
   data:
     entity_id: binary_sensor.irrigation_unlimited_c2_m
     sequence_id: 2
     actual: "00:20"
+
+# Example 2.0.2.1e - controller 2 -> sequence 2 -> zone reference 1 -> enabled
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 2
+    zones: 1
+
+# Example 2.0.2.2 - controller 2 -> sequence 2 -> zone reference 1 -> duration
+- service: irrigation_unlimited.adjust_time
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 2
+    zones: 1
+    actual: "00:20"
+
+# Example 2.0.2.2e - controller 2 -> sequence 2 -> zone reference 2 -> enabled
+- service: irrigation_unlimited.enable
+  data:
+    entity_id: binary_sensor.irrigation_unlimited_c2_m
+    sequence_id: 2
+    zones: 2
 
 # Example 2.0.2.2 - controller 2 -> sequence 2 -> zone reference 2 -> duration
 - service: irrigation_unlimited.adjust_time
@@ -859,16 +965,27 @@ Notes:
     sequence_id: 2
     zones: 2
     actual: "00:20"
-
-~~~
+```
 
 ## Frontend
 
 Because this is an integration there is no integrated frontend so there is a clean separation between the irrigation engine and the display. It allows for a great deal of flexibility in the final appearance. For an out-of-the-box vanilla solution, simply put the master and zone binary sensors onto an entity card to see what is going on.
 
+### Quick Start
+
+This card uses markdown which is included in Home Assistant as standard. Create a new card and paste [this](./lovelace/card_status_markdown.yaml) into it. See [here](https://www.markdownguide.org) for more information about markdown.
+
+![Markdown](./examples/card_status_markdown.png)
+
+Markdown does a great job but it does have some limitations in particular colour which it does not support. This next card uses [Lovelace HTML Jinja2 Template card](https://github.com/PiotrMachowski/Home-Assistant-Lovelace-HTML-Jinja2-Template-card) (it's available via HACS). Create a new card and paste [this](./lovelace/card_status_html.yaml) into it. Now you can unleash the power of HTML including colour, go ahead and have a tinker, I know you want to.
+
+![HTML](./examples/card_status_html.png)
+
+The above two cards read data from the `irrigation_unlimited.coordinator` entity. The `configuration` attribute of this entity is a JSON formatted string and can be used in all Home Assistant [templates](https://www.home-assistant.io/docs/configuration/templating/). There is more information in the JSON dataset if you want to go looking. Most fields have sensible labels and easy enough to figure out. Now the wheels must be turning.
+
 ### Generic Cards
 
-For some inspiration and a compact card try [this](./lovelace/card.yaml).
+Most of the following will require installation of further [lovelace cards](https://www.home-assistant.io/lovelace/). For some inspiration and a compact card try [this](./lovelace/card.yaml).
 
 ![Collapsed](./examples/card_collapsed.png)
 
@@ -906,17 +1023,20 @@ This configuration is three vertical stacks and works well on mobile devices.
 
 Minimum version 2021.12.0 of Irrigation Unlimited is required for this feature. First up, enable the timeline in the [zone show object](#zone-show-object).
 
-~~~yaml
+```yaml
 irrigation_unlimited:
   controllers:
     zones:
-      entity_id: 'switch.my_switch'
-      show:             # <= Add these two lines to the configuration
-        timeline: true  # <= And this one
+      all_zones_config: # <= Add these three lines <─┐
+        show: # <= to the configuration            <─┤
+          timeline: true # <= for all zones        <─┘
+      entity_id: "switch.my_switch"
+      show: # <= Add these two lines to the                  <─┐
+        timeline: true # <= configuration for indivual zones <─┘
       schedules:
-        - time: '06:00'
-          duration: '00:20'
-~~~
+        - time: "06:00"
+          duration: "00:20"
+```
 
 Like the watering history card above it also shows the upcoming schedule for a complete overview of your irrigation. Find the code [here](./lovelace/timeline_chart.yaml). Requires [apexcharts-card](https://github.com/RomRider/apexcharts-card).
 
@@ -925,7 +1045,6 @@ Like the watering history card above it also shows the upcoming schedule for a c
 If you prefer something akin to a airport departure board then try [this](./lovelace/timeline_card.yaml). Uses Markdown card which is built into Home Assistant so will work straight out of the box.
 
 ![timeline_card](./examples/timeline_card.png)
-
 
 ### Frontend Requirements
 
@@ -938,10 +1057,10 @@ homeassistant:
 
 Using your HA configuration directory (folder) as a starting point you should now also have this:
 
-~~~text
+```text
 pyscript/irrigation_unlimited_service_shim.py
 packages/irrigation_unlimited_controls.yaml
-~~~
+```
 
 More information on packages can be found [here](https://www.home-assistant.io/docs/configuration/packages) and pyscript can be found [here](https://github.com/custom-components/pyscript), don't worry about the Jupyter kernel unless you are really keen. Hint: A pyscript is used instead of Jinja2 as it produces a list which Jinja2 is not capable of, many have tried... The pyscript is a small piece of code that convert for example ‘1.1 Zone1’ inside an input_select control into ‘binary_sensor.irrigation_unlimited_c1_z1’ and then call the actual service. They are just helpers sitting between the lovelace card and the integration. It's a great way to add some additional capabilities to lovelace cards.
 
@@ -966,9 +1085,10 @@ On a personal note, I use the national weather service [BOM](http://www.bom.gov.
 You will find my adjustment automation [here](./packages/irrigation_unlimited_adjustment.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./lovelace/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
 ### ESPHome
+
 This example uses the data from a soil moisture probe created in [ESPHome](https://esphome.io/) to adjust the run times.
 
-~~~yaml
+```yaml
 automation:
   - alias: ESPHome soil moisture adjustment
     trigger:
@@ -997,14 +1117,15 @@ automation:
 
           {# Return multiplier as a percentage #}
           {{ (multiplier * 100) | round(0) }}
-~~~
+```
 
 ### HAsmartirrigation
+
 [HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 23:30 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
 
 The example below offers two methods for a single zone or a sequence.
 
-~~~yaml
+```yaml
 # Example automation for HAsmartirrigation integration (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
 automation:
   - alias: Smart Irrigation adjustment - Single zone
@@ -1047,7 +1168,7 @@ automation:
         to: "off"
     action:
       - service: smart_irrigation.smart_irrigation_reset_bucket
-~~~
+```
 
 ## Troubleshooting
 
@@ -1057,13 +1178,13 @@ There should be little trouble installing this component, please use the _[HACS]
 
 This integration depends on two other components; _[recorder](https://www.home-assistant.io/integrations/recorder/)_ and _[history](https://www.home-assistant.io/integrations/history/)_. Both of these components are part of the standard Home Assistant installation and enabled by default with the `default_config:` line in the configuration. If you have removed this line then a `history:` and `recorder:` section must be setup manually. If a mistake is made in either one of these configurations then they will not start and in turn, Irrigation Unlimited for which it depends on, will not start. Please check the log file for the following lines:
 
-~~~text
+```text
 2021-08-03 12:12:40 INFO (MainThread) [homeassistant.setup] Setting up recorder
 2021-08-03 12:12:40 INFO (MainThread) [homeassistant.setup] Setup of domain recorder took 0.1 seconds
 ...
 2021-08-03 12:12:42 INFO (MainThread) [homeassistant.setup] Setting up history
 2021-08-03 12:12:42 INFO (MainThread) [homeassistant.setup] Setup of domain history took 0.0 seconds
-~~~
+```
 
 The above shows the requirements were loaded successfully. Note: The lines may not be consecutive in the log. If you do not see these lines then go back to basics and remove any `history:` and `recorder:` sections and ensure the `default_config:` line is present. Restart HA and check you have these log entries.
 
@@ -1071,11 +1192,11 @@ The above shows the requirements were loaded successfully. Note: The lines may n
 
 There must be a `irrigation_unlimited:` section in the configuration. If the section is missing or invalid then Irrigation Unlimited will not start. Check the log file to see it successfully started up.
 
-~~~text
+```text
 2021-08-03 12:12:45 INFO (MainThread) [homeassistant.setup] Setting up irrigation_unlimited
 ...
 2021-08-03 12:12:47 INFO (MainThread) [homeassistant.setup] Setup of domain irrigation_unlimited took n.n seconds
-~~~
+```
 
 The above shows that Irrigation Unlimited loaded successfully. Note: The lines will most likely not be together so do a search. If it failed then use the minimal configuration shown _[here](#minimal-configuration)_. This is a good starting point to get aquainted with this integration.
 
@@ -1083,12 +1204,12 @@ The above shows that Irrigation Unlimited loaded successfully. Note: The lines w
 
 For more detailed information set your logging for the component to debug:
 
-~~~yaml
+```yaml
 logger:
   default: info
   logs:
     custom_components.irrigation_unlimited: debug
-~~~
+```
 
 ### Last but not least
 
@@ -1110,7 +1231,7 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 
 Some inspiration was taken from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
-***
+---
 
 [irrigation_unlimited]: https://github.com/rgc99/irrigation_unlimited
 [buymecoffee]: https://www.buymeacoffee.com/rgc99
