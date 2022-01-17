@@ -108,7 +108,7 @@ class IUComponent(RestoreEntity):
                     )
                     self._coordinator.service_call(service, controller, zone, {})
 
-                    data = IUAdjustment(zne[ATTR_ADJUSTMENT]).to_dict()
+                    data = IUAdjustment(zne.get(ATTR_ADJUSTMENT)).to_dict()
                     if data != {}:
                         self._coordinator.service_call(
                             SERVICE_TIME_ADJUST, controller, zone, data
@@ -127,7 +127,7 @@ class IUComponent(RestoreEntity):
                         {CONF_SEQUENCE_ID: sequence[CONF_INDEX] + 1},
                     )
 
-                    data = IUAdjustment(sequence[ATTR_ADJUSTMENT]).to_dict()
+                    data = IUAdjustment(sequence.get(ATTR_ADJUSTMENT)).to_dict()
                     if data != {}:
                         data[CONF_SEQUENCE_ID] = sequence[CONF_INDEX] + 1
                         self._coordinator.service_call(
@@ -150,7 +150,9 @@ class IUComponent(RestoreEntity):
                             },
                         )
 
-                        data = IUAdjustment(sequence_zone[ATTR_ADJUSTMENT]).to_dict()
+                        data = IUAdjustment(
+                            sequence_zone.get(ATTR_ADJUSTMENT)
+                        ).to_dict()
                         if data != {}:
                             data[CONF_SEQUENCE_ID] = sequence[CONF_INDEX] + 1
                             data[CONF_ZONES] = [sequence_zone[CONF_INDEX] + 1]
