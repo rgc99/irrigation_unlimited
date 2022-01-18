@@ -3322,6 +3322,12 @@ class IULogger:
             ),
         )
 
+    def log_bad_config(self, msg: str, data: str, level=WARNING) -> None:
+        """Warn invalid configuration data"""
+        self._output(
+            level, "CONFIG Invalid configuration: msg: {0}, data: {1}".format(msg, data)
+        )
+
 
 class IUCoordinator:
     """Irrigation Unimited Coordinator class"""
