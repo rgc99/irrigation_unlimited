@@ -88,18 +88,19 @@ class IUComponent(RestoreEntity):
     async def async_added_to_hass(self):
         self._coordinator.register_entity(None, None, self)
         state = await self.async_get_last_state()
-        if state is None:
+        if state is None or ATTR_CONFIGURATION not in state.attributes:
             return
-        if ATTR_CONFIGURATION in state.attributes:
-            data = json.loads(state.attributes[ATTR_CONFIGURATION])
-            for ctrl in data[CONF_CONTROLLERS]:
+        json_data = state.attributes.get(ATTR_CONFIGURATION, {})
+        try:
+            data = json.loads(json_data)
+            for ctrl in data.get(CONF_CONTROLLERS, []):
                 controller = self._coordinator.controllers[ctrl[CONF_INDEX]]
                 service = (
                     SERVICE_ENABLE if ctrl.get(CONF_ENABLED, True) else SERVICE_DISABLE
                 )
                 self._coordinator.service_call(service, controller, None, {})
 
-                for zne in ctrl[CONF_ZONES]:
+                for zne in ctrl.get(CONF_ZONES, []):
                     zone = controller.zones[zne[CONF_INDEX]]
                     service = (
                         SERVICE_ENABLE
@@ -114,7 +115,7 @@ class IUComponent(RestoreEntity):
                             SERVICE_TIME_ADJUST, controller, zone, data
                         )
 
-                for sequence in ctrl[CONF_SEQUENCES]:
+                for sequence in ctrl.get(CONF_SEQUENCES, []):
                     service = (
                         SERVICE_ENABLE
                         if sequence.get(CONF_ENABLED, True)
@@ -134,7 +135,7 @@ class IUComponent(RestoreEntity):
                             SERVICE_TIME_ADJUST, controller, None, data
                         )
 
-                    for sequence_zone in sequence[CONF_SEQUENCE_ZONES]:
+                    for sequence_zone in sequence.get(CONF_SEQUENCE_ZONES, []):
                         service = (
                             SERVICE_ENABLE
                             if sequence_zone.get(CONF_ENABLED, True)
@@ -160,6 +161,9 @@ class IUComponent(RestoreEntity):
                                 SERVICE_TIME_ADJUST, controller, None, data
                             )
             self._coordinator.restored_from_configuration = True
+        # pylint: disable=broad-except
+        except Exception as exc:
+            self._coordinator.logger.log_bad_config(str(exc), json_data)
         return
 
     async def async_will_remove_from_hass(self):
