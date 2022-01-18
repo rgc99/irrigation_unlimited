@@ -75,6 +75,68 @@ def mock_state_coordinator():
         yield
 
 
+@pytest.fixture(name="mock_state_attributes_none")
+def mock_state_attribute_none():
+    """Patch HA history"""
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
+    ) as mock:
+        mock.return_value = ha.State(
+            "irrigation_unlimited.coordinator",
+            "ok",
+            None,
+            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+        )
+        yield
+
+
+@pytest.fixture(name="mock_state_attributes_empty")
+def mock_state_attribute_empty():
+    """Patch HA history"""
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
+    ) as mock:
+        mock.return_value = ha.State(
+            "irrigation_unlimited.coordinator",
+            "ok",
+            {},
+            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+        )
+        yield
+
+
+@pytest.fixture(name="mock_state_configuration_none")
+def mock_state_configuration_none():
+    """Patch HA history"""
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
+    ) as mock:
+        dct = {"configuration": None}
+        mock.return_value = ha.State(
+            "irrigation_unlimited.coordinator",
+            "ok",
+            dct,
+            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+        )
+        yield
+
+
+@pytest.fixture(name="mock_state_configuration_empty")
+def mock_state_configuration_empty():
+    """Patch HA history"""
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
+    ) as mock:
+        dct = {"configuration": '{"dummy": "dummy"}'}
+        mock.return_value = ha.State(
+            "irrigation_unlimited.coordinator",
+            "ok",
+            dct,
+            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+        )
+        yield
+
+
 # pylint: disable=unused-argument
 # pylint: disable=redefined-outer-name
 async def test_restore_none(
@@ -142,3 +204,53 @@ async def test_restore_coordinator(
 
     assert coordinator.controllers[0].sequences[1].zones[1].enabled is False
     assert coordinator.controllers[0].sequences[1].zones[1].status == "disabled"
+
+
+async def test_restore_attributes_none(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_attributes_none
+):
+    """Test restoring coordinator with no attributes"""
+
+    full_path = TEST_CONFIG_DIR + "test_restore_entity_sequence.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+
+
+async def test_restore_attributes_empty(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_attributes_empty
+):
+    """Test restoring coordinator with empty attributes"""
+
+    full_path = TEST_CONFIG_DIR + "test_restore_entity_sequence.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+
+
+async def test_restore_configuration_none(
+    hass: ha.HomeAssistant,
+    skip_dependencies,
+    skip_history,
+    mock_state_configuration_none,
+):
+    """Test restoring coordinator with configuration None"""
+
+    full_path = TEST_CONFIG_DIR + "test_restore_entity_sequence.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+
+
+async def test_restore_configuration_empty(
+    hass: ha.HomeAssistant,
+    skip_dependencies,
+    skip_history,
+    mock_state_configuration_empty,
+):
+    """Test restoring coordinator with configuration None"""
+
+    full_path = TEST_CONFIG_DIR + "test_restore_entity_sequence.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
