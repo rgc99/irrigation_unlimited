@@ -114,7 +114,6 @@ class IURestore:
                 for item in items:
                     try:
                         item = int(item)
-                        # zne = controller.get_zone(int(item) - 1)
                         zne = controller.get_zone(item - sequence_zone.ZONE_OFFSET)
                         if zne is not None:
                             self._add_to_on_list(
