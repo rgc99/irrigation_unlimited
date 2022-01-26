@@ -75,6 +75,7 @@ CONF_ANCHOR = "anchor"
 CONF_START = "start"
 CONF_FINISH = "finish"
 CONF_LOGGING = "logging"
+CONF_VERSION = "version"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

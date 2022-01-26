@@ -3475,6 +3475,7 @@ class IUCoordinator:
     def as_dict(self) -> OrderedDict:
         """Returns the coordinator as a dict"""
         result = OrderedDict()
+        result[CONF_VERSION] = "1.0.0"
         result[CONF_CONTROLLERS] = []
         for controller in self._controllers:
             result[CONF_CONTROLLERS].append(controller.as_dict())
