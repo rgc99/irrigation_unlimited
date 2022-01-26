@@ -69,6 +69,7 @@ from .const import (
     CONF_SHOW_LOG,
     CONF_AUTOPLAY,
     CONF_ANCHOR,
+    CONF_VERSION,
     COORDINATOR,
     DEFAULT_GRANULATITY,
     DEFAULT_REFRESH_INTERVAL,
@@ -251,6 +252,21 @@ class IUBase:
     def index(self) -> int:
         """Return position within siblings"""
         return self._index
+
+    @staticmethod
+    def ids(obj: "IUBase", default: str = "", offset: int = 0) -> str:
+        """Return the index as a str"""
+        if isinstance(obj, IUBase):
+            return str(obj.index + offset)
+        return default
+
+    @staticmethod
+    def idl(obj: "list[IUBase]", default: str = "", offset: int = 0) -> "list[str]":
+        """Return a list of indexes"""
+        result = []
+        for item in obj:
+            result.append(IUBase.ids(item, default, offset))
+        return result
 
 
 class IUAdjustment:
@@ -1599,6 +1615,8 @@ class IUSequenceZone(IUBase):
 
     # pylint: disable=too-many-instance-attributes
 
+    ZONE_OFFSET: int = 1
+
     def __init__(
         self,
         controller: "IUController",
@@ -1722,7 +1740,7 @@ class IUSequenceZone(IUBase):
         result[ATTR_FINAL_DURATION] = self._sequence.zone_duration_final(
             self, duration_factor
         )
-        result[CONF_ZONES] = ",".join(str(idx + 1) for idx in self.zone_indexes())
+        result[CONF_ZONES] = list(idx + self.ZONE_OFFSET for idx in self.zone_indexes())
         result[ATTR_CURRENT_DURATION] = self._controller.runs.sequence_zone_duration(
             self
         )
@@ -1965,20 +1983,20 @@ class IUSequence(IUBase):
             return self.add_schedule(IUSchedule(self._hass, index))
         return self._schedules[index]
 
-    def find_zone(self, index: int) -> IUSequenceZone:
-        """Return the specified zone object"""
-        if index >= 0 and index < len(self._zones):
-            return self._zones[index]
-        return None
-
     def add_zone(self, zone: IUSequenceZone) -> IUSequenceZone:
         """Add a new zone to the sequence"""
         self._zones.append(zone)
         return zone
 
+    def get_zone(self, index: int) -> IUSequenceZone:
+        """Return the specified zone object"""
+        if index is not None and index >= 0 and index < len(self._zones):
+            return self._zones[index]
+        return None
+
     def find_add_zone(self, index: int) -> IUSequenceZone:
         """Look for and create if required a zone"""
-        result = self.find_zone(index)
+        result = self.get_zone(index)
         if result is None:
             result = self.add_zone(IUSequenceZone(self._controller, self, index))
         return result
@@ -2248,6 +2266,12 @@ class IUController(IUBase):
         self._zones.append(zone)
         return zone
 
+    def get_zone(self, index: int) -> IUZone:
+        """Return the zone by index"""
+        if index is not None and index >= 0 and index < len(self._zones):
+            return self._zones[index]
+        return None
+
     def find_add_zone(
         self, coordinator: "IUCoordinator", controller: "IUController", index: int
     ) -> IUZone:
@@ -2261,9 +2285,9 @@ class IUController(IUBase):
         self._sequences.append(sequence)
         return sequence
 
-    def find_sequence(self, index: int) -> IUSequence:
-        """Locate the sequence"""
-        if index >= 0 and index < len(self._sequences):
+    def get_sequence(self, index: int) -> IUSequence:
+        """Locate the sequence by index"""
+        if index is not None and index >= 0 and index < len(self._sequences):
             return self._sequences[index]
         return None
 
@@ -2631,7 +2655,7 @@ class IUController(IUBase):
                 self.enabled = new_state
                 result = True
         else:
-            sequence = self.find_sequence(sequence_id - 1)
+            sequence = self.get_sequence(sequence_id - 1)
             if sequence is not None:
                 if zone_list is None:
                     new_state = s2b(sequence.enabled, service)
@@ -2662,7 +2686,7 @@ class IUController(IUBase):
                 if self.check_item(zone.index, zone_list):
                     result |= zone.service_adjust_time(data, stime)
         else:
-            sequence = self.find_sequence(sequence_id - 1)
+            sequence = self.get_sequence(sequence_id - 1)
             if sequence is not None:
                 if zone_list is None:
                     result = sequence.adjustment.load(data)
@@ -2685,7 +2709,7 @@ class IUController(IUBase):
                 if zone_list is None or zone.index + 1 in zone_list:
                     zone.service_manual_run(data, stime)
         else:
-            sequence = self.find_sequence(sequence_id - 1)
+            sequence = self.get_sequence(sequence_id - 1)
             if sequence is not None:
                 self.muster_sequence(stime, sequence, None, wash_td(data[CONF_TIME]))
             else:
@@ -3161,20 +3185,6 @@ class IULogger:
             config = {}
         return self
 
-    def _controller_index(self, controller: IUController) -> str:
-        """Return the controller sibling index or 0 if none"""
-        # pylint: disable=no-self-use
-        if controller is not None:
-            return str(controller.index + 1)
-        return 0
-
-    def _zone_index(self, zone: IUZone) -> str:
-        """Return the zone sibling index or 0 if none"""
-        # pylint: disable=no-self-use
-        if zone is not None:
-            return str(zone.index + 1)
-        return "0"
-
     def _output(self, level: int, msg: str) -> None:
         """Send out the message"""
         self._logger.log(level, msg)
@@ -3230,8 +3240,7 @@ class IULogger:
             "CALL [{0}] service: {1}, controller: {2}, zone: {3}, data: {4}".format(
                 dt2lstr(stime),
                 service,
-                self._controller_index(controller),
-                self._zone_index(zone),
+                *IUBase.idl([controller, zone], "0", 1),
                 json.dumps(data, default=str),
             ),
         )
@@ -3244,8 +3253,7 @@ class IULogger:
             DEBUG,
             "REGISTER [{0}] controller: {1}, zone: {2}, entity: {3}".format(
                 dt2lstr(stime),
-                self._controller_index(controller),
-                self._zone_index(zone),
+                *IUBase.idl([controller, zone], "0", 1),
                 entity.entity_id,
             ),
         )
@@ -3258,8 +3266,7 @@ class IULogger:
             DEBUG,
             "DEREGISTER [{0}] controller: {1}, zone: {2}, entity: {3}".format(
                 dt2lstr(stime),
-                self._controller_index(controller),
-                self._zone_index(zone),
+                *IUBase.idl([controller, zone], "0", 1),
                 entity.entity_id,
             ),
         )
@@ -3317,15 +3324,33 @@ class IULogger:
             level,
             "SEQUENCE_ID [{0}] Invalid sequence id: controller: {1}, sequence: {2}".format(
                 dt2lstr(vtime),
-                self._controller_index(controller),
+                IUBase.ids(controller, "0", 1),
                 sequence_id,
             ),
         )
 
-    def log_bad_config(self, msg: str, data: str, level=WARNING) -> None:
-        """Warn invalid configuration data"""
+    def log_invalid_restore_data(self, msg: str, data: str, level=WARNING) -> None:
+        """Warn invalid restore data"""
         self._output(
-            level, "CONFIG Invalid configuration: msg: {0}, data: {1}".format(msg, data)
+            level, "RESTORE Invalid data: msg: {0}, data: {1}".format(msg, data)
+        )
+
+    def log_incomplete_cycle(
+        self,
+        controller: IUController,
+        zone: IUZone,
+        sequence: IUSequence,
+        sequence_zone: IUSequenceZone,
+        level=WARNING,
+    ) -> None:
+        """Warn that a cycle did not complete"""
+        # pylint: disable=too-many-arguments
+        # pylint: disable=line-too-long
+        self._output(
+            level,
+            "INCOMPLETE Cycle did not complete: controller: {0}, zone: {1}, sequence: {2}, sequence_zone: {3}".format(
+                *IUBase.idl([controller, zone, sequence, sequence_zone], "-", 1),
+            ),
         )
 
 
@@ -3434,6 +3459,12 @@ class IUCoordinator:
         """Add a new controller to the system"""
         self._controllers.append(controller)
         return controller
+
+    def get(self, index: int) -> IUController:
+        """Return the controller by index"""
+        if index is not None and index >= 0 and index < len(self._controllers):
+            return self._controllers[index]
+        return None
 
     def find_add(self, coordinator: "IUCoordinator", index: int) -> IUController:
         """Locate and create if required a controller"""
