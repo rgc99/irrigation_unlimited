@@ -2045,6 +2045,9 @@ class IUSequence(IUBase):
         result[ATTR_ADJUSTED_DURATION] = total_duration_adjusted
         result[ATTR_CURRENT_DURATION] = self._controller.runs.sequence_duration(self)
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
+        result[CONF_SCHEDULES] = []
+        for schedule in self._schedules:
+            result[CONF_SCHEDULES].append(schedule.as_dict())
         result[CONF_SEQUENCE_ZONES] = []
         for sequence_zone in self._zones:
             result[CONF_SEQUENCE_ZONES].append(sequence_zone.as_dict(duration_factor))
