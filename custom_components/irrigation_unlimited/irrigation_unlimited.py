@@ -253,6 +253,11 @@ class IUBase:
         """Return position within siblings"""
         return self._index
 
+    @property
+    def id1(self) -> int:
+        """Return the 1's based index"""
+        return self._index + 1
+
     @staticmethod
     def ids(obj: "IUBase", default: str = "", offset: int = 0) -> str:
         """Return the index as a str"""
@@ -1786,6 +1791,11 @@ class IUSequence(IUBase):
     def zones(self) -> "list[IUSequenceZone]":
         """Return the list of sequence zones"""
         return self._zones
+
+    @property
+    def name(self) -> str:
+        """Return the friendly name of this sequence"""
+        return self._name
 
     @property
     def delay(self) -> timedelta:
