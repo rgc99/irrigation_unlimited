@@ -1,3 +1,4 @@
+<!-- prettier-ignore -->
 # Irrigation Unlimited
 
 [![GitHub Release][releases-shield]][releases]
@@ -10,62 +11,64 @@
 
 [![Community Forum][forum-shield]][forum]
 
-<!-- TOC -->
+<!-- TOC depthFrom:2 orderedList:true -->
 
-- [Irrigation Unlimited](#irrigation-unlimited)
-    - [Introduction](#introduction)
-    - [Features](#features)
-    - [Structure](#structure)
-    - [Installation](#installation)
-        - [Install from HACS](#install-from-hacs)
-        - [Manual installation](#manual-installation)
-    - [Configuration](#configuration)
-        - [Controller Objects](#controller-objects)
-        - [All Zone Objects](#all-zone-objects)
-        - [Zone Objects](#zone-objects)
-        - [Zone Show Object](#zone-show-object)
-        - [Schedule Objects](#schedule-objects)
-        - [Sun Event](#sun-event)
-        - [Sequence Objects](#sequence-objects)
-        - [Sequence Zone Objects](#sequence-zone-objects)
-        - [Testing Object](#testing-object)
-        - [Test Time Objects](#test-time-objects)
-        - [Test Result Objects](#test-result-objects)
-    - [Configuration examples](#configuration-examples)
-        - [Minimal configuration](#minimal-configuration)
-        - [Sun event example](#sun-event-example)
-        - [Sequence example](#sequence-example)
-        - [Simple water saving / eco mode example](#simple-water-saving--eco-mode-example)
-        - [Every hour on the hour](#every-hour-on-the-hour)
-        - [Seasonal watering](#seasonal-watering)
-        - [Finish at sunrise](#finish-at-sunrise)
-        - [Tips](#tips)
-    - [Services](#services)
-        - [Services enable, disable and toggle](#services-enable-disable-and-toggle)
-        - [Service cancel](#service-cancel)
-        - [Service manual_run](#service-manual_run)
-        - [Service adjust_time](#service-adjust_time)
-            - [Tip](#tip)
-        - [Service reload](#service-reload)
-        - [Service call access roadmap](#service-call-access-roadmap)
-    - [Frontend](#frontend)
-        - [Quick Start](#quick-start)
-        - [Generic Cards](#generic-cards)
-        - [Timeline](#timeline)
-        - [Frontend Requirements](#frontend-requirements)
-        - [Manual run card](#manual-run-card)
-        - [Enable-disable card](#enable-disable-card)
-    - [Automation](#automation)
-        - [ESPHome](#esphome)
-        - [HAsmartirrigation](#hasmartirrigation)
-    - [Troubleshooting](#troubleshooting)
-        - [Requirements](#requirements)
-        - [Configuration](#configuration)
-        - [Logging](#logging)
-        - [Last but not least](#last-but-not-least)
-    - [Notes](#notes)
-    - [Contributions are welcome](#contributions-are-welcome)
-    - [Credits](#credits)
+1. [Introduction](#introduction)
+2. [Features](#features)
+3. [Structure](#structure)
+4. [Installation](#installation)
+    1. [Install from HACS](#install-from-hacs)
+    2. [Manual installation](#manual-installation)
+5. [Configuration](#configuration)
+    1. [Controller Objects](#controller-objects)
+    2. [All Zone Objects](#all-zone-objects)
+    3. [Zone Objects](#zone-objects)
+    4. [Zone Show Object](#zone-show-object)
+    5. [Schedule Objects](#schedule-objects)
+    6. [Sun Event](#sun-event)
+    7. [Sequence Objects](#sequence-objects)
+    8. [Sequence Zone Objects](#sequence-zone-objects)
+    9. [Testing Object](#testing-object)
+    10. [Test Time Objects](#test-time-objects)
+    11. [Test Result Objects](#test-result-objects)
+6. [Configuration examples](#configuration-examples)
+    1. [Minimal configuration](#minimal-configuration)
+    2. [Sun event example](#sun-event-example)
+    3. [Sequence example](#sequence-example)
+    4. [Simple water saving / eco mode example](#simple-water-saving--eco-mode-example)
+    5. [Every hour on the hour](#every-hour-on-the-hour)
+    6. [Seasonal watering](#seasonal-watering)
+    7. [Finish at sunrise](#finish-at-sunrise)
+    8. [Tips](#tips)
+7. [Services](#services)
+    1. [Services `enable`, `disable` and `toggle`](#services-enable-disable-and-toggle)
+    2. [Service `cancel`](#service-cancel)
+    3. [Service `manual_run`](#service-manual_run)
+    4. [Service `adjust_time`](#service-adjust_time)
+        1. [Tip](#tip)
+    5. [Service `reload`](#service-reload)
+    6. [Service call access roadmap](#service-call-access-roadmap)
+8. [Frontend](#frontend)
+    1. [Quick Start](#quick-start)
+    2. [Generic Cards](#generic-cards)
+    3. [Timeline](#timeline)
+    4. [Frontend Requirements](#frontend-requirements)
+    5. [Manual run card](#manual-run-card)
+    6. [Enable-disable card](#enable-disable-card)
+9. [Automation](#automation)
+    1. [ESPHome](#esphome)
+    2. [HAsmartirrigation](#hasmartirrigation)
+10. [Notifications](#notifications)
+    1. [Events](#events)
+        1. [irrigation_unlimited_start, irrigation_unlimited_finish](#irrigation_unlimited_start-irrigation_unlimited_finish)
+11. [Troubleshooting](#troubleshooting)
+    1. [Requirements](#requirements)
+    2. [HA Configuration](#ha-configuration)
+    3. [Logging](#logging)
+    4. [Last but not least](#last-but-not-least)
+12. [Notes](#notes)
+13. [Contributions are welcome](#contributions-are-welcome)
+14. [Credits](#credits)
 
 <!-- /TOC -->
 
@@ -163,6 +166,7 @@ custom_components/irrigation_unlimited/__init__.py
 custom_components/irrigation_unlimited/binary_sensor.py
 custom_components/irrigation_unlimited/const.py
 custom_components/irrigation_unlimited/entity.py
+custom_components/irrigation_unlimited/history.py
 custom_components/irrigation_unlilmited/irrigation_unlimited.py
 custom_components/irrigation_unlimited/manifest.json
 custom_components/irrigation_unlimited/service.py
@@ -173,7 +177,7 @@ custom_components/irrigation_unlimited/services.yaml
 
 Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#service-reload) for details and limitations.
 
-The time type is a string in the format HH:MM. Time type must be a positive value. Seconds can be specified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). All times will be syncronised to these boundaries.
+The time type is a string in the format HH:MM or H:MM:SS. Time type must be a positive value. Seconds can be specified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). This is the heart beat or system pulse. All times will be syncronised to these boundaries.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
@@ -247,7 +251,7 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 | `time` | time/_[Sun Event](#sun-event)_ | **Required** | The start time. Either a time (07:30) or sun event |
 | `anchor` | string | start | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
 | `duration` | time | | The length of time to run. Required for zones and optional for sequences |
-| `name` | string | Schedule *N* | Friendly name for the schedule |
+| `name` | string | Schedule _N_ | Friendly name for the schedule |
 | `weekday` | list | | The days of week to run [mon, tue...sun] |
 | `day` | list | | Days of month to run [1, 2...31]/odd/even |
 | `month` | list | | Months of year to run [jan, feb...dec] |
@@ -326,7 +330,7 @@ This is the test time object. Test times do _not_ alter the system clock so ther
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `name` | string | Test *N* | Friendly name for the test |
+| `name` | string | Test _N_ | Friendly name for the test |
 | `start` | datetime | | The virtual start time (YYYY-mm-dd HH:MM) |
 | `end` | datetime | | The virtual end time (YYYY-mm-dd HH:MM) |
 | `results` | list | _[Test Result Objects](#test-result-objects)_ | Expected timing results |
@@ -1170,6 +1174,54 @@ automation:
       - service: smart_irrigation.smart_irrigation_reset_bucket
 ```
 
+## Notifications
+
+This section shows how to send a notification when a sequence starts or finishes. Messages can be sent for example via email (SMTP), push notification to mobile phones, twitter and many [others](https://www.home-assistant.io/integrations/#notifications). See [here](https://www.home-assistant.io/integrations/notify/) for more information on notifications in Home Assistant. Note that it is not limited to sending notifications but many other [actions](https://www.home-assistant.io/docs/automation/action/) are available.
+
+### Events
+
+Irrigation Unlimited fires events that can be captured in an automation using the [event platform](https://www.home-assistant.io/docs/automation/trigger/#event-trigger) as a trigger.
+
+#### irrigation_unlimited_start, irrigation_unlimited_finish
+
+These events are fired when a sequence starts and finishes. The `trigger.event.data` contains additional information that can be used in automation scripts. Here is the list of additional fields.
+
+| Field | Description |
+| ----- | ----------- |
+| `controller.index` | The sequential index of the controller. |
+| `controller.name` | The friendly name of the controller. |
+| `sequence.index` | The sequential index of the sequence. |
+| `sequence.name` | The friendly name of the sequence. |
+| `schedule.index` | The sequential index of the schedule. Note: This maybe blank/empty(None) if it was a manual run - useful as a test. |
+| `schedule.name` | The friendly name of the schedule. |
+| `run.duration` | The run time of the sequence. |
+
+This example displays a [persistent notification](https://www.home-assistant.io/integrations/persistent_notification/) on the front end when a sequence completes. Note the use of [templating](https://www.home-assistant.io/docs/configuration/templating/) to construct a specific message. Although not used here, this platform also supports markdown.
+
+```yaml
+automation:
+  - alias: "Irrigation Unlimited Completion"
+    trigger:
+      platform: event
+      event_type: irrigation_unlimited_finish
+    action:
+      - service: notify.persistent_notification
+        data:
+          title: "Irrigation Unlimited - Completed"
+          message: |
+            Time: {{ as_local(trigger.event.time_fired).strftime('%c') }}
+            Controller: {{ trigger.event.data.controller.index + 1 }} {{ trigger.event.data.controller.name }}
+            Sequence: {{ trigger.event.data.sequence.index + 1 }} {{ trigger.event.data.sequence.name }}
+            Schedule: {% if trigger.event.data.schedule.index is integer %}{{ trigger.event.data.schedule.index + 1 }} {{ trigger.event.data.schedule.name }}{% else %}Manual{% endif %}
+            Duration: {{ timedelta(seconds=trigger.event.data.run.duration) }}
+```
+
+Here is the notification displayed in the Home Assistant web interface.
+
+![notification](./examples/persistent_notification.png)
+
+There is quite a lot of information on using notifications in Home Assistant on the web. Try Google, YouTube etc. for some great information and tips.
+
 ## Troubleshooting
 
 There should be little trouble installing this component, please use the _[HACS](#install-from-hacs)_ method where possible. Binary sensors are created automatically. However, if you experience difficulties please check the following:
@@ -1188,7 +1240,7 @@ This integration depends on two other components; _[recorder](https://www.home-a
 
 The above shows the requirements were loaded successfully. Note: The lines may not be consecutive in the log. If you do not see these lines then go back to basics and remove any `history:` and `recorder:` sections and ensure the `default_config:` line is present. Restart HA and check you have these log entries.
 
-### Configuration
+### HA Configuration
 
 There must be a `irrigation_unlimited:` section in the configuration. If the section is missing or invalid then Irrigation Unlimited will not start. Check the log file to see it successfully started up.
 
