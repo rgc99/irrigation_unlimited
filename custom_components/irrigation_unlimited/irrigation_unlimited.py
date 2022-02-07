@@ -52,6 +52,9 @@ from .const import (
     BINARY_SENSOR,
     CONF_ACTUAL,
     CONF_ALL_ZONES_CONFIG,
+    CONF_CONTROLLER,
+    CONF_RUN,
+    DOMAIN,
     CONF_DAY,
     CONF_DECREASE,
     CONF_FINISH,
@@ -63,6 +66,8 @@ from .const import (
     CONF_REFRESH_INTERVAL,
     CONF_RESET,
     CONF_RESULTS,
+    CONF_SCHEDULE,
+    CONF_SEQUENCE,
     CONF_SEQUENCE_ZONES,
     CONF_SEQUENCES,
     CONF_SEQUENCE_ID,
@@ -92,7 +97,8 @@ from .const import (
     CONF_MINIMUM,
     CONF_MAXIMUM,
     CONF_MONTH,
-    DOMAIN,
+    EVENT_START,
+    EVENT_FINISH,
     ICON_BLOCKED,
     ICON_CONTROLLER_OFF,
     ICON_CONTROLLER_ON,
@@ -2068,10 +2074,22 @@ class IUSequenceRun(IUBase):
     """Irrigation Unlimited sequence run manager class. Ties together the
     individual sequence zones"""
 
-    def __init__(self, sequence: IUSequence, total_time: timedelta) -> None:
+    # pylint: disable=too-many-instance-attributes
+    def __init__(
+        self,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        sequence: IUSequence,
+        schedule: IUSchedule,
+        total_time: timedelta,
+    ) -> None:
+        # pylint: disable=too-many-arguments
         super().__init__(None)
         # Passed parameters
+        self._coordinator = coordinator
+        self._controller = controller
         self._sequence = sequence
+        self._schedule = schedule
         self._total_time = total_time
         # Private variables
         self._runs: OrderedDict = {}
@@ -2114,17 +2132,37 @@ class IUSequenceRun(IUBase):
         """Update the status of the sequence"""
         is_running = run.is_running(stime)
         sequence_zone = self.sequence_zone(run)
+
         if is_running and not self._running:
+            # Sequence/sequence zone is starting
             self._running = True
             self._active_zone = sequence_zone
+            self._coordinator.notify_sequence(
+                EVENT_START,
+                self._controller,
+                self.sequence,
+                self._schedule,
+                self,
+            )
             return True
 
         if is_running and sequence_zone != self._active_zone:
+            # Sequence zone is changing
             self._active_zone = sequence_zone
             return True
 
         if not is_running and sequence_zone == self._active_zone:
+            # Sequence zone is finishing
             self._active_zone = None
+            if self.run_index(run) == len(self._runs) - 1:
+                # Sequence is finishing
+                self._coordinator.notify_sequence(
+                    EVENT_FINISH,
+                    self._controller,
+                    self._sequence,
+                    self._schedule,
+                    self,
+                )
             return True
 
         return False
@@ -2461,7 +2499,9 @@ class IUController(IUBase):
                             next_run = init_run_time(stime, schedule, zone, total_time)
                             if next_run is None:
                                 return status  # Exit if queue is full
-                            sequence_run = IUSequenceRun(sequence, total_time)
+                            sequence_run = IUSequenceRun(
+                                self._coordinator, self, sequence, schedule, total_time
+                            )
 
                         # Don't adjust manual run and no adjustment on adjustment
                         # This code should not really be here. It would be a breaking
@@ -3647,6 +3687,27 @@ class IUCoordinator:
         self._remove_shutdown_listener = self._hass.bus.async_listen_once(
             EVENT_HOMEASSISTANT_STOP, self._async_shutdown_listener
         )
+
+    def notify_sequence(
+        self,
+        event_type: str,
+        controller: IUController,
+        sequence: IUSequence,
+        schedule: IUSchedule,
+        sequence_run: IUSequenceRun,
+    ) -> None:
+        """Send out a notification for start/finish to a sequence"""
+        # pylint: disable=too-many-arguments
+        data = {
+            CONF_CONTROLLER: {CONF_INDEX: controller.index, CONF_NAME: controller.name},
+            CONF_SEQUENCE: {CONF_INDEX: sequence.index, CONF_NAME: sequence.name},
+            CONF_RUN: {CONF_DURATION: round(sequence_run.total_time.total_seconds())},
+        }
+        if schedule is not None:
+            data[CONF_SCHEDULE] = {CONF_INDEX: schedule.index, CONF_NAME: schedule.name}
+        else:
+            data[CONF_SCHEDULE] = {CONF_INDEX: None, CONF_NAME: RES_MANUAL}
+        self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
 
     def register_entity(
         self, controller: IUController, zone: IUZone, entity: Entity
