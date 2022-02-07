@@ -29,8 +29,11 @@ PLATFORMS = [BINARY_SENSOR]
 
 # Configuration and options
 CONF_ENABLED = "enabled"
+CONF_CONTROLLER = "controller"
 CONF_CONTROLLERS = "controllers"
+CONF_ZONE = "zone"
 CONF_ZONES = "zones"
+CONF_SCHEDULE = "schedule"
 CONF_SCHEDULES = "schedules"
 CONF_SUN = "sun"
 CONF_TIME = "time"
@@ -59,7 +62,9 @@ CONF_CONFIG = "config"
 CONF_TIMELINE = "timeline"
 CONF_ZONE_ID = "zone_id"
 CONF_SEQUENCE_ID = "sequence_id"
+CONF_SEQUENCE = "sequence"
 CONF_SEQUENCES = "sequences"
+CONF_SEQUENCE_ZONE = "sequence_zone"
 CONF_SEQUENCE_ZONES = "sequence_zones"
 CONF_ALL_ZONES_CONFIG = "all_zones_config"
 CONF_REFRESH_INTERVAL = "refresh_interval"
@@ -76,6 +81,7 @@ CONF_START = "start"
 CONF_FINISH = "finish"
 CONF_LOGGING = "logging"
 CONF_VERSION = "version"
+CONF_RUN = "run"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
@@ -90,6 +96,11 @@ SERVICE_TOGGLE = "toggle"
 SERVICE_CANCEL = "cancel"
 SERVICE_TIME_ADJUST = "adjust_time"
 SERVICE_MANUAL_RUN = "manual_run"
+
+# Events
+EVENT_START = "start"
+EVENT_FINISH = "finish"
+EVENT_INCOMPLETE = "incomplete"
 
 # Status
 STATUS_DISABLED = "disabled"

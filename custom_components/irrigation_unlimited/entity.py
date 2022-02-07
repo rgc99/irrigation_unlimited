@@ -24,13 +24,17 @@ from .const import (
     ATTR_ADJUSTMENT,
     ATTR_CONFIGURATION,
     ATTR_ENABLED,
+    CONF_CONTROLLER,
     CONF_CONTROLLERS,
     CONF_ENABLED,
     CONF_INDEX,
     CONF_RESET,
+    CONF_SEQUENCE,
     CONF_SEQUENCE_ID,
+    CONF_SEQUENCE_ZONE,
     CONF_SEQUENCE_ZONES,
     CONF_SEQUENCES,
+    CONF_ZONE,
     CONF_ZONES,
     COORDINATOR,
     ICON,
@@ -54,16 +58,10 @@ class IURestore:
             for c_data in data.get(CONF_CONTROLLERS, []):
                 self._restore_controller(c_data)
 
-        self._log_is_on()
-
-    def _log_is_on(self) -> None:
-        for item in self._is_on:
-            self._coordinator.logger.log_incomplete_cycle(
-                item["controller"],
-                item["zone"],
-                item["sequence"],
-                item["sequence_zone"],
-            )
+    @property
+    def is_on(self) -> list:
+        """Return the list of objects left in on state"""
+        return self._is_on
 
     def _add_to_on_list(
         self,
@@ -72,25 +70,26 @@ class IURestore:
         sequence: IUSequence = None,
         sequence_zone: IUSequenceZone = None,
     ) -> None:
+        # pylint: disable=too-many-arguments
         if sequence_zone is None:
             if sequence is not None:
                 for item in self._is_on:
-                    if item["sequence"] == sequence:
+                    if item[CONF_SEQUENCE] == sequence:
                         return
             elif zone is not None:
                 for item in self._is_on:
-                    if item["zone"] == zone:
+                    if item[CONF_ZONE] == zone:
                         return
             elif controller is not None:
                 for item in self._is_on:
-                    if item["controller"] == controller:
+                    if item[CONF_CONTROLLER] == controller:
                         return
         self._is_on.append(
             {
-                "controller": controller,
-                "zone": zone,
-                "sequence": sequence,
-                "sequence_zone": sequence_zone,
+                CONF_CONTROLLER: controller,
+                CONF_ZONE: zone,
+                CONF_SEQUENCE: sequence,
+                CONF_SEQUENCE_ZONE: sequence_zone,
             }
         )
         return
@@ -197,17 +196,16 @@ class IURestore:
             self._restore_zone(z_data, controller)
         self._check_is_on(data, controller, None, None, None)
 
-    @property
-    def is_on(self) -> str:
-        """Return warnings about incomplete cycles"""
+    def report_is_on(self) -> str:
+        """Generate a list of incomplete cycles"""
         for item in self._is_on:
             yield ",".join(
                 IUBase.idl(
                     [
-                        item["controller"],
-                        item["zone"],
-                        item["sequence"],
-                        item["sequence_zone"],
+                        item[CONF_CONTROLLER],
+                        item[CONF_ZONE],
+                        item[CONF_SEQUENCE],
+                        item[CONF_SEQUENCE_ZONE],
                     ],
                     "-",
                 )
@@ -273,16 +271,20 @@ class IUComponent(RestoreEntity):
         try:
             data = json.loads(json_data)
             for item in IURestore(data, self._coordinator).is_on:
+                controller: IUController = item[CONF_CONTROLLER]
+                zone: IUZone = item[CONF_ZONE]
+                sequence: IUSequence = item[CONF_SEQUENCE]
+                sequence_zone: IUSequenceZone = item[CONF_SEQUENCE_ZONE]
                 self._coordinator.logger.log_incomplete_cycle(
-                    item["controller"],
-                    item["zone"],
-                    item["sequence"],
-                    item["sequence_zone"],
+                    controller,
+                    zone,
+                    sequence,
+                    sequence_zone,
                 )
             self._coordinator.restored_from_configuration = True
         # pylint: disable=broad-except
         except Exception as exc:
-            self._coordinator.logger.log_invalid_restore_data(str(exc), json_data)
+            self._coordinator.logger.log_invalid_restore_data(repr(exc), json_data)
         return
 
     async def async_will_remove_from_hass(self):
