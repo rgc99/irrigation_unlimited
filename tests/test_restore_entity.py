@@ -6,7 +6,11 @@ import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
 
-from custom_components.irrigation_unlimited.const import COORDINATOR, DOMAIN
+from custom_components.irrigation_unlimited.const import (
+    COORDINATOR,
+    DOMAIN,
+    EVENT_INCOMPLETE,
+)
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 from custom_components.irrigation_unlimited.irrigation_unlimited import IUCoordinator
 from custom_components.irrigation_unlimited.entity import IURestore
@@ -66,6 +70,25 @@ def mock_state_coordinator():
         # pylint: disable=line-too-long
         dct = {
             "configuration": '{"controllers": [{"index": 0, "name": "Fundos", "state": "off", "enabled": true, "icon": "mdi:water-off", "status": "off", "zones": [{"index": 0, "name": "Gramado", "state": "off", "enabled": true, "icon": "mdi:valve-closed", "zone_id": "1", "status": "off", "adjustment": "%50.0", "current_duration": "", "schedules": []}, {"index": 1, "name": "Lateral", "state": "off", "enabled": true, "icon": "mdi:valve-closed", "zone_id": "2", "status": "off", "adjustment": "", "current_duration": "", "schedules": []}, {"index": 2, "name": "Corredor", "state": "off", "enabled": true, "icon": "mdi:valve-closed", "zone_id": "3", "status": "off", "adjustment": "", "current_duration": "", "schedules": []}, {"index": 3, "name": "Horta", "state": "off", "enabled": false, "icon": "mdi:circle-off-outline", "zone_id": "4", "status": "disabled", "adjustment": "", "current_duration": "", "schedules": []}], "sequences": [{"index": 0, "name": "Multi zone", "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "default_duration": "600", "default_delay": "20", "duration_factor": 0.24848484848484848, "total_delay": "40", "total_duration": "1650", "adjusted_duration": "410", "current_duration": "", "adjustment": "%25.0", "sequence_zones": [{"index": 0, "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "delay": "20", "base_duration": "600", "adjusted_duration": "450", "final_duration": "110", "zones": [1], "current_duration": "", "adjustment": "%75.0"}, {"index": 1, "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "delay": "20", "base_duration": "600", "adjusted_duration": "600", "final_duration": "150", "zones": [2], "current_duration": "", "adjustment": ""}, {"index": 2, "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "delay": "20", "base_duration": "600", "adjusted_duration": "600", "final_duration": "150", "zones": [3], "current_duration": "", "adjustment": ""}]}, {"index": 1, "name": "Outer zone", "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "default_duration": "900", "default_delay": "10", "duration_factor": 1.0, "total_delay": "10", "total_duration": "1800", "adjusted_duration": "1800", "current_duration": "", "adjustment": "", "sequence_zones": [{"index": 0, "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "delay": "10", "base_duration": "900", "adjusted_duration": "900", "final_duration": "900", "zones": [1], "current_duration": "", "adjustment": ""}, {"index": 1, "state": "off", "enabled": false, "icon": "mdi:circle-off-outline", "status": "disabled", "delay": "", "base_duration": "", "adjusted_duration": "", "final_duration": "", "zones": [2], "current_duration": "", "adjustment": ""}, {"index": 2, "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "delay": "10", "base_duration": "900", "adjusted_duration": "900", "final_duration": "900", "zones": [3,4], "current_duration": "", "adjustment": ""}]}, {"index": 2, "name": "Later zone", "state": "off", "enabled": false, "icon": "mdi:circle-off-outline", "status": "disabled", "default_duration": "720", "default_delay": "10", "duration_factor": 1.0, "total_delay": "", "total_duration": "", "adjusted_duration": "", "current_duration": "", "adjustment": "", "sequence_zones": [{"index": 0, "state": "off", "enabled": true, "icon": "mdi:alert-octagon-outline", "status": "blocked", "delay": "", "base_duration": "", "adjusted_duration": "", "final_duration": "", "zones": [3], "current_duration": "", "adjustment": ""}, {"index": 1, "state": "off", "enabled": true, "icon": "mdi:alert-octagon-outline", "status": "blocked", "delay": "", "base_duration": "", "adjusted_duration": "", "final_duration": "", "zones": [2], "current_duration": "", "adjustment": ""}, {"index": 2, "state": "off", "enabled": true, "icon": "mdi:alert-octagon-outline", "status": "blocked", "delay": "", "base_duration": "", "adjusted_duration": "", "final_duration": "", "zones": [1], "current_duration": "", "adjustment": ""}]}]}]}'
+        }
+        mock.return_value = ha.State(
+            "irrigation_unlimited.coordinator",
+            "ok",
+            dct,
+            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+        )
+        yield
+
+
+@pytest.fixture(name="mock_state_coordinator_is_on")
+def mock_state_coordinator_is_on():
+    """Patch HA history"""
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
+    ) as mock:
+        # pylint: disable=line-too-long
+        dct = {
+            "configuration": '{"version": "1.0.0", "controllers": [{"index": 0, "name": "My Garden", "state": "on", "enabled": true, "icon": "mdi:water", "status": "on", "zones": [{"index": 0, "name": "Front Lawn", "state": "on", "enabled": true, "icon": "mdi:valve-open", "zone_id": "1", "status": "on", "adjustment": "", "current_duration": "90", "schedules": []}, {"index": 1, "name": "Vege Patch", "state": "off", "enabled": true, "icon": "mdi:valve-closed", "zone_id": "2", "status": "off", "adjustment": "", "current_duration": "", "schedules": []}, {"index": 2, "name": "Roses", "state": "off", "enabled": true, "icon": "mdi:valve-closed", "zone_id": "3", "status": "off", "adjustment": "", "current_duration": "", "schedules": []}, {"index": 3, "name": "Back Yard", "state": "off", "enabled": true, "icon": "mdi:valve-closed", "zone_id": "4", "status": "off", "adjustment": "", "current_duration": "", "schedules": []}], "sequences": [{"index": 0, "name": "Main run", "state": "on", "enabled": true, "icon": "mdi:play-circle-outline", "status": "on", "default_duration": "600", "default_delay": "20", "duration_factor": 1.0, "total_delay": "40", "total_duration": "1800", "adjusted_duration": "1800", "current_duration": "300", "adjustment": "", "sequence_zones": [{"index": 0, "state": "on", "enabled": true, "icon": "mdi:play-circle-outline", "status": "on", "delay": "20", "base_duration": "600", "adjusted_duration": "600", "final_duration": "600", "zones": [1], "current_duration": "90", "adjustment": ""}, {"index": 1, "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "delay": "20", "base_duration": "600", "adjusted_duration": "600", "final_duration": "600", "zones": [2], "current_duration": "", "adjustment": ""}, {"index": 2, "state": "off", "enabled": true, "icon": "mdi:stop-circle-outline", "status": "off", "delay": "20", "base_duration": "600", "adjusted_duration": "600", "final_duration": "600", "zones": [3], "current_duration": "", "adjustment": ""}]}]}]}'
         }
         mock.return_value = ha.State(
             "irrigation_unlimited.coordinator",
@@ -360,10 +383,35 @@ async def test_restore_coordinator(
             }
         ]
     }
-    assert list(IURestore(data, coordinator).is_on) == [
+    assert list(IURestore(data, coordinator).report_is_on()) == [
         "0,-,0,-",
         "0,2,1,2",
         "0,3,1,2",
         "0,2,2,2",
         "0,3,2,2",
     ]
+
+
+async def test_restore_coordinator_events(
+    hass: ha.HomeAssistant,
+    skip_dependencies,
+    skip_history,
+    mock_state_coordinator_is_on,
+):
+    """Test restoring coordinator in on state"""
+
+    event_data = []
+
+    def handle_event(event: ha.Event):
+        nonlocal event_data
+        event_data.append(event.data)
+
+    hass.bus.async_listen(f"{DOMAIN}_{EVENT_INCOMPLETE}", handle_event)
+
+    full_path = TEST_CONFIG_DIR + "test_restore_entity_sequence.yaml"
+    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
+    await async_setup_component(hass, DOMAIN, config)
+    await hass.async_block_till_done()
+
+    # This is work in progress. No event is currently fired.
+    assert event_data == []
