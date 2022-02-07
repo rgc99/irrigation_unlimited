@@ -3,7 +3,7 @@
   "name": "Irrigation Unlimited",
   "documentation": "https://github.com/rgc99/irrigation_unlimited",
   "issue_tracker": "https://github.com/rgc99/irrigation_unlimited/issues",
-  "version": "2022.1.0",
+  "version": "2022.2.0",
   "dependencies": [
     "recorder",
     "history"
