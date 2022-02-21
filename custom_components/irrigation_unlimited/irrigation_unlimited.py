@@ -1141,6 +1141,9 @@ class IUScheduleQueue(IURunQueue):
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUScheduleQueue":
         """Load the configuration settings"""
+        self._minimum = None
+        self._maximum = None
+
         super().load(config, all_zones)
         if all_zones is not None:
             self._minimum = wash_td(all_zones.get(CONF_MINIMUM, self._minimum))
