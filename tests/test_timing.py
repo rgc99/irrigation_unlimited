@@ -8,7 +8,9 @@ from tests.iu_test_support import IUExam
 IUExam.quiet_mode()
 
 
-async def test_timings(hass: ha.HomeAssistant, skip_setup, skip_history):
+async def test_timings(
+    hass: ha.HomeAssistant, skip_setup, skip_dependencies, skip_history
+):
     # pylint: disable=unused-argument
     """Test timings. Process all the configuration files in the
     test_config directory matching timing_*.yaml and check the results."""
