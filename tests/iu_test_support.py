@@ -2,10 +2,20 @@
 import logging
 from datetime import datetime, timedelta
 import homeassistant.core as ha
+from homeassistant.config import (
+    load_yaml_config_file,
+    async_process_ha_core_config,
+)
+from homeassistant.setup import async_setup_component
 
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
 )
+from custom_components.irrigation_unlimited.const import (
+    DOMAIN,
+    COORDINATOR,
+)
+from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +43,6 @@ def no_check(check_off: bool = True) -> None:
     NO_CHECK = check_off
     if NO_CHECK:
         _LOGGER.debug("WARNING: Checks are disabled===================================")
-    return
 
 
 def check_summary(full_path: str, coordinator: IUCoordinator):
@@ -56,7 +65,6 @@ def check_summary(full_path: str, coordinator: IUCoordinator):
             coordinator.tester.total_time,
         )
     )
-    return
 
 
 async def run_until(
@@ -130,3 +138,122 @@ async def finish_test(
         ), f"Failed test {test.index + 1}, extra event"
     _LOGGER.debug("Finished test: %s, time: %.2fs", test.name, test.test_time)
     return
+
+
+async def reset_hass_config(hass: ha.HomeAssistant) -> None:
+    """Reset the home assistant configuration"""
+    config = {
+        "unit_system": "metric",
+        "time_zone": "UTC",
+        "name": "Home",
+        "latitude": 0,
+        "longitude": 0,
+        "elevation": 0,
+    }
+    await async_process_ha_core_config(hass, config)
+
+
+class IUExam:
+    """Class for running tests"""
+
+    default_config_dir = TEST_CONFIG_DIR
+
+    def __init__(self, hass: ha.HomeAssistant, config_file: str) -> None:
+        self._hass = hass
+        self._config_file = config_file
+        self._coordinator: IUCoordinator = None
+        self._current_time: datetime = None
+        self._core_config_changed = False
+        self._config_directory = type(self).default_config_dir
+        self._no_check = False
+
+    @property
+    def coordinator(self) -> IUCoordinator:
+        """Return the coordinator"""
+        return self._coordinator
+
+    @property
+    def config_directory(self) -> str:
+        """Return the config directory"""
+        return self._config_directory
+
+    @config_directory.setter
+    def config_directory(self, value: str) -> None:
+        """Set the config directory"""
+        self._config_directory = value
+
+    @staticmethod
+    def quiet_mode() -> None:
+        """Trun off a lot of noise"""
+        quiet_mode()
+
+    def no_check(self, check_off: bool = True) -> None:
+        """Disable checking results"""
+        self._no_check = check_off
+        no_check(check_off)
+
+    async def setup(self) -> None:
+        """Setup the hass environment"""
+        config = CONFIG_SCHEMA(
+            load_yaml_config_file(self._config_directory + self._config_file)
+        )
+        if ha.DOMAIN in config:
+            await async_process_ha_core_config(self._hass, config[ha.DOMAIN])
+            self._core_config_changed = True
+
+        if DOMAIN not in self._hass.config.components:
+            await async_setup_component(self._hass, DOMAIN, config)
+            await self._hass.async_block_till_done()
+            self._coordinator: IUCoordinator = self._hass.data[DOMAIN][COORDINATOR]
+        else:
+            self._coordinator: IUCoordinator = self._hass.data[DOMAIN][COORDINATOR]
+            self._coordinator.load(config[DOMAIN])
+
+    async def restore(self) -> None:
+        """Reset home assistant parameters"""
+        if self._core_config_changed:
+            await reset_hass_config(self._hass)
+            self._core_config_changed = False
+
+    async def __aenter__(self):
+        await self.setup()
+        return self
+
+    async def __aexit__(self, *args):
+        await self.restore()
+
+    async def begin_test(self, test_no: int) -> None:
+        """Start a test"""
+        self._current_time = await begin_test(test_no, self._coordinator)
+
+    async def finish_test(self) -> None:
+        """Finish a test"""
+        await finish_test(self._hass, self._coordinator, self._current_time, True)
+
+    async def run_until(self, stop_at: datetime) -> None:
+        """Run until a point in time"""
+        self._current_time = await run_until(
+            self._hass, self._coordinator, self._current_time, stop_at, True
+        )
+
+    async def run_for(self, duration: timedelta) -> None:
+        """Run for a period of time"""
+        self._current_time = await run_for(
+            self._hass, self._coordinator, self._current_time, duration, True
+        )
+
+    async def run_for_1_tick(self) -> None:
+        """Run for 1 tick of the clock"""
+        self._current_time = await run_for_1_tick(
+            self._hass, self._coordinator, self._current_time, True
+        )
+
+    async def run_all(self) -> None:
+        """Run all tests"""
+        for test in range(self._coordinator.tester.total_tests):
+            self._current_time = await begin_test(test + 1, self._coordinator)
+            await finish_test(self._hass, self._coordinator, self._current_time, True)
+
+    def check_summary(self) -> None:
+        """Check the test results"""
+        check_summary(self._config_directory + self._config_file, self._coordinator)
