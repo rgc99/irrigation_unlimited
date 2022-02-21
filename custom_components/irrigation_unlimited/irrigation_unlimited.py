@@ -3555,6 +3555,7 @@ class IUCoordinator:
 
         self._dirty = True
         self._muster_required = True
+        self.request_update(False)
         self._logger.log_load(config)
         self._history.load(config)
         return self
