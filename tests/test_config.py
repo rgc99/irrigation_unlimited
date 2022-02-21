@@ -6,92 +6,56 @@ from datetime import timedelta, datetime
 import json
 import pytest
 import homeassistant.core as ha
-from homeassistant.config import (
-    load_yaml_config_file,
-    async_process_ha_core_config,
-)
-from homeassistant.setup import async_setup_component
-
-from custom_components.irrigation_unlimited.irrigation_unlimited import (
-    IUCoordinator,
-)
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
-    COORDINATOR,
     SERVICE_TIME_ADJUST,
 )
-from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
-from tests.iu_test_support import (
-    begin_test,
-    check_summary,
-    finish_test,
-    no_check,
-    quiet_mode,
-    run_for,
-    run_until,
-    TEST_CONFIG_DIR,
-)
+from tests.iu_test_support import IUExam
 
-quiet_mode()
+IUExam.quiet_mode()
 
 # Remove the following decorator to run test
-@pytest.mark.skip
+# @pytest.mark.skip
 async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test loading of a config."""
     # pylint: disable=unused-argument
 
-    # """Prevent checking results. Helpful for just outputting results"""
-    # no_check()
+    async with IUExam(hass, "test_config.yaml") as exam:
 
-    full_path = TEST_CONFIG_DIR + "test_config.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    if ha.DOMAIN in config:
-        await async_process_ha_core_config(hass, config[ha.DOMAIN])
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+        # """Prevent checking results. Helpful for just outputting results"""
+        # exam.no_check()
 
-    # Run a single test
-    # start_time = await begin_test(1, coordinator)
-    # print(json.dumps(coordinator.as_dict(), default=str))
-    # await finish_test(hass, coordinator, start_time, True)
+        # Run a single test
+        # await exam.begin_test(1)
+        # print(json.dumps(exam.coordinator.as_dict(), default=str))
+        # await exam.finish_test()
 
-    # Run all tests
-    # for t in range(coordinator.tester.total_tests):
-    #     start_time = await begin_test(t + 1, coordinator)
-    #     await finish_test(hass, coordinator, start_time, True)
+        # Run all tests
+        # await exam.run_all()
 
-    # Run a test with a service call
-    # start_time = await begin_test(1, coordinator)
-    # await hass.services.async_call(
-    #     DOMAIN,
-    #     SERVICE_TIME_ADJUST,
-    #     {
-    #         "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-    #         "sequence_id": 1,
-    #         "zones": 0,
-    #         "actual": "00:10",
-    #     },
-    #     True,
-    # )
-    # await finish_test(hass, coordinator, start_time, True)
+        # Run a test with a service call
+        # await exam.begin_test(1)
+        # await hass.services.async_call(
+        #     DOMAIN,
+        #     SERVICE_TIME_ADJUST,
+        #     {
+        #         "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+        #         "sequence_id": 1,
+        #         "zones": 0,
+        #         "actual": "00:10",
+        #     },
+        #     True,
+        # )
+        # await exam.finish_test()
 
-    # Run to a point in time
-    # start_time = await begin_test(1, coordinator)
-    # next_time = await run_until(
-    #     hass,
-    #     coordinator,
-    #     start_time,
-    #     datetime.fromisoformat("2021-01-04 06:02:00+00:00"),
-    #     True,
-    # )
-    # await finish_test(hass, coordinator, next_time, True)
+        # Run to a point in time
+        # await exam.begin_test(1)
+        # await exam.run_until(datetime.fromisoformat("2021-01-04 06:02:00+00:00"))
+        # await exam.finish_test()
 
-    # Run for a period of time
-    # start_time = await begin_test(1, coordinator)
-    # next_time = await run_for(
-    #     hass, coordinator, start_time, timedelta(minutes=15), True
-    # )
-    # await finish_test(hass, coordinator, next_time, True)
+        # Run for a period of time
+        # await exam.begin_test(1)
+        # await exam.run_for(timedelta(minutes=15))
+        # await exam.finish_test()
 
-    check_summary(full_path, coordinator)
+        exam.check_summary()
