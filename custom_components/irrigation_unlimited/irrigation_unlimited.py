@@ -2692,7 +2692,7 @@ class IUController(IUBase):
         self, data: MappingProxyType, stime: datetime, service: str
     ) -> bool:
         """Handler for enable/disable/toggle service call"""
-        # pylint: disable=too-many-nested-blocks
+        # pylint: disable=too-many-branches, disable=too-many-nested-blocks
 
         def s2b(test: bool, service: str) -> bool:
             """Convert the service code to bool"""
@@ -2711,29 +2711,38 @@ class IUController(IUBase):
                 self.enabled = new_state
                 result = True
         else:
-            sequence = self.get_sequence(sequence_id - 1)
-            if sequence is not None:
-                if zone_list is None:
-                    new_state = s2b(sequence.enabled, service)
-                    if sequence.enabled != new_state:
-                        sequence.enabled = new_state
-                        result = True
-                else:
-                    for sequence_zone in sequence.zones:
-                        if self.check_item(sequence_zone.index, zone_list):
-                            new_state = s2b(sequence_zone.enabled, service)
-                            if sequence_zone.enabled != new_state:
-                                sequence_zone.enabled = new_state
-                                result = True
-                if result:
-                    self.clear_sequence_runs(stime, sequence.zone_ids())
-                    self._run_queue.clear(stime)
+            sequence_list: list[int] = []
+            if sequence_id == 0:
+                sequence_list.extend(sequence.index for sequence in self._sequences)
             else:
-                self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
+                sequence_list.append(sequence_id - 1)
+
+            for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
+                if sequence is not None:
+                    if zone_list is None:
+                        new_state = s2b(sequence.enabled, service)
+                        if sequence.enabled != new_state:
+                            sequence.enabled = new_state
+                            result = True
+                    else:
+                        for sequence_zone in sequence.zones:
+                            if self.check_item(sequence_zone.index, zone_list):
+                                new_state = s2b(sequence_zone.enabled, service)
+                                if sequence_zone.enabled != new_state:
+                                    sequence_zone.enabled = new_state
+                                    result = True
+                    if result:
+                        self.clear_sequence_runs(stime, sequence.zone_ids())
+                        self._run_queue.clear(stime)
+                else:
+                    self._coordinator.logger.log_invalid_sequence(
+                        stime, self, sequence_id
+                    )
         return result
 
     def service_adjust_time(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the adjust_time service call"""
+        # pylint: disable=too-many-branches, disable=too-many-nested-blocks
         result = False
         zone_list: list[int] = data.get(CONF_ZONES)
         sequence_id = data.get(CONF_SEQUENCE_ID)
@@ -2742,18 +2751,26 @@ class IUController(IUBase):
                 if self.check_item(zone.index, zone_list):
                     result |= zone.service_adjust_time(data, stime)
         else:
-            sequence = self.get_sequence(sequence_id - 1)
-            if sequence is not None:
-                if zone_list is None:
-                    result = sequence.adjustment.load(data)
-                else:
-                    for sequence_zone in sequence.zones:
-                        if self.check_item(sequence_zone.index, zone_list):
-                            result |= sequence_zone.adjustment.load(data)
-                if result:
-                    self.clear_sequence_runs(stime, sequence.zone_ids())
+            sequence_list: list[int] = []
+            if sequence_id == 0:
+                sequence_list.extend(sequence.index for sequence in self._sequences)
             else:
-                self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
+                sequence_list.append(sequence_id - 1)
+
+            for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
+                if sequence is not None:
+                    if zone_list is None:
+                        result = sequence.adjustment.load(data)
+                    else:
+                        for sequence_zone in sequence.zones:
+                            if self.check_item(sequence_zone.index, zone_list):
+                                result |= sequence_zone.adjustment.load(data)
+                    if result:
+                        self.clear_sequence_runs(stime, sequence.zone_ids())
+                else:
+                    self._coordinator.logger.log_invalid_sequence(
+                        stime, self, sequence_id
+                    )
         return result
 
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:

@@ -1383,6 +1383,29 @@ async def test_service_adjust_time_sequence_run(
     assert sta.attributes["current_adjustment"] == "%200.0"
     await finish_test(hass, coordinator, start_time, True)
 
+    # Reset zone adustments. Test 'all' sequence_id (0)
+    start_time = await begin_test(12, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "reset": None,
+        },
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 0,
+            "percentage": 50,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
     check_summary(full_path, coordinator)
 
 
@@ -2082,6 +2105,33 @@ async def test_service_enable_disable_sequence(
             "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
             "sequence_id": 2,
             "zones": [1, 2, 3],
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # At this stage all sequences and zones are enabled
+    # Disable all sequences
+    start_time = await begin_test(13, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_DISABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 0,
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Enable all sequences
+    start_time = await begin_test(14, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_ENABLE,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 0,
         },
         True,
     )
