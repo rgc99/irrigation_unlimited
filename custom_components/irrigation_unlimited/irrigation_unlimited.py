@@ -2718,22 +2718,24 @@ class IUController(IUBase):
                 sequence_list.append(sequence_id - 1)
 
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
+                changed = False
                 if sequence is not None:
                     if zone_list is None:
                         new_state = s2b(sequence.enabled, service)
                         if sequence.enabled != new_state:
                             sequence.enabled = new_state
-                            result = True
+                            changed = True
                     else:
                         for sequence_zone in sequence.zones:
                             if self.check_item(sequence_zone.index, zone_list):
                                 new_state = s2b(sequence_zone.enabled, service)
                                 if sequence_zone.enabled != new_state:
                                     sequence_zone.enabled = new_state
-                                    result = True
-                    if result:
+                                    changed = True
+                    if changed:
                         self.clear_sequence_runs(stime, sequence.zone_ids())
                         self._run_queue.clear(stime)
+                        result = True
                 else:
                     self._coordinator.logger.log_invalid_sequence(
                         stime, self, sequence_id
@@ -2758,15 +2760,17 @@ class IUController(IUBase):
                 sequence_list.append(sequence_id - 1)
 
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
+                changed = False
                 if sequence is not None:
                     if zone_list is None:
-                        result = sequence.adjustment.load(data)
+                        changed = sequence.adjustment.load(data)
                     else:
                         for sequence_zone in sequence.zones:
                             if self.check_item(sequence_zone.index, zone_list):
-                                result |= sequence_zone.adjustment.load(data)
-                    if result:
+                                changed |= sequence_zone.adjustment.load(data)
+                    if changed:
                         self.clear_sequence_runs(stime, sequence.zone_ids())
+                        result = True
                 else:
                     self._coordinator.logger.log_invalid_sequence(
                         stime, self, sequence_id
