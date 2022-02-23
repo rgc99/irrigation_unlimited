@@ -182,6 +182,16 @@ class IUExam:
         """Set the config directory"""
         self._config_directory = value
 
+    @property
+    def virtual_time(self) -> datetime:
+        """Return the virtual time"""
+        return self._coordinator.tester.current_test.virtual_time(self._current_time)
+
+    @property
+    def track_interval(self) -> timedelta:
+        """Return the clock interval"""
+        return self._coordinator.track_interval()
+
     @staticmethod
     def quiet_mode() -> None:
         """Trun off a lot of noise"""
@@ -248,11 +258,15 @@ class IUExam:
             self._hass, self._coordinator, self._current_time, True
         )
 
+    async def run_test(self, test_no: int) -> None:
+        """Run a single test"""
+        await self.begin_test(test_no)
+        await self.finish_test()
+
     async def run_all(self) -> None:
         """Run all tests"""
         for test in range(self._coordinator.tester.total_tests):
-            self._current_time = await begin_test(test + 1, self._coordinator)
-            await finish_test(self._hass, self._coordinator, self._current_time, True)
+            await self.run_test(test + 1)
 
     def check_summary(self) -> None:
         """Check the test results"""
