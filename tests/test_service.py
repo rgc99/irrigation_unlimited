@@ -1,6 +1,7 @@
 """Test integration_unlimited service calls."""
 # pylint: disable=too-many-lines
 from datetime import datetime, timedelta
+import json
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
@@ -1383,7 +1384,7 @@ async def test_service_adjust_time_sequence_run(
     assert sta.attributes["current_adjustment"] == "%200.0"
     await finish_test(hass, coordinator, start_time, True)
 
-    # Reset zone adustments. Test 'all' sequence_id (0)
+    # Reset zone adustments. Test 'all' sequence_id (0) to %50
     start_time = await begin_test(12, coordinator)
     await hass.services.async_call(
         DOMAIN,
@@ -1404,6 +1405,41 @@ async def test_service_adjust_time_sequence_run(
         },
         True,
     )
+    start_time = await run_for_1_tick(hass, coordinator, start_time, True)
+    sta = hass.states.get("irrigation_unlimited.coordinator")
+    data = json.loads(sta.attributes["configuration"])
+    assert data["controllers"][0]["sequences"][0]["adjustment"] == "%50.0"
+    assert data["controllers"][0]["sequences"][1]["adjustment"] == "%50.0"
+    await finish_test(hass, coordinator, start_time, True)
+
+    # Reset zone adustments. Test 'all' sequence_id (0) reset
+    # Split the reset to check refresh correct
+    start_time = await begin_test(13, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 2,
+            "reset": None,
+        },
+        True,
+    )
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 0,
+            "reset": None,
+        },
+        True,
+    )
+    start_time = await run_for_1_tick(hass, coordinator, start_time, True)
+    sta = hass.states.get("irrigation_unlimited.coordinator")
+    data = json.loads(sta.attributes["configuration"])
+    assert data["controllers"][0]["sequences"][0]["adjustment"] == ""
+    assert data["controllers"][0]["sequences"][1]["adjustment"] == ""
     await finish_test(hass, coordinator, start_time, True)
 
     check_summary(full_path, coordinator)
@@ -2122,6 +2158,11 @@ async def test_service_enable_disable_sequence(
         },
         True,
     )
+    start_time = await run_for_1_tick(hass, coordinator, start_time, True)
+    sta = hass.states.get("irrigation_unlimited.coordinator")
+    data = json.loads(sta.attributes["configuration"])
+    assert data["controllers"][0]["sequences"][0]["enabled"] is False
+    assert data["controllers"][0]["sequences"][1]["enabled"] is False
     await finish_test(hass, coordinator, start_time, True)
 
     # Enable all sequences
@@ -2135,6 +2176,11 @@ async def test_service_enable_disable_sequence(
         },
         True,
     )
+    start_time = await run_for_1_tick(hass, coordinator, start_time, True)
+    sta = hass.states.get("irrigation_unlimited.coordinator")
+    data = json.loads(sta.attributes["configuration"])
+    assert data["controllers"][0]["sequences"][0]["enabled"] is True
+    assert data["controllers"][0]["sequences"][1]["enabled"] is True
     await finish_test(hass, coordinator, start_time, True)
 
     check_summary(full_path, coordinator)
