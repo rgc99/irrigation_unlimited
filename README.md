@@ -95,7 +95,7 @@ Zones also have an associated sensor which, like the master, shows on/off status
 
 ## Structure
 
-Irrigation Unlimited is comprised of controllers, zones and schedules in a tree like formation. Each controller has one or more zones and each zone has one or more schedules. Controllers and zones will have a binary sensor associated with each one so they can be intregrated with Home Assistant.
+Irrigation Unlimited is comprised of controllers, zones and schedules in a tree like formation. Each controller has one or more zones and each zone has one or more schedules. Controllers and zones will have a binary sensor associated with each one so they can be integrated with Home Assistant.
 
 ```text
 └── Irrigation Unlimited
@@ -167,7 +167,7 @@ custom_components/irrigation_unlimited/binary_sensor.py
 custom_components/irrigation_unlimited/const.py
 custom_components/irrigation_unlimited/entity.py
 custom_components/irrigation_unlimited/history.py
-custom_components/irrigation_unlilmited/irrigation_unlimited.py
+custom_components/irrigation_unlimited/irrigation_unlimited.py
 custom_components/irrigation_unlimited/manifest.json
 custom_components/irrigation_unlimited/service.py
 custom_components/irrigation_unlimited/services.yaml
@@ -177,13 +177,13 @@ custom_components/irrigation_unlimited/services.yaml
 
 Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#service-reload) for details and limitations.
 
-The time type is a string in the format HH:MM or H:MM:SS. Time type must be a positive value. Seconds can be specified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). This is the heart beat or system pulse. All times will be syncronised to these boundaries.
+The time type is a string in the format HH:MM or H:MM:SS. Time type must be a positive value. Seconds can be specified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). This is the heart beat or system pulse. All times will be synchronised to these boundaries.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
 | `controllers` | list | _[Controller Objects](#controller-objects)_ | Controller details (Must have at least one) |
 | `granularity` | number | 60 | System time boundaries in seconds |
-| `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more repsonsive display. Increase this number to conserve resources.
+| `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more responsive display. Increase this number to conserve resources.
 | `history_span` | number | 7 | Number of days of history data to fetch |
 | `history_refresh` | number | 120 | History refresh interval in seconds |
 | `testing` | object | _[Testing Object](#testing-object)_ | Used for testing setup |
@@ -309,7 +309,7 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
 
-Special note for [schedules](#schedule-objects) and the `duration` parameter contained within when used with sequences. Each zone in the sequence will be proportionaly adjusted to fit the specified duration. For example, if 3 zones were to each run for 10, 20 and 30 minutes respectively (total 1 hour) and the `schedule.duration` parameter specified 30 minutes then each zone would be adjusted to 5, 10 and 15 minutes. Likewise if `schedule.duration` specified 1.5 hours then the zones would be 15, 30 and 45 minutes. Some variation may occur due to rounding of the times to the system boundaries (granularity). This parameter influences the durations specified in the sequence and sequence zone objects.
+Special note for [schedules](#schedule-objects) and the `duration` parameter contained within when used with sequences. Each zone in the sequence will be proportionally adjusted to fit the specified duration. For example, if 3 zones were to each run for 10, 20 and 30 minutes respectively (total 1 hour) and the `schedule.duration` parameter specified 30 minutes then each zone would be adjusted to 5, 10 and 15 minutes. Likewise if `schedule.duration` specified 1.5 hours then the zones would be 15, 30 and 45 minutes. Some variation may occur due to rounding of the times to the system boundaries (granularity). This parameter influences the durations specified in the sequence and sequence zone objects.
 
 ### Testing Object
 
@@ -643,7 +643,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 
 ### Service `adjust_time`
 
-Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `descrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
+Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
 A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day. Adjustments must be made _before_ the scheduled start time. Running schedules will be not affected.
 
@@ -754,7 +754,7 @@ irrigation_unlimited:
 
 Notes:
 
-1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplisity however all methods are available as described _[above](#service-adjust_time)_.
+1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplicity however all methods are available as described _[above](#service-adjust_time)_.
 2. The `enable` service call can also be `disable` or `toggle`.
 
 ```yaml
@@ -791,7 +791,7 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c1_m
     sequence_id: 1
 
-# Example 1.0.1 -> controller 1 -> sequence 1 -> duration. This will proportionaly alter the duration
+# Example 1.0.1 -> controller 1 -> sequence 1 -> duration. This will proportionally alter the duration
 # for all zone references in the first sequence.
 - service: irrigation_unlimited.adjust_time
   data:
@@ -840,7 +840,7 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c1_m
     sequence_id: 2
 
-# Example 1.0.2 - controller 1 -> sequence 2 -> duration. This will proportionaly alter the duration
+# Example 1.0.2 - controller 1 -> sequence 2 -> duration. This will proportionally alter the duration
 # for all zone references in the second sequence.
 - service: irrigation_unlimited.adjust_time
   data:
@@ -885,7 +885,7 @@ Notes:
     entity_id: binary_sensor.irrigation_unlimited_c2_m
     sequence_id: 1
 
-# Example 2.0.1 - controller 2 -> sequence 1 -> duration. This will proportionaly alter the duration
+# Example 2.0.1 - controller 2 -> sequence 1 -> duration. This will proportionally alter the duration
 # for all zone references in the first sequence.
 - service: irrigation_unlimited.adjust_time
   data:
@@ -1036,7 +1036,7 @@ irrigation_unlimited:
           timeline: true # <= for all zones        <─┘
       entity_id: "switch.my_switch"
       show: # <= Add these two lines to the                  <─┐
-        timeline: true # <= configuration for indivual zones <─┘
+        timeline: true # <= configuration for individual zones <─┘
       schedules:
         - time: "06:00"
           duration: "00:20"
@@ -1052,7 +1052,7 @@ If you prefer something akin to a airport departure board then try [this](./love
 
 ### Frontend Requirements
 
-The [manual_run](#manual-run-card) and [enable/disable](#enable-disable-card) cards require additional support files. Minimun version 2021.6.3 of Irrigation Unlimited is required. There is a support file [packages/irrigation_unlimited_controls.yaml](./packages/irrigation_unlimited_controls.yaml) which should go in the config/packages directory. Also required is a [pyscript](./pyscript/irrigation_unlimited_service_shim.py) which is called from the above automation to populate the input_select with all the irrigation unlimited controllers and zones. The script should go in the **config/pyscript directory**. If you don't have a packages and a pyscript folder then create them and add the following to your configuration.yaml.
+The [manual_run](#manual-run-card) and [enable/disable](#enable-disable-card) cards require additional support files. Minimum version 2021.6.3 of Irrigation Unlimited is required. There is a support file [packages/irrigation_unlimited_controls.yaml](./packages/irrigation_unlimited_controls.yaml) which should go in the config/packages directory. Also required is a [pyscript](./pyscript/irrigation_unlimited_service_shim.py) which is called from the above automation to populate the input_select with all the irrigation unlimited controllers and zones. The script should go in the **config/pyscript directory**. If you don't have a packages and a pyscript folder then create them and add the following to your configuration.yaml.
 
 ```yaml
 homeassistant:
@@ -1082,9 +1082,9 @@ This card will enable or disable a zone from a dropdown list, see [requirements]
 
 ## Automation
 
-Due to the many weather integrations available and their relevance to your situation, there is realistically no way to provide a built in 'auto-adjustment' feature. Therefore, no attempt has been made to include a solution and this also makes the integration more independant and flexible. Run time adjustment is achieved by setting up sensor(s) that consume weather information such as rainfall and temperature but could factor in wind speed, solar radiation etc. to determine if more or less watering time is required. You might also consider using forecast information... A service call is then made to irrigation unlimited to adjust the run times. This does mean some knowledge of creating automations is required.
+Due to the many weather integrations available and their relevance to your situation, there is realistically no way to provide a built in 'auto-adjustment' feature. Therefore, no attempt has been made to include a solution and this also makes the integration more independent and flexible. Run time adjustment is achieved by setting up sensor(s) that consume weather information such as rainfall and temperature but could factor in wind speed, solar radiation etc. to determine if more or less watering time is required. You might also consider using forecast information... A service call is then made to irrigation unlimited to adjust the run times. This does mean some knowledge of creating automations is required.
 
-On a personal note, I use the national weather service [BOM](http://www.bom.gov.au) for my forecast information but find their observation data not relevant due to the extreme regional variations in my situation. There are many micro climates (mountains) and a few kilometers in any direction makes a lot of difference, down pour to a few drops. To this end I have a Personal Weather Station (PWS) that feeds [Weather Underground](https://www.wunderground.com) where I use the [WUnderground](https://www.home-assistant.io/integrations/wunderground) integration to retrieve the data.
+On a personal note, I use the national weather service [BOM](http://www.bom.gov.au) for my forecast information but find their observation data not relevant due to the extreme regional variations in my situation. There are many micro climates (mountains) and a few kilometres in any direction makes a lot of difference, down pour to a few drops. To this end I have a Personal Weather Station (PWS) that feeds [Weather Underground](https://www.wunderground.com) where I use the [WUnderground](https://www.home-assistant.io/integrations/wunderground) integration to retrieve the data.
 
 You will find my adjustment automation [here](./packages/irrigation_unlimited_adjustment.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./lovelace/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
@@ -1250,7 +1250,7 @@ There must be a `irrigation_unlimited:` section in the configuration. If the sec
 2021-08-03 12:12:47 INFO (MainThread) [homeassistant.setup] Setup of domain irrigation_unlimited took n.n seconds
 ```
 
-The above shows that Irrigation Unlimited loaded successfully. Note: The lines will most likely not be together so do a search. If it failed then use the minimal configuration shown _[here](#minimal-configuration)_. This is a good starting point to get aquainted with this integration.
+The above shows that Irrigation Unlimited loaded successfully. Note: The lines will most likely not be together so do a search. If it failed then use the minimal configuration shown _[here](#minimal-configuration)_. This is a good starting point to get acquainted with this integration.
 
 ### Logging
 

@@ -77,7 +77,7 @@ async def async_entity_service_handler(entity: IUEntity, call: ServiceCall) -> N
 
 
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
-    """Register all the available service calls for the intities"""
+    """Register all the available service calls for the entities"""
     platform.async_register_entity_service(
         SERVICE_ENABLE, ENABLE_DISABLE_SCHEMA, async_entity_service_handler
     )

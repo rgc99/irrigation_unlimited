@@ -76,7 +76,7 @@ from .const import (
     CONF_ANCHOR,
     CONF_VERSION,
     COORDINATOR,
-    DEFAULT_GRANULATITY,
+    DEFAULT_GRANULARITY,
     DEFAULT_REFRESH_INTERVAL,
     DEFAULT_TEST_SPEED,
     CONF_DURATION,
@@ -157,16 +157,16 @@ def dt2lstr(stime: datetime) -> str:
 
 
 # These routines truncate dates, times and deltas to the internal
-# granularity. This should be no more than 1 minute and realisticly
+# granularity. This should be no more than 1 minute and realistically
 # no less than 1 second i.e. 1 >= GRANULARITY <= 60
 # The current boundaries are whole minutes (60 seconds).
-SYSTEM_GRANULARITY: int = DEFAULT_GRANULATITY  # Granularity in seconds
+SYSTEM_GRANULARITY: int = DEFAULT_GRANULARITY  # Granularity in seconds
 
 
 def reset_granularity() -> None:
     """Restore the original granularity"""
     global SYSTEM_GRANULARITY  # pylint: disable=global-statement
-    SYSTEM_GRANULARITY = DEFAULT_GRANULATITY
+    SYSTEM_GRANULARITY = DEFAULT_GRANULARITY
 
 
 def granularity_time() -> timedelta:
@@ -772,7 +772,7 @@ class IURun(IUBase):
 
 # class IURunQueue(list[IURun]): # python 3.9
 class IURunQueue(typing.List[IURun]):
-    """Irrigation Unlimited class to hold the upcomming runs"""
+    """Irrigation Unlimited class to hold the upcoming runs"""
 
     # pylint: disable=too-many-public-methods
 
@@ -2213,7 +2213,7 @@ class IUController(IUBase):
 
     @property
     def zones(self) -> "list[IUZone]":
-        """Return a list of childen zones"""
+        """Return a list of children zones"""
         return self._zones
 
     @property
@@ -2919,7 +2919,7 @@ class IUTest(IUBase):
 
     @property
     def events(self) -> int:
-        """Return the number of events recieved"""
+        """Return the number of events received"""
         return self._events
 
     @property
@@ -3284,7 +3284,7 @@ class IULogger:
         self._output(DEBUG, "INITIALISED")
 
     def log_event(self, event: IUEvent, level=DEBUG) -> None:
-        """Message that an event has occured - controller or zone turning on or off"""
+        """Message that an event has occurred - controller or zone turning on or off"""
         if len(event.crumbs) != 0:
             result = "EVENT [{0}] controller: {1:d}, zone: {2:d}, state: {3}, data: {4}".format(
                 dt2lstr(event.time),
@@ -3432,7 +3432,7 @@ class IULogger:
 
 
 class IUCoordinator:
-    """Irrigation Unimited Coordinator class"""
+    """Irrigation Unlimited Coordinator class"""
 
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-public-methods
@@ -3458,7 +3458,7 @@ class IUCoordinator:
         self._tester = IUTester(self)
         self._logger = IULogger(_LOGGER)
         self._history = IUHistory(self._hass)
-        self._restored_from_configutation: bool = False
+        self._restored_from_configuration: bool = False
 
     @property
     def entity_id(self) -> str:
@@ -3513,12 +3513,12 @@ class IUCoordinator:
     @property
     def restored_from_configuration(self) -> bool:
         """Return if the system has been restored from coordinator date"""
-        return self._restored_from_configutation
+        return self._restored_from_configuration
 
     @restored_from_configuration.setter
     def restored_from_configuration(self, value: bool) -> None:
-        """Flas the system has been restored from coordinator data"""
-        self._restored_from_configutation = value
+        """Flag the system has been restored from coordinator data"""
+        self._restored_from_configuration = value
 
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
@@ -3560,7 +3560,7 @@ class IUCoordinator:
         self.clear()
 
         global SYSTEM_GRANULARITY  # pylint: disable=global-statement
-        SYSTEM_GRANULARITY = config.get(CONF_GRANULARITY, DEFAULT_GRANULATITY)
+        SYSTEM_GRANULARITY = config.get(CONF_GRANULARITY, DEFAULT_GRANULARITY)
         self._refresh_interval = timedelta(
             seconds=config.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
         )
@@ -3692,7 +3692,7 @@ class IUCoordinator:
             self._logger.log_stop()
 
     def finalise(self, turn_off: bool) -> None:
-        """Tear down the system and cleanup"""
+        """Tear down the system and clean up"""
         for controller in self._controllers:
             controller.finalise(turn_off)
 

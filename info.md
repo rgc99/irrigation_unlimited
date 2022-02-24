@@ -18,10 +18,10 @@ This integration is for irrigation systems large and small. It can offer some co
 1. Unlimited controllers.
 2. Unlimited zones.
 3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
-4. Hardware independant. Use your own switches/valve controllers.
-5. Software independant. Pure play python.
+4. Hardware independent. Use your own switches/valve controllers.
+5. Software independent. Pure play python.
 
-*Practicle limitations will depend on your hardware.
+*Practical limitations will depend on your hardware.
 
 ![example][exampleimg]
 

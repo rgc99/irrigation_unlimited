@@ -174,7 +174,7 @@ adjust_time:
       selector:
         time:
 
-    descrease:
+    decrease:
       description: Decrease the run time.
       example: "00:02"
       required: false
