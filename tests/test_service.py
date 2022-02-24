@@ -1384,7 +1384,7 @@ async def test_service_adjust_time_sequence_run(
     assert sta.attributes["current_adjustment"] == "%200.0"
     await finish_test(hass, coordinator, start_time, True)
 
-    # Reset zone adustments. Test 'all' sequence_id (0) to %50
+    # Reset zone adjustments. Test 'all' sequence_id (0) to %50
     start_time = await begin_test(12, coordinator)
     await hass.services.async_call(
         DOMAIN,
@@ -1412,7 +1412,7 @@ async def test_service_adjust_time_sequence_run(
     assert data["controllers"][0]["sequences"][1]["adjustment"] == "%50.0"
     await finish_test(hass, coordinator, start_time, True)
 
-    # Reset zone adustments. Test 'all' sequence_id (0) reset
+    # Reset zone adjustments. Test 'all' sequence_id (0) reset
     # Split the reset to check refresh correct
     start_time = await begin_test(13, coordinator)
     await hass.services.async_call(
