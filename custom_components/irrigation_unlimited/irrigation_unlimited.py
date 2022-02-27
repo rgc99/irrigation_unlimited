@@ -644,7 +644,7 @@ class IURun(IUBase):
             return RES_NONE
         if self.sequence_has_adjustment(True):
             return self.sequence_adjustment()
-        return self._zone.adjustment.to_str()
+        return str(self._zone.adjustment)
 
     @property
     def end_time(self) -> datetime:
@@ -725,10 +725,10 @@ class IURun(IUBase):
     def sequence_adjustment(self) -> str:
         """Return the adjustment for the sequence"""
         if self.is_sequence:
-            result = self._sequence_run.sequence.adjustment.to_str()
+            result = str(self._sequence_run.sequence.adjustment)
             sequence_zone = self._sequence_run.sequence_zone(self)
             if sequence_zone.has_adjustment:
-                result = f"{result},{sequence_zone.adjustment.to_str()}"
+                result = f"{result},{str(sequence_zone.adjustment)}"
             return result
         return None
 

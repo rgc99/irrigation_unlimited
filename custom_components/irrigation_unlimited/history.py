@@ -92,7 +92,9 @@ class IUHistory:
             result[TIMELINE_START] = round_seconds_dt(item.last_changed)
             result[TIMELINE_END] = round_seconds_dt(end)
             result[TIMELINE_SCHEDULE_NAME] = item.attributes.get(ATTR_CURRENT_NAME)
-            result[TIMELINE_ADJUSTMENT] = item.attributes.get(ATTR_CURRENT_ADJUSTMENT)
+            result[TIMELINE_ADJUSTMENT] = item.attributes.get(
+                ATTR_CURRENT_ADJUSTMENT, ""
+            )
             return result
 
         run_history = []

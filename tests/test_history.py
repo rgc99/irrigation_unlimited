@@ -95,7 +95,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-06 06:05")),
                 ("end", mk_dt("2021-01-06 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -104,7 +104,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-05 06:05")),
                 ("end", mk_dt("2021-01-05 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -113,7 +113,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 06:05")),
                 ("end", mk_dt("2021-01-04 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "next"),
             ]
         ),
@@ -122,7 +122,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 05:30")),
                 ("end", mk_dt("2021-01-04 05:32")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -131,7 +131,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 04:30")),
                 ("end", mk_dt("2021-01-04 04:32")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -147,7 +147,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-06 06:10")),
                 ("end", mk_dt("2021-01-06 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -156,7 +156,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-05 06:10")),
                 ("end", mk_dt("2021-01-05 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -165,7 +165,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 06:10")),
                 ("end", mk_dt("2021-01-04 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "next"),
             ]
         ),
@@ -174,7 +174,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 05:40")),
                 ("end", mk_dt("2021-01-04 05:45")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -183,7 +183,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 05:35")),
                 ("end", mk_dt("2021-01-04 05:38")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -192,7 +192,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 04:35")),
                 ("end", mk_dt("2021-01-04 04:38")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -214,7 +214,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-07 06:05")),
                 ("end", mk_dt("2021-01-07 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -223,7 +223,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-06 06:05")),
                 ("end", mk_dt("2021-01-06 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -232,7 +232,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-05 06:05")),
                 ("end", mk_dt("2021-01-05 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "next"),
             ]
         ),
@@ -241,7 +241,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 05:30")),
                 ("end", mk_dt("2021-01-04 05:32")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -250,7 +250,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 04:30")),
                 ("end", mk_dt("2021-01-04 04:32")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -266,7 +266,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-07 06:10")),
                 ("end", mk_dt("2021-01-07 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -275,7 +275,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-06 06:10")),
                 ("end", mk_dt("2021-01-06 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -284,7 +284,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-05 06:10")),
                 ("end", mk_dt("2021-01-05 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "next"),
             ]
         ),
@@ -293,7 +293,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 05:40")),
                 ("end", mk_dt("2021-01-04 05:45")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -302,7 +302,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 05:35")),
                 ("end", mk_dt("2021-01-04 05:38")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -311,7 +311,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-04 04:35")),
                 ("end", mk_dt("2021-01-04 04:38")),
                 ("schedule_name", None),
-                ("adjustment", None),
+                ("adjustment", ""),
                 ("status", "history"),
             ]
         ),
@@ -334,7 +334,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-07 06:05")),
                 ("end", mk_dt("2021-01-07 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -343,7 +343,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-06 06:05")),
                 ("end", mk_dt("2021-01-06 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -352,7 +352,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-05 06:05")),
                 ("end", mk_dt("2021-01-05 06:15")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "next"),
             ]
         ),
@@ -368,7 +368,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-07 06:10")),
                 ("end", mk_dt("2021-01-07 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -377,7 +377,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-06 06:10")),
                 ("end", mk_dt("2021-01-06 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "scheduled"),
             ]
         ),
@@ -386,7 +386,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
                 ("start", mk_dt("2021-01-05 06:10")),
                 ("end", mk_dt("2021-01-05 06:20")),
                 ("schedule_name", "Schedule 1"),
-                ("adjustment", "None"),
+                ("adjustment", ""),
                 ("status", "next"),
             ]
         ),

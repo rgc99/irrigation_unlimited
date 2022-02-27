@@ -208,7 +208,7 @@ class IUZoneEntity(IUEntity):
         attr[ATTR_STATUS] = self._zone.status
         attr[ATTR_SCHEDULE_COUNT] = len(self._zone.schedules)
         attr[CONF_SCHEDULES] = ""
-        attr[ATTR_ADJUSTMENT] = self._zone.adjustment.to_str()
+        attr[ATTR_ADJUSTMENT] = str(self._zone.adjustment)
         current = self._zone.runs.current_run
         if current is not None:
             attr[ATTR_CURRENT_ADJUSTMENT] = current.adjustment
