@@ -1,6 +1,7 @@
 """Irrigation Unlimited Coordinator and sub classes"""
 # pylint: disable=too-many-lines
 import typing
+import weakref
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
 from typing import OrderedDict, List
@@ -247,7 +248,10 @@ class IUBase:
         self._index: int = index
 
     def __eq__(self, other) -> bool:
-        return isinstance(other, IUBase) and self.uid == other.uid
+        return isinstance(other, IUBase) and self._uid == other._uid
+
+    def __hash__(self) -> int:
+        return self._uid
 
     @property
     def uid(self) -> str:
@@ -2095,7 +2099,7 @@ class IUSequenceRun(IUBase):
         self._schedule = schedule
         self._total_time = total_time
         # Private variables
-        self._runs: OrderedDict = {}
+        self._runs = weakref.WeakKeyDictionary()
         self._active_zone: IUSequenceZone = None
         self._running = False
 
@@ -2121,15 +2125,15 @@ class IUSequenceRun(IUBase):
 
     def add(self, run: IURun, sequence_zone: IUSequenceZone) -> None:
         """Adds a sequence zone to the group"""
-        self._runs[run.uid] = sequence_zone
+        self._runs[run] = sequence_zone
 
     def run_index(self, run: IURun) -> int:
         """Extract the index from the supplied run"""
-        return list(self._runs.keys()).index(run.uid)
+        return list(self._runs.keys()).index(run)
 
     def sequence_zone(self, run: IURun) -> IUSequenceZone:
         """Extract the sequence zone from the run"""
-        return self._runs.get(run.uid, None)
+        return self._runs.get(run, None)
 
     def update(self, stime: datetime, run: IURun) -> bool:
         """Update the status of the sequence"""
