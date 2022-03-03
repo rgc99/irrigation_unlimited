@@ -641,7 +641,7 @@ class IURun(IUBase):
     def adjustment(self) -> str:
         """Return the adjustment in play"""
         if self._schedule is None:
-            return RES_NONE
+            return ""
         if self.sequence_has_adjustment(True):
             return self.sequence_adjustment()
         return str(self._zone.adjustment)
