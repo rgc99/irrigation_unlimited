@@ -1897,16 +1897,20 @@ class IUSequence(IUBase):
                 duration = zone.runs.constrain(duration)
         return duration
 
+    def zone_delay_config(self, sequence_zone: IUSequenceZone) -> timedelta:
+        """Return the configured (static) delay"""
+        if sequence_zone.delay is not None:
+            delay = sequence_zone.delay
+        else:
+            delay = self._delay
+        if delay is None:
+            delay = timedelta(0)
+        return delay
+
     def zone_delay(self, sequence_zone: IUSequenceZone) -> timedelta:
         """Return the delay for the specified zone"""
         if self.zone_enabled(sequence_zone):
-            if sequence_zone.delay is not None:
-                delay = sequence_zone.delay
-            else:
-                delay = self._delay
-            if delay is None:
-                delay = timedelta(0)
-            return delay
+            return self.zone_delay_config(sequence_zone)
         return timedelta(0)
 
     def total_delay(self) -> timedelta:
@@ -1922,16 +1926,20 @@ class IUSequence(IUBase):
                 delay -= self.zone_delay(last_zone)
         return delay
 
+    def zone_duration_config(self, sequence_zone: IUSequenceZone) -> timedelta:
+        """Return the configured (static) duration for the specified zone"""
+        if sequence_zone.duration is not None:
+            duration = sequence_zone.duration
+        else:
+            duration = self._duration
+        if duration is None:
+            duration = granularity_time()
+        return duration
+
     def zone_duration_base(self, sequence_zone: IUSequenceZone) -> timedelta:
         """Return the base duration for the specified zone"""
         if self.zone_enabled(sequence_zone):
-            if sequence_zone.duration is not None:
-                duration = sequence_zone.duration
-            else:
-                duration = self._duration
-            if duration is None:
-                duration = granularity_time()
-            return duration
+            return self.zone_duration_config(sequence_zone)
         return timedelta(0)
 
     def zone_duration(self, sequence_zone: IUSequenceZone) -> timedelta:
