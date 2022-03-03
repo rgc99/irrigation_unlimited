@@ -731,7 +731,7 @@ class IURun(IUBase):
         if self.is_sequence:
             result = str(self._sequence_run.sequence.adjustment)
             sequence_zone = self._sequence_run.sequence_zone(self)
-            if sequence_zone.has_adjustment:
+            if sequence_zone is not None and sequence_zone.has_adjustment:
                 result = f"{result},{str(sequence_zone.adjustment)}"
             return result
         return None
