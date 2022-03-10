@@ -58,6 +58,7 @@ async def test_model(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         # Run for a period of time
         # await exam.begin_test(1)
         # await exam.run_for(timedelta(minutes=15))
+        # print(f"The date and time is {exam.virtual_time}")
         # await exam.finish_test()
 
         # Run for one clock tick
