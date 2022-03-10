@@ -136,7 +136,15 @@ async def finish_test(
         assert (
             test.events >= test.total_results
         ), f"Failed test {test.index + 1}, extra event"
-    _LOGGER.debug("Finished test: %s, time: %.2fs", test.name, test.test_time)
+    _LOGGER.debug(
+        "Finished test: %s, time: %.2fs, events: %d, results: %d, errors: %d, no_check: %s",
+        test.name,
+        test.test_time,
+        test.events,
+        test.total_results,
+        test.errors,
+        NO_CHECK,
+    )
     return
 
 
