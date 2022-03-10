@@ -14,6 +14,7 @@ from .entity import IUEntity
 from .service import register_platform_services
 from .const import (
     ATTR_ENABLED,
+    ATTR_SEQUENCE_STATUS,
     ATTR_STATUS,
     ATTR_INDEX,
     ATTR_CURRENT_SCHEDULE,
@@ -143,6 +144,7 @@ class IUMasterEntity(IUEntity):
         attr[ATTR_STATUS] = self._controller.status
         attr[ATTR_ZONE_COUNT] = len(self._controller.zones)
         attr[CONF_ZONES] = ""
+        attr[ATTR_SEQUENCE_STATUS] = self._controller.sequence_status()
         current = self._controller.runs.current_run
         if current is not None:
             attr[ATTR_CURRENT_ZONE] = current.zone.index + 1

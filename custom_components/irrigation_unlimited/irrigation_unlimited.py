@@ -4,7 +4,7 @@ import typing
 import weakref
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
-from typing import OrderedDict, List
+from typing import Dict, OrderedDict, List, Set
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
@@ -45,11 +45,16 @@ from .const import (
     ATTR_CURRENT_DURATION,
     ATTR_DEFAULT_DELAY,
     ATTR_DEFAULT_DURATION,
+    ATTR_DURATION,
     ATTR_DURATION_FACTOR,
     ATTR_FINAL_DURATION,
+    ATTR_SCHEDULE_INDEX,
+    ATTR_SCHEDULE_NAME,
+    ATTR_START,
     ATTR_STATUS,
     ATTR_TOTAL_DELAY,
     ATTR_TOTAL_DURATION,
+    ATTR_ZONES,
     BINARY_SENSOR,
     CONF_ACTUAL,
     CONF_ALL_ZONES_CONFIG,
@@ -2106,7 +2111,6 @@ class IUSequenceRun(IUBase):
         controller: "IUController",
         sequence: IUSequence,
         schedule: IUSchedule,
-        total_time: timedelta,
     ) -> None:
         # pylint: disable=too-many-arguments
         super().__init__(None)
@@ -2115,11 +2119,13 @@ class IUSequenceRun(IUBase):
         self._controller = controller
         self._sequence = sequence
         self._schedule = schedule
-        self._total_time = total_time
         # Private variables
-        self._runs = weakref.WeakKeyDictionary()
+        self._runs: Dict[IURun, IUSequenceZone] = weakref.WeakKeyDictionary()
         self._active_zone: IUSequenceZone = None
         self._running = False
+        self._start_time: datetime = None
+        self._end_time: datetime = None
+        self._accumulated_duration = timedelta(0)
 
     @property
     def sequence(self) -> IUSequence:
@@ -2127,9 +2133,31 @@ class IUSequenceRun(IUBase):
         return self._sequence
 
     @property
+    def schedule(self) -> IUSchedule:
+        """Return the schedule associated with this run"""
+        return self._schedule
+
+    @property
+    def start_time(self) -> datetime:
+        """Return the start time for this sequence"""
+        return self._start_time
+
+    @property
+    def end_time(self) -> datetime:
+        """Return the end time for this sequence"""
+        return self._end_time
+
+    @property
     def total_time(self) -> timedelta:
         """Return the total run time for this sequence"""
-        return self._total_time
+        return self._end_time - self._start_time
+
+    @property
+    def accumulated_duration(self) -> timedelta:
+        """Return the accumulated time. This is the sum
+        of all durations which may overlap. Handy to check if
+        this sequence runs at all."""
+        return self._accumulated_duration
 
     @property
     def running(self) -> bool:
@@ -2141,9 +2169,50 @@ class IUSequenceRun(IUBase):
         """Return the active zone in the sequence"""
         return self._active_zone
 
+    def is_manual(self) -> bool:
+        """Check if this is a manual run"""
+        return self._schedule is None
+
+    def is_expired(self, stime: datetime) -> bool:
+        """Check if this sequence run is expired"""
+        return stime >= self._end_time
+
     def add(self, run: IURun, sequence_zone: IUSequenceZone) -> None:
         """Adds a sequence zone to the group"""
         self._runs[run] = sequence_zone
+        self._accumulated_duration += run.duration
+        if self._start_time is None or run.start_time < self._start_time:
+            self._start_time = run.start_time
+        if self._end_time is None or run.end_time > self._end_time:
+            self._end_time = run.end_time
+
+    @staticmethod
+    def _calc_on_time(runs: List[IURun]) -> timedelta:
+        """Return the total time this list of runs is on. Accounts for
+        overlapping time periods"""
+        result = timedelta(0)
+        period_start: datetime = None
+        period_end: datetime = None
+
+        for run in runs:
+            if period_end is None or run.start_time > period_end:
+                if period_end is not None:
+                    result += period_end - period_start
+                period_start = run.start_time
+                period_end = run.end_time
+            else:
+                period_end = max(period_end, run.end_time)
+        if period_end is not None:
+            result += period_end - period_start
+        return result
+
+    def on_time(self) -> timedelta:
+        """Return the total time this run is on"""
+        return self._calc_on_time(self._runs.keys())
+
+    def zone_runs(self, sequence_zone: IUSequenceZone) -> List[IURun]:
+        """Get the list of runs associated with the sequence zone"""
+        return [run for run in self._runs.keys() if self._runs[run] == sequence_zone]
 
     def run_index(self, run: IURun) -> int:
         """Extract the index from the supplied run"""
@@ -2165,7 +2234,7 @@ class IUSequenceRun(IUBase):
             self._coordinator.notify_sequence(
                 EVENT_START,
                 self._controller,
-                self.sequence,
+                self._sequence,
                 self._schedule,
                 self,
             )
@@ -2191,6 +2260,55 @@ class IUSequenceRun(IUBase):
             return True
 
         return False
+
+    def as_dict(self) -> dict:
+        """Return this sequence run as a dict"""
+        result = {}
+        result[ATTR_STATUS] = self._sequence.status(self._running)
+        result[ATTR_ICON] = self._sequence.icon(self._running)
+        result[ATTR_START] = dt.as_local(self._start_time)
+        result[ATTR_DURATION] = to_secs(self.on_time())
+        result[ATTR_ADJUSTMENT] = str(self._sequence.adjustment)
+        if not self.is_manual():
+            result[ATTR_SCHEDULE_INDEX] = self._schedule.index
+            result[ATTR_SCHEDULE_NAME] = self._schedule.name
+        else:
+            result[ATTR_SCHEDULE_INDEX] = None
+            result[ATTR_SCHEDULE_NAME] = RES_MANUAL
+        result[ATTR_ZONES] = []
+        for zone in self._sequence.zones:
+            runs = self.zone_runs(zone)
+            is_on = zone == self._active_zone
+            sqr = {}
+            sqr[ATTR_STATUS] = zone.status(is_on)
+            sqr[ATTR_ICON] = zone.icon(is_on)
+            sqr[ATTR_DURATION] = to_secs(self._calc_on_time(runs))
+            sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
+            result[ATTR_ZONES].append(sqr)
+        return result
+
+    @staticmethod
+    def skeleton(sequence: IUSequence) -> dict:
+        """Return a skeleton dict for when no sequence run is
+        active. Must match the as_dict method"""
+
+        result = {}
+        result[ATTR_STATUS] = sequence.status(False)
+        result[ATTR_ICON] = sequence.icon(False)
+        result[ATTR_START] = None
+        result[ATTR_DURATION] = 0
+        result[ATTR_ADJUSTMENT] = str(sequence.adjustment)
+        result[ATTR_SCHEDULE_INDEX] = None
+        result[ATTR_SCHEDULE_NAME] = None
+        result[ATTR_ZONES] = []
+        for zone in sequence.zones:
+            sqr = {}
+            sqr[ATTR_STATUS] = zone.status(False)
+            sqr[ATTR_ICON] = zone.icon(False)
+            sqr[ATTR_DURATION] = 0
+            sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
+            result[ATTR_ZONES].append(sqr)
+        return result
 
 
 class IUController(IUBase):
@@ -2458,6 +2576,41 @@ class IUController(IUBase):
             result[CONF_SEQUENCES].append(sequence.as_dict())
         return result
 
+    def sequence_runs(
+        self,
+    ) -> Set[IUSequenceRun]:
+        """Gather all the sequence runs"""
+        result: Set[IUSequenceRun] = set()
+        for zone in self._zones:
+            for run in zone.runs:
+                if run.is_sequence:
+                    result.add(run.sequence_run)
+        return result
+
+    def up_next(self) -> Dict[IUSequence, IUSequenceRun]:
+        """Return a list of sequences and their next start times filtered"""
+        stime = self._coordinator.service_time()
+        sequences: Dict[IUSequence, IUSequenceRun] = {}
+        for run in self.sequence_runs():
+            if run.is_expired(stime):
+                continue
+            sample = sequences.get(run.sequence)
+            if sample is None or run.start_time < sample.start_time:
+                sequences[run.sequence] = run
+        return sequences
+
+    def sequence_status(self) -> List[dict]:
+        """Return the sequence status or run information"""
+        result = []
+        runs = self.up_next()
+        for sequence in self._sequences:
+            run = runs.get(sequence)
+            if run is not None:
+                result.append(run.as_dict())
+            else:
+                result.append(IUSequenceRun.skeleton(sequence))
+        return result
+
     def muster_sequence(
         self,
         stime: datetime,
@@ -2525,7 +2678,7 @@ class IUController(IUBase):
                             if next_run is None:
                                 return status  # Exit if queue is full
                             sequence_run = IUSequenceRun(
-                                self._coordinator, self, sequence, schedule, total_time
+                                self._coordinator, self, sequence, schedule
                             )
 
                         # Don't adjust manual run and no adjustment on adjustment
