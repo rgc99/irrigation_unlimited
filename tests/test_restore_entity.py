@@ -159,13 +159,13 @@ async def test_restore_coordinator(
     assert sta.attributes["enabled"] is False
 
     assert coordinator.controllers[0].sequences[2].enabled is False
-    assert coordinator.controllers[0].sequences[2].status == "disabled"
-    assert coordinator.controllers[0].sequences[2].zones[0].status == "blocked"
-    assert coordinator.controllers[0].sequences[2].zones[1].status == "blocked"
-    assert coordinator.controllers[0].sequences[2].zones[2].status == "blocked"
+    assert coordinator.controllers[0].sequences[2].status() == "disabled"
+    assert coordinator.controllers[0].sequences[2].zones[0].status() == "blocked"
+    assert coordinator.controllers[0].sequences[2].zones[1].status() == "blocked"
+    assert coordinator.controllers[0].sequences[2].zones[2].status() == "blocked"
 
     assert coordinator.controllers[0].sequences[1].zones[1].enabled is False
-    assert coordinator.controllers[0].sequences[1].zones[1].status == "disabled"
+    assert coordinator.controllers[0].sequences[1].zones[1].status() == "disabled"
 
     IURestore(None, coordinator)
     IURestore({}, coordinator)
