@@ -199,7 +199,6 @@ class IUExam:
 
     def no_check(self, check_off: bool = True) -> None:
         """Disable checking results"""
-        self._no_check = check_off
         no_check(check_off)
 
     async def setup(self) -> None:
@@ -226,10 +225,13 @@ class IUExam:
             self._core_config_changed = False
 
     async def __aenter__(self):
+        self._no_check = NO_CHECK
         await self.setup()
         return self
 
     async def __aexit__(self, *args):
+        global NO_CHECK
+        NO_CHECK = self._no_check
         await self.restore()
 
     async def begin_test(self, test_no: int) -> None:
