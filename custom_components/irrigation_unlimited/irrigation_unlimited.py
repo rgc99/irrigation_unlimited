@@ -156,6 +156,11 @@ def dt2lstr(stime: datetime) -> str:
     return datetime.strftime(dt.as_local(stime), "%Y-%m-%d %H:%M:%S")
 
 
+def to_secs(atime: timedelta) -> int:
+    """Convert the supplied time to whole seconds"""
+    return round(atime.total_seconds())
+
+
 # These routines truncate dates, times and deltas to the internal
 # granularity. This should be no more than 1 minute and realistically
 # no less than 1 second i.e. 1 >= GRANULARITY <= 60
