@@ -1698,25 +1698,27 @@ class IUSequenceZone(IUBase):
         """Return if this sequence zone is running"""
         return self._controller.runs.is_sequence_zone_running(self)
 
-    @property
-    def icon(self) -> str:
+    def icon(self, is_on: bool = None) -> str:
         """Return the icon to use in the frontend."""
         if self._controller.enabled:
             if self._sequence.enabled:
                 if self._sequence.zone_enabled(self):
-                    if self.is_on:
+                    if is_on is None:
+                        is_on = self.is_on
+                    if is_on:
                         return ICON_SEQUENCE_ZONE_ON
                     return ICON_SEQUENCE_ZONE_OFF
                 return ICON_DISABLED
         return ICON_BLOCKED
 
-    @property
-    def status(self) -> str:
+    def status(self, is_on: bool = None) -> str:
         """Return status of the sequence zone"""
         if self._controller.enabled:
             if self._sequence.enabled:
                 if self._sequence.zone_enabled(self):
-                    if self.is_on:
+                    if is_on is None:
+                        is_on = self.is_on
+                    if is_on:
                         return STATE_ON
                     return STATE_OFF
                 return STATUS_DISABLED
@@ -1745,12 +1747,13 @@ class IUSequenceZone(IUBase):
 
     def as_dict(self, duration_factor: float) -> dict:
         """Return this sequence zone as a dict"""
+        is_on = self.is_on
         result = OrderedDict()
         result[CONF_INDEX] = self._index
-        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
+        result[CONF_STATE] = STATE_ON if is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
-        result[CONF_ICON] = self.icon
-        result[ATTR_STATUS] = self.status
+        result[CONF_ICON] = self.icon(is_on)
+        result[ATTR_STATUS] = self.status(is_on)
         result[CONF_DELAY] = self._sequence.zone_delay(self)
         result[ATTR_BASE_DURATION] = self._sequence.zone_duration_base(self)
         result[ATTR_ADJUSTED_DURATION] = self._sequence.zone_duration(self)
@@ -1844,23 +1847,25 @@ class IUSequence(IUBase):
         """Return if the sequence is on or off"""
         return self._controller.runs.is_sequence_running(self)
 
-    @property
-    def icon(self) -> str:
+    def icon(self, is_on: bool = None) -> str:
         """Return the icon to use in the frontend."""
         if self._controller.enabled:
             if self.enabled:
-                if self.is_on:
+                if is_on is None:
+                    is_on = self.is_on
+                if is_on:
                     return ICON_SEQUENCE_ON
                 return ICON_SEQUENCE_OFF
             return ICON_DISABLED
         return ICON_BLOCKED
 
-    @property
-    def status(self) -> str:
+    def status(self, is_on: bool = None) -> str:
         """Return status of the sequence"""
         if self._controller.enabled:
             if self._enabled:
-                if self.is_on:
+                if is_on is None:
+                    is_on = self.is_on
+                if is_on:
                     return STATE_ON
                 return STATE_OFF
             return STATUS_DISABLED
@@ -2060,13 +2065,14 @@ class IUSequence(IUBase):
         total_duration = self.total_duration()
         total_duration_adjusted = self.total_duration_adjusted(total_duration)
         duration_factor = self.duration_factor(total_duration_adjusted + total_delay)
+        is_on = self.is_on
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
-        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
+        result[CONF_STATE] = STATE_ON if is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
-        result[ATTR_ICON] = self.icon
-        result[ATTR_STATUS] = self.status
+        result[ATTR_ICON] = self.icon(is_on)
+        result[ATTR_STATUS] = self.status(is_on)
         result[ATTR_DEFAULT_DURATION] = self._duration
         result[ATTR_DEFAULT_DELAY] = self._delay
         result[ATTR_DURATION_FACTOR] = duration_factor
