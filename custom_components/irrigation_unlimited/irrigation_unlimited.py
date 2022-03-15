@@ -241,11 +241,9 @@ class IUJSONEncoder(json.JSONEncoder):
 
     def default(self, o):
         if isinstance(o, datetime):
-            return o.isoformat()
+            return dt.as_local(o).isoformat()
         if isinstance(o, timedelta):
-            if o != timedelta(0):
-                return str(round(o.total_seconds()))
-            return ""
+            return round(o.total_seconds())
         return o.__str__()
 
 
