@@ -1,48 +1,104 @@
 type: custom:html-template-card
-title: Irrigation Status
 ignore_line_breaks: true
 content: >
-  {% set data =
+  {% set palette =
+  ['3498db','e74c3c','9b59b6','f1c40f','2ecc71','1abc9c','34495e','e67e22','7f8c8d','27ae60','2980b9','8e44ad']
+  %} {% set data =
   state_attr('irrigation_unlimited.coordinator','configuration')|from_json %} {%
   for controller in data.controllers %}
-    <h1 style="line-height:0"><ha-icon{% if controller.state == 'on' %} style="color:yellow"{% endif %} icon={{ controller.icon }}></ha-icon> {{ controller.name }}</h1>
-    <table>
+    {% set sensor = 'binary_sensor.irrigation_unlimited_c' ~ (controller.index + 1) + '_m' %}
+    {% set runs = state_attr(sensor, 'sequence_status') %}
+    {% set icon = state_attr(sensor, 'icon') %}
+    {% set is_on = is_state(sensor, 'on') %}
+    <span style="font-size:x-large"><ha-icon style="color:{% if is_on %}var(--state-icon-active-color){% else %}var(--state-icon-color){% endif %}" icon={{ icon }}></ha-icon> {{ controller.name }}</span>
+    <table style="padding-top:1.5em">
       <tr>
-        <th style="text-align:left"><h2 style="line-height:0">Zones</h2></th>
-        <th>Adjustment</th>
-        <th>Current</th>
+        <th style="text-align:left"><ha-icon icon="mdi:map-marker"></ha-icon></th>
+        <th style="min-width:3em"><ha-icon icon="mdi:clock-outline"></ha-icon></th>
+        <th style="min-width:3em"><ha-icon icon="mdi:timer-sand"></ha-icon></th>
+        <th style="min-width:3em"><ha-icon icon="mdi:delta"></ha-icon></th>
       </tr>
     {% for zone in controller.zones %}
-      <tr>
-        <td style="padding-left:20px">{{ zone.zone_id }} <ha-icon{% if zone.state == 'on' %} style="color:yellow"{% endif %} icon={{ zone.icon }}></ha-icon> <b>{{ zone.name }}</b></td>
-        <td style="text-align:right">{{ zone.adjustment }}</td>
-        <td style="color: yellow">{% if zone.current_duration %} {{ timedelta(seconds=zone.current_duration | int) }} {% endif %}</td>
+      {% set sensor = 'binary_sensor.irrigation_unlimited_c' ~ (controller.index + 1) + '_z' ~ (zone.index + 1) %}
+      {% set icon = state_attr(sensor, 'icon') %}
+      {% set is_on = is_state(sensor, 'on') %}
+      {% if is_on %}
+        {% set start = state_attr(sensor, 'current_start') %}
+        {% set schedule_index = state_attr(sensor, 'current_schedule') %}
+        {% set schedule_name = state_attr(sensor, 'current_name') %}
+        {% set duration = state_attr(sensor, 'time_remaining') %}
+        {% set adjustment = state_attr(sensor, 'current_adjustment') %}
+      {% else %}
+        {% set start = state_attr(sensor, 'next_start') %}
+        {% set schedule_index = state_attr(sensor, 'next_schedule') %}
+        {% set schedule_name = state_attr(sensor, 'next_name') %}
+        {% set duration = state_attr(sensor, 'next_duration') %}
+        {% set adjustment = state_attr(sensor, 'next_adjustment') %}
+      {% endif %}
+      {% if schedule_index == 'Manual' %}{% set schedule_index = 0 %}{% endif %}
+      {% if schedule_name == None %}{% set schedule_name = '' %}{% endif %}
+      {% if duration == None %}{% set duration = '' %}{% endif %}
+      <tr style="line-height:300%">
+        <td style="padding-left:1em"><span style="color:#{{ palette[zone.index % palette | length ]}}">{{ zone.index + 1 }}</span> <ha-icon style="color:{% if is_on %}var(--state-icon-active-color){% else %}var(--state-icon-color){% endif %}" icon={{ icon }}></ha-icon> {{ zone.name }}</td>
+        {% if start != None and duration != '0:00:00' %}
+          {% if schedule_index != 0 %}
+            {% if is_on %}
+              <td style="color:var(--state-on-color);text-align:center">{{ schedule_name }}</td>
+            {% else %}
+              <td style="text-align:center;line-height:1.2;padding:0 .5em 0 .5em"><span style="color:var(--secondary-text-color);font-size:small">{{ schedule_name }}</span><br><span style="font-size:small">{{ start.strftime('%a %H:%M') }}</span></td>
+            {% endif %}
+          {% else %}
+            <td style="text-align:center;color:var(--label-badge-red)">{{ schedule_name }}</td>
+          {% endif %}
+          <td{% if is_on %} style="color:var(--state-on-color)"{% endif %}>{{ duration }}</td>
+        {% else %}
+          <td></td>
+          <td></td>
+        {% endif %}
+        <td>{% if adjustment %}{{ adjustment }}{% endif %}</td>
       </tr>
     {% endfor %}
     </table>
-    <table>
+    <table style="padding-top:1.5em">
       <tr>
-        <th style="text-align:left"><h2 style="line-height:0">Sequences</h2></th>
-        <th>Adjustment</th>
-        <th>Duration</th>
-        <th>Current</th>
-        <th>Zones</th>
+        <th style="text-align:left"><ha-icon icon="mdi:reorder-horizontal"></ha-icon></th>
+        <th style="min-width:3em"><ha-icon icon="mdi:clock-outline"></ha-icon></th>
+        <th style="min-width:3em"><ha-icon icon="mdi:timer-sand"></ha-icon></th>
+        <th style="min-width:3em"><ha-icon icon="mdi:delta"></ha-icon></th>
+        <th style="min-width:2em"><ha-icon icon="mdi:map-marker"></ha-icon></th>
       </tr>
     {% for sq in controller.sequences %}
-      <tr style="font-weight:bold">
-        <td style="padding-left:20px">{{ sq.index + 1 }} <ha-icon{% if sq.state == 'on' %} style="color:yellow"{% endif %} icon={{ sq.icon }}></ha-icon> {{ sq.name }}</td>
-        <td style="text-align:right">{{ sq.adjustment }}</td>
-        <td>{{ timedelta(seconds=sq.adjusted_duration | int) }}</td>
-        <td style="color: yellow">{% if sq.current_duration %} {{ timedelta(seconds=sq.current_duration | int) }}</span> {% endif %}</td>
+      {% set run = runs[sq.index] %}
+      {% set is_on = run.status == 'on' %}
+      {% set is_manual = run.schedule.index == None %}
+      <tr style="line-height:300%">
+        <td style="padding-left:1em">{{ sq.index + 1 }} <ha-icon style="color:{% if is_on %}var(--state-icon-active-color){% else %}var(--state-icon-color){% endif %}" icon={{ run.icon }}></ha-icon> {{ sq.name }}</td>
+        {% if run.start != None and run.duration > 0 %}
+          {% if not is_manual %}
+            {% if is_on %}
+              <td style="color:var(--state-on-color);text-align:center">{{ run.schedule.name }}</td>
+            {% else %}
+              <td style="text-align:center;line-height:1.2;padding:0 .5em 0 .5em"><span style="color:var(--secondary-text-color);font-size:small">{{ run.schedule.name }}<br></span><span style="font-size:small">{{ run.start.strftime('%a %H:%M') }}</span></td>
+            {% endif %}
+          {% else %}
+            <td style="text-align:center;color:var(--label-badge-red)">{{ run.schedule.name }}</td>
+          {% endif %}
+          <td{% if is_on %} style=color:var(--state-on-color){% endif %}>{{ timedelta(seconds=run.duration) }}</td>
+        {% else %}
+          <td></td>
+          <td></td>
+        {% endif %}
+        <td>{% if not is_manual %}{{ run.adjustment }}{% endif %}</td>
       </tr>
       {% for sz in sq.sequence_zones -%}
-      <tr>
-        <td style="padding-left:40px">{{ sz.index + 1 }} <ha-icon{% if sz.state == 'on' %} style="color:yellow"{% endif %} icon={{ sz.icon }}></ha-icon></td>
-        <td style="text-align:right">{{ sz.adjustment }} </td>
-        <td>{% if sz.final_duration %} {{ timedelta(seconds=sz.final_duration | int) }} {% else %} - {% endif %}</td>
-        <td style="color: yellow">{% if sz.current_duration %} {{ timedelta(seconds=sz.current_duration | int) }} {% endif %}</td>
-        <td style="text-align:right">{{ sz.zones }}</td>
-      </tr>
+        {% set run_sz = run.zones[sz.index] %}
+        <tr style="line-height:200%">
+          <td style="padding-left:2em">{{ sz.index + 1 }} <ha-icon style="color:{% if run_sz.status == 'on' %}var(--state-icon-active-color){% else %}var(--state-icon-color){% endif %}" icon={{ run_sz.icon }}></ha-icon></td>
+          <td></td>
+          <td{% if run_sz.status == 'on' %} style="color:var(--state-on-color)"{% endif %}>{% if run_sz.duration > 0 %}{{ timedelta(seconds=run_sz.duration) }}{% endif %}</td>
+          <td>{% if not is_manual %}{{ run_sz.adjustment }}{% endif %}</td>
+          <td style="text-align:center">{% for zone in sz.zones %} <span style="color:#{{ palette[(zone - 1) % palette | length ]}}">{{ zone }}</span>{% endfor %}</td>
+        </tr>
       {% endfor -%}
     {% endfor -%}
     </table>
