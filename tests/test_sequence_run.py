@@ -32,6 +32,13 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "zones"
             ][0].keys()
         )
+        assert set(
+            exam.coordinator.controllers[0].sequence_status()[0]["schedule"].keys()
+        ) == set(
+            IUSequenceRun.skeleton(exam.coordinator.controllers[0].sequences[0])[
+                "schedule"
+            ].keys()
+        )
 
         # Check normal operation
         await exam.begin_test(1)
@@ -47,8 +54,10 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "adjustment": "",
-                "schedule_index": 0,
-                "schedule_name": "Schedule 1",
+                "schedule": {
+                    "index": 0,
+                    "name": "Schedule 1",
+                },
                 "zones": [
                     {
                         "status": "off",
@@ -78,8 +87,10 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "adjustment": "",
-                "schedule_index": 0,
-                "schedule_name": "Schedule 1",
+                "schedule": {
+                    "index": 0,
+                    "name": "Schedule 1",
+                },
                 "zones": [
                     {
                         "status": "off",
@@ -126,8 +137,10 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "adjustment": "",
-                "schedule_index": 0,
-                "schedule_name": "Schedule 1",
+                "schedule": {
+                    "index": 0,
+                    "name": "Schedule 1",
+                },
                 "zones": [
                     {
                         "status": "off",
@@ -157,8 +170,10 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "adjustment": "%0.0",
-                "schedule_index": 0,
-                "schedule_name": "Schedule 1",
+                "schedule": {
+                    "index": 0,
+                    "name": "Schedule 1",
+                },
                 "zones": [
                     {
                         "status": "off",
@@ -204,8 +219,10 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "adjustment": "",
-                "schedule_index": 0,
-                "schedule_name": "Schedule 1",
+                "schedule": {
+                    "index": 0,
+                    "name": "Schedule 1",
+                },
                 "zones": [
                     {
                         "status": "off",
@@ -233,8 +250,10 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "status": "disabled",
                 "icon": "mdi:circle-off-outline",
                 "adjustment": "%0.0",
-                "schedule_index": None,
-                "schedule_name": None,
+                "schedule": {
+                    "index": None,
+                    "name": None,
+                },
                 "zones": [
                     {
                         "status": "blocked",

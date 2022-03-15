@@ -48,8 +48,9 @@ from .const import (
     ATTR_DURATION,
     ATTR_DURATION_FACTOR,
     ATTR_FINAL_DURATION,
-    ATTR_SCHEDULE_INDEX,
-    ATTR_SCHEDULE_NAME,
+    ATTR_INDEX,
+    ATTR_NAME,
+    ATTR_SCHEDULE,
     ATTR_START,
     ATTR_STATUS,
     ATTR_TOTAL_DELAY,
@@ -2270,11 +2271,15 @@ class IUSequenceRun(IUBase):
         result[ATTR_DURATION] = to_secs(self.on_time())
         result[ATTR_ADJUSTMENT] = str(self._sequence.adjustment)
         if not self.is_manual():
-            result[ATTR_SCHEDULE_INDEX] = self._schedule.index
-            result[ATTR_SCHEDULE_NAME] = self._schedule.name
+            result[ATTR_SCHEDULE] = {
+                ATTR_INDEX: self._schedule.index,
+                ATTR_NAME: self._schedule.name,
+            }
         else:
-            result[ATTR_SCHEDULE_INDEX] = None
-            result[ATTR_SCHEDULE_NAME] = RES_MANUAL
+            result[ATTR_SCHEDULE] = {
+                ATTR_INDEX: None,
+                ATTR_NAME: RES_MANUAL,
+            }
         result[ATTR_ZONES] = []
         for zone in self._sequence.zones:
             runs = self.zone_runs(zone)
@@ -2298,8 +2303,10 @@ class IUSequenceRun(IUBase):
         result[ATTR_START] = None
         result[ATTR_DURATION] = 0
         result[ATTR_ADJUSTMENT] = str(sequence.adjustment)
-        result[ATTR_SCHEDULE_INDEX] = None
-        result[ATTR_SCHEDULE_NAME] = None
+        result[ATTR_SCHEDULE] = {
+            ATTR_INDEX: None,
+            ATTR_NAME: None,
+        }
         result[ATTR_ZONES] = []
         for zone in sequence.zones:
             sqr = {}
