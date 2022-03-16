@@ -1,6 +1,5 @@
 """Irrigation Unlimited Coordinator and sub classes"""
 # pylint: disable=too-many-lines
-import typing
 import weakref
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
@@ -259,11 +258,6 @@ class IUBase:
         return isinstance(other, IUBase) and self._uid == other._uid
 
     def __hash__(self) -> int:
-        return self._uid
-
-    @property
-    def uid(self) -> str:
-        """Return our unique id"""
         return self._uid
 
     @property
@@ -782,8 +776,7 @@ class IURun(IUBase):
         return result
 
 
-# class IURunQueue(list[IURun]): # python 3.9
-class IURunQueue(typing.List[IURun]):
+class IURunQueue(List[IURun]):
     """Irrigation Unlimited class to hold the upcoming runs"""
 
     # pylint: disable=too-many-public-methods
@@ -904,28 +897,28 @@ class IURunQueue(typing.List[IURun]):
                 self._sorted = True
         return modified
 
-    def find_last_index(self, uid: int) -> int:
+    def find_last_index(self, schedule: IUSchedule) -> int:
         """Return the index of the run that finishes last in the queue.
         This routine does not require the list to be sorted."""
         result: int = None
         last_time: datetime = None
         for i, run in enumerate(self):
-            if run.schedule is not None and run.schedule.uid == uid:
+            if run.schedule is not None and run.schedule == schedule:
                 if last_time is None or run.end_time > last_time:
                     last_time = run.end_time
                     result = i
         return result
 
-    def find_last_run(self, uid: int) -> IURun:
-        """Find the last run for the matching uid"""
-        i = self.find_last_index(uid)
+    def find_last_run(self, schedule: IUSchedule) -> IURun:
+        """Find the last run for the matching schedule"""
+        i = self.find_last_index(schedule)
         if i is not None:
             return self[i]
         return None
 
-    def find_last_date(self, uid: int) -> datetime:
-        """Find the last time in the queue for the supplied uid"""
-        run = self.find_last_run(uid)
+    def find_last_date(self, schedule: IUSchedule) -> datetime:
+        """Find the last time in the queue for the supplied schedule"""
+        run = self.find_last_run(schedule)
         if run is not None:
             return run.end_time
         return None
@@ -1120,7 +1113,7 @@ class IUScheduleQueue(IURunQueue):
 
         # See if schedule already exists in run queue. If so get
         # the finish time of the last entry.
-        next_time = self.find_last_date(schedule.uid)
+        next_time = self.find_last_date(schedule)
         if next_time is not None:
             next_time += granularity_time()
         else:
@@ -2633,7 +2626,7 @@ class IUController(IUBase):
             total_duration: timedelta,
         ) -> datetime:
             if schedule is not None:
-                next_time = zone.runs.find_last_date(schedule.uid)
+                next_time = zone.runs.find_last_date(schedule)
                 if next_time is not None:
                     next_time += granularity_time()
                 else:
