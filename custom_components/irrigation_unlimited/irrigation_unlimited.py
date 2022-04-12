@@ -2912,6 +2912,7 @@ class IUController(IUBase):
                     if changed:
                         self.clear_sequence_runs(stime, sequence.zone_ids())
                         self._run_queue.clear(stime)
+                        self.request_update(True)
                         result = True
                 else:
                     self._coordinator.logger.log_invalid_sequence(
