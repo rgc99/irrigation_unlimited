@@ -1020,21 +1020,21 @@ class IURunQueue(List[IURun]):
             status |= self.RQ_STATUS_REDUCED
 
         # Try to find a running schedule
-        if self._current_run is None and len(self) > 0 and self[0].is_running(stime):
-            self._current_run = self[0]
-            self._next_run = None
-            status |= self.RQ_STATUS_UPDATED
+        if self._current_run is None:
+            for run in self:
+                if run.is_running(stime) and run.duration != timedelta(0):
+                    self._current_run = run
+                    self._next_run = None
+                    status |= self.RQ_STATUS_UPDATED
+                    break
 
         # Try to find the next schedule
         if self._next_run is None:
-            if self._current_run is None:
-                if len(self) >= 1:
-                    self._next_run = self[0]
+            for run in self:
+                if not run.is_running(stime) and run.duration != timedelta(0):
+                    self._next_run = run
                     status |= self.RQ_STATUS_UPDATED
-            else:
-                if len(self) >= 2:
-                    self._next_run = self[1]
-                    status |= self.RQ_STATUS_UPDATED
+                    break
 
         return status
 

@@ -280,12 +280,12 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
     assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=5)
     assert sta.attributes["percent_complete"] == 64
-    assert sta.attributes["next_zone"] == 2
-    assert sta.attributes["next_name"] == "Second zone"
+    assert sta.attributes["next_zone"] == 1
+    assert sta.attributes["next_name"] == "First zone"
     assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:08:00+00:00"
+        "2021-01-04 14:03:00+00:00"
     )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
+    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water"
 
