@@ -23,6 +23,7 @@ from .irrigation_unlimited import (
 from .const import (
     ATTR_ADJUSTMENT,
     ATTR_CONFIGURATION,
+    ATTR_CONTROLLER_COUNT,
     ATTR_ENABLED,
     CONF_CONTROLLER,
     CONF_CONTROLLERS,
@@ -326,5 +327,6 @@ class IUComponent(RestoreEntity):
     def state_attributes(self):
         """Return the state attributes."""
         attr = {}
+        attr[ATTR_CONTROLLER_COUNT] = len(self._coordinator.controllers)
         attr[ATTR_CONFIGURATION] = self._coordinator.configuration
         return attr

@@ -152,6 +152,7 @@ ATTR_START = "start"
 ATTR_DURATION = "duration"
 ATTR_ZONES = "zones"
 ATTR_SEQUENCE_STATUS = "sequence_status"
+ATTR_CONTROLLER_COUNT = "controller_count"
 
 # Resources
 RES_MANUAL = "Manual"
