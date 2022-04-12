@@ -10,7 +10,11 @@ import time as tm
 import json
 from homeassistant.core import HomeAssistant, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.event import async_track_time_interval, Event as HAEvent
+from homeassistant.helpers.event import (
+    async_track_time_interval,
+    async_call_later,
+    Event as HAEvent,
+)
 import homeassistant.helpers.sun as sun
 import homeassistant.util.dt as dt
 
@@ -3886,6 +3890,14 @@ class IUCoordinator:
             EVENT_HOMEASSISTANT_STOP, self._async_shutdown_listener
         )
 
+    async def _async_replay_last_timer(self, atime: datetime) -> None:
+        """Update after a service call"""
+        # pylint: disable=unused-argument
+        self.request_update(False)
+        self._muster_required = True
+        if self._last_tick is not None:
+            self.timer(self._last_tick)
+
     def notify_sequence(
         self,
         event_type: str,
@@ -3980,9 +3992,8 @@ class IUCoordinator:
             else:
                 controller.service_manual_run(data, stime)
         if changed:
-            self.request_update(False)
-            self._muster_required = True
             self._logger.log_service_call(service, stime, controller, zone, data)
+            async_call_later(self._hass, 0, self._async_replay_last_timer)
 
     def start_test(self, test_no: int) -> datetime:
         """Main entry to start a test"""
