@@ -47,6 +47,9 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             "sequence_status"
         ] == [
             {
+                "index": 0,
+                "enabled": True,
+                "name": "Seq 1",
                 "start": datetime.datetime(
                     2021, 1, 4, 6, 5, tzinfo=datetime.timezone.utc
                 ),
@@ -60,26 +63,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 },
                 "zones": [
                     {
+                        "index": 0,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
                         "adjustment": "",
+                        "zone_ids": ["1"],
                     },
                     {
+                        "index": 1,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
                         "adjustment": "",
+                        "zone_ids": ["2", "3"],
                     },
                     {
+                        "index": 2,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
                         "adjustment": "",
+                        "zone_ids": ["4"],
                     },
                 ],
             },
             {
+                "index": 1,
+                "enabled": True,
+                "name": "Seq 2",
                 "start": datetime.datetime(
                     2021, 1, 4, 6, 10, tzinfo=datetime.timezone.utc
                 ),
@@ -93,22 +108,31 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 },
                 "zones": [
                     {
+                        "index": 0,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
                         "adjustment": "",
+                        "zone_ids": ["1"],
                     },
                     {
+                        "index": 1,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
                         "adjustment": "",
+                        "zone_ids": ["2", "3"],
                     },
                     {
+                        "index": 2,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
                         "adjustment": "",
+                        "zone_ids": ["4"],
                     },
                 ],
             },
@@ -130,6 +154,9 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         await exam.run_for_1_tick()
         assert exam.coordinator.controllers[0].sequence_status() == [
             {
+                "index": 0,
+                "enabled": True,
+                "name": "Seq 1",
                 "start": datetime.datetime(
                     2021, 1, 4, 6, 5, tzinfo=datetime.timezone.utc
                 ),
@@ -143,26 +170,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 },
                 "zones": [
                     {
+                        "index": 0,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
                         "adjustment": "",
+                        "zone_ids": ["1"],
                     },
                     {
+                        "index": 1,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
                         "adjustment": "",
+                        "zone_ids": ["2", "3"],
                     },
                     {
+                        "index": 2,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
                         "adjustment": "",
+                        "zone_ids": ["4"],
                     },
                 ],
             },
             {
+                "index": 1,
+                "enabled": True,
+                "name": "Seq 2",
                 "start": datetime.datetime(
                     2021, 1, 4, 6, 10, tzinfo=datetime.timezone.utc
                 ),
@@ -176,22 +215,31 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 },
                 "zones": [
                     {
+                        "index": 0,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
                         "adjustment": "",
+                        "zone_ids": ["1"],
                     },
                     {
+                        "index": 1,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
                         "adjustment": "",
+                        "zone_ids": ["2", "3"],
                     },
                     {
+                        "index": 2,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
                         "adjustment": "",
+                        "zone_ids": ["4"],
                     },
                 ],
             },
@@ -212,6 +260,9 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         await exam.run_for_1_tick()
         assert exam.coordinator.controllers[0].sequence_status() == [
             {
+                "index": 0,
+                "enabled": True,
+                "name": "Seq 1",
                 "start": datetime.datetime(
                     2021, 1, 4, 6, 5, tzinfo=datetime.timezone.utc
                 ),
@@ -225,26 +276,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 },
                 "zones": [
                     {
+                        "index": 0,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
                         "adjustment": "",
+                        "zone_ids": ["1"],
                     },
                     {
+                        "index": 1,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
                         "adjustment": "",
+                        "zone_ids": ["2", "3"],
                     },
                     {
+                        "index": 2,
+                        "enabled": True,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
                         "adjustment": "",
+                        "zone_ids": ["4"],
                     },
                 ],
             },
             {
+                "index": 1,
+                "enabled": False,
+                "name": "Seq 2",
                 "start": None,
                 "duration": 0,
                 "status": "disabled",
@@ -256,22 +319,31 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 },
                 "zones": [
                     {
+                        "index": 0,
+                        "enabled": True,
                         "status": "blocked",
                         "icon": "mdi:alert-octagon-outline",
                         "duration": 0,
                         "adjustment": "",
+                        "zone_ids": ["1"],
                     },
                     {
+                        "index": 1,
+                        "enabled": True,
                         "status": "blocked",
                         "icon": "mdi:alert-octagon-outline",
                         "duration": 0,
                         "adjustment": "",
+                        "zone_ids": ["2", "3"],
                     },
                     {
+                        "index": 2,
+                        "enabled": True,
                         "status": "blocked",
                         "icon": "mdi:alert-octagon-outline",
                         "duration": 0,
                         "adjustment": "",
+                        "zone_ids": ["4"],
                     },
                 ],
             },

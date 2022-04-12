@@ -50,6 +50,7 @@ from .const import (
     ATTR_DEFAULT_DURATION,
     ATTR_DURATION,
     ATTR_DURATION_FACTOR,
+    ATTR_ENABLED,
     ATTR_FINAL_DURATION,
     ATTR_INDEX,
     ATTR_NAME,
@@ -58,6 +59,7 @@ from .const import (
     ATTR_STATUS,
     ATTR_TOTAL_DELAY,
     ATTR_TOTAL_DURATION,
+    ATTR_ZONE_IDS,
     ATTR_ZONES,
     BINARY_SENSOR,
     CONF_ACTUAL,
@@ -2260,6 +2262,9 @@ class IUSequenceRun(IUBase):
     def as_dict(self) -> dict:
         """Return this sequence run as a dict"""
         result = {}
+        result[ATTR_INDEX] = self._sequence.index
+        result[ATTR_NAME] = self._sequence.name
+        result[ATTR_ENABLED] = self._sequence.enabled
         result[ATTR_STATUS] = self._sequence.status(self._running)
         result[ATTR_ICON] = self._sequence.icon(self._running)
         result[ATTR_START] = dt.as_local(self._start_time)
@@ -2280,10 +2285,13 @@ class IUSequenceRun(IUBase):
             runs = self.zone_runs(zone)
             is_on = zone == self._active_zone
             sqr = {}
+            sqr[ATTR_INDEX] = zone.index
+            sqr[ATTR_ENABLED] = zone.enabled
             sqr[ATTR_STATUS] = zone.status(is_on)
             sqr[ATTR_ICON] = zone.icon(is_on)
             sqr[ATTR_DURATION] = to_secs(self._calc_on_time(runs))
             sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
+            sqr[ATTR_ZONE_IDS] = zone.zone_ids
             result[ATTR_ZONES].append(sqr)
         return result
 
@@ -2293,6 +2301,9 @@ class IUSequenceRun(IUBase):
         active. Must match the as_dict method"""
 
         result = {}
+        result[ATTR_INDEX] = sequence.index
+        result[ATTR_NAME] = sequence.name
+        result[ATTR_ENABLED] = sequence.enabled
         result[ATTR_STATUS] = sequence.status(False)
         result[ATTR_ICON] = sequence.icon(False)
         result[ATTR_START] = None
@@ -2305,10 +2316,13 @@ class IUSequenceRun(IUBase):
         result[ATTR_ZONES] = []
         for zone in sequence.zones:
             sqr = {}
+            sqr[ATTR_INDEX] = zone.index
+            sqr[ATTR_ENABLED] = zone.enabled
             sqr[ATTR_STATUS] = zone.status(False)
             sqr[ATTR_ICON] = zone.icon(False)
             sqr[ATTR_DURATION] = 0
             sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
+            sqr[ATTR_ZONE_IDS] = zone.zone_ids
             result[ATTR_ZONES].append(sqr)
         return result
 
