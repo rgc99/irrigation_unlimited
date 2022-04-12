@@ -89,7 +89,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 1"
@@ -108,7 +108,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 2"
@@ -157,7 +157,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 1"
@@ -176,7 +176,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 2"
@@ -248,7 +248,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["zone_id"] == "2"
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 2"
@@ -375,7 +375,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
@@ -448,7 +448,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
@@ -466,7 +466,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 2"
@@ -509,7 +509,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
@@ -527,7 +527,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["status"] == STATE_OFF
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["schedule_count"] == 2
-    assert sta.attributes["current_schedule"] == RES_NOT_RUNNING
+    assert sta.attributes["current_schedule"] is None
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 2"

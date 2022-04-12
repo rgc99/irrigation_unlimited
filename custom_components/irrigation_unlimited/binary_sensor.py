@@ -218,14 +218,14 @@ class IUZoneEntity(IUEntity):
                 attr[ATTR_CURRENT_SCHEDULE] = current.schedule.index + 1
                 attr[ATTR_CURRENT_NAME] = current.schedule.name
             else:
-                attr[ATTR_CURRENT_SCHEDULE] = RES_MANUAL
+                attr[ATTR_CURRENT_SCHEDULE] = 0
                 attr[ATTR_CURRENT_NAME] = RES_MANUAL
             attr[ATTR_CURRENT_START] = dt.as_local(current.start_time)
             attr[ATTR_CURRENT_DURATION] = str(current.duration)
             attr[ATTR_TIME_REMAINING] = str(current.time_remaining)
             attr[ATTR_PERCENT_COMPLETE] = current.percent_complete
         else:
-            attr[ATTR_CURRENT_SCHEDULE] = RES_NOT_RUNNING
+            attr[ATTR_CURRENT_SCHEDULE] = None
             attr[ATTR_PERCENT_COMPLETE] = 0
 
         next_run = self._zone.runs.next_run
@@ -235,12 +235,12 @@ class IUZoneEntity(IUEntity):
                 attr[ATTR_NEXT_SCHEDULE] = next_run.schedule.index + 1
                 attr[ATTR_NEXT_NAME] = next_run.schedule.name
             else:
-                attr[ATTR_NEXT_SCHEDULE] = RES_MANUAL
+                attr[ATTR_NEXT_SCHEDULE] = 0
                 attr[ATTR_NEXT_NAME] = RES_MANUAL
             attr[ATTR_NEXT_START] = dt.as_local(next_run.start_time)
             attr[ATTR_NEXT_DURATION] = str(next_run.duration)
         else:
-            attr[ATTR_NEXT_SCHEDULE] = RES_NONE
+            attr[ATTR_NEXT_SCHEDULE] = None
         attr[ATTR_TOTAL_TODAY] = round(
             self._zone.today_total.total_seconds() / 60,
             1,
