@@ -1856,7 +1856,7 @@ class IUSequence(IUBase):
     def icon(self, is_on: bool = None) -> str:
         """Return the icon to use in the frontend."""
         if self._controller.enabled:
-            if self.enabled:
+            if self._enabled:
                 if is_on is None:
                     is_on = self.is_on
                 if is_on:
@@ -1890,7 +1890,7 @@ class IUSequence(IUBase):
     def zone_enabled(self, sequence_zone: IUSequenceZone) -> bool:
         """Return True if at least one real zone referenced by the
         sequence_zone is enabled"""
-        if self._controller.enabled and self.enabled and sequence_zone.enabled:
+        if self._controller.enabled and self._enabled and sequence_zone.enabled:
             for zone_id in sequence_zone.zone_ids:
                 zone = self._controller.find_zone_by_zone_id(zone_id)
                 if zone is not None and zone.enabled:
