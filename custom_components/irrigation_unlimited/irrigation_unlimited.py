@@ -1397,7 +1397,7 @@ class IUZone(IUBase):
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUZone":
         """Load zone data from the configuration"""
         self.clear()
-        self._zone_id = config.get(CONF_ID, str(self.index + 1))
+        self._zone_id = config.get(CONF_ZONE_ID, str(self.index + 1))
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._name = config.get(CONF_NAME, None)
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
