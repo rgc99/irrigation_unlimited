@@ -7,6 +7,7 @@ from homeassistant.config import (
     async_process_ha_core_config,
 )
 from homeassistant.setup import async_setup_component
+from homeassistant.helpers.typing import ConfigType
 
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
@@ -174,6 +175,7 @@ class IUExam:
         self._core_config_changed = False
         self._config_directory = type(self).default_config_dir
         self._no_check = False
+        self._config: ConfigType = None
 
     @property
     def coordinator(self) -> IUCoordinator:
@@ -200,6 +202,11 @@ class IUExam:
         """Return the clock interval"""
         return self._coordinator.track_interval()
 
+    @property
+    def config(self) -> ConfigType:
+        """Return the processed config file"""
+        return self._config
+
     @staticmethod
     def quiet_mode() -> None:
         """Trun off a lot of noise"""
@@ -209,22 +216,26 @@ class IUExam:
         """Disable checking results"""
         no_check(check_off)
 
+    async def async_load_component(self, domain: str) -> None:
+        """Load a domain"""
+        await async_setup_component(self._hass, domain, self._config)
+        await self._hass.async_block_till_done()
+
     async def setup(self) -> None:
         """Setup the hass environment"""
-        config = CONFIG_SCHEMA(
+        self._config = CONFIG_SCHEMA(
             load_yaml_config_file(self._config_directory + self._config_file)
         )
-        if ha.DOMAIN in config:
-            await async_process_ha_core_config(self._hass, config[ha.DOMAIN])
+        if ha.DOMAIN in self._config:
+            await async_process_ha_core_config(self._hass, self._config[ha.DOMAIN])
             self._core_config_changed = True
 
         if DOMAIN not in self._hass.config.components:
-            await async_setup_component(self._hass, DOMAIN, config)
-            await self._hass.async_block_till_done()
+            await self.async_load_component(DOMAIN)
             self._coordinator: IUCoordinator = self._hass.data[DOMAIN][COORDINATOR]
         else:
             self._coordinator: IUCoordinator = self._hass.data[DOMAIN][COORDINATOR]
-            self._coordinator.load(config[DOMAIN])
+            self._coordinator.load(self._config[DOMAIN])
 
     async def restore(self) -> None:
         """Reset home assistant parameters"""
