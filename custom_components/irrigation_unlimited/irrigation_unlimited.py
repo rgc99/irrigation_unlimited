@@ -2226,7 +2226,7 @@ class IUSequenceRun(IUBase):
 
     def zone_runs(self, sequence_zone: IUSequenceZone) -> List[IURun]:
         """Get the list of runs associated with the sequence zone"""
-        return [run for run in self._runs.keys() if self._runs[run] == sequence_zone]
+        return [run for run, sqz in self._runs.items() if sqz == sequence_zone]
 
     def run_index(self, run: IURun) -> int:
         """Extract the index from the supplied run"""
