@@ -81,6 +81,7 @@ CONF_FINISH = "finish"
 CONF_LOGGING = "logging"
 CONF_VERSION = "version"
 CONF_RUN = "run"
+CONF_SYNC_SWITCHES = "sync_switches"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

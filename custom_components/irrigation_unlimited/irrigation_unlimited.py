@@ -65,6 +65,7 @@ from .const import (
     CONF_ALL_ZONES_CONFIG,
     CONF_CONTROLLER,
     CONF_RUN,
+    CONF_SYNC_SWITCHES,
     DOMAIN,
     CONF_DAY,
     CONF_DECREASE,
@@ -1552,6 +1553,22 @@ class IUZone(IUBase):
 
         return updated
 
+    def check_switch(self, resync: bool, stime: datetime) -> bool:
+        """Check the linked entity is in sync"""
+        result = True
+        if self._switch_entity_id is not None:
+            for entity_id in self._switch_entity_id:
+                state = self._hass.states.is_state(
+                    entity_id, STATE_ON if self._is_on else STATE_OFF
+                )
+                result = result and state
+                if not state:
+                    self._coordinator.logger.log_sync_error(entity_id, stime)
+                    if resync:
+                        self.call_switch(self._is_on, stime)
+
+        return result
+
     def call_switch(self, state: bool, stime: datetime = None) -> None:
         """Turn the HA entity on or off"""
         if self._switch_entity_id is not None:
@@ -2858,6 +2875,25 @@ class IUController(IUBase):
         for zone in self._zones:
             zone.update_sensor(stime, True)
 
+    def check_switch(self, resync: bool, stime: datetime) -> bool:
+        """Check the linked entity is in sync"""
+        result = True
+        if self._switch_entity_id is not None:
+            for entity_id in self._switch_entity_id:
+                state = self._hass.states.is_state(
+                    entity_id, STATE_ON if self._is_on else STATE_OFF
+                )
+                result = result and state
+                if not state:
+                    self._coordinator.logger.log_sync_error(entity_id, stime)
+                    if resync:
+                        self.call_switch(self._is_on, stime)
+
+        for zone in self._zones:
+            result = result & zone.check_switch(resync, stime)
+
+        return result
+
     def call_switch(self, state: bool, stime: datetime = None) -> None:
         """Update the linked entity if enabled"""
         if self._switch_entity_id is not None:
@@ -3621,6 +3657,18 @@ class IULogger:
             ),
         )
 
+    def log_sync_error(
+        self, switch_entity_id: str, vtime: datetime, level=WARNING
+    ) -> None:
+        """Warn that switch and entity are out of sync"""
+        self._output(
+            level,
+            "SYNCHRONISATION [{0}] Switch does not match current state: switch: {1}".format(
+                dt2lstr(vtime),
+                switch_entity_id,
+            ),
+        )
+
 
 class IUCoordinator:
     """Irrigation Unlimited Coordinator class"""
@@ -3650,6 +3698,7 @@ class IUCoordinator:
         self._logger = IULogger(_LOGGER)
         self._history = IUHistory(self._hass)
         self._restored_from_configuration: bool = False
+        self._sync_switches: bool = True
 
     @property
     def entity_id(self) -> str:
@@ -3755,6 +3804,7 @@ class IUCoordinator:
         self._refresh_interval = timedelta(
             seconds=config.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
         )
+        self._sync_switches = config.get(CONF_SYNC_SWITCHES, True)
 
         cidx: int = 0
         for cidx, controller_config in enumerate(config[CONF_CONTROLLERS]):
@@ -3854,6 +3904,7 @@ class IUCoordinator:
             self._initialised = self.is_setup
             if self._initialised:
                 self._logger.log_initialised()
+                self.check_switches(self._sync_switches, atime)
                 self.request_update(True)
                 self.poll_main(atime)
 
@@ -3911,6 +3962,13 @@ class IUCoordinator:
         self._muster_required = True
         if self._last_tick is not None:
             self.timer(self._last_tick)
+
+    def check_switches(self, resync: bool, stime: datetime) -> bool:
+        """Check if entities match current status"""
+        result = True
+        for controller in self._controllers:
+            result = result and controller.check_switch(resync, stime)
+        return result
 
     def notify_sequence(
         self,

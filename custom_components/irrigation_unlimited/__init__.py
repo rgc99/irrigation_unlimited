@@ -41,6 +41,7 @@ from .const import (
     CONF_SHOW_LOG,
     CONF_AUTOPLAY,
     CONF_ANCHOR,
+    CONF_SYNC_SWITCHES,
     DOMAIN,
     COORDINATOR,
     COMPONENT,
@@ -229,6 +230,7 @@ IRRIGATION_SCHEMA = vol.Schema(
         vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
         vol.Optional(CONF_HISTORY_SPAN): cv.positive_int,
         vol.Optional(CONF_HISTORY_REFRESH): cv.positive_int,
+        vol.Optional(CONF_SYNC_SWITCHES): cv.boolean,
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
     }
 )
