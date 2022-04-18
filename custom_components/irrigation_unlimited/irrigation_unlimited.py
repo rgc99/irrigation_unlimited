@@ -1327,7 +1327,7 @@ class IUZone(IUBase):
             return STATUS_BLOCKED
         return STATUS_INITIALISING
 
-    def service_enable(
+    def service_call(
         self, data: MappingProxyType, stime: datetime, service: str
     ) -> bool:
         """Handler for enable/disable/toggle service call"""
@@ -2914,7 +2914,7 @@ class IUController(IUBase):
             items is None or (items is not None and items == [0]) or index + 1 in items
         )
 
-    def service_enable(
+    def service_call(
         self, data: MappingProxyType, stime: datetime, service: str
     ) -> bool:
         """Handler for enable/disable/toggle service call"""
@@ -4044,10 +4044,10 @@ class IUCoordinator:
 
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
             if zone is not None:
-                if changed := zone.service_enable(data, stime, service):
+                if changed := zone.service_call(data, stime, service):
                     controller.clear_sequence_runs(stime)
             else:
-                changed = controller.service_enable(data, stime, service)
+                changed = controller.service_call(data, stime, service)
         elif service == SERVICE_CANCEL:
             if zone is not None:
                 zone.service_cancel(data, stime)
