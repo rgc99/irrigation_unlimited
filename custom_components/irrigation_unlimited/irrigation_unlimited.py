@@ -1185,7 +1185,7 @@ class IUZone(IUBase):
         self._zone_id: str = None
         self._is_enabled: bool = True
         self._name: str = None
-        self._switch_entity_id: str = None
+        self._switch_entity_id: list[str] = None
         self._show_config: bool = False
         self._show_timeline: bool = False
         # Private variables
@@ -2341,7 +2341,7 @@ class IUController(IUBase):
         # Config parameters
         self._is_enabled: bool = True
         self._name: str = None
-        self._switch_entity_id: str = None
+        self._switch_entity_id: list[str] = None
         self._preamble: timedelta = None
         self._postamble: timedelta = None
         # Private variables
