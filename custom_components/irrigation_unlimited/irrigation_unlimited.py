@@ -29,7 +29,6 @@ from homeassistant.const import (
     CONF_REPEAT,
     CONF_STATE,
     CONF_WEEKDAY,
-    CONF_ID,
     EVENT_HOMEASSISTANT_STOP,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
