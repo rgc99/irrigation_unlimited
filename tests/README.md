@@ -62,6 +62,7 @@ config_directory | str | "tests/configs/" | Sets/gets the path to the config fil
 coordinator | IUCoordinator | read-only | Returns the top level coordinator object.
 track_interval | timedelta | read-only | Returns the system clock interval. The duration of a tick is the combination of the `granularity` and `refresh_interval` settings.
 virtual_time | datetime | read-only | Returns the current 'virtual time' in the test.
+config | ConfigType | read-only | The processed config file.
 
 ### Methods
 
@@ -80,6 +81,14 @@ Finish a test. Will complete advancing the virtual clock until the test `end` ti
 #### quiet_mode()
 
 Sometimes it can be hard to see the forest for all the trees so eliminate some noise.
+
+#### async_load_component(domain)
+
+Load a component.
+
+Parameter Name | Type | Description
+---- | ---- | -----------
+domain | str | The name of the domain to load for example 'homeassistant'.
 
 #### run_test(test_no)
 

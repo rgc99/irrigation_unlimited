@@ -24,8 +24,13 @@ async def test_model(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         # results (set `output_events: true` in yaml)
         # exam.no_check()
 
+        # Load any components
+        # await exam.async_load_component("homeassistant")
+        # await exam.async_load_component("input_boolean")
+
         # Run a single test
         await exam.run_test(1)
+        await exam.finish_test()
 
         # Start a test and do something
         # await exam.begin_test(1)
