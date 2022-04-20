@@ -529,13 +529,15 @@ class IUSchedule(IUBase):
         local_time = dt.as_local(stime)
         final_time = dt.as_local(ftime)
 
-        next_run: datetime = None
+        current_time: datetime = None
+        next_run: datetime
         while True:
 
-            if next_run is None:  # Initialise on first pass
-                next_run = local_time
+            if current_time is None:  # Initialise on first pass
+                current_time = local_time
             else:
-                next_run += timedelta(days=1)  # Advance to next day
+                current_time += timedelta(days=1)  # Advance to next day
+            next_run = current_time
 
             # Sanity check. Note: Astral events like sunrise might be months
             # away i.e. Antarctica winter
