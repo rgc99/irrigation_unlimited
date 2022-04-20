@@ -1719,6 +1719,19 @@ async def test_service_adjust_time_finish(
         {
             "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
             "sequence_id": 1,
+            "actual": "7:30:00",
+        },
+        True,
+    )
+    await finish_test(hass, coordinator, next_time, True)
+
+    next_time = await begin_test(26, coordinator)
+    await hass.services.async_call(
+        DOMAIN,
+        SERVICE_TIME_ADJUST,
+        {
+            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+            "sequence_id": 1,
             "reset": None,
         },
         True,
