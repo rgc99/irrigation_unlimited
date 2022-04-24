@@ -8,6 +8,7 @@ from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
 import json
+import re
 from homeassistant.core import HomeAssistant, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import (
@@ -2580,6 +2581,8 @@ class IUController(IUBase):
                     sequence_config
                 )
 
+        self.check_links()
+
         self._dirty = True
         return self
 
@@ -2841,6 +2844,34 @@ class IUController(IUBase):
                 zone.call_switch(zone.is_on, stime)
 
         return state_changed
+
+    def check_links(self) -> bool:
+        """Check inter object links"""
+
+        def check_id(zone_id: str) -> bool:
+            return bool(re.match(r"^[a-z0-9]+(_[a-z0-9]+)*$", zone_id))
+
+        result = True
+        zone_ids = set()
+        for zone in self._zones:
+            if not check_id(zone.zone_id):
+                self._coordinator.logger.log_invalid_id(self, zone)
+                result = False
+            if zone.zone_id in zone_ids:
+                self._coordinator.logger.log_duplicate_id(self, zone)
+                result = False
+            else:
+                zone_ids.add(zone.zone_id)
+
+        for sequence in self._sequences:
+            for sequence_zone in sequence.zones:
+                for zone_id in sequence_zone.zone_ids:
+                    if zone_id not in zone_ids:
+                        self._coordinator.logger.log_orphan_id(
+                            self, sequence, sequence_zone, zone_id
+                        )
+                        result = False
+        return result
 
     def request_update(self, deep: bool) -> None:
         """Flag the sensor needs an update. The actual update is done
@@ -3669,6 +3700,53 @@ class IULogger:
                 dt2lstr(vtime),
                 switch_entity_id,
             ),
+        )
+
+    def log_invalid_id(
+        self, controller: IUController, zone: IUZone, level=WARNING
+    ) -> None:
+        """Warn that the zone_id is not valid"""
+        idl = IUBase.idl([controller, zone], "0", 1)
+        self._output(
+            level,
+            f"INVALID_ID Invalid ID (use snake_case format): "
+            f"controller: {idl[0]}, "
+            f"zone: {idl[1]}, "
+            f"zone_id: {zone.zone_id}",
+        )
+
+    def log_duplicate_id(
+        self, controller: IUController, zone: IUZone, level=WARNING
+    ) -> None:
+        """Warn a zone has a duplicate zone_id"""
+        idl = IUBase.idl([controller, zone], "0", 1)
+        self._output(
+            level,
+            f"DUPLICATE_ID Duplicate ID: "
+            f"controller: {idl[0]}, "
+            f"zone: {idl[1]}, "
+            f"zone_id: {zone.zone_id}",
+        )
+
+    def log_orphan_id(
+        self,
+        controller: IUController,
+        sequence: IUSequence,
+        sequence_zone: IUSequenceZone,
+        zone_id: str,
+        level=WARNING,
+    ) -> None:
+        # pylint: disable=too-many-arguments
+        # pylint: disable=line-too-long
+        """Warn a zone_id reference is orphaned"""
+        idl = IUBase.idl([controller, sequence, sequence_zone], "0", 1)
+        self._output(
+            level,
+            f"ORPHAN_ID Invalid reference ID: "
+            f"controller: {idl[0]}, "
+            f"sequence: {idl[1]}, "
+            f"sequence_zone: {idl[2]}, "
+            f"zone_id: {zone_id}",
         )
 
 

@@ -1,0 +1,24 @@
+default_config:
+
+irrigation_unlimited:
+  controllers:
+    zones:
+      - name: "Zone 1"
+      - name: "Zone 2"
+        zone_id: "1"
+      - name: "Zone 3"
+        zone_id: "zone_3"
+      - name: "Zone 4"
+        zone_id: "zone_3"
+      - name: "Zone 5"
+        zone_id: "ABC"
+    sequences:
+      - name: "Sequence 1"
+        schedules:
+          - name: Never
+            time: "21:00"
+            month: [feb]
+            day: [31]
+        zones:
+          - zone_id: 1
+          - zone_id: [1, "no_zone"]

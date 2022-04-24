@@ -221,7 +221,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `schedules` | list | _[Schedule Objects](#schedule-objects)_ | Schedule details (Must have at least one) |
-| `zone_id` | string | _N_ | Zone reference. Used for sequencing. |
+| `zone_id` | string | _N_ | Zone reference. Used for sequencing. This should be in [snake_case](https://en.wikipedia.org/wiki/Snake_case) style |
 | `name` | string | Zone _N_ | Friendly name for the zone |
 | `enabled` | bool | true | Enable/disable the zone |
 | `minimum` | time | '00:01' | The minimum run time |
