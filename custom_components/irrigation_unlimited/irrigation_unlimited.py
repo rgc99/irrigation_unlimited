@@ -723,12 +723,12 @@ class IURun(IUBase):
         else:
             sidx = 0
 
-        return "{}.{}.{}.{}.{}".format(
-            get_index(self._zone),
-            get_index(self._schedule),
-            get_index(self.sequence),
-            get_index(self.sequence_zone),
-            sidx,
+        return (
+            f"{get_index(self._zone)}"
+            f".{get_index(self._schedule)}"
+            f".{get_index(self.sequence)}"
+            f".{get_index(self.sequence_zone)}"
+            f".{sidx}"
         )
 
     def sequence_has_adjustment(self, deep: bool) -> bool:
@@ -3080,8 +3080,11 @@ class IUEvent:
         )
 
     def __str__(self) -> str:
-        return "{{t: '{}', c: {}, z: {}, s: {}}}".format(
-            dt2lstr(self._time), self._controller, self._zone, str(int(self._state))
+        return (
+            f"{{t: '{dt2lstr(self._time)}', "
+            f"c: {self._controller}, "
+            f"z: {self._zone}, "
+            f"s: {str(int(self._state))}}}"
         )
 
     @property
@@ -3546,19 +3549,19 @@ class IULogger:
     def log_event(self, event: IUEvent, level=DEBUG) -> None:
         """Message that an event has occurred - controller or zone turning on or off"""
         if len(event.crumbs) != 0:
-            result = "EVENT [{0}] controller: {1:d}, zone: {2:d}, state: {3}, data: {4}".format(
-                dt2lstr(event.time),
-                event.controller,
-                event.zone,
-                str(int(event.state)),
-                event.crumbs,
+            result = (
+                f"EVENT [{dt2lstr(event.time)}] "
+                f"controller: {event.controller:d}, "
+                f"zone: {event.zone:d}, "
+                f"state: {str(int(event.state))}, "
+                f"data: {event.crumbs}"
             )
         else:
-            result = "EVENT [{0}] controller: {1:d}, zone: {2:d}, state: {3}".format(
-                dt2lstr(event.time),
-                event.controller,
-                event.zone,
-                str(int(event.state)),
+            result = (
+                f"EVENT [{dt2lstr(event.time)}] "
+                f"controller: {event.controller:d}, "
+                f"zone: {event.zone:d}, "
+                f"state: {str(int(event.state))}"
             )
         self._output(level, result)
 
@@ -3572,56 +3575,55 @@ class IULogger:
     ) -> None:
         """Message that we have received a service call"""
         # pylint: disable=too-many-arguments
+        idl = IUBase.idl([controller, zone], "0", 1)
         self._output(
             DEBUG,
-            "CALL [{0}] service: {1}, controller: {2}, zone: {3}, data: {4}".format(
-                dt2lstr(stime),
-                service,
-                *IUBase.idl([controller, zone], "0", 1),
-                json.dumps(data, default=str),
-            ),
+            f"CALL [{dt2lstr(stime)}] "
+            f"service: {service}, "
+            f"controller: {idl[0]}, "
+            f"zone: {idl[1]}, "
+            f"data: {json.dumps(data, default=str)}",
         )
 
     def log_register_entity(
         self, stime: datetime, controller: IUController, zone: IUZone, entity: Entity
     ) -> None:
         """Message that HA has registered an entity"""
+        idl = IUBase.idl([controller, zone], "0", 1)
         self._output(
             DEBUG,
-            "REGISTER [{0}] controller: {1}, zone: {2}, entity: {3}".format(
-                dt2lstr(stime),
-                *IUBase.idl([controller, zone], "0", 1),
-                entity.entity_id,
-            ),
+            f"REGISTER [{dt2lstr(stime)}] "
+            f"controller: {idl[0]}, "
+            f"zone: {idl[1]}, "
+            f"entity: {entity.entity_id}",
         )
 
     def log_deregister_entity(
         self, stime: datetime, controller: IUController, zone: IUZone, entity: Entity
     ) -> None:
         """Message that HA is removing an entity"""
+        idl = IUBase.idl([controller, zone], "0", 1)
         self._output(
             DEBUG,
-            "DEREGISTER [{0}] controller: {1}, zone: {2}, entity: {3}".format(
-                dt2lstr(stime),
-                *IUBase.idl([controller, zone], "0", 1),
-                entity.entity_id,
-            ),
+            f"DEREGISTER [{dt2lstr(stime)}] "
+            f"controller: {idl[0]}, "
+            f"zone: {idl[1]}, "
+            f"entity: {entity.entity_id}",
         )
 
     def log_test_start(self, vtime: datetime, test: IUTest, level=DEBUG) -> None:
         """Message that a test is starting"""
         self._output(
             level,
-            "TEST_START [{0}] test: {1:d}, start: {2}, end: {3}".format(
-                dt2lstr(vtime), test.index + 1, dt2lstr(test.start), dt2lstr(test.end)
-            ),
+            f"TEST_START [{dt2lstr(vtime)}] "
+            f"test: {test.index + 1:d}, "
+            f"start: {dt2lstr(test.start)}, "
+            f"end: {dt2lstr(test.end)}",
         )
 
     def log_test_end(self, vtime: datetime, test: IUTest, level=DEBUG) -> None:
         """Message that a test has finished"""
-        self._output(
-            level, "TEST_END [{0}] test: {1:d}".format(dt2lstr(vtime), test.index + 1)
-        )
+        self._output(level, f"TEST_END [{dt2lstr(vtime)}] test: {test.index + 1:d}")
 
     def log_test_error(
         self, test: IUTest, actual: IUEvent, expected: IUEvent, level=DEBUG
@@ -3629,28 +3631,23 @@ class IULogger:
         """Message that an event did not meet expected result"""
         self._output(
             level,
-            "TEST_ERROR test: {0:d}, actual: {1}, expected: {2}".format(
-                test.index + 1, str(actual), str(expected)
-            ),
+            f"TEST_ERROR test: {test.index + 1:d}, "
+            f"actual: {str(actual)}, "
+            f"expected: {str(expected)}",
         )
 
     def log_test_completed(self, checks: int, errors: int, level=DEBUG) -> None:
         """Message that all tests have been completed"""
         self._output(
             level,
-            "TEST_COMPLETED (Idle): checks: {0:d}, errors: {1:d}".format(
-                checks, errors
-            ),
+            f"TEST_COMPLETED (Idle): checks: {checks:d}, errors: {errors:d}",
         )
 
     def log_sequence_entity(self, vtime: datetime, level=WARNING) -> None:
         """Warn that a service call involved a sequence but was not directed
         at the controller"""
         self._output(
-            level,
-            "ENTITY [{0}] Sequence specified but entity_id is zone".format(
-                dt2lstr(vtime)
-            ),
+            level, f"ENTITY [{dt2lstr(vtime)}] Sequence specified but entity_id is zone"
         )
 
     def log_invalid_sequence(
@@ -3659,18 +3656,14 @@ class IULogger:
         """Warn that a service call with a sequence_id is invalid"""
         self._output(
             level,
-            "SEQUENCE_ID [{0}] Invalid sequence id: controller: {1}, sequence: {2}".format(
-                dt2lstr(vtime),
-                IUBase.ids(controller, "0", 1),
-                sequence_id,
-            ),
+            f"SEQUENCE_ID [{dt2lstr(vtime)}] Invalid sequence id: "
+            f"controller: {IUBase.ids(controller, '0', 1)}, "
+            f"sequence: {sequence_id}",
         )
 
     def log_invalid_restore_data(self, msg: str, data: str, level=WARNING) -> None:
         """Warn invalid restore data"""
-        self._output(
-            level, "RESTORE Invalid data: msg: {0}, data: {1}".format(msg, data)
-        )
+        self._output(level, f"RESTORE Invalid data: msg: {msg}, data: {data}")
 
     def log_incomplete_cycle(
         self,
@@ -3682,12 +3675,14 @@ class IULogger:
     ) -> None:
         """Warn that a cycle did not complete"""
         # pylint: disable=too-many-arguments
-        # pylint: disable=line-too-long
+        idl = IUBase.idl([controller, zone, sequence, sequence_zone], "-", 1)
         self._output(
             level,
-            "INCOMPLETE Cycle did not complete: controller: {0}, zone: {1}, sequence: {2}, sequence_zone: {3}".format(
-                *IUBase.idl([controller, zone, sequence, sequence_zone], "-", 1),
-            ),
+            f"INCOMPLETE Cycle did not complete: "
+            f"controller: {idl[0]}, "
+            f"zone: {idl[1]}, "
+            f"sequence: {idl[2]}, "
+            f"sequence_zone: {idl[3]}",
         )
 
     def log_sync_error(
@@ -3696,10 +3691,9 @@ class IULogger:
         """Warn that switch and entity are out of sync"""
         self._output(
             level,
-            "SYNCHRONISATION [{0}] Switch does not match current state: switch: {1}".format(
-                dt2lstr(vtime),
-                switch_entity_id,
-            ),
+            f"SYNCHRONISATION [{dt2lstr(vtime)}] "
+            f"Switch does not match current state: "
+            f"switch: {switch_entity_id}",
         )
 
     def log_invalid_id(
@@ -3737,7 +3731,6 @@ class IULogger:
         level=WARNING,
     ) -> None:
         # pylint: disable=too-many-arguments
-        # pylint: disable=line-too-long
         """Warn a zone_id reference is orphaned"""
         idl = IUBase.idl([controller, sequence, sequence_zone], "0", 1)
         self._output(
