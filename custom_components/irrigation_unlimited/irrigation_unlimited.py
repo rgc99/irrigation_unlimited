@@ -16,8 +16,8 @@ from homeassistant.helpers.event import (
     async_call_later,
     Event as HAEvent,
 )
-import homeassistant.helpers.sun as sun
-import homeassistant.util.dt as dt
+from homeassistant.helpers import sun
+from homeassistant.util import dt
 
 from homeassistant.const import (
     ATTR_ICON,
