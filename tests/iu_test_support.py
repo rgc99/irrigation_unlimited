@@ -1,5 +1,6 @@
 """Irrigation Unlimited test support routines"""
 import logging
+from typing import Any
 from datetime import datetime, timedelta
 import homeassistant.core as ha
 from homeassistant.config import (
@@ -161,8 +162,29 @@ async def reset_hass_config(hass: ha.HomeAssistant) -> None:
     await async_process_ha_core_config(hass, config)
 
 
+async def load_component(
+    hass: ha.HomeAssistant, domain: str, config: ConfigType
+) -> None:
+    """Load a domain"""
+    await async_setup_component(hass, domain, config)
+    await hass.async_block_till_done()
+
+
+async def load_iu_dependencies(hass: ha.HomeAssistant) -> None:
+    """Load the dependencies for the integration"""
+    await load_component(hass, "http", {})
+    await load_component(
+        hass,
+        "recorder",
+        {"recorder": {"db_url": "sqlite:///:memory:"}},
+    )
+    await load_component(hass, "history", {})
+
+
 class IUExam:
     """Class for running tests"""
+
+    # pytest: disable=too-many-instance-attributes
 
     default_config_dir = TEST_CONFIG_DIR
 
@@ -217,8 +239,11 @@ class IUExam:
 
     async def async_load_component(self, domain: str) -> None:
         """Load a domain"""
-        await async_setup_component(self._hass, domain, self._config)
-        await self._hass.async_block_till_done()
+        await load_component(self._hass, domain, self._config)
+
+    async def load_dependencies(self) -> None:
+        """Load IU dependencies"""
+        await load_iu_dependencies(self._hass)
 
     async def setup(self) -> None:
         """Setup the hass environment"""
@@ -287,6 +312,10 @@ class IUExam:
         """Run all tests"""
         for test in range(self._coordinator.tester.total_tests):
             await self.run_test(test + 1)
+
+    async def call(self, service: str, data: dict[str, Any] | None = None) -> None:
+        """Call IU service"""
+        await self._hass.services.async_call(DOMAIN, service, data, True)
 
     def check_summary(self) -> None:
         """Check the test results"""
