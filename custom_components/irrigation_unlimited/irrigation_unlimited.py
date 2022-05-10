@@ -3908,11 +3908,17 @@ class IUCoordinator:
         """Calculate run times for system"""
         status: int = 0
 
-        entity_ids: List[str] = []
-        for controller in self._controllers:
-            for zone in controller.zones:
-                entity_ids.append(zone.entity_id)
-        self._history.muster(stime, entity_ids, force)
+        entity_ids = self._history.muster(stime, force)
+        if entity_ids is not None and len(entity_ids) > 0:
+            for controller in self._controllers:
+                if controller.entity_id in entity_ids:
+                    controller.request_update(False)
+                    entity_ids.remove(controller.entity_id)
+                for zone in controller.zones:
+                    if zone.entity_id in entity_ids:
+                        zone.request_update()
+                        entity_ids.remove(zone.entity_id)
+            status |= IURunQueue.RQ_STATUS_CHANGED
 
         for controller in self._controllers:
             status |= controller.muster(stime, force)

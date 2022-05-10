@@ -41,6 +41,7 @@ from .const import (
     CONF_SHOW_LOG,
     CONF_AUTOPLAY,
     CONF_ANCHOR,
+    CONF_SPAN,
     CONF_SYNC_SWITCHES,
     DOMAIN,
     COORDINATOR,
@@ -192,6 +193,14 @@ CONTROLLER_SCHEMA = vol.Schema(
     }
 )
 
+HISTORY_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_ENABLED): cv.boolean,
+        vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
+        vol.Optional(CONF_SPAN): cv.positive_int,
+    }
+)
+
 TEST_RESULT_SCHEMA = vol.Schema(
     {
         vol.Required("t"): cv.datetime,
@@ -232,6 +241,7 @@ IRRIGATION_SCHEMA = vol.Schema(
         vol.Optional(CONF_HISTORY_REFRESH): cv.positive_int,
         vol.Optional(CONF_SYNC_SWITCHES): cv.boolean,
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
+        vol.Optional("history"): HISTORY_SCHEMA,
     }
 )
 

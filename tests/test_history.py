@@ -1,21 +1,27 @@
 """Test irrigation_unlimited history."""
 from unittest.mock import patch
-from datetime import datetime
-from typing import OrderedDict, List
+from datetime import datetime, timedelta
+from typing import OrderedDict, List, Any
 import pytest
 import homeassistant.core as ha
 from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
 
 from custom_components.irrigation_unlimited.irrigation_unlimited import IUCoordinator
-from custom_components.irrigation_unlimited.const import COORDINATOR, DOMAIN
+from custom_components.irrigation_unlimited.const import (
+    COORDINATOR,
+    DOMAIN,
+    SERVICE_DISABLE,
+)
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 from tests.iu_test_support import (
+    IUExam,
     begin_test,
     check_summary,
     finish_test,
+    load_iu_dependencies,
     quiet_mode,
-    run_for_1_tick,
+    run_for,
     run_until,
     TEST_CONFIG_DIR,
 )
@@ -23,12 +29,17 @@ from tests.iu_test_support import (
 quiet_mode()
 
 # pylint: disable=unused-argument
+# pylint: disable=too-many-arguments
 def hist_data(
     hass,
     start_time: datetime,
     end_time: datetime,
     entity_ids: List[str],
-    significant_changes_only: bool,
+    filters: Any | None = None,
+    include_start_time_state: bool = True,
+    significant_changes_only: bool = True,
+    minimal_response: bool = False,
+    no_attributes: bool = False,
 ) -> dict:
     """Return dummy history data"""
 
@@ -71,21 +82,24 @@ def mock_history():
         yield
 
 
-async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
+async def test_history(hass: ha.HomeAssistant, mock_history):
     """Test out the history caching and timeline"""
     # pylint: disable=redefined-outer-name
 
     def mk_dt(date: str) -> datetime:
         return datetime.strptime(date + "+0000", "%Y-%m-%d %H:%M%z")
 
+    await load_iu_dependencies(hass)
+
     full_path = TEST_CONFIG_DIR + "test_history.yaml"
     config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
     await async_setup_component(hass, DOMAIN, config)
     await hass.async_block_till_done()
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
-
     start_time = await begin_test(1, coordinator)
-    start_time = await run_for_1_tick(hass, coordinator, start_time, True)
+    start_time = await run_for(
+        hass, coordinator, start_time, timedelta(seconds=60), True
+    )
 
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert state.attributes["today_total"] == 4.0
@@ -203,7 +217,9 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
 
     # Midnight rollover
     start_time = await begin_test(2, coordinator)
-    start_time = await run_for_1_tick(hass, coordinator, start_time, True)
+    start_time = await run_for(
+        hass, coordinator, start_time, timedelta(seconds=60), True
+    )
 
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
     assert state.attributes["today_total"] == 4.0
@@ -322,7 +338,7 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-05T00:00:00+00:00"),
+        datetime.fromisoformat("2021-01-05T00:00:30+00:00"),
         True,
     )
     state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -396,3 +412,34 @@ async def test_history(hass: ha.HomeAssistant, skip_dependencies, mock_history):
     await finish_test(hass, coordinator, start_time, True)
 
     check_summary(full_path, coordinator)
+
+
+async def test_history_disabled(hass: ha.HomeAssistant, mock_history):
+    """Test out the history caching and timeline when disabled"""
+    # pylint: disable=redefined-outer-name
+    # pylint: disable=protected-access
+
+    async with IUExam(hass, "test_history_disabled.yaml") as exam:
+
+        await exam.load_dependencies()
+
+        # Check values read from config
+        assert exam.coordinator.history._history_span == timedelta(days=5)
+        assert exam.coordinator.history._refresh_interval == timedelta(seconds=60)
+
+        await exam.begin_test(1)
+        await exam.call(
+            SERVICE_DISABLE,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+            },
+        )
+        await exam.run_for(timedelta(seconds=60))
+
+        # Check there is no history
+        state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        assert state.attributes["today_total"] == 0.0
+        assert state.attributes["timeline"] == []
+
+        await exam.finish_test()
+        exam.check_summary()
