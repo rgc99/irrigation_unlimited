@@ -15,17 +15,15 @@
 # See here for more info: https://docs.pytest.org/en/latest/fixture.html (note that
 # pytest includes fixtures OOB which you can use as defined on this page)
 from unittest.mock import patch
-from _pytest.fixtures import yield_fixture
-
 import pytest
 
 pytest_plugins = "pytest_homeassistant_custom_component"
-
 
 # This fixture enables loading custom integrations in all tests.
 # Remove to enable selective use of this fixture
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(hass, enable_custom_integrations):
+    """Allow custom integrations to load"""
     yield
 
 
@@ -41,18 +39,28 @@ def skip_notifications_fixture():
         yield
 
 
+@pytest.fixture(autouse=True)
+def auto_enable_unix_sockets(socket_enabled):
+    """Allow the use of sockets. Required for http integration"""
+    yield
+
+
+# Prevent HomeAssistant from loading the Irrigation Unlimited dependencies which
+# are currently "history" which requires "recorder" which requires "http".
+@pytest.fixture(name="skip_dependencies", autouse=True)
+def skip_dep():
+    """Skip loading dependencies"""
+    with patch("homeassistant.loader.Integration.dependencies", return_value=[]):
+        yield
+
+
 @pytest.fixture(name="skip_setup")
 def skip_setup():
+    """Fake the coordinator is setup"""
     with patch(
         "custom_components.irrigation_unlimited.IUCoordinator._is_setup",
         return_value=True,
     ):
-        yield
-
-
-@pytest.fixture(name="skip_dependencies")
-def skip_dep():
-    with patch("homeassistant.loader.Integration.dependencies", return_value=[]):
         yield
 
 
@@ -68,6 +76,7 @@ def skip_history():
 
 @pytest.fixture(name="skip_start")
 def skip_start():
+    """Skip coordinator start calls"""
     with patch(
         "custom_components.irrigation_unlimited.IUCoordinator.start",
         return_value=True,
