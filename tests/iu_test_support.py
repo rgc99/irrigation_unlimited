@@ -313,7 +313,7 @@ class IUExam:
         for test in range(self._coordinator.tester.total_tests):
             await self.run_test(test + 1)
 
-    async def call(self, service: str, data: dict[str, Any] | None = None) -> None:
+    async def call(self, service: str, data: dict[str, Any] = None) -> None:
         """Call IU service"""
         await self._hass.services.async_call(DOMAIN, service, data, True)
 
