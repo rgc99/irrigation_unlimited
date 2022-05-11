@@ -10,6 +10,7 @@ from custom_components.irrigation_unlimited.const import (
 from tests.iu_test_support import (
     IUExam,
 )
+from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 
 IUExam.quiet_mode()
 
@@ -31,7 +32,11 @@ def hist_data(
     def s2dt(adate: str) -> datetime:
         return datetime.fromisoformat(adate + "+00:00")
 
-    print(f"=========start_time: {start_time}, end_time: {end_time}==========")
+    _LOGGER: Logger = getLogger(__package__)
+    _LOGGER.log(
+        DEBUG, f"=========start_time: {start_time}, end_time: {end_time}=========="
+    )
+
     result = {}
     idx = "binary_sensor.irrigation_unlimited_c1_z1"
     if idx in entity_ids:
