@@ -35,7 +35,7 @@ def hist_data(
     start_time: datetime,
     end_time: datetime,
     entity_ids: List[str],
-    filters: Any | None = None,
+    filters: Any = None,
     include_start_time_state: bool = True,
     significant_changes_only: bool = True,
     minimal_response: bool = False,
