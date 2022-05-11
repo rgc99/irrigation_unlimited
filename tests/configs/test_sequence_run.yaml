@@ -1,3 +1,6 @@
+homeassistant:
+  time_zone: UTC
+
 irrigation_unlimited:
   granularity: 10
   refresh_interval: 10

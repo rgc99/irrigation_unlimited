@@ -1,5 +1,6 @@
 """irrigation_unlimited test unit for IUSequenceRun object"""
 import datetime
+import zoneinfo
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
@@ -51,7 +52,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "enabled": True,
                 "name": "Seq 1",
                 "start": datetime.datetime(
-                    2021, 1, 4, 6, 5, tzinfo=datetime.timezone.utc
+                    2021, 1, 4, 6, 5, tzinfo=zoneinfo.ZoneInfo(key="UTC")
                 ),
                 "duration": 2160,
                 "status": "off",
@@ -96,7 +97,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "enabled": True,
                 "name": "Seq 2",
                 "start": datetime.datetime(
-                    2021, 1, 4, 6, 10, tzinfo=datetime.timezone.utc
+                    2021, 1, 4, 6, 10, tzinfo=zoneinfo.ZoneInfo(key="UTC")
                 ),
                 "duration": 2160,
                 "status": "off",
@@ -158,7 +159,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "enabled": True,
                 "name": "Seq 1",
                 "start": datetime.datetime(
-                    2021, 1, 4, 6, 5, tzinfo=datetime.timezone.utc
+                    2021, 1, 4, 6, 5, tzinfo=zoneinfo.ZoneInfo(key="UTC")
                 ),
                 "duration": 2160,
                 "status": "off",
@@ -203,7 +204,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "enabled": True,
                 "name": "Seq 2",
                 "start": datetime.datetime(
-                    2021, 1, 4, 6, 10, tzinfo=datetime.timezone.utc
+                    2021, 1, 4, 6, 10, tzinfo=zoneinfo.ZoneInfo(key="UTC")
                 ),
                 "duration": 0,
                 "status": "off",
@@ -264,7 +265,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "enabled": True,
                 "name": "Seq 1",
                 "start": datetime.datetime(
-                    2021, 1, 4, 6, 5, tzinfo=datetime.timezone.utc
+                    2021, 1, 4, 6, 5, tzinfo=zoneinfo.ZoneInfo(key="UTC")
                 ),
                 "duration": 2160,
                 "status": "off",
