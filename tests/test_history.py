@@ -31,6 +31,7 @@ def hist_data(
     def s2dt(adate: str) -> datetime:
         return datetime.fromisoformat(adate + "+00:00")
 
+    print(f"=========start_time: {start_time}, end_time: {end_time}==========")
     result = {}
     idx = "binary_sensor.irrigation_unlimited_c1_z1"
     if idx in entity_ids:
