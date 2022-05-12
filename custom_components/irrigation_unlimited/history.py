@@ -1,8 +1,8 @@
 """History access and caching. This module runs asynchronously collecting
 and caching history data"""
 from datetime import datetime, timedelta
-from typing import OrderedDict
-from homeassistant.core import HomeAssistant, CALLBACK_TYPE
+from typing import OrderedDict, Any
+from homeassistant.core import HomeAssistant, State, CALLBACK_TYPE
 from homeassistant.util import dt
 from homeassistant.components.recorder.const import DATA_INSTANCE as RECORDER_INSTANCE
 from homeassistant.components.recorder import get_instance
@@ -63,7 +63,7 @@ class IUHistory:
         self._enabled = True
         # Private variables
         self._history_last: datetime = None
-        self._cache = {}
+        self._cache: dict[str, Any] = {}
         self._entity_ids: list[str] = []
         self._entity_ids_to_update: set[str] = set()
         self._refresh_remove: CALLBACK_TYPE = None
@@ -109,6 +109,7 @@ class IUHistory:
 
         self._remove_refresh()
         self._history_last = None
+        self._stime = None
         self._clear_cache()
         self._entity_ids_to_update.clear()
         self._entity_ids.clear()
@@ -121,11 +122,12 @@ class IUHistory:
     def _clear_cache(self) -> None:
         self._cache = {}
 
-    def _today_duration(self, stime: datetime, data: list) -> timedelta:
+    def _today_duration(self, stime: datetime, data: list[State]) -> timedelta:
         """Return the total on time"""
         # pylint: disable=no-self-use
+
         elapsed = timedelta(0)
-        front_marker: dict = None
+        front_marker: State = None
         start = midnight(stime)
 
         for item in data:
@@ -152,11 +154,11 @@ class IUHistory:
 
         return timedelta(seconds=round(elapsed.total_seconds()))
 
-    def _run_history(self, stime: datetime, data: list) -> list:
+    def _run_history(self, stime: datetime, data: list[State]) -> list:
         """Return the on/off series"""
         # pylint: disable=no-self-use
 
-        def create_record(item: dict, end: datetime) -> dict:
+        def create_record(item: State, end: datetime) -> dict:
             result = OrderedDict()
             result[TIMELINE_START] = round_seconds_dt(item.last_changed)
             result[TIMELINE_END] = round_seconds_dt(end)
@@ -167,7 +169,7 @@ class IUHistory:
             return result
 
         run_history = []
-        front_marker: dict = None
+        front_marker: State = None
 
         for item in data:
 
@@ -276,7 +278,7 @@ class IUHistory:
             return self._cache[entity_id][TODAY_ON]
         return timedelta(0)
 
-    def timeline(self, entity_id: str) -> list:
+    def timeline(self, entity_id: str) -> list[dict]:
         """Return the timeline history"""
         if entity_id in self._cache:
             return self._cache[entity_id][TIMELINE].copy()
