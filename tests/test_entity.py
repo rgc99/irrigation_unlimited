@@ -1,5 +1,5 @@
 """Test irrigation_unlimited entity operations."""
-from datetime import datetime, timedelta
+from datetime import timedelta
 import homeassistant.core as ha
 from homeassistant.config import (
     load_yaml_config_file,
@@ -31,15 +31,12 @@ from tests.iu_test_support import (
     finish_test,
     TEST_CONFIG_DIR,
     check_summary,
+    mk_utc,
+    mk_local,
+    mk_td,
 )
 
 quiet_mode()
-
-
-def hms_to_td(time: str) -> timedelta:
-    """Convert time string to timedelta"""
-    tstr = datetime.strptime(time, "%H:%M:%S")
-    return timedelta(hours=tstr.hour, minutes=tstr.minute, seconds=tstr.second)
 
 
 # pylint: disable=unused-argument
@@ -61,7 +58,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:02:00+00:00"),
+        mk_utc("2021-01-04 06:02"),
         True,
     )
     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
@@ -74,10 +71,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_zone"] == 1
     assert sta.attributes["next_name"] == "First zone"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:03:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=14)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:03")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=14)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water-off"
 
@@ -93,10 +88,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 1"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=10)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:05")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=10)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -112,10 +105,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 2"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:10")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -123,7 +114,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:04:00+00:00"),
+        mk_utc("2021-01-04 06:04"),
         True,
     )
     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
@@ -134,18 +125,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["zone_count"] == 2
     assert sta.attributes["current_zone"] == 1
     assert sta.attributes["current_name"] == "First zone"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:03:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=13)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:03")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=13)
     assert sta.attributes["percent_complete"] == 7
     assert sta.attributes["next_zone"] == 2
     assert sta.attributes["next_name"] == "Second zone"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:08:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:08")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water"
 
@@ -161,10 +148,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 1"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=10)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:05")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=10)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -180,10 +165,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 2"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:10")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -191,7 +174,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass,
         coordinator,
         next_time,
-        datetime.fromisoformat("2021-01-04 06:07:00+00:00"),
+        mk_utc("2021-01-04 06:07"),
         True,
     )
     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
@@ -202,18 +185,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["zone_count"] == 2
     assert sta.attributes["current_zone"] == 1
     assert sta.attributes["current_name"] == "First zone"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:03:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=10)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:03")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=10)
     assert sta.attributes["percent_complete"] == 28
     assert sta.attributes["next_zone"] == 2
     assert sta.attributes["next_name"] == "Second zone"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:08:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:08")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water"
 
@@ -226,18 +205,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["current_schedule"] == 1
     assert sta.attributes["current_name"] == "Morning 1"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=10)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=8)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:05")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=10)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=8)
     assert sta.attributes["percent_complete"] == 20
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
@@ -252,10 +227,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 1
     assert sta.attributes["next_name"] == "Morning 2"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:10")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -263,7 +236,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:12:00+00:00"),
+        mk_utc("2021-01-04 06:12"),
         True,
     )
     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
@@ -274,18 +247,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["zone_count"] == 2
     assert sta.attributes["current_zone"] == 1
     assert sta.attributes["current_name"] == "First zone"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:03:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=5)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:03")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=5)
     assert sta.attributes["percent_complete"] == 64
     assert sta.attributes["next_zone"] == 2
     assert sta.attributes["next_name"] == "Second zone"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 06:08:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 06:08")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water"
 
@@ -298,18 +267,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["current_schedule"] == 1
     assert sta.attributes["current_name"] == "Morning 1"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=10)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=3)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:05")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=10)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=3)
     assert sta.attributes["percent_complete"] == 70
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
@@ -322,18 +287,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["current_schedule"] == 1
     assert sta.attributes["current_name"] == "Morning 2"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=12)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=10)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:10")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=12)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=10)
     assert sta.attributes["percent_complete"] == 16
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 2"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
@@ -341,7 +302,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:17:00+00:00"),
+        mk_utc("2021-01-04 06:17"),
         True,
     )
     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
@@ -352,18 +313,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["zone_count"] == 2
     assert sta.attributes["current_zone"] == 2
     assert sta.attributes["current_name"] == "Second zone"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:08:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=16)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=7)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:08")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=16)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=7)
     assert sta.attributes["percent_complete"] == 56
     assert sta.attributes["next_zone"] == 1
     assert sta.attributes["next_name"] == "First zone"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:03:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:03")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water"
 
@@ -379,10 +336,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -395,18 +350,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["adjustment"] == ""
     assert sta.attributes["current_schedule"] == 1
     assert sta.attributes["current_name"] == "Morning 2"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=12)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=5)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:10")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=12)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=5)
     assert sta.attributes["percent_complete"] == 58
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 2"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
@@ -414,7 +365,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass,
         coordinator,
         start_time,
-        datetime.fromisoformat("2021-01-04 06:23:00+00:00"),
+        mk_utc("2021-01-04 06:23"),
         True,
     )
     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
@@ -425,18 +376,14 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["zone_count"] == 2
     assert sta.attributes["current_zone"] == 2
     assert sta.attributes["current_name"] == "Second zone"
-    assert sta.attributes["current_start"] == datetime.fromisoformat(
-        "2021-01-04 06:08:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["current_duration"]) == timedelta(minutes=16)
-    assert hms_to_td(sta.attributes["time_remaining"]) == timedelta(minutes=1)
+    assert sta.attributes["current_start"] == mk_local("2021-01-04 06:08")
+    assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=16)
+    assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=1)
     assert sta.attributes["percent_complete"] == 93
     assert sta.attributes["next_zone"] == 1
     assert sta.attributes["next_name"] == "First zone"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:03:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:03")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water"
 
@@ -452,10 +399,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -470,10 +415,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 2"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -481,7 +424,7 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass,
         coordinator,
         next_time,
-        datetime.fromisoformat("2021-01-04 06:25:00+00:00"),
+        mk_utc("2021-01-04 06:25"),
         True,
     )
     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
@@ -494,10 +437,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_zone"] == 1
     assert sta.attributes["next_name"] == "First zone"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:03:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:03")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
     assert sta.attributes[ATTR_ICON] == "mdi:water-off"
 
@@ -513,10 +454,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 1"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:05:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -531,10 +470,8 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     assert sta.attributes["percent_complete"] == 0
     assert sta.attributes["next_schedule"] == 2
     assert sta.attributes["next_name"] == "Afternoon 2"
-    assert sta.attributes["next_start"] == datetime.fromisoformat(
-        "2021-01-04 14:10:00+00:00"
-    )
-    assert hms_to_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+    assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
+    assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
     assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
     assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 

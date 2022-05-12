@@ -1,6 +1,4 @@
 """irrigation_unlimited test unit for IUSequenceRun object"""
-import datetime
-import zoneinfo
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
@@ -8,7 +6,7 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_TIME_ADJUST,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import IUSequenceRun
-from tests.iu_test_support import IUExam
+from tests.iu_test_support import IUExam, mk_local
 
 IUExam.quiet_mode()
 
@@ -51,9 +49,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "enabled": True,
                 "name": "Seq 1",
-                "start": datetime.datetime(
-                    2021, 1, 4, 6, 5, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-                ),
+                "start": mk_local("2021-01-04 06:05"),
                 "duration": 2160,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
@@ -96,9 +92,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "enabled": True,
                 "name": "Seq 2",
-                "start": datetime.datetime(
-                    2021, 1, 4, 6, 10, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-                ),
+                "start": mk_local("2021-01-04 06:10"),
                 "duration": 2160,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
@@ -158,9 +152,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "enabled": True,
                 "name": "Seq 1",
-                "start": datetime.datetime(
-                    2021, 1, 4, 6, 5, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-                ),
+                "start": mk_local("2021-01-04 06:05"),
                 "duration": 2160,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
@@ -203,9 +195,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "enabled": True,
                 "name": "Seq 2",
-                "start": datetime.datetime(
-                    2021, 1, 4, 6, 10, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-                ),
+                "start": mk_local("2021-01-04 06:10"),
                 "duration": 0,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
@@ -264,9 +254,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "enabled": True,
                 "name": "Seq 1",
-                "start": datetime.datetime(
-                    2021, 1, 4, 6, 5, tzinfo=zoneinfo.ZoneInfo(key="UTC")
-                ),
+                "start": mk_local("2021-01-04 06:05"),
                 "duration": 2160,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
