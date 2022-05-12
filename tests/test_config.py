@@ -10,13 +10,13 @@ from custom_components.irrigation_unlimited.const import (
     DOMAIN,
     SERVICE_TIME_ADJUST,
 )
-from tests.iu_test_support import IUExam
+from tests.iu_test_support import IUExam, mk_utc
 
 IUExam.quiet_mode()
 
 # Remove the following decorator to run test
-# @pytest.mark.skip
-async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+@pytest.mark.skip
+async def test_config(hass: ha.HomeAssistant, skip_history):
     """Test loading of a config."""
     # pylint: disable=unused-argument
 
@@ -24,6 +24,12 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
 
         # """Prevent checking results. Helpful for just outputting results"""
         # exam.no_check()
+
+        # await exam.load_dependencies()
+        # await exam.async_load_component("homeassistant")
+
+        # await exam.begin_test(1)
+        # await exam.finish_test()
 
         # Run a single test
         # await exam.begin_test(1)
@@ -41,8 +47,7 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         #     {
         #         "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
         #         "sequence_id": 1,
-        #         "zones": 0,
-        #         "actual": "00:10",
+        #         "percentage": 47.5,
         #     },
         #     True,
         # )
@@ -50,7 +55,7 @@ async def test_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
 
         # Run to a point in time
         # await exam.begin_test(1)
-        # await exam.run_until(datetime.fromisoformat("2021-01-04 06:02:00+00:00"))
+        # await exam.run_until(mk_utc("2021-01-04 06:02"))
         # await exam.finish_test()
 
         # Run for a period of time
