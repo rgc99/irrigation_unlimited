@@ -9,6 +9,7 @@ from homeassistant.config import (
 )
 from homeassistant.setup import async_setup_component
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.util.dt import parse_datetime, as_utc, as_local
 
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
@@ -320,3 +321,20 @@ class IUExam:
     def check_summary(self) -> None:
         """Check the test results"""
         check_summary(self._config_directory + self._config_file, self._coordinator)
+
+
+def mk_utc(adate: str) -> datetime:
+    """Parse a datetime string assumed to be in local format
+    and return in UTC"""
+    return as_utc(parse_datetime(adate))
+
+
+def mk_local(adate: str) -> datetime:
+    """Parse a datetime string assumed to be in local format"""
+    return as_local(parse_datetime(adate))
+
+
+def mk_td(time_str: str) -> timedelta:
+    """Convert time string to timedelta"""
+    tstr = datetime.strptime(time_str, "%H:%M:%S")
+    return timedelta(hours=tstr.hour, minutes=tstr.minute, seconds=tstr.second)
