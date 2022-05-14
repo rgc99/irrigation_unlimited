@@ -138,6 +138,7 @@ from .const import (
     CONF_SHOW,
     CONF_CONFIG,
     CONF_TIMELINE,
+    CONF_CONTROLLER_ID,
     CONF_ZONE_ID,
     CONF_FUTURE_SPAN,
     SERVICE_CANCEL,
@@ -2361,6 +2362,7 @@ class IUController(IUBase):
         # Config parameters
         self._is_enabled: bool = True
         self._name: str = None
+        self._controller_id: str = None
         self._switch_entity_id: list[str] = None
         self._preamble: timedelta = None
         self._postamble: timedelta = None
@@ -2375,6 +2377,11 @@ class IUController(IUBase):
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
         self._dirty: bool = True
+
+    @property
+    def controller_id(self) -> str:
+        """Return the controller_id for the controller entity"""
+        return self._controller_id
 
     @property
     def unique_id(self) -> str:
@@ -2563,6 +2570,7 @@ class IUController(IUBase):
         self.clear()
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._name = config.get(CONF_NAME, f"Controller {self.index + 1}")
+        self._controller_id  = config.get(CONF_CONTROLLER_ID, str(self.index + 1))
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
@@ -2601,6 +2609,7 @@ class IUController(IUBase):
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
+        result[CONF_CONTROLLER_ID] = self._controller_id
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self._is_enabled
         result[CONF_ICON] = self.icon

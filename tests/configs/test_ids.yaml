@@ -10,8 +10,6 @@ irrigation_unlimited:
         zone_id: "zone_3"
       - name: "Zone 4"
         zone_id: "zone_3"
-      - name: "Zone 5"
-        zone_id: "ABC"
     sequences:
       - name: "Sequence 1"
         schedules:
