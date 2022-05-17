@@ -34,6 +34,7 @@ from tests.iu_test_support import (
     mk_utc,
     mk_local,
     mk_td,
+    IUExam,
 )
 
 quiet_mode()
@@ -478,3 +479,26 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     await finish_test(hass, coordinator, next_time, True)
 
     check_summary(full_path, coordinator)
+
+
+async def test_entity_rename(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test renaming entities."""
+    # pylint: disable=unused-argument
+
+    async with IUExam(hass, "test_entity_rename.yaml") as exam:
+        assert exam.coordinator.rename_entities is True
+        assert (
+            hass.states.get("binary_sensor.irrigation_unlimited_my_garden") is not None
+        )
+        assert (
+            hass.states.get("binary_sensor.irrigation_unlimited_my_garden_vege_patch")
+            is not None
+        )
+        assert (
+            hass.states.get("binary_sensor.irrigation_unlimited_my_garden_rose_bed")
+            is not None
+        )
+        assert (
+            hass.states.get("binary_sensor.irrigation_unlimited_my_garden_front_lawn")
+            is not None
+        )

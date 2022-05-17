@@ -85,6 +85,8 @@ CONF_LOGGING = "logging"
 CONF_VERSION = "version"
 CONF_RUN = "run"
 CONF_SYNC_SWITCHES = "sync_switches"
+CONF_RENAME_ENTITIES = "rename_entities"
+CONF_ENTITY_BASE = "entity_base"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

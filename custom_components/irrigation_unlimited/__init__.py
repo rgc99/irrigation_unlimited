@@ -37,6 +37,7 @@ from .const import (
     CONF_DAY,
     CONF_ODD,
     CONF_EVEN,
+    CONF_RENAME_ENTITIES,
     CONF_RESULTS,
     CONF_SHOW_LOG,
     CONF_AUTOPLAY,
@@ -243,6 +244,7 @@ IRRIGATION_SCHEMA = vol.Schema(
         vol.Optional(CONF_HISTORY_SPAN): cv.positive_int,
         vol.Optional(CONF_HISTORY_REFRESH): cv.positive_int,
         vol.Optional(CONF_SYNC_SWITCHES): cv.boolean,
+        vol.Optional(CONF_RENAME_ENTITIES): cv.boolean,
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
         vol.Optional("history"): HISTORY_SCHEMA,
     }

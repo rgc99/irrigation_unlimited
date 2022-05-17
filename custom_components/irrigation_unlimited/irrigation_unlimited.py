@@ -8,7 +8,6 @@ from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
 import json
-import re
 from homeassistant.core import HomeAssistant, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import (
@@ -65,6 +64,8 @@ from .const import (
     CONF_ACTUAL,
     CONF_ALL_ZONES_CONFIG,
     CONF_CONTROLLER,
+    CONF_RENAME_ENTITIES,
+    CONF_ENTITY_BASE,
     CONF_RUN,
     CONF_SYNC_SWITCHES,
     DOMAIN,
@@ -1211,9 +1212,16 @@ class IUZone(IUBase):
         return f"c{self._controller.index + 1}_z{self.index + 1}"
 
     @property
+    def entity_base(self) -> str:
+        """Return the base of the entity_id"""
+        if self._coordinator.rename_entities:
+            return f"{self._controller.controller_id}_{self._zone_id}"
+        return self.unique_id
+
+    @property
     def entity_id(self) -> str:
         """Return the HA entity_id for the zone"""
-        return f"{BINARY_SENSOR}.{DOMAIN}_{self.unique_id}"
+        return f"{BINARY_SENSOR}.{DOMAIN}_{self.entity_base}"
 
     @property
     def schedules(self) -> "list[IUSchedule]":
@@ -1443,6 +1451,7 @@ class IUZone(IUBase):
         result[CONF_ENABLED] = self.enabled
         result[CONF_ICON] = self.icon
         result[CONF_ZONE_ID] = self._zone_id
+        result[CONF_ENTITY_BASE] = self.entity_base
         result[ATTR_STATUS] = self.status
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
         result[ATTR_CURRENT_DURATION] = current_duration
@@ -2389,9 +2398,16 @@ class IUController(IUBase):
         return f"c{self.index + 1}_m"
 
     @property
+    def entity_base(self) -> str:
+        """Return the base entity_id"""
+        if self._coordinator.rename_entities:
+            return self._controller_id
+        return self.unique_id
+
+    @property
     def entity_id(self) -> str:
         """Return the HA entity_id for the controller entity"""
-        return f"{BINARY_SENSOR}.{DOMAIN}_{self.unique_id}"
+        return f"{BINARY_SENSOR}.{DOMAIN}_{self.entity_base}"
 
     @property
     def zones(self) -> "list[IUZone]":
@@ -2570,7 +2586,7 @@ class IUController(IUBase):
         self.clear()
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._name = config.get(CONF_NAME, f"Controller {self.index + 1}")
-        self._controller_id  = config.get(CONF_CONTROLLER_ID, str(self.index + 1))
+        self._controller_id = config.get(CONF_CONTROLLER_ID, str(self.index + 1))
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
@@ -2588,8 +2604,6 @@ class IUController(IUBase):
                 self.find_add_sequence(self._coordinator, self, qidx).load(
                     sequence_config
                 )
-
-        self.check_links()
 
         self._dirty = True
         return self
@@ -2610,6 +2624,7 @@ class IUController(IUBase):
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
         result[CONF_CONTROLLER_ID] = self._controller_id
+        result[CONF_ENTITY_BASE] = self.entity_base
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self._is_enabled
         result[CONF_ICON] = self.icon
@@ -2857,15 +2872,9 @@ class IUController(IUBase):
     def check_links(self) -> bool:
         """Check inter object links"""
 
-        def check_id(zone_id: str) -> bool:
-            return bool(re.match(r"^[a-z0-9]+(_[a-z0-9]+)*$", zone_id))
-
         result = True
         zone_ids = set()
         for zone in self._zones:
-            if not check_id(zone.zone_id):
-                self._coordinator.logger.log_invalid_id(self, zone)
-                result = False
             if zone.zone_id in zone_ids:
                 self._coordinator.logger.log_duplicate_id(self, zone)
                 result = False
@@ -3721,14 +3730,15 @@ class IULogger:
     def log_duplicate_id(
         self, controller: IUController, zone: IUZone, level=WARNING
     ) -> None:
-        """Warn a zone has a duplicate zone_id"""
+        """Warn a controller/zone has a duplicate id"""
         idl = IUBase.idl([controller, zone], "0", 1)
         self._output(
             level,
             f"DUPLICATE_ID Duplicate ID: "
             f"controller: {idl[0]}, "
+            f"controller_id: {controller.controller_id}, "
             f"zone: {idl[1]}, "
-            f"zone_id: {zone.zone_id}",
+            f"zone_id: {zone.zone_id if zone else ''}",
         )
 
     def log_orphan_id(
@@ -3781,6 +3791,7 @@ class IUCoordinator:
         self._history = IUHistory(self._hass)
         self._restored_from_configuration: bool = False
         self._sync_switches: bool = True
+        self._rename_entities = False
 
     @property
     def entity_id(self) -> str:
@@ -3842,6 +3853,11 @@ class IUCoordinator:
         """Flag the system has been restored from coordinator data"""
         self._restored_from_configuration = value
 
+    @property
+    def rename_entities(self) -> bool:
+        """Indicate if entity renaming is allowed"""
+        return self._rename_entities
+
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
         all_setup: bool = self._hass.is_running and self._component is not None
@@ -3887,6 +3903,7 @@ class IUCoordinator:
             seconds=config.get(CONF_REFRESH_INTERVAL, DEFAULT_REFRESH_INTERVAL)
         )
         self._sync_switches = config.get(CONF_SYNC_SWITCHES, True)
+        self._rename_entities = config.get(CONF_RENAME_ENTITIES, self._rename_entities)
 
         cidx: int = 0
         for cidx, controller_config in enumerate(config[CONF_CONTROLLERS]):
@@ -3902,6 +3919,9 @@ class IUCoordinator:
         self.request_update(False)
         self._logger.log_load(config)
         self._history.load(config)
+
+        self.check_links()
+
         return self
 
     def as_dict(self) -> OrderedDict:
@@ -3944,6 +3964,21 @@ class IUCoordinator:
             status_changed |= controller.check_run(stime)
 
         return status_changed
+
+    def check_links(self) -> bool:
+        """Check inter object links"""
+
+        result = True
+        controller_ids = set()
+        for controller in self._controllers:
+            if controller.controller_id in controller_ids:
+                self._logger.log_duplicate_id(controller, None)
+                result = False
+            else:
+                controller_ids.add(controller.controller_id)
+            if not controller.check_links():
+                result = False
+        return result
 
     def request_update(self, deep: bool) -> None:
         """Flag the sensor needs an update. The actual update is done

@@ -2,21 +2,34 @@ default_config:
 
 irrigation_unlimited:
   controllers:
-    zones:
-      - name: "Zone 1"
-      - name: "Zone 2"
-        zone_id: "1"
-      - name: "Zone 3"
-        zone_id: "zone_3"
-      - name: "Zone 4"
-        zone_id: "zone_3"
-    sequences:
-      - name: "Sequence 1"
-        schedules:
-          - name: Never
-            time: "21:00"
-            month: [feb]
-            day: [31]
-        zones:
-          - zone_id: 1
-          - zone_id: [1, "no_zone"]
+    - name: Controller 1
+      zones:
+        - name: "Zone 1"
+        - name: "Zone 2"
+          zone_id: "1" # Conflicts with Zone 1
+        - name: "Zone 3"
+          zone_id: "zone_3"
+        - name: "Zone 4"
+          zone_id: "zone_3" # Conflicts with Zone 3
+      sequences:
+        - name: "Sequence 1"
+          schedules:
+            - name: Never
+              time: "21:00"
+              month: [feb]
+              day: [31]
+          zones:
+            - zone_id: 1
+            - zone_id: [1, "no_zone"] # Orphaned
+    - name: Controller 2
+      controller_id: "1" # Conflicts with controller 1
+      zones:
+        - name: "Zone 1"
+    - name: Controller 3
+      controller_id: "controller_3"
+      zones:
+        - name: "Zone 1"
+    - name: Controller 4
+      controller_id: "controller_3" # Conflicts with controller 3
+      zones:
+        - name: "Zone 1"
