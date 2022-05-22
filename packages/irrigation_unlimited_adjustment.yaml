@@ -10,7 +10,7 @@
 # More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
 #
 # Set up some observation sensors.
-# This uses the Weather Underground (WUnderground) https://www.home-assistant.io/integrations/wunderground/ integration.
+# This uses the Home-Assistant-wundergroundpws https://github.com/cytech/Home-Assistant-wundergroundpws integration.
 # Rain information (wupws_preciptotal) is a daily accumulation total. So we want to grab the
 # data just before midnight to get the daily total. We shouldn't be too eager to look after midnight
 # because the reset from WU may take a few minutes to come through, currently 10 min. Increase this
