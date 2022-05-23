@@ -1,6 +1,6 @@
 # Filename: irrigation_smart_irrigation.yaml
 #
-# Verion: 1.0.1
+# Verion: 1.0.2
 #
 # Description: Example automation for HAsmartirrigation integration
 # (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
@@ -51,5 +51,10 @@ automation:
           - binary_sensor.irrigation_unlimited_c1_m
         from: "on"
         to: "off"
+    condition:
+      condition: and
+      conditions:
+        - "{{ states('sensor.smart_irrigation_daily_adjusted_run_time') != 'unknown' }}"
+        - "{{ false }}" # Change this to true when HAsmartirrigation is setup.
     action:
       - service: smart_irrigation.smart_irrigation_reset_bucket
