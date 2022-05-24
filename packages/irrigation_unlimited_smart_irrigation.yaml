@@ -22,10 +22,9 @@ automation:
       - platform: time
         at: "23:30"
     condition:
-      condition: and
-      conditions:
-        - "{{ states('sensor.smart_irrigation_daily_adjusted_run_time') != 'unknown' }}"
-        - "{{ false }}" # Change this to true when HAsmartirrigation is setup.
+      - condition: numeric_state
+        above: '0'
+        entity_id: sensor.smart_irrigation_daily_adjusted_run_time
     action:
       - service: irrigation_unlimited.adjust_time
         data:
@@ -52,9 +51,8 @@ automation:
         from: "on"
         to: "off"
     condition:
-      condition: and
-      conditions:
-        - "{{ states('sensor.smart_irrigation_daily_adjusted_run_time') != 'unknown' }}"
-        - "{{ false }}" # Change this to true when HAsmartirrigation is setup.
+      - condition: numeric_state
+        above: '0'
+        entity_id: sensor.smart_irrigation_daily_adjusted_run_time
     action:
       - service: smart_irrigation.smart_irrigation_reset_bucket
