@@ -22,9 +22,9 @@ automation:
       - platform: time
         at: "23:30"
     condition:
-      - condition: numeric_state
-        above: '0'
-        entity_id: sensor.smart_irrigation_daily_adjusted_run_time
+      condition: and
+      conditions:
+        - "{{ states('sensor.smart_irrigation_daily_adjusted_run_time') | float(-1) >= 0 }}"
     action:
       - service: irrigation_unlimited.adjust_time
         data:
