@@ -1,8 +1,4 @@
 {
     "name": "Irrigation Unlimited",
-    "hacs": "1.6.0",
-    "domains": [
-        "binary_sensor"
-    ],
-    "homeassistant": "0.118.0"
+    "homeassistant": "2022.1.0"
 }
