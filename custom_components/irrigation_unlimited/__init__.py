@@ -190,8 +190,8 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_CONTROLLER_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
         vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
-        vol.Optional(CONF_PREAMBLE): cv.positive_time_period,
-        vol.Optional(CONF_POSTAMBLE): cv.positive_time_period,
+        vol.Optional(CONF_PREAMBLE): cv.time_period,
+        vol.Optional(CONF_POSTAMBLE): cv.time_period,
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_ALL_ZONES_CONFIG): vol.All(ALL_ZONES_SCHEMA),
     }
