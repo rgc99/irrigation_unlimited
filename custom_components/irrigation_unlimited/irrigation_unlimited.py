@@ -3,7 +3,7 @@
 import weakref
 from datetime import datetime, time, timedelta
 from types import MappingProxyType
-from typing import Dict, OrderedDict, List, Set
+from typing import Dict, OrderedDict, List, Set, NamedTuple
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
@@ -2127,6 +2127,14 @@ class IUSequence(IUBase):
         return result
 
 
+class IUSequenceZoneRun(NamedTuple):
+    """Irrigation Unlimited sequence zone run class"""
+
+    sequence_zone: IUSequenceZone
+    sequence_repeat: int
+    zone_repeat: int
+
+
 class IUSequenceRun(IUBase):
     """Irrigation Unlimited sequence run manager class. Ties together the
     individual sequence zones"""
@@ -2147,8 +2155,8 @@ class IUSequenceRun(IUBase):
         self._sequence = sequence
         self._schedule = schedule
         # Private variables
-        self._runs: Dict[IURun, IUSequenceZone] = weakref.WeakKeyDictionary()
-        self._active_zone: IUSequenceZone = None
+        self._runs: Dict[IURun, IUSequenceZoneRun] = weakref.WeakKeyDictionary()
+        self._active_zone: IUSequenceZoneRun = None
         self._running = False
         self._start_time: datetime = None
         self._end_time: datetime = None
@@ -2192,7 +2200,7 @@ class IUSequenceRun(IUBase):
         return self._running
 
     @property
-    def active_zone(self) -> bool:
+    def active_zone(self) -> IUSequenceZoneRun:
         """Return the active zone in the sequence"""
         return self._active_zone
 
@@ -2204,9 +2212,15 @@ class IUSequenceRun(IUBase):
         """Check if this sequence run is expired"""
         return stime >= self._end_time
 
-    def add(self, run: IURun, sequence_zone: IUSequenceZone) -> None:
+    def add(
+        self,
+        run: IURun,
+        sequence_zone: IUSequenceZone,
+        sequence_repeat: int,
+        zone_repeat: int,
+    ) -> None:
         """Adds a sequence zone to the group"""
-        self._runs[run] = sequence_zone
+        self._runs[run] = IUSequenceZoneRun(sequence_zone, sequence_repeat, zone_repeat)
         self._accumulated_duration += run.duration
         if self._start_time is None or run.start_time < self._start_time:
             self._start_time = run.start_time
@@ -2239,7 +2253,9 @@ class IUSequenceRun(IUBase):
 
     def zone_runs(self, sequence_zone: IUSequenceZone) -> List[IURun]:
         """Get the list of runs associated with the sequence zone"""
-        return [run for run, sqz in self._runs.items() if sqz == sequence_zone]
+        return [
+            run for run, sqz in self._runs.items() if sqz.sequence_zone == sequence_zone
+        ]
 
     def run_index(self, run: IURun) -> int:
         """Extract the index from the supplied run"""
@@ -2247,17 +2263,20 @@ class IUSequenceRun(IUBase):
 
     def sequence_zone(self, run: IURun) -> IUSequenceZone:
         """Extract the sequence zone from the run"""
-        return self._runs.get(run, None)
+        sequence_zone_run = self._runs.get(run, None)
+        if sequence_zone_run is not None:
+            return sequence_zone_run.sequence_zone
+        return None
 
     def update(self, stime: datetime, run: IURun) -> bool:
         """Update the status of the sequence"""
         is_running = run.is_running(stime)
-        sequence_zone = self.sequence_zone(run)
+        sequence_zone_run = self._runs.get(run)
 
         if is_running and not self._running:
             # Sequence/sequence zone is starting
             self._running = True
-            self._active_zone = sequence_zone
+            self._active_zone = sequence_zone_run
             self._coordinator.notify_sequence(
                 EVENT_START,
                 self._controller,
@@ -2267,12 +2286,12 @@ class IUSequenceRun(IUBase):
             )
             return True
 
-        if is_running and sequence_zone != self._active_zone:
+        if is_running and sequence_zone_run != self._active_zone:
             # Sequence zone is changing
-            self._active_zone = sequence_zone
+            self._active_zone = sequence_zone_run
             return True
 
-        if not is_running and sequence_zone == self._active_zone:
+        if not is_running and sequence_zone_run == self._active_zone:
             # Sequence zone is finishing
             self._active_zone = None
             if self.run_index(run) == len(self._runs) - 1:
@@ -2721,7 +2740,9 @@ class IUController(IUBase):
         next_run: datetime = None
         sequence_run: IUSequenceRun = None
         # pylint: disable=too-many-nested-blocks
-        for i in range(sequence.repeat):  # pylint: disable=unused-variable
+        for sequence_repeat in range(
+            sequence.repeat
+        ):  # pylint: disable=unused-variable
             for sequence_zone in sequence.zones:
                 if not sequence_zone.enabled:
                     continue
@@ -2752,7 +2773,7 @@ class IUController(IUBase):
                             duration_adjusted = duration
 
                         zone_run_time = next_run
-                        for j in range(  # pylint: disable=unused-variable
+                        for zone_repeat in range(  # pylint: disable=unused-variable
                             sequence_zone.repeat
                         ):
                             run = zone.runs.add(
@@ -2762,7 +2783,9 @@ class IUController(IUBase):
                                 schedule,
                                 sequence_run,
                             )
-                            sequence_run.add(run, sequence_zone)
+                            sequence_run.add(
+                                run, sequence_zone, sequence_repeat, zone_repeat
+                            )
                             zone_run_time += run.duration + delay
                         zone.request_update()
                         duration_max = max(duration_max, zone_run_time - next_run)
