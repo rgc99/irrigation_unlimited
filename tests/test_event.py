@@ -29,29 +29,29 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
 
         exam.check_summary()
 
-    assert event_data == [
-        {
-            "controller": {"index": 0, "name": "Test controller 1"},
-            "sequence": {"index": 0, "name": "Seq 1"},
-            "run": {"duration": 2280},
-            "schedule": {"index": 0, "name": "Schedule 1"},
-        },
-        {
-            "controller": {"index": 0, "name": "Test controller 1"},
-            "sequence": {"index": 0, "name": "Seq 1"},
-            "run": {"duration": 2280},
-            "schedule": {"index": 0, "name": "Schedule 1"},
-        },
-        {
-            "controller": {"index": 0, "name": "Test controller 1"},
-            "sequence": {"index": 1, "name": "Seq 2"},
-            "run": {"duration": 2280},
-            "schedule": {"index": 0, "name": "Schedule 1"},
-        },
-        {
-            "controller": {"index": 0, "name": "Test controller 1"},
-            "sequence": {"index": 1, "name": "Seq 2"},
-            "run": {"duration": 2280},
-            "schedule": {"index": 0, "name": "Schedule 1"},
-        },
-    ]
+        assert event_data == [
+            {
+                "controller": {"index": 0, "name": "Test controller 1"},
+                "sequence": {"index": 0, "name": "Seq 1"},
+                "run": {"duration": 5460},
+                "schedule": {"index": 0, "name": "Schedule 1"},
+            },
+            {
+                "controller": {"index": 0, "name": "Test controller 1"},
+                "sequence": {"index": 0, "name": "Seq 1"},
+                "run": {"duration": 5460},
+                "schedule": {"index": 0, "name": "Schedule 1"},
+            },
+            {
+                "controller": {"index": 0, "name": "Test controller 1"},
+                "sequence": {"index": 1, "name": "Seq 2"},
+                "run": {"duration": 2280},
+                "schedule": {"index": 0, "name": "Schedule 1"},
+            },
+            {
+                "controller": {"index": 0, "name": "Test controller 1"},
+                "sequence": {"index": 1, "name": "Seq 2"},
+                "run": {"duration": 2280},
+                "schedule": {"index": 0, "name": "Schedule 1"},
+            },
+        ]
