@@ -26,6 +26,61 @@ Command | Description
 `pytest --durations=10 --cov-report term-missing --cov=custom_components.irrigation_unlimited tests` | This tells `pytest` that your target module to test is `custom_components.irrigation_unlimited` so that it can give you a [code coverage](https://en.wikipedia.org/wiki/Code_coverage) summary, including % of code that was executed and the line numbers of missed executions.
 `pytest tests/test_service.py -k test_service_adjust_time` | Runs the `test_service_adjust_time` test function located in `tests/test_service.py`
 
+## Configuration
+
+See the main documentation [here](README.md) for the detailed integration setup information. The following objects are for testing purposes.
+
+| Name | Type | Default | Description |
+| -----| ---- | ------- | ----------- |
+| `testing` | object | _[Testing Object](#testing-object)_ | Used for testing setup |
+
+### Testing Object
+
+The testing object is useful for running through a predetermined regime. Note: the `speed` value does _not_ alter the system clock in any way. It is accomplished by an internal 'virtual clock'.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `enabled` | bool | true | Enable/disable testing |
+| `speed` | number | 1.0 | Test speed. A value less than 1 will slow down the system. Values above 1 will speed up tests. A value of 2 will double the speed, 60 will turn minutes to seconds and 3600 will turn hours to seconds. Upper limit will depend on individual systems.|
+| `show_log` | bool | true | Outputs controller and zones to the log |
+| `output_events` | bool | false | Prints event information to the console. Useful for creating the _[Test Result Objects](#test-result-objects)_ |
+| `auto_play` | bool | true | Automatically start tests when system is started or reloaded |
+| `times` | list | _[Test Time Objects](#test-time-objects)_ | Test run times |
+
+### Test Time Objects
+
+This is the test time object. Test times do _not_ alter the system clock so there is no danger of disruption to the Home Assistant system.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `name` | string | Test _N_ | Friendly name for the test |
+| `start` | datetime | | The virtual start time (YYYY-mm-dd HH:MM) |
+| `end` | datetime | | The virtual end time (YYYY-mm-dd HH:MM) |
+| `results` | list | _[Test Result Objects](#test-result-objects)_ | Expected timing results |
+
+### Test Result Objects
+
+These are the expected results from the test object. Every time a controller or zone turns on or off it is compared to the next item in this list. To aid in generating this list from scratch set `output_event` to `true` in the _[Testing Object](#testing-object)_. Events will be printed to the console which can be copied to this object.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `t` | time | required | The time of the event |
+| `c` | int | required | The controller number |
+| `z` | int | required | The zone number. Zone 0 is the master |
+| `s` | int | required | 0 = Off and 1 = On |
+
+For a more concise style, results can be on one line for example:
+
+```yaml
+results:
+  - { t: "2021-01-04 06:00:30", c: 1, z: 0, s: 1 }
+  - { t: "2021-01-04 06:00:30", c: 1, z: 1, s: 1 }
+  - { t: "2021-01-04 06:10:00", c: 1, z: 2, s: 1 }
+  - { t: "2021-01-04 06:10:30", c: 1, z: 1, s: 0 }
+  - { t: "2021-01-04 06:20:00", c: 1, z: 2, s: 0 }
+  - { t: "2021-01-04 06:20:00", c: 1, z: 0, s: 0 }
+```
+
 ## Framework
 
 To begin you will need some basic knowledge of python programming. Each test_*.py file usually contains multiple exams and each exam has multiple tests which are a set of events that must occur in order at a certain time.
@@ -140,7 +195,7 @@ Restore the hass environment. If the `homeassistant:` section has been changed i
 
 ### Examples
 
-Here are some basic examples of using the framework. See [test_model.py](./test_model.py) for all the imports etc.
+Here are some basic examples of using the framework. See [test_model.py](./test_model.py) for all the imports etc., and [test_model.yaml](./configs/test_model.yaml) for a configuration.
 
 This is a basic three-liner to run all the tests in the config file and check the results.
 
