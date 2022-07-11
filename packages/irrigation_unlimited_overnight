@@ -1,0 +1,42 @@
+# Filename: irrigation_unlimited_overnight.yaml
+#
+# Verion: 1.0.0
+#
+# Description: Example automation for running from sunset to sunrise
+#
+# This file is a package and should be located in the config/packages
+# folder. If you do not have a packages folder then create it and add
+# the following to configuration.yaml
+#
+# homeassistant:
+#  packages: !include_dir_named packages
+#
+# More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
+#
+automation:
+  - id: 'IU1655789912900'
+    alias: IU Overnight
+    description: Run irrigation from sunset to sunrise
+    trigger:
+      - platform: sun
+        event: sunset
+        offset: -00:60:00
+    condition: []
+    action:
+      service: irrigation_unlimited.adjust_time
+      data:
+        # -------------------------------------------------------------------
+        # Please see documentation regarding the adjust_time service call.
+        # Choose an option below. Comment out/delete/change as needed.
+        # *** This will NOT work as is. ***
+        # 1. Adjust a single zone. Change the zone as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_z1
+        # 2. Adjust a sequence. Change the sequence_id as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_m
+        # sequence_id: 1
+        # -------------------------------------------------------------------
+        actual: >
+          {% set t1 = as_datetime(state_attr("sun.sun", "next_setting")).replace(microsecond=0) %}
+          {% set t2 = as_datetime(state_attr("sun.sun", "next_rising")).replace(microsecond=0) %}
+          {{ t2 - t1 }}
+    mode: single

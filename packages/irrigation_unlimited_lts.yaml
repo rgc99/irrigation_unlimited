@@ -1,0 +1,8 @@
+template:
+  - sensor:
+    - name: Today Total C1 Z1
+      state_class: total_increasing
+      icon: mdi:sprinkler
+      unit_of_measurement: s
+      state: >
+        {{ state_attr('binary_sensor.irrigation_unlimited_c1_z1', 'today_total') | float(0) }}
