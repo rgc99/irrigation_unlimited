@@ -164,11 +164,11 @@ SEQUENCE_ZONE_SCHEMA = vol.Schema(
 
 SEQUENCE_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_SCHEDULES, default={}): vol.All(
-            cv.ensure_list, [SEQUENCE_SCHEDULE_SCHEMA], _list_is_not_empty
-        ),
         vol.Required(CONF_ZONES, default={}): vol.All(
             cv.ensure_list, [SEQUENCE_ZONE_SCHEMA], _list_is_not_empty
+        ),
+        vol.Optional(CONF_SCHEDULES): vol.All(
+            cv.ensure_list, [SEQUENCE_SCHEDULE_SCHEMA]
         ),
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_DELAY): cv.positive_time_period,

@@ -2092,8 +2092,9 @@ class IUSequence(IUBase):
         self._enabled = config.get(CONF_ENABLED, self._enabled)
         for zidx, zone_config in enumerate(config[CONF_ZONES]):
             self.find_add_zone(zidx).load(zone_config)
-        for sidx, schedule_config in enumerate(config[CONF_SCHEDULES]):
-            self.find_add_schedule(sidx).load(schedule_config)
+        if CONF_SCHEDULES in config:
+            for sidx, schedule_config in enumerate(config[CONF_SCHEDULES]):
+                self.find_add_schedule(sidx).load(schedule_config)
         return self
 
     def as_dict(self) -> OrderedDict:
