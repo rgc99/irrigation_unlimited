@@ -3381,6 +3381,7 @@ class IUTester:
         self._running_test: int = None
         self._last_test: int = None
         self._autoplay_initialised: bool = False
+        self._ticker: datetime = None
         self.load(None)
 
     @property
@@ -3470,6 +3471,16 @@ class IUTester:
             result += test.total_results
         return result
 
+    @property
+    def ticker(self) -> datetime:
+        """Return the tester clock"""
+        return self._ticker
+
+    @ticker.setter
+    def ticker(self, value: datetime) -> None:
+        """Set the tester clock"""
+        self._ticker = value
+
     def virtual_time(self, atime: datetime) -> datetime:
         """Convert actual time to virtual time"""
         if self.is_testing:
@@ -3491,6 +3502,7 @@ class IUTester:
 
     def start_test(self, test_no: int, atime: datetime) -> IUTest:
         """Start the test"""
+        self._ticker = atime
         if 0 < test_no <= len(self._tests):
             self._running_test = test_no - 1  # 0-based
             test = self._tests[self._running_test]
