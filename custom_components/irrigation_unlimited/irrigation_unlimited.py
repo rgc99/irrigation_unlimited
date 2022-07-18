@@ -4186,8 +4186,13 @@ class IUCoordinator:
         # pylint: disable=unused-argument
         self.request_update(False)
         self._muster_required = True
-        if self._last_tick is not None:
-            self.timer(self._last_tick)
+
+    def next_awakening(self, stime: datetime) -> datetime:
+        """Return the next event time"""
+        result = datetime.max.replace(tzinfo=timezone.utc)
+        for controller in self._controllers:
+            result = min(controller.next_awakening(stime), result)
+        return result
 
     def check_switches(self, resync: bool, stime: datetime) -> bool:
         """Check if entities match current status"""
