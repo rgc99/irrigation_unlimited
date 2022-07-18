@@ -3584,6 +3584,7 @@ class IUTester:
                     test = self.next_test(atime)
                     if test is not None:
                         poll_func(test.start, True)
+                        self._test_initialised = True
                     else:  # All tests finished
                         if self._show_log:
                             self._coordinator.logger.log_test_completed(
