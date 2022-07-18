@@ -226,6 +226,14 @@ def wash_t(stime: time, granularity: int = None) -> time:
     return None
 
 
+def round_dt(stime: datetime, granularity: int = None) -> datetime:
+    """Round the supplied datetime to internal boundaries"""
+    if stime is not None:
+        base_time = wash_dt(stime, granularity)
+        return base_time + round_td(stime - base_time, granularity)
+    return None
+
+
 def round_td(delta: timedelta, granularity: int = None) -> timedelta:
     """Round the supplied timedelta to internal boundaries"""
     if delta is not None:
