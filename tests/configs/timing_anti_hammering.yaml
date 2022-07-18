@@ -51,13 +51,13 @@ irrigation_unlimited:
           - name: Spring and Autumn
             time:
               sun: sunrise
-              after: 00:20
+              after: 00:19:37
             weekday: [sat]
             month: [apr, may, sep, oct]
           - name: Summer
             time:
               sun: sunrise
-              after: 00:20
+              after: 00:19:37
             weekday: [tue, sat]
             month: [jun, jul, aug]
         zones:

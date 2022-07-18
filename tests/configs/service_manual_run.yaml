@@ -78,7 +78,7 @@ irrigation_unlimited:
         - name: "Zone 4"
       sequences:
         - name: "Multi zone"
-          duration: "0:10:00"
+          duration: "0:09:00"
           delay: "0:01:00"
           schedules:
             - time: "12:00"
