@@ -4,7 +4,7 @@ irrigation_unlimited:
   testing:
     enabled: true
     speed: 60.0
-    output_events: true
+    output_events: false
     show_log: true
     autoplay: true
     times:
