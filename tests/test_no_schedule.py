@@ -21,6 +21,7 @@ async def test_sequence_no_schedule(
 
         # Zone manual run
         await exam.begin_test(2)
+        await exam.run_until("2021-01-04 06:00:09")
         await exam.call(
             SERVICE_MANUAL_RUN,
             {
@@ -32,6 +33,7 @@ async def test_sequence_no_schedule(
 
         # Sequence manual run
         await exam.begin_test(3)
+        await exam.run_until("2021-01-04 06:00:09")
         await exam.call(
             SERVICE_MANUAL_RUN,
             {

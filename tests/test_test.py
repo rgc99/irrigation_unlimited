@@ -1,87 +1,53 @@
-"""Test irrigation_unlimited tester"""
+"""Test irrigation_unlimited tester for the tester"""
 import pytest
 import homeassistant.core as ha
-from homeassistant.config import (
-    load_yaml_config_file,
-    async_process_ha_core_config,
-)
-from homeassistant.setup import async_setup_component
+from tests.iu_test_support import IUExam
 
-from custom_components.irrigation_unlimited.irrigation_unlimited import (
-    IUCoordinator,
-)
-from custom_components.irrigation_unlimited.const import (
-    DOMAIN,
-    COORDINATOR,
-)
-from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
-from tests.iu_test_support import (
-    begin_test,
-    check_summary,
-    finish_test,
-    quiet_mode,
-    TEST_CONFIG_DIR,
-)
-
-quiet_mode()
+IUExam.quiet_mode()
 
 
 # pylint: disable=unused-argument
 async def test_test_1(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test the testing unit. Parameter show_log=False"""
 
-    full_path = TEST_CONFIG_DIR + "test_test_1.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    if ha.DOMAIN in config:
-        await async_process_ha_core_config(hass, config[ha.DOMAIN])
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+    async with IUExam(hass, "test_test_1.yaml") as exam:
+        with pytest.raises(AssertionError, match="Invalid test 999"):
+            await exam.begin_test(999)
 
-    with pytest.raises(AssertionError, match="Invalid test 999"):
-        start_time = await begin_test(999, coordinator)
+        await exam.begin_test(1)
+        with pytest.raises(AssertionError, match="Failed test 1, errors not zero"):
+            await exam.finish_test()
 
-    start_time = await begin_test(1, coordinator)
-    with pytest.raises(AssertionError, match="Failed test 1, errors not zero"):
-        await finish_test(hass, coordinator, start_time, True)
+        await exam.begin_test(2)
+        with pytest.raises(AssertionError, match="Failed test 2, missing event"):
+            await exam.finish_test()
 
-    start_time = await begin_test(2, coordinator)
-    with pytest.raises(AssertionError, match="Failed test 2, missing event"):
-        await finish_test(hass, coordinator, start_time, True)
+        await exam.begin_test(3)
+        with pytest.raises(AssertionError, match="Failed test 3, extra event"):
+            await exam.finish_test()
 
-    start_time = await begin_test(3, coordinator)
-    with pytest.raises(AssertionError, match="Failed test 3, extra event"):
-        await finish_test(hass, coordinator, start_time, True)
-
-    with pytest.raises(AssertionError, match="Failed summary results"):
-        check_summary(full_path, coordinator)
+        with pytest.raises(AssertionError, match="Failed summary results"):
+            exam.check_summary()
 
 
 async def test_test_2(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test the testing unit. Parameter show_log=True"""
 
-    full_path = TEST_CONFIG_DIR + "test_test_2.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    if ha.DOMAIN in config:
-        await async_process_ha_core_config(hass, config[ha.DOMAIN])
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+    async with IUExam(hass, "test_test_2.yaml") as exam:
+        with pytest.raises(AssertionError, match="Invalid test 999"):
+            await exam.begin_test(999)
 
-    with pytest.raises(AssertionError, match="Invalid test 999"):
-        start_time = await begin_test(999, coordinator)
+        await exam.begin_test(1)
+        with pytest.raises(AssertionError, match="Failed test 1, errors not zero"):
+            await exam.finish_test()
 
-    start_time = await begin_test(1, coordinator)
-    with pytest.raises(AssertionError, match="Failed test 1, errors not zero"):
-        await finish_test(hass, coordinator, start_time, True)
+        await exam.begin_test(2)
+        with pytest.raises(AssertionError, match="Failed test 2, missing event"):
+            await exam.finish_test()
 
-    start_time = await begin_test(2, coordinator)
-    with pytest.raises(AssertionError, match="Failed test 2, missing event"):
-        await finish_test(hass, coordinator, start_time, True)
+        await exam.begin_test(3)
+        with pytest.raises(AssertionError, match="Failed test 3, extra event"):
+            await exam.finish_test()
 
-    start_time = await begin_test(3, coordinator)
-    with pytest.raises(AssertionError, match="Failed test 3, extra event"):
-        await finish_test(hass, coordinator, start_time, True)
-
-    with pytest.raises(AssertionError, match="Failed summary results"):
-        check_summary(full_path, coordinator)
+        with pytest.raises(AssertionError, match="Failed summary results"):
+            exam.check_summary()

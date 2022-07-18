@@ -1,22 +1,16 @@
 """Test irrigation_unlimited history."""
 from unittest.mock import patch
-from datetime import datetime
 import pytest
 import homeassistant.core as ha
-from homeassistant.config import load_yaml_config_file
-from homeassistant.setup import async_setup_component
 
 from custom_components.irrigation_unlimited.const import (
-    COORDINATOR,
     DOMAIN,
     EVENT_INCOMPLETE,
 )
-from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
-from custom_components.irrigation_unlimited.irrigation_unlimited import IUCoordinator
 from custom_components.irrigation_unlimited.entity import IURestore
-from tests.iu_test_support import quiet_mode, TEST_CONFIG_DIR
+from tests.iu_test_support import IUExam, mk_utc
 
-quiet_mode()
+IUExam.quiet_mode()
 
 
 @pytest.fixture(name="mock_state_z1_none")
@@ -40,7 +34,7 @@ def mock_state_z1_enabled():
             idx,
             "on",
             {"enabled": True},
-            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+            mk_utc("2021-01-04 04:30:00"),
         )
         yield
 
@@ -56,7 +50,7 @@ def mock_state_z1_disabled():
             idx,
             "on",
             {"enabled": False},
-            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+            mk_utc("2021-01-04 04:30:00"),
         )
         yield
 
@@ -75,7 +69,7 @@ def mock_state_coordinator():
             "irrigation_unlimited.coordinator",
             "ok",
             dct,
-            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+            mk_utc("2021-01-04 04:30:00"),
         )
         yield
 
@@ -94,7 +88,7 @@ def mock_state_coordinator_is_on():
             "irrigation_unlimited.coordinator",
             "ok",
             dct,
-            datetime.fromisoformat("2021-01-04 04:30:00+00:00"),
+            mk_utc("2021-01-04 04:30:00"),
         )
         yield
 
@@ -106,12 +100,9 @@ async def test_restore_none(
 ):
     """Test restoring entity with no history"""
 
-    full_path = TEST_CONFIG_DIR + "test_restore_entity.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert sta.attributes["enabled"] is True
+    async with IUExam(hass, "test_restore_entity.yaml"):
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        assert sta.attributes["enabled"] is True
 
 
 async def test_restore_enabled(
@@ -119,12 +110,9 @@ async def test_restore_enabled(
 ):
     """Test restoring entity in enabled state"""
 
-    full_path = TEST_CONFIG_DIR + "test_restore_entity.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert sta.attributes["enabled"] is True
+    async with IUExam(hass, "test_restore_entity.yaml"):
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        assert sta.attributes["enabled"] is True
 
 
 async def test_restore_disabled(
@@ -132,12 +120,9 @@ async def test_restore_disabled(
 ):
     """Test restoring entity in disabled state"""
 
-    full_path = TEST_CONFIG_DIR + "test_restore_entity.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-    assert sta.attributes["enabled"] is False
+    async with IUExam(hass, "test_restore_entity.yaml"):
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        assert sta.attributes["enabled"] is False
 
 
 async def test_restore_coordinator(
@@ -145,251 +130,263 @@ async def test_restore_coordinator(
 ):
     """Test restoring coordinator"""
 
-    full_path = TEST_CONFIG_DIR + "test_restore_entity_sequence.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
-    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
-    assert str(coordinator.controllers[0].zones[0].adjustment) == "%50.0"
-    assert str(coordinator.controllers[0].sequences[0].adjustment) == "%25.0"
-    assert str(coordinator.controllers[0].sequences[0].zones[0].adjustment) == "%75.0"
+    async with IUExam(hass, "test_restore_entity_sequence.yaml") as exam:
+        assert str(exam.coordinator.controllers[0].zones[0].adjustment) == "%50.0"
+        assert str(exam.coordinator.controllers[0].sequences[0].adjustment) == "%25.0"
+        assert (
+            str(exam.coordinator.controllers[0].sequences[0].zones[0].adjustment)
+            == "%75.0"
+        )
 
-    assert coordinator.controllers[0].zones[3].enabled is False
-    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
-    assert sta.attributes["enabled"] is False
+        assert exam.coordinator.controllers[0].zones[3].enabled is False
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z4")
+        assert sta.attributes["enabled"] is False
 
-    assert coordinator.controllers[0].sequences[2].enabled is False
-    assert coordinator.controllers[0].sequences[2].status() == "disabled"
-    assert coordinator.controllers[0].sequences[2].zones[0].status() == "blocked"
-    assert coordinator.controllers[0].sequences[2].zones[1].status() == "blocked"
-    assert coordinator.controllers[0].sequences[2].zones[2].status() == "blocked"
+        assert exam.coordinator.controllers[0].sequences[2].enabled is False
+        assert exam.coordinator.controllers[0].sequences[2].status() == "disabled"
+        assert (
+            exam.coordinator.controllers[0].sequences[2].zones[0].status() == "blocked"
+        )
+        assert (
+            exam.coordinator.controllers[0].sequences[2].zones[1].status() == "blocked"
+        )
+        assert (
+            exam.coordinator.controllers[0].sequences[2].zones[2].status() == "blocked"
+        )
 
-    assert coordinator.controllers[0].sequences[1].zones[1].enabled is False
-    assert coordinator.controllers[0].sequences[1].zones[1].status() == "disabled"
+        assert exam.coordinator.controllers[0].sequences[1].zones[1].enabled is False
+        assert (
+            exam.coordinator.controllers[0].sequences[1].zones[1].status() == "disabled"
+        )
 
-    IURestore(None, coordinator)
-    IURestore({}, coordinator)
+        IURestore(None, exam.coordinator)
+        IURestore({}, exam.coordinator)
 
-    # Missing fields. Check passes and nothing changes
-    data = {
-        "controllers": [
-            {
-                "index": 0,
-                "zones": [
-                    {},
-                ],
-                "sequences": [
-                    {
-                        "sequence_zones": [
-                            {},
-                        ],
-                    },
-                ],
-            }
+        # Missing fields. Check passes and nothing changes
+        data = {
+            "controllers": [
+                {
+                    "index": 0,
+                    "zones": [
+                        {},
+                    ],
+                    "sequences": [
+                        {
+                            "sequence_zones": [
+                                {},
+                            ],
+                        },
+                    ],
+                }
+            ]
+        }
+        IURestore(data, exam.coordinator)
+        assert exam.coordinator.controllers[0].enabled is True
+        assert exam.coordinator.controllers[0].zones[0].enabled is True
+        assert exam.coordinator.controllers[0].sequences[0].enabled is True
+        assert exam.coordinator.controllers[0].sequences[0].zones[0].enabled is True
+        assert str(exam.coordinator.controllers[0].zones[0].adjustment) == "%50.0"
+        assert str(exam.coordinator.controllers[0].sequences[0].adjustment) == "%25.0"
+        assert (
+            str(exam.coordinator.controllers[0].sequences[0].zones[0].adjustment)
+            == "%75.0"
+        )
+
+        # Bad data
+        data = {
+            "controllers": [
+                {
+                    "index": 0,
+                    "zones": [
+                        {},
+                    ],
+                    "sequences": [
+                        {
+                            "index": 0,
+                            "state": "on",
+                            "enabled": True,
+                            "sequence_zones": [
+                                {
+                                    "index": 0,
+                                    "state": "xxx",
+                                    "zones": "dummy",
+                                },
+                                {
+                                    "index": 999,
+                                    "state": "on",
+                                    "zones": "dummy",
+                                },
+                            ],
+                        },
+                    ],
+                }
+            ]
+        }
+        IURestore(data, exam.coordinator)
+
+        # Disable all and clear adjustments
+        data = {
+            "controllers": [
+                {
+                    "index": 0,
+                    "state": "off",
+                    "enabled": False,
+                    "zones": [
+                        {
+                            "index": 0,
+                            "state": "off",
+                            "enabled": False,
+                            "adjustment": "",
+                        },
+                    ],
+                    "sequences": [
+                        {
+                            "index": 0,
+                            "state": "off",
+                            "enabled": False,
+                            "adjustment": "",
+                            "sequence_zones": [
+                                {
+                                    "index": 0,
+                                    "state": "off",
+                                    "enabled": False,
+                                    "adjustment": "",
+                                },
+                            ],
+                        },
+                    ],
+                }
+            ]
+        }
+        IURestore(data, exam.coordinator)
+        assert exam.coordinator.controllers[0].enabled is False
+        assert exam.coordinator.controllers[0].zones[0].enabled is False
+        assert exam.coordinator.controllers[0].sequences[0].enabled is False
+        assert exam.coordinator.controllers[0].sequences[0].zones[0].enabled is False
+        assert str(exam.coordinator.controllers[0].zones[0].adjustment) == ""
+        assert str(exam.coordinator.controllers[0].sequences[0].adjustment) == ""
+        assert (
+            str(exam.coordinator.controllers[0].sequences[0].zones[0].adjustment) == ""
+        )
+
+        # Enable all and leave in on state
+        data = {
+            "controllers": [
+                {
+                    "index": 0,
+                    "state": "on",
+                    "enabled": True,
+                    "zones": [
+                        {
+                            "index": 0,
+                            "state": "off",
+                            "enabled": True,
+                            "adjustment": "",
+                        },
+                        {
+                            "index": 1,
+                            "state": "off",
+                            "enabled": True,
+                            "adjustment": "",
+                        },
+                        {
+                            "index": 2,
+                            "state": "on",
+                            "enabled": True,
+                            "adjustment": "",
+                        },
+                        {
+                            "index": 3,
+                            "state": "on",
+                            "enabled": True,
+                            "adjustment": "",
+                        },
+                    ],
+                    "sequences": [
+                        {
+                            "index": 0,
+                            "state": "on",
+                            "enabled": True,
+                            "adjustment": "",
+                            "sequence_zones": [
+                                {
+                                    "index": 0,
+                                    "state": "off",
+                                    "enabled": True,
+                                    "adjustment": "",
+                                    "zones": [1],
+                                },
+                            ],
+                        },
+                        {
+                            "index": 1,
+                            "state": "on",
+                            "enabled": True,
+                            "adjustment": "",
+                            "sequence_zones": [
+                                {
+                                    "index": 0,
+                                    "state": "off",
+                                    "enabled": True,
+                                    "adjustment": "",
+                                    "zones": [1],
+                                },
+                                {
+                                    "index": 1,
+                                    "state": "off",
+                                    "enabled": True,
+                                    "adjustment": "",
+                                    "zones": [2],
+                                },
+                                {
+                                    "index": 2,
+                                    "state": "on",
+                                    "enabled": True,
+                                    "adjustment": "",
+                                    "zones": [3, 4],
+                                },
+                            ],
+                        },
+                        {
+                            "index": 2,
+                            "state": "on",
+                            "enabled": True,
+                            "adjustment": "",
+                            "sequence_zones": [
+                                {
+                                    "index": 0,
+                                    "state": "off",
+                                    "enabled": True,
+                                    "adjustment": "",
+                                    "zones": [1],
+                                },
+                                {
+                                    "index": 1,
+                                    "state": "off",
+                                    "enabled": True,
+                                    "adjustment": "",
+                                    "zones": [2],
+                                },
+                                {
+                                    "index": 2,
+                                    "state": "on",
+                                    "enabled": True,
+                                    "adjustment": "",
+                                    "zones": "3,4",
+                                },
+                            ],
+                        },
+                    ],
+                }
+            ]
+        }
+        assert list(IURestore(data, exam.coordinator).report_is_on()) == [
+            "0,-,0,-",
+            "0,2,1,2",
+            "0,3,1,2",
+            "0,2,2,2",
+            "0,3,2,2",
         ]
-    }
-    IURestore(data, coordinator)
-    assert coordinator.controllers[0].enabled is True
-    assert coordinator.controllers[0].zones[0].enabled is True
-    assert coordinator.controllers[0].sequences[0].enabled is True
-    assert coordinator.controllers[0].sequences[0].zones[0].enabled is True
-    assert str(coordinator.controllers[0].zones[0].adjustment) == "%50.0"
-    assert str(coordinator.controllers[0].sequences[0].adjustment) == "%25.0"
-    assert str(coordinator.controllers[0].sequences[0].zones[0].adjustment) == "%75.0"
-
-    # Bad data
-    data = {
-        "controllers": [
-            {
-                "index": 0,
-                "zones": [
-                    {},
-                ],
-                "sequences": [
-                    {
-                        "index": 0,
-                        "state": "on",
-                        "enabled": True,
-                        "sequence_zones": [
-                            {
-                                "index": 0,
-                                "state": "xxx",
-                                "zones": "dummy",
-                            },
-                            {
-                                "index": 999,
-                                "state": "on",
-                                "zones": "dummy",
-                            },
-                        ],
-                    },
-                ],
-            }
-        ]
-    }
-    IURestore(data, coordinator)
-
-    # Disable all and clear adjustments
-    data = {
-        "controllers": [
-            {
-                "index": 0,
-                "state": "off",
-                "enabled": False,
-                "zones": [
-                    {
-                        "index": 0,
-                        "state": "off",
-                        "enabled": False,
-                        "adjustment": "",
-                    },
-                ],
-                "sequences": [
-                    {
-                        "index": 0,
-                        "state": "off",
-                        "enabled": False,
-                        "adjustment": "",
-                        "sequence_zones": [
-                            {
-                                "index": 0,
-                                "state": "off",
-                                "enabled": False,
-                                "adjustment": "",
-                            },
-                        ],
-                    },
-                ],
-            }
-        ]
-    }
-    IURestore(data, coordinator)
-    assert coordinator.controllers[0].enabled is False
-    assert coordinator.controllers[0].zones[0].enabled is False
-    assert coordinator.controllers[0].sequences[0].enabled is False
-    assert coordinator.controllers[0].sequences[0].zones[0].enabled is False
-    assert str(coordinator.controllers[0].zones[0].adjustment) == ""
-    assert str(coordinator.controllers[0].sequences[0].adjustment) == ""
-    assert str(coordinator.controllers[0].sequences[0].zones[0].adjustment) == ""
-
-    # Enable all and leave in on state
-    data = {
-        "controllers": [
-            {
-                "index": 0,
-                "state": "on",
-                "enabled": True,
-                "zones": [
-                    {
-                        "index": 0,
-                        "state": "off",
-                        "enabled": True,
-                        "adjustment": "",
-                    },
-                    {
-                        "index": 1,
-                        "state": "off",
-                        "enabled": True,
-                        "adjustment": "",
-                    },
-                    {
-                        "index": 2,
-                        "state": "on",
-                        "enabled": True,
-                        "adjustment": "",
-                    },
-                    {
-                        "index": 3,
-                        "state": "on",
-                        "enabled": True,
-                        "adjustment": "",
-                    },
-                ],
-                "sequences": [
-                    {
-                        "index": 0,
-                        "state": "on",
-                        "enabled": True,
-                        "adjustment": "",
-                        "sequence_zones": [
-                            {
-                                "index": 0,
-                                "state": "off",
-                                "enabled": True,
-                                "adjustment": "",
-                                "zones": [1],
-                            },
-                        ],
-                    },
-                    {
-                        "index": 1,
-                        "state": "on",
-                        "enabled": True,
-                        "adjustment": "",
-                        "sequence_zones": [
-                            {
-                                "index": 0,
-                                "state": "off",
-                                "enabled": True,
-                                "adjustment": "",
-                                "zones": [1],
-                            },
-                            {
-                                "index": 1,
-                                "state": "off",
-                                "enabled": True,
-                                "adjustment": "",
-                                "zones": [2],
-                            },
-                            {
-                                "index": 2,
-                                "state": "on",
-                                "enabled": True,
-                                "adjustment": "",
-                                "zones": [3, 4],
-                            },
-                        ],
-                    },
-                    {
-                        "index": 2,
-                        "state": "on",
-                        "enabled": True,
-                        "adjustment": "",
-                        "sequence_zones": [
-                            {
-                                "index": 0,
-                                "state": "off",
-                                "enabled": True,
-                                "adjustment": "",
-                                "zones": [1],
-                            },
-                            {
-                                "index": 1,
-                                "state": "off",
-                                "enabled": True,
-                                "adjustment": "",
-                                "zones": [2],
-                            },
-                            {
-                                "index": 2,
-                                "state": "on",
-                                "enabled": True,
-                                "adjustment": "",
-                                "zones": "3,4",
-                            },
-                        ],
-                    },
-                ],
-            }
-        ]
-    }
-    assert list(IURestore(data, coordinator).report_is_on()) == [
-        "0,-,0,-",
-        "0,2,1,2",
-        "0,3,1,2",
-        "0,2,2,2",
-        "0,3,2,2",
-    ]
 
 
 async def test_restore_coordinator_events(
@@ -408,10 +405,7 @@ async def test_restore_coordinator_events(
 
     hass.bus.async_listen(f"{DOMAIN}_{EVENT_INCOMPLETE}", handle_event)
 
-    full_path = TEST_CONFIG_DIR + "test_restore_entity_sequence.yaml"
-    config = CONFIG_SCHEMA(load_yaml_config_file(full_path))
-    await async_setup_component(hass, DOMAIN, config)
-    await hass.async_block_till_done()
+    async with IUExam(hass, "test_restore_entity_sequence.yaml"):
 
-    # This is work in progress. No event is currently fired.
-    assert event_data == []
+        # This is work in progress. No event is currently fired.
+        assert event_data == []

@@ -90,7 +90,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
             mock.side_effect = hist_data
 
             await exam.begin_test(1)
-            await exam.run_for(timedelta(seconds=60))
+            await exam.run_for("00:02:00")
 
             assert mock.call_count == 1
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -209,7 +209,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
 
             # Midnight rollover
             await exam.begin_test(2)
-            await exam.run_for(timedelta(seconds=60))
+            await exam.run_for("00:01:00")
 
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 4.0
@@ -324,8 +324,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
             ]
             assert state.attributes["timeline"] == timeline
 
-            await exam.run_until(mk_utc("2021-01-05 00:00:30"))
-
+            await exam.run_until("2021-01-05 00:01:00")
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 0.0
 
@@ -423,7 +422,7 @@ async def test_history_disabled(hass: ha.HomeAssistant, allow_memory_db):
                     "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
                 },
             )
-            await exam.run_for(timedelta(seconds=60))
+            await exam.run_for("00:01:00")
 
             # Check there is no history
             assert mock.call_count == 0
