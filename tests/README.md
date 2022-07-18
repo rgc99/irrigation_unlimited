@@ -175,7 +175,7 @@ duration | timedelta | The virtual duration.
 
 #### run_for_1_tick()
 
-Run for one tick. This method will advance the current test for one clock tick. Required after a service call before checking the entity. Also useful to single step through the test.
+Deprecated and removed. Run for one tick. This method will advance the current test for one clock tick. Required after a service call before checking the entity. Also useful to single step through the test.
 
 #### check_summary()
 
@@ -255,9 +255,6 @@ Start and stop the test, run to certain points in time. This will give an opport
 
         # Run for another 30 minutes
         await exam.run_for(timedelta(minutes=30))
-
-        # Run for one more clock tick
-        await exam.run_for_1_tick()
 
         # Test ends at 07:00
         await exam.finish_test()
