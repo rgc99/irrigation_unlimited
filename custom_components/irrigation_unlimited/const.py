@@ -87,6 +87,7 @@ CONF_RUN = "run"
 CONF_SYNC_SWITCHES = "sync_switches"
 CONF_RENAME_ENTITIES = "rename_entities"
 CONF_ENTITY_BASE = "entity_base"
+CONF_CLOCK = "clock"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

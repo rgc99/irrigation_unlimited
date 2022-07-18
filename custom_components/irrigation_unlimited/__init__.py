@@ -26,9 +26,11 @@ from .service import register_component_services
 
 from .const import (
     BINARY_SENSOR,
+    CONF_CLOCK,
     CONF_ENABLED,
     CONF_FINISH,
     CONF_FUTURE_SPAN,
+    CONF_HISTORY,
     CONF_HISTORY_REFRESH,
     CONF_HISTORY_SPAN,
     CONF_MAXIMUM,
@@ -205,6 +207,12 @@ HISTORY_SCHEMA = vol.Schema(
     }
 )
 
+CLOCK_SCHEMA = vol.Schema(
+    {
+        vol.Optional("fixed"): cv.boolean,
+    }
+)
+
 TEST_RESULT_SCHEMA = vol.Schema(
     {
         vol.Required("t"): cv.datetime,
@@ -246,7 +254,8 @@ IRRIGATION_SCHEMA = vol.Schema(
         vol.Optional(CONF_SYNC_SWITCHES): cv.boolean,
         vol.Optional(CONF_RENAME_ENTITIES): cv.boolean,
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
-        vol.Optional("history"): HISTORY_SCHEMA,
+        vol.Optional(CONF_HISTORY): HISTORY_SCHEMA,
+        vol.Optional(CONF_CLOCK): CLOCK_SCHEMA,
     }
 )
 
