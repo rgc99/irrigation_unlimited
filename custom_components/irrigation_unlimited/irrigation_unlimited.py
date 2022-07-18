@@ -3360,6 +3360,12 @@ class IUTest(IUBase):
         virtual_duration: float = actual_duration * self._speed
         return self._start + timedelta(seconds=virtual_duration)
 
+    def actual_time(self, stime: datetime) -> datetime:
+        """Return the actual time from the virtual time"""
+        virtual_duration = (stime - self._start).total_seconds()
+        actual_duration = virtual_duration / self._speed
+        return self._start + self._delta + timedelta(seconds=actual_duration)
+
 
 class IUTester:
     """Irrigation Unlimited testing class"""
