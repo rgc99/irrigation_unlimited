@@ -4091,6 +4091,7 @@ class IUCoordinator:
 
     def update_sensor(self, stime: datetime) -> None:
         """Update home assistant sensors if required"""
+        stime = wash_dt(stime, 1)
         for controller in self._controllers:
             controller.update_sensor(stime)
 
@@ -4109,7 +4110,7 @@ class IUCoordinator:
                 self.check_run(wtime)
             self._muster_required = False
             self._last_muster = wtime
-        self.update_sensor(wash_dt(vtime, 1))
+        self.update_sensor(vtime)
 
     def poll_main(self, atime: datetime, force: bool = False) -> None:
         """Post initialisation worker. Divert to testing unit if
