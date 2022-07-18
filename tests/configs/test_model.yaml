@@ -9,8 +9,8 @@ homeassistant:
   elevation: 0
 
 irrigation_unlimited:
-  granularity: 10
-  refresh_interval: 10
+  granularity: 30
+  refresh_interval: 30
   testing:
     enabled: true
     speed: 1.0
@@ -41,6 +41,7 @@ irrigation_unlimited:
           schedules:
             - time:
                 sun: 'sunrise'
+                before: '00:00:02'
           zones:
             - zone_id: 1
               duration: "0:06:00"
