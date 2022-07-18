@@ -18,8 +18,8 @@ async def test_switches(hass: ha.HomeAssistant, skip_dependencies, skip_history)
 
     async with IUExam(hass, "test_switch.yaml") as exam:
 
-        await exam.async_load_component("homeassistant")
-        await exam.async_load_component("input_boolean")
+        await exam.load_component("homeassistant")
+        await exam.load_component("input_boolean")
 
         # Check switches are in the correct state
         assert hass.states.is_state("input_boolean.dummy_switch_c1_m", STATE_ON) is True
