@@ -115,7 +115,7 @@ def register_component_services(
             conf = {DOMAIN: {}}
         coordinator.load(conf[DOMAIN])
         await async_reload_platform(component, coordinator)
-        coordinator.start()
+        coordinator.clock.start()
 
     async_register_admin_service(
         component.hass,
