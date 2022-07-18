@@ -3883,7 +3883,7 @@ class IUClock:
         # Private variables
         self._listener_job = HassJob(self._listener)
         self._remove_timer_listener: CALLBACK_TYPE = None
-        self._fixed_clock = False
+        self._fixed_clock = True
 
     @property
     def is_fixed(self) -> bool:
