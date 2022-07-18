@@ -816,7 +816,7 @@ class IURunQueue(List[IURun]):
         self._current_run: IURun = None
         self._next_run: IURun = None
         self._sorted: bool = False
-        self._cancel_request: bool = False
+        self._cancel_request: datetime = None
         self._future_span = wash_td(timedelta(days=self.DAYS_SPAN))
 
     @property
