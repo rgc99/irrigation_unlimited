@@ -1,5 +1,4 @@
 """Test irrigation_unlimited timing operations."""
-# pylint: disable=unused-import
 import os
 import glob
 import homeassistant.core as ha
@@ -16,7 +15,6 @@ async def test_timings(
     test_config directory matching timing_*.yaml and check the results."""
 
     for fname in glob.glob(IUExam.default_config_dir + "timing_*.yaml"):
-        print(f"Processing: {fname}")
         async with IUExam(hass, os.path.basename(fname)) as exam:
             await exam.run_all()
             exam.check_summary()
