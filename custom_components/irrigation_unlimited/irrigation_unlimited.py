@@ -3470,6 +3470,25 @@ class IUTester:
             result += test.total_results
         return result
 
+    def virtual_time(self, atime: datetime) -> datetime:
+        """Convert actual time to virtual time"""
+        if self.is_testing:
+            result = self.current_test.virtual_time(atime)
+            rounded = round_dt(result)
+            # The conversion may not be exact due to the internal precision
+            # of the compiler particularly at high speed values. Compensate
+            # by rounding if the value is very close to an internal boundary
+            if abs(result - rounded) < timedelta(microseconds=100000):
+                return rounded
+            return result
+        return atime
+
+    def actual_time(self, stime: datetime) -> datetime:
+        """Convert virtual time to actual time"""
+        if self.is_testing:
+            return self.current_test.actual_time(stime)
+        return stime
+
     def start_test(self, test_no: int, atime: datetime) -> IUTest:
         """Start the test"""
         if 0 < test_no <= len(self._tests):
