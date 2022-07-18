@@ -3297,9 +3297,9 @@ class IUTest(IUBase):
         """Return the number of expected results from the test"""
         return len(self._results)
 
-    def is_finished(self, stime) -> bool:
+    def is_finished(self, atime) -> bool:
         """Indicate if this test has finished"""
-        return self.virtual_time(stime) > self._end
+        return self.virtual_time(atime) >= self._end
 
     def next_result(self) -> IUEvent:
         """Return the next result"""
