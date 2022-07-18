@@ -1,7 +1,7 @@
 """History access and caching. This module runs asynchronously collecting
 and caching history data"""
 from datetime import datetime, timedelta
-from typing import OrderedDict, Any
+from typing import Callable, OrderedDict, Any
 from homeassistant.core import HomeAssistant, State, CALLBACK_TYPE
 from homeassistant.util import dt
 from homeassistant.components.recorder.const import DATA_INSTANCE as RECORDER_INSTANCE
@@ -55,8 +55,9 @@ class IUHistory:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, hass: HomeAssistant):
+    def __init__(self, hass: HomeAssistant, callback: Callable[[set[str]], None]):
         self._hass = hass
+        self._callback = callback
         # Configuration variables
         self._history_span = timedelta(days=7)
         self._refresh_interval = timedelta(seconds=120)
@@ -65,7 +66,6 @@ class IUHistory:
         self._history_last: datetime = None
         self._cache: dict[str, Any] = {}
         self._entity_ids: list[str] = []
-        self._entity_ids_to_update: set[str] = set()
         self._refresh_remove: CALLBACK_TYPE = None
         self._stime: datetime = None
         self._initialised = False
@@ -111,12 +111,10 @@ class IUHistory:
         self._history_last = None
         self._stime = None
         self._clear_cache()
-        self._entity_ids_to_update.clear()
         self._entity_ids.clear()
         for entity_id in self._hass.states.async_entity_ids():
             if entity_id.startswith(f"{BINARY_SENSOR}.{DOMAIN}_"):
                 self._entity_ids.append(entity_id)
-        self._entity_ids_to_update.update(self._entity_ids)
         self._initialised = True
 
     def _clear_cache(self) -> None:
@@ -211,6 +209,7 @@ class IUHistory:
         if data is None or len(data) == 0:
             return
 
+        entity_ids: set[str] = set()
         for entity_id in data:
             new_run_history = self._run_history(stime, data[entity_id])
             new_today_on = self._today_duration(stime, data[entity_id])
@@ -223,9 +222,9 @@ class IUHistory:
                 continue
             self._cache[entity_id][TIMELINE] = new_run_history
             self._cache[entity_id][TODAY_ON] = new_today_on
-            self._entity_ids_to_update.add(entity_id)
-
-        return
+            entity_ids.add(entity_id)
+        if len(entity_ids) > 0:
+            self._callback(entity_ids)
 
     def load(self, config: OrderedDict) -> "IUHistory":
         """Load config data"""
@@ -253,11 +252,12 @@ class IUHistory:
         self._initialised = False
         return self
 
-    def muster(self, stime: datetime, force: bool) -> set[str]:
-        """Check and update history if required.
+    def muster(self, stime: datetime, force: bool) -> int:
+        """Check and update history if required"""
 
-        Returns a set of entity_ids that need to be updated. This
-        may be from a previous request"""
+        if force:
+            self._initialised = False
+
         if not self._initialised:
             self._initialise()
 
@@ -269,8 +269,7 @@ class IUHistory:
             self._schedule_refresh(True)
 
         self._stime = stime
-
-        return self._entity_ids_to_update
+        return 0
 
     def today_total(self, entity_id: str) -> timedelta:
         """Return the total on time for today"""

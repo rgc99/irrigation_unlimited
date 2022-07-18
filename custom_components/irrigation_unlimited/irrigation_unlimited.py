@@ -3890,7 +3890,7 @@ class IUCoordinator:
         self._remove_shutdown_listener: CALLBACK_TYPE = None
         self._tester = IUTester(self)
         self._logger = IULogger(_LOGGER)
-        self._history = IUHistory(self._hass)
+        self._history = IUHistory(self._hass, self.service_history)
         self._restored_from_configuration: bool = False
         self._sync_switches: bool = True
         self._rename_entities = False
@@ -4039,17 +4039,7 @@ class IUCoordinator:
         """Calculate run times for system"""
         status: int = 0
 
-        entity_ids = self._history.muster(stime, force)
-        if entity_ids is not None and len(entity_ids) > 0:
-            for controller in self._controllers:
-                if controller.entity_id in entity_ids:
-                    controller.request_update(False)
-                    entity_ids.remove(controller.entity_id)
-                for zone in controller.zones:
-                    if zone.entity_id in entity_ids:
-                        zone.request_update()
-                        entity_ids.remove(zone.entity_id)
-            status |= IURunQueue.RQ_STATUS_CHANGED
+        status |= self._history.muster(stime, force)
 
         for controller in self._controllers:
             status |= controller.muster(stime, force)
@@ -4297,6 +4287,17 @@ class IUCoordinator:
         if changed:
             self._logger.log_service_call(service, stime, controller, zone, data)
             async_call_later(self._hass, 0, self._async_replay_last_timer)
+
+    def service_history(self, entity_ids: set[str]) -> None:
+        """History service call entry point. The history has changed
+        and the sensors require an update"""
+        for controller in self._controllers:
+            if controller.entity_id in entity_ids:
+                controller.request_update(False)
+            for zone in controller.zones:
+                if zone.entity_id in entity_ids:
+                    zone.request_update()
+        self.update_sensor(self.service_time())
 
     def start_test(self, test_no: int) -> datetime:
         """Main entry to start a test"""
