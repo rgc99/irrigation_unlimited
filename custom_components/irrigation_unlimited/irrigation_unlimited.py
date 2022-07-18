@@ -1,7 +1,7 @@
 """Irrigation Unlimited Coordinator and sub classes"""
 # pylint: disable=too-many-lines
 import weakref
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 from types import MappingProxyType
 from typing import Dict, OrderedDict, List, Set, NamedTuple
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
@@ -1058,6 +1058,18 @@ class IURunQueue(List[IURun]):
         if self._current_run is None:
             return False
         return self._current_run.update_time_remaining(stime)
+
+    def next_event(self, stime: datetime) -> datetime:
+        """Return the time of the next state change"""
+        result = datetime.max.replace(tzinfo=timezone.utc)
+        for run in self:
+            if not run.is_running(stime):
+                result = min(run.start_time, result)
+            else:
+                result = min(run.end_time, result)
+        if self._cancel_request is not None:
+            result = min(self._cancel_request, result)
+        return result
 
     def as_list(self) -> list:
         """Return a list of runs"""
