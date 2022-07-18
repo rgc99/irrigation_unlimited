@@ -1,0 +1,6 @@
+irrigation_unlimited:
+  controllers:
+    zones:
+      schedules:
+        time: "06:00"
+        duration: "10:00"
