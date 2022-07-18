@@ -3371,7 +3371,7 @@ class IUTest(IUBase):
 class IUTester:
     """Irrigation Unlimited testing class"""
 
-    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
 
     def __init__(self, coordinator: "IUCoordinator") -> None:
         # Passed parameters
@@ -3633,6 +3633,8 @@ class IUTester:
 
 class IULogger:
     """Irrigation Unlimited logger class"""
+
+    # pylint: disable=too-many-public-methods
 
     def __init__(self, logger: Logger) -> None:
         # Passed parameters
@@ -3984,8 +3986,7 @@ class IUClock:
 class IUCoordinator:
     """Irrigation Unlimited Coordinator class"""
 
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-instance-attributes, too-many-public-methods
 
     def __init__(self, hass: HomeAssistant) -> None:
         # Passed parameters
