@@ -1586,6 +1586,15 @@ class IUZone(IUBase):
 
         return updated
 
+    def next_awakening(self, stime: datetime) -> datetime:
+        """Return the next event time"""
+        result = self._run_queue.next_event(stime)
+        if self._is_on and self._sensor_last_update is not None:
+            result = min(
+                self._sensor_last_update + self._coordinator.refresh_interval, result
+            )
+        return result
+
     def check_switch(self, resync: bool, stime: datetime) -> bool:
         """Check the linked entity is in sync"""
         result = True
@@ -2969,6 +2978,17 @@ class IUController(IUBase):
 
         for zone in self._zones:
             zone.update_sensor(stime, True)
+
+    def next_awakening(self, stime: datetime) -> datetime:
+        """Return the next event time"""
+        result = self._run_queue.next_event(stime)
+        if self._is_on and self._sensor_last_update is not None:
+            result = min(
+                self._sensor_last_update + self._coordinator.refresh_interval, result
+            )
+        for zone in self._zones:
+            result = min(zone.next_awakening(stime), result)
+        return result
 
     def check_switch(self, resync: bool, stime: datetime) -> bool:
         """Check the linked entity is in sync"""
