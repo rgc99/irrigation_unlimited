@@ -41,7 +41,6 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
 
         # Check normal operation
         await exam.begin_test(1)
-        await exam.run_for_1_tick()
         assert hass.states.get("binary_sensor.irrigation_unlimited_c1_m").attributes[
             "sequence_status"
         ] == [
@@ -146,7 +145,6 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             },
             True,
         )
-        await exam.run_for_1_tick()
         assert exam.coordinator.controllers[0].sequence_status() == [
             {
                 "index": 0,
@@ -248,7 +246,6 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             },
             True,
         )
-        await exam.run_for_1_tick()
         assert exam.coordinator.controllers[0].sequence_status() == [
             {
                 "index": 0,
