@@ -1,7 +1,7 @@
 """Irrigation Unlimited test support routines"""
 import logging
 from typing import Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import homeassistant.core as ha
 from homeassistant.config import (
     load_yaml_config_file,
@@ -39,117 +39,6 @@ def quiet_mode() -> None:
     )
 
 
-# Turn off checking
-def no_check(check_off: bool = True) -> None:
-    """Disable checking results"""
-    global NO_CHECK
-    NO_CHECK = check_off
-    if NO_CHECK:
-        _LOGGER.debug("WARNING: Checks are disabled===================================")
-
-
-def check_summary(full_path: str, coordinator: IUCoordinator):
-    """Check the test results"""
-    if not NO_CHECK:
-        assert (
-            coordinator.tester.total_events
-            == coordinator.tester.total_checks
-            == coordinator.tester.total_results
-        ), "Failed summary results"
-        assert coordinator.tester.total_errors == 0, "Failed summary errors"
-
-    # pylint: disable=logging-fstring-interpolation
-    _LOGGER.debug(
-        f"Finished: {full_path}, "
-        f"tests: {coordinator.tester.total_tests}, "
-        f"events: {coordinator.tester.total_events}, "
-        f"checks: {coordinator.tester.total_checks}, "
-        f"errors: {coordinator.tester.total_errors}, "
-        f"time: {coordinator.tester.total_time:.2f}s"
-    )
-
-
-async def run_until(
-    hass: ha.HomeAssistant,
-    coordinator: IUCoordinator,
-    time: datetime,
-    stop_at: datetime,
-    block: bool,
-) -> datetime:
-    """Run until a point in time"""
-    interval = coordinator.track_interval()
-    while coordinator.tester.is_testing and (
-        stop_at is None or coordinator.tester.current_test.virtual_time(time) < stop_at
-    ):
-        time += interval
-        coordinator.timer(time)
-        if block:
-            await hass.async_block_till_done()
-    return time
-
-
-async def run_for(
-    hass: ha.HomeAssistant,
-    coordinator: IUCoordinator,
-    time: datetime,
-    duration: timedelta,
-    block: bool,
-) -> datetime:
-    """Run for a period of time"""
-    if duration is not None:
-        stop_at = coordinator.tester.current_test.virtual_time(time) + duration
-    else:
-        stop_at = None
-    return await run_until(hass, coordinator, time, stop_at, block)
-
-
-async def run_for_1_tick(
-    hass: ha.HomeAssistant, coordinator: IUCoordinator, time: datetime, block: bool
-) -> datetime:
-    """Run for 1 tick of the clock"""
-    stop_at = (
-        coordinator.tester.current_test.virtual_time(time)
-        + coordinator.track_interval()
-    )
-    return await run_until(hass, coordinator, time, stop_at, block)
-
-
-async def begin_test(test_no: int, coordinator: IUCoordinator) -> datetime:
-    """Start a test"""
-    coordinator.stop()
-    start_time = coordinator.start_test(test_no)
-    assert start_time is not None, f"Invalid test {test_no}"
-    _LOGGER.debug("Starting test: %s", coordinator.tester.current_test.name)
-    return start_time
-
-
-async def finish_test(
-    hass: ha.HomeAssistant, coordinator: IUCoordinator, time: datetime, block: bool
-):
-    """Finish a test"""
-    await run_until(hass, coordinator, time, None, block)
-
-    test = coordinator.tester.last_test
-    if not NO_CHECK:
-        assert test.errors == 0, f"Failed test {test.index + 1}, errors not zero"
-        assert (
-            test.events <= test.total_results
-        ), f"Failed test {test.index + 1}, missing event"
-        assert (
-            test.events >= test.total_results
-        ), f"Failed test {test.index + 1}, extra event"
-    _LOGGER.debug(
-        "Finished test: %s, time: %.2fs, events: %d, results: %d, errors: %d, no_check: %s",
-        test.name,
-        test.test_time,
-        test.events,
-        test.total_results,
-        test.errors,
-        NO_CHECK,
-    )
-    return
-
-
 async def reset_hass_config(hass: ha.HomeAssistant) -> None:
     """Reset the home assistant configuration"""
     config = {
@@ -163,29 +52,11 @@ async def reset_hass_config(hass: ha.HomeAssistant) -> None:
     await async_process_ha_core_config(hass, config)
 
 
-async def load_component(
-    hass: ha.HomeAssistant, domain: str, config: ConfigType
-) -> None:
-    """Load a domain"""
-    await async_setup_component(hass, domain, config)
-    await hass.async_block_till_done()
-
-
-async def load_iu_dependencies(hass: ha.HomeAssistant) -> None:
-    """Load the dependencies for the integration"""
-    await load_component(hass, "http", {})
-    await load_component(
-        hass,
-        "recorder",
-        {"recorder": {"db_url": "sqlite:///:memory:"}},
-    )
-    await load_component(hass, "history", {})
-
-
 class IUExam:
     """Class for running tests"""
 
-    # pytest: disable=too-many-instance-attributes
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-public-methods
 
     default_config_dir = TEST_CONFIG_DIR
 
@@ -215,14 +86,19 @@ class IUExam:
         self._config_directory = value
 
     @property
+    def config_file(self) -> str:
+        """Return the config filename"""
+        return self._config_file
+
+    @property
+    def config_file_full(self) -> str:
+        """Return the full path to the config file"""
+        return self._config_directory + self._config_file
+
+    @property
     def virtual_time(self) -> datetime:
         """Return the virtual time"""
         return self._coordinator.tester.current_test.virtual_time(self._current_time)
-
-    @property
-    def track_interval(self) -> timedelta:
-        """Return the clock interval"""
-        return self._coordinator.track_interval()
 
     @property
     def config(self) -> ConfigType:
@@ -236,15 +112,29 @@ class IUExam:
 
     def no_check(self, check_off: bool = True) -> None:
         """Disable checking results"""
-        no_check(check_off)
+        # pylint: disable=no-self-use
+        global NO_CHECK
+        NO_CHECK = check_off
+        if NO_CHECK:
+            _LOGGER.debug(
+                "WARNING: Checks are disabled==================================="
+            )
 
-    async def async_load_component(self, domain: str) -> None:
+    async def load_component(self, domain: str, config: ConfigType = None) -> None:
         """Load a domain"""
-        await load_component(self._hass, domain, self._config)
+        if config is None:
+            config = self._config
+        await async_setup_component(self._hass, domain, config)
+        await self._hass.async_block_till_done()
 
     async def load_dependencies(self) -> None:
         """Load IU dependencies"""
-        await load_iu_dependencies(self._hass)
+        await self.load_component("http", {})
+        await self.load_component(
+            "recorder",
+            {"recorder": {"db_url": "sqlite:///:memory:"}},
+        )
+        await self.load_component("history", {})
 
     async def setup(self) -> None:
         """Setup the hass environment"""
@@ -256,7 +146,7 @@ class IUExam:
             self._core_config_changed = True
 
         if DOMAIN not in self._hass.config.components:
-            await self.async_load_component(DOMAIN)
+            await self.load_component(DOMAIN)
             self._coordinator: IUCoordinator = self._hass.data[DOMAIN][COORDINATOR]
         else:
             self._coordinator: IUCoordinator = self._hass.data[DOMAIN][COORDINATOR]
@@ -280,29 +170,71 @@ class IUExam:
 
     async def begin_test(self, test_no: int) -> None:
         """Start a test"""
-        self._current_time = await begin_test(test_no, self._coordinator)
+        self._coordinator.clock.stop()
+        self._current_time = self._coordinator.start_test(test_no)
+        assert self._current_time is not None, f"Invalid test {test_no}"
+        _LOGGER.debug("Starting test: %s", self._coordinator.tester.current_test.name)
+        await self._hass.async_block_till_done()
 
     async def finish_test(self) -> None:
         """Finish a test"""
-        await finish_test(self._hass, self._coordinator, self._current_time, True)
+
+        await self.run_until(None)
+
+        test = self._coordinator.tester.last_test
+        try:
+            if not NO_CHECK:
+                assert (
+                    test.errors == 0
+                ), f"Failed test {test.index + 1}, errors not zero"
+                assert (
+                    test.events <= test.total_results
+                ), f"Failed test {test.index + 1}, missing event"
+                assert (
+                    test.events >= test.total_results
+                ), f"Failed test {test.index + 1}, extra event"
+        finally:
+            _LOGGER.debug(
+                "Finished test: %s, time: %.2fs, events: %d, results: %d, errors: %d, no_check: %s",
+                test.name,
+                test.test_time,
+                test.events,
+                test.total_results,
+                test.errors,
+                NO_CHECK,
+            )
 
     async def run_until(self, stop_at: datetime) -> None:
         """Run until a point in time"""
-        self._current_time = await run_until(
-            self._hass, self._coordinator, self._current_time, stop_at, True
-        )
+        if isinstance(stop_at, str):
+            stop_at = mk_utc(stop_at)
+        if stop_at is not None:
+            astop_at = self._coordinator.tester.actual_time(stop_at)
+        else:
+            astop_at = datetime.max.replace(tzinfo=timezone.utc)
+        while self._coordinator.tester.is_testing and self._current_time <= astop_at:
+            # Get next scheduled clock tick
+            next_awakening = self._coordinator.clock.next_awakening(self._current_time)
+            self._coordinator.tester.ticker = min(next_awakening, astop_at)
+            if next_awakening <= astop_at:
+                self._coordinator.timer(next_awakening)
+                await self._hass.async_block_till_done()
+                self._current_time = next_awakening
+            else:
+                break
 
     async def run_for(self, duration: timedelta) -> None:
         """Run for a period of time"""
-        self._current_time = await run_for(
-            self._hass, self._coordinator, self._current_time, duration, True
-        )
-
-    async def run_for_1_tick(self) -> None:
-        """Run for 1 tick of the clock"""
-        self._current_time = await run_for_1_tick(
-            self._hass, self._coordinator, self._current_time, True
-        )
+        if isinstance(duration, str):
+            duration = mk_td(duration)
+        if duration is not None:
+            stop_at = (
+                self._coordinator.tester.current_test.virtual_time(self._current_time)
+                + duration
+            )
+        else:
+            stop_at = None
+        await self.run_until(stop_at)
 
     async def run_test(self, test_no: int) -> None:
         """Run a single test"""
@@ -318,9 +250,27 @@ class IUExam:
         """Call IU service"""
         await self._hass.services.async_call(DOMAIN, service, data, True)
 
-    def check_summary(self) -> None:
+    def check_summary(self, config_file: str = None) -> None:
         """Check the test results"""
-        check_summary(self._config_directory + self._config_file, self._coordinator)
+        # pylint: disable=logging-fstring-interpolation
+        if config_file is None:
+            config_file = self._config_directory + self._config_file
+        tester = self._coordinator.tester
+        try:
+            if not NO_CHECK:
+                assert (
+                    tester.total_events == tester.total_checks == tester.total_results
+                ), "Failed summary results"
+                assert tester.total_errors == 0, "Failed summary errors"
+        finally:
+            _LOGGER.debug(
+                f"Finished: {config_file}, "
+                f"tests: {tester.total_tests}, "
+                f"events: {tester.total_events}, "
+                f"checks: {tester.total_checks}, "
+                f"errors: {tester.total_errors}, "
+                f"time: {tester.total_time:.2f}s"
+            )
 
 
 def mk_utc(adate: str) -> datetime:
@@ -338,3 +288,10 @@ def mk_td(time_str: str) -> timedelta:
     """Convert time string to timedelta"""
     tstr = datetime.strptime(time_str, "%H:%M:%S")
     return timedelta(hours=tstr.hour, minutes=tstr.minute, seconds=tstr.second)
+
+
+def lvt(coordinator: IUCoordinator, atime: datetime) -> datetime:
+    """Return the actual time as virtual in local"""
+    if atime is not None:
+        return as_local(coordinator.tester.virtual_time(atime))
+    return None

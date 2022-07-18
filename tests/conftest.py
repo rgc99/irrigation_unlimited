@@ -17,6 +17,9 @@
 from unittest.mock import patch
 import pytest
 
+# pylint: disable=invalid-name
+# pylint: disable=unused-argument
+
 pytest_plugins = "pytest_homeassistant_custom_component"
 
 # This fixture enables loading custom integrations in all tests.
@@ -78,7 +81,7 @@ def skip_history():
 def skip_start():
     """Skip coordinator start calls"""
     with patch(
-        "custom_components.irrigation_unlimited.IUCoordinator.start",
-        return_value=True,
+        "custom_components.irrigation_unlimited.IUClock.start",
+        return_value=None,
     ):
         yield
