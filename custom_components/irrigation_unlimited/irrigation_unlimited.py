@@ -885,9 +885,9 @@ class IURunQueue(List[IURun]):
         self._sorted = False
         return run
 
-    def cancel(self) -> None:
+    def cancel(self, stime: datetime) -> None:
         """Flag the current run to be cancelled"""
-        self._cancel_request = True
+        self._cancel_request = stime
 
     def clear_all(self) -> bool:
         """Clear out all runs"""
@@ -1026,10 +1026,10 @@ class IURunQueue(List[IURun]):
             if run.sequence_update(stime):
                 status |= self.RQ_STATUS_CHANGED
 
-        if self._cancel_request:
+        if self._cancel_request is not None:
             if self.remove_current():
                 status |= self.RQ_STATUS_CANCELED
-            self._cancel_request = False
+            self._cancel_request = None
 
         if self.remove_expired(stime):
             status |= self.RQ_STATUS_REDUCED
@@ -1386,7 +1386,7 @@ class IUZone(IUBase):
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> None:
         """Cancel the current running schedule"""
         # pylint: disable=unused-argument
-        self._run_queue.cancel()
+        self._run_queue.cancel(stime)
 
     def add(self, schedule: IUSchedule) -> IUSchedule:
         """Add a new schedule to the zone"""
