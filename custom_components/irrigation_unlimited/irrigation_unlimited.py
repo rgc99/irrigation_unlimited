@@ -253,6 +253,11 @@ def str_to_td(atime: str) -> timedelta:
     return timedelta(hours=dur.hour, minutes=dur.minute, seconds=dur.second)
 
 
+def utc_eot() -> datetime:
+    """Return the end of time in UTC format"""
+    return datetime.max.replace(tzinfo=timezone.utc)
+
+
 class IUJSONEncoder(json.JSONEncoder):
     """JSON serialiser to handle ISO datetime output"""
 
@@ -1062,7 +1067,7 @@ class IURunQueue(List[IURun]):
 
     def next_event(self, stime: datetime) -> datetime:
         """Return the time of the next state change"""
-        result = datetime.max.replace(tzinfo=timezone.utc)
+        result = utc_eot()
         for run in self:
             if not run.is_running(stime):
                 result = min(run.start_time, result)
@@ -4291,7 +4296,7 @@ class IUCoordinator:
 
     def next_awakening(self, stime: datetime) -> datetime:
         """Return the next event time"""
-        result = datetime.max.replace(tzinfo=timezone.utc)
+        result = utc_eot()
         for controller in self._controllers:
             result = min(controller.next_awakening(stime), result)
         return result
