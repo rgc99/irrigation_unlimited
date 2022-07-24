@@ -3929,7 +3929,7 @@ class IUClock:
             result = self._coordinator.next_awakening(atime)
 
         # Midnight rollover
-        if result != utc_eot() and (
+        if result == utc_eot() or (
             dt.as_local(self._coordinator.tester.virtual_time(atime)).toordinal()
             != dt.as_local(self._coordinator.tester.virtual_time(result)).toordinal()
         ):
