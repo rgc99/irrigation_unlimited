@@ -4367,8 +4367,7 @@ class IUCoordinator:
             result = self._last_tick + self._clock.track_interval() / 2
         else:
             result = dt.utcnow()
-        result = wash_dt(result)
-        return result
+        return wash_dt(result)
 
     def service_call(
         self,
