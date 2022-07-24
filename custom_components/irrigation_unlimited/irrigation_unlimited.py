@@ -4010,9 +4010,9 @@ class IUCoordinator:
         self._last_muster: datetime = None
         self._muster_required: bool = False
         self._remove_shutdown_listener: CALLBACK_TYPE = None
-        self._clock = IUClock(self._hass, self, self._async_timer)
-        self._tester = IUTester(self)
         self._logger = IULogger(_LOGGER)
+        self._tester = IUTester(self)
+        self._clock = IUClock(self._hass, self, self._async_timer)
         self._history = IUHistory(self._hass, self.service_history)
         self._restored_from_configuration: bool = False
         self._sync_switches: bool = True
