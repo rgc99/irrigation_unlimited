@@ -4144,8 +4144,8 @@ class IUCoordinator:
         while cidx < len(self._controllers) - 1:
             self._controllers.pop().finalise(True)
 
-        self._tester = IUTester(self).load(config.get(CONF_TESTING))
-        self._logger = IULogger(_LOGGER).load(config.get(CONF_LOGGING))
+        self._tester.load(config.get(CONF_TESTING))
+        self._logger.load(config.get(CONF_LOGGING))
 
         self._dirty = True
         self._muster_required = True
