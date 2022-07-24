@@ -3364,7 +3364,14 @@ class IUTest(IUBase):
         virtual_start: datetime = atime - self._delta
         actual_duration: float = (virtual_start - self._start).total_seconds()
         virtual_duration: float = actual_duration * self._speed
-        return self._start + timedelta(seconds=virtual_duration)
+        vtime = self._start + timedelta(seconds=virtual_duration)
+        # The conversion may not be exact due to the internal precision
+        # of the compiler particularly at high speed values. Compensate
+        # by rounding if the value is very close to an internal boundary
+        vtime_rounded = round_dt(vtime)
+        if abs(vtime - vtime_rounded) < timedelta(microseconds=100000):
+            return vtime_rounded
+        return vtime
 
     def actual_time(self, stime: datetime) -> datetime:
         """Return the actual time from the virtual time"""
@@ -3490,14 +3497,7 @@ class IUTester:
     def virtual_time(self, atime: datetime) -> datetime:
         """Convert actual time to virtual time"""
         if self.is_testing:
-            result = self.current_test.virtual_time(atime)
-            rounded = round_dt(result)
-            # The conversion may not be exact due to the internal precision
-            # of the compiler particularly at high speed values. Compensate
-            # by rounding if the value is very close to an internal boundary
-            if abs(result - rounded) < timedelta(microseconds=100000):
-                return rounded
-            return result
+            return self.current_test.virtual_time(atime)
         return atime
 
     def actual_time(self, stime: datetime) -> datetime:
