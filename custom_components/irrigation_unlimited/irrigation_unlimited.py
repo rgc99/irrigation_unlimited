@@ -3555,6 +3555,7 @@ class IUTester:
         self._running_test = None
         self._last_test = None
         self._autoplay_initialised = False
+        self._ticker: datetime = None
 
     def load(self, config: OrderedDict) -> "IUTester":
         """Load config data for the tester"""
