@@ -2,6 +2,7 @@
 # pylint: disable=too-many-lines
 import weakref
 from datetime import datetime, time, timedelta, timezone
+from collections import deque
 from types import MappingProxyType
 from typing import Dict, OrderedDict, List, Set, NamedTuple, Callable, Awaitable
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
@@ -65,6 +66,7 @@ from .const import (
     CONF_ALL_ZONES_CONFIG,
     CONF_CLOCK,
     CONF_CONTROLLER,
+    CONF_MODE,
     CONF_RENAME_ENTITIES,
     CONF_ENTITY_BASE,
     CONF_RUN,
@@ -154,6 +156,9 @@ from .const import (
     STATUS_DISABLED,
     STATUS_INITIALISING,
     TIMELINE_STATUS,
+    CONF_FIXED,
+    CONF_MAX_LOG_ENTRIES,
+    DEFAULT_MAX_LOG_ENTRIES,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -3889,12 +3894,31 @@ class IUClock:
         # Private variables
         self._listener_job = HassJob(self._listener)
         self._remove_timer_listener: CALLBACK_TYPE = None
+        self._tick_log = deque["datetime"](maxlen=DEFAULT_MAX_LOG_ENTRIES)
+        self._next_tick: datetime = None
         self._fixed_clock = True
+        self._show_log = False
 
     @property
     def is_fixed(self) -> bool:
         """Return if the clock is fixed or variable"""
         return self._fixed_clock
+
+    @property
+    def next_tick(self) -> datetime:
+        """Return the next anticipated scheduled tick. It
+        may however be cancelled due to a service call"""
+        return self._next_tick
+
+    @property
+    def tick_log(self) -> deque["datetime"]:
+        """Return the tick history log"""
+        return self._tick_log
+
+    @property
+    def show_log(self) -> bool:
+        """Indicate if we should show the tick log"""
+        return self._show_log
 
     def track_interval(self) -> timedelta:
         """Returns the system clock time interval"""
@@ -3920,6 +3944,7 @@ class IUClock:
         if self._fixed_clock:
             return atime + self.track_interval()
 
+        # Handle testing
         if self._coordinator.tester.is_testing:
             stime = self._coordinator.tester.virtual_time(atime)
             next_stime = self._coordinator.next_awakening(stime)
@@ -3958,18 +3983,23 @@ class IUClock:
 
     def _schedule_next_poll(self, atime: datetime) -> None:
         """Set the timer for the next update"""
-        next_time = self.next_awakening(atime)
+        self._next_tick = self.next_awakening(atime)
 
         self._remove_timer_listener = async_track_point_in_utc_time(
-            self._hass, self._listener_job, next_time
+            self._hass, self._listener_job, self._next_tick
         )
 
     async def _listener(self, atime: datetime) -> None:
         """Listener for the timer event"""
+        if not self._fixed_clock:
+            self._tick_log.appendleft(atime)
         try:
             await self._action(atime)
         finally:
             self._schedule_next_poll(atime)
+        if not self._fixed_clock and self._show_log:
+            self._coordinator.request_update(False)
+            self._coordinator.update_sensor(atime, False)
 
     def rearm(self, atime: datetime) -> None:
         """Rearm the timer"""
@@ -3980,7 +4010,12 @@ class IUClock:
         """Load config data"""
         if config is not None and CONF_CLOCK in config:
             clock_conf: dict = config[CONF_CLOCK]
-            self._fixed_clock = clock_conf.get("fixed", self._fixed_clock)
+            self._fixed_clock = clock_conf[CONF_MODE] == CONF_FIXED
+            self._show_log = clock_conf[CONF_SHOW_LOG]
+            if (
+                max_entries := clock_conf.get(CONF_MAX_LOG_ENTRIES)
+            ) is not None and max_entries != self._tick_log.maxlen:
+                self._tick_log = deque["datetime"](maxlen=max_entries)
 
         if not self._fixed_clock:
             global SYSTEM_GRANULARITY  # pylint: disable=global-statement
@@ -4211,11 +4246,12 @@ class IUCoordinator:
             for controller in self._controllers:
                 controller.request_update(True)
 
-    def update_sensor(self, stime: datetime) -> None:
+    def update_sensor(self, stime: datetime, deep: bool = True) -> None:
         """Update home assistant sensors if required"""
         stime = wash_dt(stime, 1)
-        for controller in self._controllers:
-            controller.update_sensor(stime)
+        if deep:
+            for controller in self._controllers:
+                controller.update_sensor(stime)
 
         if self._component is not None and self._sensor_update_required:
             self._component.schedule_update_ha_state()

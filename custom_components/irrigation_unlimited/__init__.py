@@ -29,12 +29,15 @@ from .const import (
     CONF_CLOCK,
     CONF_ENABLED,
     CONF_FINISH,
+    CONF_FIXED,
     CONF_FUTURE_SPAN,
     CONF_HISTORY,
     CONF_HISTORY_REFRESH,
     CONF_HISTORY_SPAN,
+    CONF_MAX_LOG_ENTRIES,
     CONF_MAXIMUM,
     CONF_MINIMUM,
+    CONF_MODE,
     CONF_MONTH,
     CONF_DAY,
     CONF_ODD,
@@ -46,6 +49,7 @@ from .const import (
     CONF_ANCHOR,
     CONF_SPAN,
     CONF_SYNC_SWITCHES,
+    CONF_VARIABLE,
     DOMAIN,
     COORDINATOR,
     COMPONENT,
@@ -206,9 +210,13 @@ HISTORY_SCHEMA = vol.Schema(
     }
 )
 
+clock_mode = vol.Any(CONF_FIXED, CONF_VARIABLE)
+
 CLOCK_SCHEMA = vol.Schema(
     {
-        vol.Optional("fixed"): cv.boolean,
+        vol.Optional(CONF_MODE, default=CONF_FIXED): clock_mode,
+        vol.Optional(CONF_SHOW_LOG, default=False): cv.boolean,
+        vol.Optional(CONF_MAX_LOG_ENTRIES): cv.positive_int,
     }
 )
 

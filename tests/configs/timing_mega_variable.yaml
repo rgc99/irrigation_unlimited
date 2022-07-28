@@ -28,7 +28,7 @@ irrigation_unlimited:
   granularity: 10
   refresh_interval: 20
   clock:
-    fixed: false
+    mode: variable
   testing:
     enabled: true
     speed: 1.0
