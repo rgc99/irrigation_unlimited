@@ -189,7 +189,6 @@ CONTROLLER_SCHEMA = vol.Schema(
             cv.ensure_list, [SEQUENCE_SCHEMA], _list_is_not_empty
         ),
         vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_CONTROLLER_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
         vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
         vol.Optional(CONF_PREAMBLE): cv.time_period,
