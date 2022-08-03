@@ -166,6 +166,8 @@ ATTR_ZONES = "zones"
 ATTR_SEQUENCE_STATUS = "sequence_status"
 ATTR_ZONE_IDS = "zone_ids"
 ATTR_CONTROLLER_COUNT = "controller_count"
+ATTR_NEXT_TICK = "next_tick"
+ATTR_TICK_LOG = "tick_log"
 
 # Resources
 RES_MANUAL = "Manual"
