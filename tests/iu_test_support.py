@@ -8,6 +8,10 @@ from homeassistant.config import (
     async_process_ha_core_config,
 )
 from homeassistant.setup import async_setup_component
+from homeassistant.helpers.recorder import (
+    async_initialize_recorder,
+    async_wait_recorder,
+)
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.dt import parse_datetime, as_utc, as_local
 
@@ -129,11 +133,13 @@ class IUExam:
 
     async def load_dependencies(self) -> None:
         """Load IU dependencies"""
+        async_initialize_recorder(self._hass)
         await self.load_component("http", {})
         await self.load_component(
             "recorder",
             {"recorder": {"db_url": "sqlite:///:memory:"}},
         )
+        await async_wait_recorder(self._hass)
         await self.load_component("history", {})
 
     async def setup(self) -> None:
