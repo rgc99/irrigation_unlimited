@@ -179,6 +179,7 @@ class IUExam:
         self._coordinator.clock.stop()
         self._current_time = self._coordinator.start_test(test_no)
         assert self._current_time is not None, f"Invalid test {test_no}"
+        self._coordinator.clock.test_ticker_update(self._current_time)
         _LOGGER.debug("Starting test: %s", self._coordinator.tester.current_test.name)
         await self._hass.async_block_till_done()
 
@@ -221,9 +222,12 @@ class IUExam:
         while self._coordinator.tester.is_testing and self._current_time <= astop_at:
             # Get next scheduled clock tick
             next_awakening = self._coordinator.clock.next_awakening(self._current_time)
+            if self._coordinator.clock.test_ticker_update(next_awakening):
+                await self._hass.async_block_till_done()
             self._coordinator.tester.ticker = min(next_awakening, astop_at)
             if next_awakening <= astop_at:
                 self._coordinator.timer(next_awakening)
+                self._coordinator.clock.test_ticker_fired(next_awakening)
                 await self._hass.async_block_till_done()
                 self._current_time = next_awakening
             else:
