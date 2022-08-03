@@ -2,10 +2,8 @@
 from unittest.mock import patch
 from datetime import datetime, timedelta
 from typing import OrderedDict, List, Any
-import asyncio
 import pytest
 import homeassistant.core as ha
-from homeassistant.components.recorder.const import DATA_INSTANCE as RECORDER_INSTANCE
 from custom_components.irrigation_unlimited.const import (
     SERVICE_DISABLE,
 )
@@ -85,9 +83,6 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
 
     async with IUExam(hass, "test_history.yaml") as exam:
         await exam.load_dependencies()
-
-        if not RECORDER_INSTANCE in hass.data:
-            await asyncio.sleep(1)
 
         with patch(
             "homeassistant.components.recorder.history.get_significant_states"
