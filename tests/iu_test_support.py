@@ -114,6 +114,12 @@ class IUExam:
         """Trun off a lot of noise"""
         quiet_mode()
 
+    def lvt(self, atime: datetime) -> datetime:
+        """Return the actual time as virtual in local"""
+        if atime is not None:
+            return as_local(self._coordinator.tester.virtual_time(as_utc(atime)))
+        return None
+
     def no_check(self, check_off: bool = True) -> None:
         """Disable checking results"""
         # pylint: disable=no-self-use
@@ -298,10 +304,3 @@ def mk_td(time_str: str) -> timedelta:
     """Convert time string to timedelta"""
     tstr = datetime.strptime(time_str, "%H:%M:%S")
     return timedelta(hours=tstr.hour, minutes=tstr.minute, seconds=tstr.second)
-
-
-def lvt(coordinator: IUCoordinator, atime: datetime) -> datetime:
-    """Return the actual time as virtual in local"""
-    if atime is not None:
-        return as_local(coordinator.tester.virtual_time(atime))
-    return None
