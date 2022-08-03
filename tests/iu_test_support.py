@@ -101,7 +101,7 @@ class IUExam:
 
     @property
     def virtual_time(self) -> datetime:
-        """Return the virtual time"""
+        """Return the current virtual time"""
         return self._coordinator.tester.current_test.virtual_time(self._current_time)
 
     @property
