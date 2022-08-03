@@ -3972,6 +3972,24 @@ class IUClock:
 
         return result
 
+    def _update_next_tick(self, atime: datetime) -> bool:
+        """Update the next_tick variable"""
+        if atime != self._next_tick:
+            self._next_tick = atime
+            if self._show_log:
+                self._coordinator.request_update(False)
+            return True
+        return False
+
+    def _add_to_log(self, atime: datetime) -> bool:
+        """Add a time to the head of tick log"""
+        if not self._fixed_clock and atime is not None:
+            self._tick_log.appendleft(atime)
+            if self._show_log:
+                self._coordinator.request_update(False)
+            return True
+        return False
+
     def _remove_timer(self) -> None:
         """Remove the current timer. Return False if there is
         no timer currently active (clock is stopped)"""
@@ -3983,7 +4001,7 @@ class IUClock:
 
     def _schedule_next_poll(self, atime: datetime) -> None:
         """Set the timer for the next update"""
-        self._next_tick = self.next_awakening(atime)
+        self._update_next_tick(self.next_awakening(atime))
 
         self._remove_timer_listener = async_track_point_in_utc_time(
             self._hass, self._listener_job, self._next_tick
@@ -3991,20 +4009,34 @@ class IUClock:
 
     async def _listener(self, atime: datetime) -> None:
         """Listener for the timer event"""
-        if not self._fixed_clock:
-            self._tick_log.appendleft(atime)
+        self._add_to_log(atime)
         try:
             await self._action(atime)
         finally:
             self._schedule_next_poll(atime)
-        if not self._fixed_clock and self._show_log:
-            self._coordinator.request_update(False)
+        if self._show_log:
             self._coordinator.update_sensor(atime, False)
+
+    def test_ticker_update(self, atime: datetime) -> bool:
+        """Interface for testing unit when starting tick"""
+        if self._update_next_tick(atime) and self._show_log:
+            self._coordinator.update_sensor(atime, False)
+            return True
+        return False
+
+    def test_ticker_fired(self, atime: datetime) -> bool:
+        """Interface for testing unit when finishing tick"""
+        if self._add_to_log(atime) and self._show_log:
+            self._coordinator.update_sensor(atime, False)
+            return True
+        return False
 
     def rearm(self, atime: datetime) -> None:
         """Rearm the timer"""
         if not self._fixed_clock and self._remove_timer():
             self._schedule_next_poll(atime)
+            if self._show_log:
+                self._coordinator.update_sensor(atime, False)
 
     def load(self, config: OrderedDict) -> "IUClock":
         """Load config data"""
