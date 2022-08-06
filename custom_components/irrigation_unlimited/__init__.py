@@ -49,7 +49,7 @@ from .const import (
     CONF_ANCHOR,
     CONF_SPAN,
     CONF_SYNC_SWITCHES,
-    CONF_VARIABLE,
+    CONF_SEER,
     DOMAIN,
     COORDINATOR,
     COMPONENT,
@@ -210,7 +210,7 @@ HISTORY_SCHEMA = vol.Schema(
     }
 )
 
-clock_mode = vol.Any(CONF_FIXED, CONF_VARIABLE)
+clock_mode = vol.Any(CONF_FIXED, CONF_SEER)
 
 CLOCK_SCHEMA = vol.Schema(
     {

@@ -90,7 +90,7 @@ CONF_ENTITY_BASE = "entity_base"
 CONF_CLOCK = "clock"
 CONF_MODE = "mode"
 CONF_FIXED = "fixed"
-CONF_VARIABLE = "variable"
+CONF_SEER = "seer"
 CONF_MAX_LOG_ENTRIES = "max_log_entries"
 DEFAULT_MAX_LOG_ENTRIES = 50
 

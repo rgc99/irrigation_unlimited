@@ -10,7 +10,7 @@ irrigation_unlimited:
   granularity: 30
   refresh_interval: 2000
   clock:
-    mode: variable
+    mode: seer
   testing:
     enabled: true
     speed: 1.0
