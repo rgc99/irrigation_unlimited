@@ -2722,7 +2722,7 @@ class IUController(IUBase):
 
     def sequence_status(self) -> List[dict]:
         """Return the sequence status or run information"""
-        result = []
+        result: list[dict] = []
         runs = self.up_next()
         for sequence in self._sequences:
             run = runs.get(sequence)
