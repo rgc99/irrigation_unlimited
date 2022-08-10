@@ -2372,7 +2372,10 @@ class IUSequenceRun(IUBase):
         result[ATTR_ZONES] = []
         for zone in self._sequence.zones:
             runs = self.zone_runs(zone)
-            is_on = zone == self._active_zone
+            if self._active_zone is not None:
+                is_on = zone == self._active_zone.sequence_zone
+            else:
+                is_on = False
             sqr = {}
             sqr[ATTR_INDEX] = zone.index
             sqr[ATTR_ENABLED] = zone.enabled
