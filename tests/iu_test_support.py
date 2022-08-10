@@ -217,7 +217,7 @@ class IUExam:
                 NO_CHECK,
             )
 
-    async def run_until(self, stop_at: datetime) -> None:
+    async def run_until(self, stop_at: datetime | str) -> None:
         """Run until a point in time"""
         if isinstance(stop_at, str):
             stop_at = mk_utc(stop_at)
