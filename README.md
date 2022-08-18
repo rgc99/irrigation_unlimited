@@ -31,6 +31,7 @@
   - [5.8. Sequence Zone Objects](#58-sequence-zone-objects)
   - [5.9. History Object](#59-history-object)
     - [5.9.1. Long term statistics LTS](#591-long-term-statistics-lts)
+  - [5.10. Clock Object](#510-clock-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
   - [6.2. Sun event example](#62-sun-event-example)
@@ -190,6 +191,7 @@ The time type is a string in the format HH:MM or H:MM:SS. Time type must be a po
 | `history_span` | number | 7 | Deprecated. See [history](#59-history-object) `span` |
 | `history_refresh` | number | 120 | Deprecated. See [history](#59-history-object) `refresh_interval` |
 | `history` | object | _[History Object](#59-history-object)_ | History data gathering options |
+| `clock` | object | _[Clock Object](#510-clock-object)_ | Clock options |
 
 ### 5.1. Controller Objects
 
@@ -331,6 +333,16 @@ The `timeline` and `total_today` attributes use history information. This inform
 
 History is typically purged after 10 days. If you wish to retain the `total_today` data beyond this period then setup a Long-Term Statistic sensor. See [here](./packages/irrigation_unlimited_lts.yaml) for an example.
 For more information see [Long-Term Statistics](https://data.home-assistant.io/docs/statistics/)
+
+### 5.10. Clock Object
+
+This object controls the internal clock mode.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `mode` | string | seer | `fixed` or `seer`. Set the clock to fixed (game loop) or seer (event loop) |
+| `show_log` | bool | false | Expose the clock ticks via `next_tick` and `tick_log` attributes in the coordinator entity |
+| `max_log_entiries` | number | 50 | Set the number of entires in the tick log history |
 
 ## 6. Configuration examples
 
