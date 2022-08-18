@@ -214,7 +214,7 @@ clock_mode = vol.Any(CONF_FIXED, CONF_SEER)
 
 CLOCK_SCHEMA = vol.Schema(
     {
-        vol.Optional(CONF_MODE, default=CONF_FIXED): clock_mode,
+        vol.Optional(CONF_MODE, default=CONF_SEER): clock_mode,
         vol.Optional(CONF_SHOW_LOG, default=False): cv.boolean,
         vol.Optional(CONF_MAX_LOG_ENTRIES): cv.positive_int,
     }
