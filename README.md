@@ -1010,10 +1010,10 @@ Minimum version 2021.12.0 of Irrigation Unlimited is required for this feature. 
 ```yaml
 irrigation_unlimited:
   controllers:
+    all_zones_config: # <= Add these three lines <─┐
+      show: # <= to the configuration            <─┤
+        timeline: true # <= for all zones        <─┘
     zones:
-      all_zones_config: # <= Add these three lines <─┐
-        show: # <= to the configuration            <─┤
-          timeline: true # <= for all zones        <─┘
       entity_id: "switch.my_switch"
       show: # <= Add these two lines to the                    <─┐
         timeline: true # <= configuration for individual zones <─┘
