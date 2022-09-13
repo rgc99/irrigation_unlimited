@@ -4,7 +4,7 @@
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
-[![License][license-shield]](LICENSE)
+[![License][license-shield]][license]
 
 [![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
@@ -312,8 +312,8 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zone_id` | string/list | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#53-zone-objects)_ |
-| `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#55-sequence-objects)_ |
-| `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#55-sequence-objects)_ |
+| `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#57-sequence-objects)_ |
+| `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#57-sequence-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
 
@@ -1256,7 +1256,7 @@ If all else fails please open an [issue](https://github.com/rgc99/irrigation_unl
 
 ## 13. Snake case
 
- The [controller_id](#51-controller-objects) and [zone_id](#52-zone-objects) identifiers need to be in snake_case like `my_garden`, `vege_patch`, `rose_bed`, `front_lawn`. The allowable characters are lower case alphabet, numerals and the underscore. The underscore cannot be used as a leading or trailing character and not more than one together. For more information see [here](https://en.wikipedia.org/wiki/Snake_case)
+ The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) identifiers need to be in snake_case like `my_garden`, `vege_patch`, `rose_bed`, `front_lawn`. The allowable characters are lower case alphabet, numerals and the underscore. The underscore cannot be used as a leading or trailing character and not more than one together. For more information see [here](https://en.wikipedia.org/wiki/Snake_case)
 
 ## 14. Switch entities
 
@@ -1294,19 +1294,17 @@ Some inspiration was taken from [kloggy's](https://github.com/kloggy/HA-Irrigati
 
 ---
 
-[irrigation_unlimited]: https://github.com/rgc99/irrigation_unlimited
 [buymecoffee]: https://www.buymeacoffee.com/rgc99
 [buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
 [commits-shield]: https://img.shields.io/github/commit-activity/y/rgc99/irrigation_unlimited?style=for-the-badge
 [commits]: https://github.com/rgc99/irrigation_unlimited/commits/master
 [hacs]: https://github.com/custom-components/hacs
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[exampleimg]: example.png
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
 [forum]: https://community.home-assistant.io/t/irrigation-unlimited-integration/
-[license-shield]: https://img.shields.io/github/license/rgc99/irrigation_unlimited.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Robert%20Cook%20%40rgc99-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/rgc99/irrigation_unlimited.svg?style=for-the-badge
 [releases]: https://github.com/rgc99/irrigation_unlimited/releases
-[download-shield]: https://img.shields.io/github/downloads/rgc99/irrigation_unlimited/total?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/rgc99/irrigation_unlimited.svg?style=for-the-badge
+[license]: LICENSE
 [integration_blueprint]: https://github.com/custom-components/integration_blueprint
