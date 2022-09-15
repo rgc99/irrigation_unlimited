@@ -143,7 +143,10 @@ async def test_restore_coordinator(
         assert sta.attributes["enabled"] is False
 
         assert exam.coordinator.controllers[0].sequences[2].enabled is False
-        assert exam.coordinator.controllers[0].sequences[2].status() == "disabled"
+        assert (
+            exam.coordinator.controllers[0].sequences[2].status(False, False)
+            == "disabled"
+        )
         assert (
             exam.coordinator.controllers[0].sequences[2].zones[0].status() == "blocked"
         )
@@ -408,4 +411,4 @@ async def test_restore_coordinator_events(
     async with IUExam(hass, "test_restore_entity_sequence.yaml"):
 
         # This is work in progress. No event is currently fired.
-        assert event_data == []
+        assert not event_data

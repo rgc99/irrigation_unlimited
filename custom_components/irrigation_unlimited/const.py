@@ -20,6 +20,7 @@ ICON_CONTROLLER_OFF = "mdi:water-off"
 ICON_CONTROLLER_PAUSED = "mdi:pause-circle-outline"
 ICON_SEQUENCE_ON = "mdi:play-circle-outline"
 ICON_SEQUENCE_OFF = "mdi:stop-circle-outline"
+ICON_SEQUENCE_PAUSED = "mdi:pause-circle-outline"
 ICON_SEQUENCE_ZONE_ON = "mdi:play-circle-outline"
 ICON_SEQUENCE_ZONE_OFF = "mdi:stop-circle-outline"
 

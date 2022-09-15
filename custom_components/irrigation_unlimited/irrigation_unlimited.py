@@ -121,6 +121,7 @@ from .const import (
     ICON_CONTROLLER_ON,
     ICON_CONTROLLER_PAUSED,
     ICON_DISABLED,
+    ICON_SEQUENCE_PAUSED,
     ICON_SEQUENCE_ZONE_OFF,
     ICON_SEQUENCE_ZONE_ON,
     ICON_ZONE_OFF,
@@ -853,6 +854,13 @@ class IURunQueue(List[IURun]):
         for run in self:
             if run.sequence_running and run.sequence == sequence:
                 return True
+        return False
+
+    def is_sequence_paused(self, sequence: "IUSequence") -> bool:
+        """Check if the sequence is currently paused"""
+        for run in self:
+            if run.sequence_running and run.sequence == sequence:
+                return run.sequence_run.active_zone is not None
         return False
 
     def sequence_duration(self, sequence: "IUSequence") -> timedelta:
@@ -1924,25 +1932,38 @@ class IUSequence(IUBase):
         """Return if the sequence is on or off"""
         return self._controller.runs.is_sequence_running(self)
 
-    def icon(self, is_on: bool = None) -> str:
+    @property
+    def is_paused(self) -> bool:
+        """Return is the sequence is paused"""
+        return self._controller.runs.is_sequence_paused(self)
+
+    def icon(self, is_on: bool = None, is_paused: bool = None) -> str:
         """Return the icon to use in the frontend."""
         if self._controller.enabled:
             if self._enabled:
                 if is_on is None:
                     is_on = self.is_on
+                if is_paused is None:
+                    is_paused = self.is_paused
                 if is_on:
+                    if is_paused:
+                        return ICON_SEQUENCE_PAUSED
                     return ICON_SEQUENCE_ON
                 return ICON_SEQUENCE_OFF
             return ICON_DISABLED
         return ICON_BLOCKED
 
-    def status(self, is_on: bool = None) -> str:
+    def status(self, is_on: bool = None, is_paused: bool = None) -> str:
         """Return status of the sequence"""
         if self._controller.enabled:
             if self._enabled:
                 if is_on is None:
                     is_on = self.is_on
+                if is_paused is None:
+                    is_paused = self.is_paused
                 if is_on:
+                    if is_paused:
+                        return STATUS_PAUSED
                     return STATE_ON
                 return STATE_OFF
             return STATUS_DISABLED
@@ -2144,13 +2165,14 @@ class IUSequence(IUBase):
         total_duration_adjusted = self.total_duration_adjusted(total_duration)
         duration_factor = self.duration_factor(total_duration_adjusted + total_delay)
         is_on = self.is_on
+        is_paused = self.is_paused
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
         result[CONF_STATE] = STATE_ON if is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
-        result[ATTR_ICON] = self.icon(is_on)
-        result[ATTR_STATUS] = self.status(is_on)
+        result[ATTR_ICON] = self.icon(is_on, is_paused)
+        result[ATTR_STATUS] = self.status(is_on, is_paused)
         result[ATTR_DEFAULT_DURATION] = self._duration
         result[ATTR_DEFAULT_DELAY] = self._delay
         result[ATTR_DURATION_FACTOR] = duration_factor
@@ -2354,8 +2376,12 @@ class IUSequenceRun(IUBase):
         result[ATTR_INDEX] = self._sequence.index
         result[ATTR_NAME] = self._sequence.name
         result[ATTR_ENABLED] = self._sequence.enabled
-        result[ATTR_STATUS] = self._sequence.status(self._running)
-        result[ATTR_ICON] = self._sequence.icon(self._running)
+        result[ATTR_STATUS] = self._sequence.status(
+            self._running, self._active_zone is None
+        )
+        result[ATTR_ICON] = self._sequence.icon(
+            self._running, self._active_zone is None
+        )
         result[ATTR_START] = dt.as_local(self._start_time)
         result[ATTR_DURATION] = to_secs(self.on_time())
         result[ATTR_ADJUSTMENT] = str(self._sequence.adjustment)
@@ -2396,8 +2422,8 @@ class IUSequenceRun(IUBase):
         result[ATTR_INDEX] = sequence.index
         result[ATTR_NAME] = sequence.name
         result[ATTR_ENABLED] = sequence.enabled
-        result[ATTR_STATUS] = sequence.status(False)
-        result[ATTR_ICON] = sequence.icon(False)
+        result[ATTR_STATUS] = sequence.status(False, False)
+        result[ATTR_ICON] = sequence.icon(False, False)
         result[ATTR_START] = None
         result[ATTR_DURATION] = 0
         result[ATTR_ADJUSTMENT] = str(sequence.adjustment)
@@ -3883,6 +3909,8 @@ class IULogger:
 
 class IUClock:
     """Irrigation Unlimited Clock class"""
+
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
