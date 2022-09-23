@@ -2814,7 +2814,7 @@ class IUController(IUBase):
             sequence.repeat
         ):  # pylint: disable=unused-variable
             for sequence_zone in sequence.zones:
-                if not sequence_zone.enabled:
+                if not sequence.zone_enabled(sequence_zone):
                     continue
                 duration = sequence.zone_duration_final(sequence_zone, duration_factor)
                 duration_max = timedelta(0)
