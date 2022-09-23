@@ -3935,7 +3935,7 @@ class IUClock:
         self._remove_timer_listener: CALLBACK_TYPE = None
         self._tick_log = deque["datetime"](maxlen=DEFAULT_MAX_LOG_ENTRIES)
         self._next_tick: datetime = None
-        self._fixed_clock = True
+        self._fixed_clock = False
         self._show_log = False
 
     @property
