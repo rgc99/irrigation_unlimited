@@ -277,6 +277,9 @@ class IUExam:
                 assert (
                     tester.total_events == tester.total_checks == tester.total_results
                 ), "Failed summary results"
+                assert (
+                    tester.tests_completed == tester.total_tests
+                ), "Not all tests have been run"
                 assert tester.total_errors == 0, "Failed summary errors"
         finally:
             _LOGGER.debug(

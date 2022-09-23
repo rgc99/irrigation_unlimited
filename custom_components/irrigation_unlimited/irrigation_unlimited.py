@@ -3429,6 +3429,7 @@ class IUTester:
         self._last_test: int = None
         self._autoplay_initialised: bool = False
         self._ticker: datetime = None
+        self._tests_completed: set[int] = set()
         self.load(None)
 
     @property
@@ -3519,6 +3520,11 @@ class IUTester:
         return result
 
     @property
+    def tests_completed(self) -> int:
+        """Return the number of tests completed"""
+        return len(self._tests_completed)
+
+    @property
     def ticker(self) -> datetime:
         """Return the tester clock"""
         return self._ticker
@@ -3569,6 +3575,7 @@ class IUTester:
                 )
             else:
                 self._coordinator.logger.log_test_end(test.virtual_time(atime), test)
+            self._tests_completed.add(self._running_test)
         self._last_test = self._running_test
         self._running_test = None
 
@@ -3590,6 +3597,7 @@ class IUTester:
         self._last_test = None
         self._autoplay_initialised = False
         self._ticker: datetime = None
+        self._tests_completed.clear()
 
     def load(self, config: OrderedDict) -> "IUTester":
         """Load config data for the tester"""
