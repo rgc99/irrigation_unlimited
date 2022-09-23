@@ -94,6 +94,7 @@ CONF_FIXED = "fixed"
 CONF_SEER = "seer"
 CONF_MAX_LOG_ENTRIES = "max_log_entries"
 DEFAULT_MAX_LOG_ENTRIES = 50
+CONF_ALLOW_MANUAL = "allow_manual"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

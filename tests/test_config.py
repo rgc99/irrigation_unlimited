@@ -7,15 +7,18 @@ import json
 import pytest
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
-    DOMAIN,
     SERVICE_TIME_ADJUST,
+    DOMAIN,
+    COORDINATOR,
+    EVENT_FINISH,
+    EVENT_START,
 )
 from tests.iu_test_support import IUExam, mk_utc
 
 IUExam.quiet_mode()
 
 # Remove the following decorator to run test
-@pytest.mark.skip
+# @pytest.mark.skip
 async def test_config(hass: ha.HomeAssistant, skip_history):
     """Test loading of a config."""
     # pylint: disable=unused-argument
@@ -25,42 +28,44 @@ async def test_config(hass: ha.HomeAssistant, skip_history):
         # """Prevent checking results. Helpful for just outputting results"""
         # exam.no_check()
 
+        # Load dependencies if required
         # await exam.load_dependencies()
+
+        # Load any components
         # await exam.async_load_component("homeassistant")
 
-        # await exam.begin_test(1)
-        # await exam.finish_test()
+        # Run all tests
+        await exam.run_all()
 
         # Run a single test
         # await exam.begin_test(1)
-        # print(json.dumps(exam.coordinator.as_dict(), default=str))
-        # await exam.finish_test()
 
-        # Run all tests
-        # await exam.run_all()
-
-        # Run a test with a service call
-        # await exam.begin_test(1)
-        # await hass.services.async_call(
-        #     DOMAIN,
+        # Make a service call
+        # await exam.call(
         #     SERVICE_TIME_ADJUST,
         #     {
         #         "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
         #         "sequence_id": 1,
         #         "percentage": 47.5,
         #     },
-        #     True,
         # )
-        # await exam.finish_test()
 
         # Run to a point in time
-        # await exam.begin_test(1)
         # await exam.run_until(mk_utc("2021-01-04 06:02"))
-        # await exam.finish_test()
+        # await exam.run_until(mk_utc("2022-05-11 06:30:00"))
 
         # Run for a period of time
-        # await exam.begin_test(1)
         # await exam.run_for(timedelta(minutes=15))
+
+        # Print out the configuration
+        # print(json.dumps(exam.coordinator.as_dict(), default=str))
+
+        # print out the attributes of an entity
+        # sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        # print(sta.attributes)
+
+        # Complete the current test
         # await exam.finish_test()
 
+        # Finish up and check test results
         exam.check_summary()

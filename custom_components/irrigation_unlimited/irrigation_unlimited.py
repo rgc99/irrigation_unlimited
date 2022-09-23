@@ -64,6 +64,7 @@ from .const import (
     BINARY_SENSOR,
     CONF_ACTUAL,
     CONF_ALL_ZONES_CONFIG,
+    CONF_ALLOW_MANUAL,
     CONF_CLOCK,
     CONF_CONTROLLER,
     CONF_MODE,
@@ -1229,6 +1230,7 @@ class IUZone(IUBase):
         # Config parameters
         self._zone_id: str = None
         self._is_enabled: bool = True
+        self._allow_manual: bool = False
         self._name: str = None
         self._switch_entity_id: list[str] = None
         self._show_config: bool = False
@@ -1408,7 +1410,7 @@ class IUZone(IUBase):
 
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Add a manual run."""
-        if self._is_enabled and self._controller.enabled:
+        if (self._is_enabled or self._allow_manual) and self._controller.enabled:
             nst = wash_dt(stime + granularity_time())
             if self._controller.preamble is not None:
                 nst += self._controller.preamble
@@ -1448,16 +1450,21 @@ class IUZone(IUBase):
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUZone":
         """Load zone data from the configuration"""
         self.clear()
+        if all_zones is not None:
+            self._allow_manual = all_zones.get(CONF_ALLOW_MANUAL, self._allow_manual)
+            if CONF_SHOW in all_zones:
+                self._show_config = all_zones[CONF_SHOW].get(
+                    CONF_CONFIG, self._show_config
+                )
+                self._show_timeline = all_zones[CONF_SHOW].get(
+                    CONF_TIMELINE, self._show_timeline
+                )
         self._zone_id = config.get(CONF_ZONE_ID, str(self.index + 1))
         self._is_enabled = config.get(CONF_ENABLED, True)
+        self._allow_manual = config.get(CONF_ALLOW_MANUAL, self._allow_manual)
         self._name = config.get(CONF_NAME, None)
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._run_queue.load(config, all_zones)
-        if all_zones is not None and CONF_SHOW in all_zones:
-            self._show_config = all_zones[CONF_SHOW].get(CONF_CONFIG, self._show_config)
-            self._show_timeline = all_zones[CONF_SHOW].get(
-                CONF_TIMELINE, self._show_timeline
-            )
         if CONF_SHOW in config:
             self._show_config = config[CONF_SHOW].get(CONF_CONFIG, self._show_config)
             self._show_timeline = config[CONF_SHOW].get(
@@ -1549,11 +1556,17 @@ class IUZone(IUBase):
         is_running: bool = False
         state_changed: bool = False
 
-        is_running = (
-            parent_enabled
-            and self._is_enabled
-            and self._run_queue.current_run is not None
-            and self._run_queue.current_run.is_running(stime)
+        is_running = parent_enabled and (
+            (
+                self._is_enabled
+                and self._run_queue.current_run is not None
+                and self._run_queue.current_run.is_running(stime)
+            )
+            or (
+                self._allow_manual
+                and self._run_queue.current_run is not None
+                and self._run_queue.current_run.is_manual()
+            )
         )
 
         state_changed = is_running ^ self._is_on

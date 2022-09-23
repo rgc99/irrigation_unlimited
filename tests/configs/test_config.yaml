@@ -1,32 +1,78 @@
 default_config:
 
+homeassistant:
+  unit_system: metric
+  time_zone: Australia/Sydney
+  name: Opera House
+  latitude: -33.85951127367736
+  longitude: 151.22225761413577
+  elevation: 0
+
 irrigation_unlimited:
-  granularity: 10
-  refresh_interval: 20
+  testing:
+    enabled: true
+    speed: 1.0
+    output_events: true
+    show_log: true
+    autoplay: false
+    times:
+      - name: "1-Sequence 1"
+        start: "2022-06-18 06:00"
+        end: "2022-06-18 07:30"
+        results:
+          - {t: '2022-06-18 06:29:00', c: 1, z: 0, s: 1}
+          - {t: '2022-06-18 06:30:00', c: 1, z: 1, s: 1}
+          - {t: '2022-06-18 06:30:00', c: 1, z: 2, s: 1}
+          - {t: '2022-06-18 06:40:00', c: 1, z: 1, s: 0}
+          - {t: '2022-06-18 06:40:00', c: 1, z: 2, s: 0}
+          - {t: '2022-06-18 06:41:00', c: 1, z: 3, s: 1}
+          - {t: '2022-06-18 06:46:00', c: 1, z: 3, s: 0}
+          - {t: '2022-06-18 06:47:00', c: 1, z: 4, s: 1}
+          - {t: '2022-06-18 06:52:00', c: 1, z: 4, s: 0}
+          - {t: '2022-06-18 06:53:00', c: 1, z: 1, s: 1}
+          - {t: '2022-06-18 06:53:00', c: 1, z: 2, s: 1}
+          - {t: '2022-06-18 07:03:00', c: 1, z: 1, s: 0}
+          - {t: '2022-06-18 07:03:00', c: 1, z: 2, s: 0}
+          - {t: '2022-06-18 07:04:00', c: 1, z: 3, s: 1}
+          - {t: '2022-06-18 07:09:00', c: 1, z: 3, s: 0}
+          - {t: '2022-06-18 07:10:00', c: 1, z: 4, s: 1}
+          - {t: '2022-06-18 07:15:00', c: 1, z: 4, s: 0}
+          - {t: '2022-06-18 07:16:00', c: 1, z: 0, s: 0}
   controllers:
-    - name: 'Hauptventil'
-      entity_id: 'switch.4ch_eins_1'
-      preamble: '00:01'
-      enabled: true
-      zones:
-        - name: 'Zone 1'
-          entity_id: 'switch.4ch_zwei_3'
-        - name: 'Zone 2'
-          entity_id: 'switch.4ch_zwei_4'
-        - name: 'Zone 3'
-          entity_id: 'switch.4ch_zwei_1'
-        - name: 'Zone 4'
-          entity_id: 'switch.4ch_zwei_2'
-      sequences:
-        - name: "Multi zone"
-          duration: "00:02"
-          delay: "00:01"
-          schedules:
-            - time:
-                sun: 'sunset'
-                before: '00:20'
-          zones:
-            - zone_id: 1
-            - zone_id: 2
-            - zone_id: 3
-            - zone_id: 4
+    # entity_id: switch.gartenpumpe_timer
+    name: Gartenbewaesserung
+    enabled: true
+    preamble: "00:01"
+    postamble: "00:01"
+    zones:
+      - name: "Terrasse"
+        # entity_id: "switch.versenkregner_terrasse_timer"
+        enabled: true
+        maximum: "00:45"
+      - name: "Hinten"
+        # entity_id: "switch.versenkregner_hinten_timer"
+        enabled: true
+        maximum: "00:45"
+      - name: "Seite"
+        # entity_id: "switch.versenkregner_seite_timer"
+        enabled: true
+        maximum: "00:30"
+      - name: "Vorne"
+        # entity_id: "switch.versenkregner_vorne_timer"
+        enabled: true
+        maximum: "00:30"
+    sequences:
+      - name: "Gesamt"
+        delay: "00:01"
+        repeat: 2
+        schedules:
+          - time: "06:30"
+            # day: "odd"
+            month: [may, jun, jul, aug, sep]
+        zones:
+          - zone_id: [1, 2]
+            duration: "00:10"
+          - zone_id: 3
+            duration: "00:05"
+          - zone_id: 4
+            duration: "00:05"
