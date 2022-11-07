@@ -1,5 +1,6 @@
 <!-- prettier-ignore -->
 
+<!-- omit in toc -->
 # Irrigation Unlimited
 
 [![GitHub Release][releases-shield]][releases]
@@ -30,7 +31,7 @@
   - [5.7. Sequence Objects](#57-sequence-objects)
   - [5.8. Sequence Zone Objects](#58-sequence-zone-objects)
   - [5.9. History Object](#59-history-object)
-    - [5.9.1. Long term statistics LTS](#591-long-term-statistics-lts)
+    - [5.9.1. Long term statistics (LTS)](#591-long-term-statistics-lts)
   - [5.10. Clock Object](#510-clock-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
@@ -42,12 +43,12 @@
   - [6.7. Finish at sunrise](#67-finish-at-sunrise)
   - [6.8. Tips](#68-tips)
 - [7. Services](#7-services)
-  - [7.1. Services enable, disable and toggle](#71-services-enable-disable-and-toggle)
-  - [7.2. Service cancel](#72-service-cancel)
-  - [7.3. Service manual_run](#73-service-manual_run)
-  - [7.4. Service adjust_time](#74-service-adjust_time)
+  - [7.1. Services `enable`, `disable` and `toggle`](#71-services-enable-disable-and-toggle)
+  - [7.2. Service `cancel`](#72-service-cancel)
+  - [7.3. Service `manual_run`](#73-service-manual_run)
+  - [7.4. Service `adjust_time`](#74-service-adjust_time)
     - [7.4.1. Tip](#741-tip)
-  - [7.5. Service reload](#75-service-reload)
+  - [7.5. Service `reload`](#75-service-reload)
   - [7.6. Service call access roadmap](#76-service-call-access-roadmap)
 - [8. Frontend](#8-frontend)
   - [8.1. Generic Cards](#81-generic-cards)
@@ -58,6 +59,7 @@
 - [9. Automation](#9-automation)
   - [9.1. ESPHome](#91-esphome)
   - [9.2. HAsmartirrigation](#92-hasmartirrigation)
+  - [9.3. Overnight watering](#93-overnight-watering)
 - [10. Notifications](#10-notifications)
   - [10.1. Events](#101-events)
     - [10.1.1. irrigation_unlimited_start, irrigation_unlimited_finish](#1011-irrigation_unlimited_start-irrigation_unlimited_finish)
@@ -71,7 +73,6 @@
 - [14. Switch entities](#14-switch-entities)
 - [15. Contributions are welcome](#15-contributions-are-welcome)
 - [16. Credits](#16-credits)
-
 <!-- /TOC -->
 
 ## 1. Introduction
@@ -218,6 +219,7 @@ This object is useful when the same settings are required for each zone. It is s
 | `minimum` | time | | The minimum run time |
 | `maximum` | time | | The maximum run time |
 | `future_span` | time | | Run queue look ahead |
+| `allow_manual` | bool | false | Allow manual run even when disabled |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 
 ### 5.3. Zone Objects
@@ -233,6 +235,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `minimum` | time | '00:01' | The minimum run time |
 | `maximum` | time | | The maximum run time |
 | `future_span` | number | 3 | Number of days to look ahead |
+| `allow_manual` | bool | false | Allow manual run even when disabled |
 | `entity_id` | string/list | | Switch entity_id(s) for example `switch.my_zone_valve_1`. More information [here](#14-switch-entities) |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 
@@ -1153,6 +1156,40 @@ automation:
         entity_id: sensor.smart_irrigation_daily_adjusted_run_time
     action:
       - service: smart_irrigation.smart_irrigation_reset_bucket
+```
+
+### 9.3. Overnight watering
+
+Run from sunset to sunrise. This automation will run 1 hour before sunset. It uses the sun integration to calculate the duration from sunset to sunrise and then set this via the adjust_time service call. Create a schedule that starts at sunset and just put in a nominal duration. The duration will be replaced by the service call. Please take note of the comments in the automation as you must change it to suit your configuration.
+
+```yaml
+automation:
+  - id: 'IU1655789912900'
+    alias: IU Overnight
+    description: Run irrigation from sunset to sunrise
+    trigger:
+      - platform: sun
+        event: sunset
+        offset: -00:60:00
+    condition: []
+    action:
+      service: irrigation_unlimited.adjust_time
+      data:
+        # -------------------------------------------------------------------
+        # Please see documentation regarding the adjust_time service call.
+        # Choose an option below. Comment out/delete/change as needed.
+        # *** This will NOT work as is. ***
+        # 1. Adjust a single zone. Change the zone as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_z1
+        # 2. Adjust a sequence. Change the sequence_id as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_m
+        # sequence_id: 1
+        # -------------------------------------------------------------------
+        actual: >
+          {% set t1 = as_datetime(state_attr("sun.sun", "next_setting")).replace(microsecond=0) %}
+          {% set t2 = as_datetime(state_attr("sun.sun", "next_rising")).replace(microsecond=0) %}
+          {{ t2 - t1 }}
+    mode: single
 ```
 
 ## 10. Notifications
