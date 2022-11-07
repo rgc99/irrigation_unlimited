@@ -1,0 +1,76 @@
+# Filename: irrigation_unlimited_soil_temperature.yaml
+#
+# This file is a package and should be located in the config/packages
+# folder. If you do not have a packages folder then create it and add
+# the following to configuration.yaml
+#
+# homeassistant:
+#  packages: !include_dir_named packages
+#
+# More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
+
+# Create a sensor for the temperature average of the last day.
+sensor:
+  - platform: average
+    name: "Irrigation Unlimited Average Soil Temperature"
+    unique_id: "irrigation_unlimited_average_soil_temperature"
+    end: "{{ now().replace(hour=0).replace(minute=0).replace(second=0) }}"
+    duration:
+      hours: 24
+    entities:
+      - sensor.plaid_systems_ps_sprzms_slp3_temperature
+    precision: 1
+    scan_interval: 600
+
+# Automation to adjust the run times for Irrigation Unlimited based on a soil temperature readings. This
+# is based on the Spruce Moisture Sensor from Plaid Systems.
+# Adjust the 'threshold' variable to suit you needs.
+automation:
+  - id: "IU1653849227290"
+    alias: Irrigation Unlimited Soil Temperature Adjustment
+    trigger:
+      # -------------------------------------------------------------------
+      # Choose how you want to trigger this automation.
+      # Comment out/delete/change as required.
+      # -------------------------------------------------------------------
+      # Run at a fixed time
+      - platform: time
+        at: "02:00"
+      # Run when Home Assistant starts
+      - platform: homeassistant
+        event: start
+      # Run when the sensors update. Don't use this option if your schedules
+      # use the 'anchor: finish'. It will most likely cause your system to
+      # skip. Use a fixed time.
+      # - platform: state
+      #   entity_id:
+      #    - sensor.plaid_systems_ps_sprzms_slp3_humidity
+    condition:
+      condition: and
+      conditions:
+        - "{{ states('sensor.irrigation_unlimited_average_soil_temperature') | float(-273) != -273 }}"
+    action:
+      service: irrigation_unlimited.adjust_time
+      data:
+        # -------------------------------------------------------------------
+        # Please see documentation regarding the adjust_time service call.
+        # Choose an option below. Comment out/delete/change as needed.
+        # *** This will NOT work as is. ***
+        # 1. Adjust a single zone. Change the zone as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_z1
+        # 2. Adjust a sequence. Change the sequence_id as required
+        entity_id: binary_sensor.irrigation_unlimited_c1_m
+        sequence_id: 0
+        # -------------------------------------------------------------------
+        percentage: >
+          {# Threshold variables #}
+          {% set temperature_threshold = 20.0 %}
+
+          {# Sensor data #}
+          {% set temperature_average = states('sensor.irrigation_unlimited_average_soil_temperature') | float(-273) %}
+
+          {# Threshold variables #}
+          {% set temperature_multiplier = temperature_average / temperature_threshold %}
+
+          {# Return multiplier as a percentage #}
+          {{ (temperature_multiplier * 100) | round(0) }}

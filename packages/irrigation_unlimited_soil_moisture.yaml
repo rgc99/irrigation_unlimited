@@ -1,0 +1,66 @@
+# Filename: irrigation_unlimited_soil_moisture.yaml
+#
+# This file is a package and should be located in the config/packages
+# folder. If you do not have a packages folder then create it and add
+# the following to configuration.yaml
+#
+# homeassistant:
+#  packages: !include_dir_named packages
+#
+# More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
+#
+# Automation to adjust the run times for Irrigation Unlimited based on a soil moisture reading. This
+# is based on the Spruce Moisture Sensor from Plaid Systems.
+# Adjust the 'threshold' variable to suit you needs.
+automation:
+  - id: "IU1653340127290"
+    alias: Irrigation Unlimited Soil Moisture Adjustment
+    trigger:
+      # -------------------------------------------------------------------
+      # Choose how you want to trigger this automation.
+      # Comment out/delete/change as required.
+      # -------------------------------------------------------------------
+      # Run at a fixed time
+      - platform: time
+        at: "02:00"
+      # Run when Home Assistant starts
+      - platform: homeassistant
+        event: start
+      # Run when the sensors update. Don't use this option if your schedules
+      # use the 'anchor: finish'. It will most likely cause your system to
+      # skip. Use a fixed time.
+      # - platform: state
+      #   entity_id:
+      #    - sensor.plaid_systems_ps_sprzms_slp3_humidity
+    condition:
+      condition: and
+      conditions:
+        - "{{ states('sensor.plaid_systems_ps_sprzms_slp3_humidity') | float(-1) != -1 }}"
+    action:
+      service: irrigation_unlimited.adjust_time
+      data:
+        # -------------------------------------------------------------------
+        # Please see documentation regarding the adjust_time service call.
+        # Choose an option below. Comment out/delete/change as needed.
+        # *** This will NOT work as is. ***
+        # 1. Adjust a single zone. Change the zone as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_z1
+        # 2. Adjust a sequence. Change the sequence_id as required
+        entity_id: binary_sensor.irrigation_unlimited_c1_m
+        sequence_id: 0
+        # -------------------------------------------------------------------
+        percentage: >
+          {# Threshold variable 0-100 percent #}
+          {% set threshold = 80 %}
+
+          {# Sensor data #}
+          {% set humidity = states('sensor.plaid_systems_ps_sprzms_slp3_humidity') | float %}
+
+          {% if humidity < threshold %}
+            {% set multiplier = 1 - (humidity / threshold) %}
+          {% else %}
+            {% set multiplier = 0.0 %} {# It's too wet, turn off #}
+          {% endif %}
+
+          {# Return multiplier as a percentage #}
+          {{ (multiplier * 100) | round(0) }}
