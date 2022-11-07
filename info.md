@@ -1,3 +1,5 @@
+# Irrigation Unlimited
+
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]][license]
@@ -18,21 +20,25 @@ This integration is for irrigation systems large and small. It can offer some co
 1. Unlimited controllers.
 2. Unlimited zones.
 3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
-4. Hardware independent. Use your own switches/valve controllers.
-5. Software independent. Pure play python.
+4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between. A 'playlist' for your zones.
+5. Suitable for indoor (greenhouse, hothouse, undercover areas) and outdoor (gardens, lawns, crops).
+6. Hardware independent. Use your own switches/valve controllers.
+7. Software independent. Pure play python.
 
 *Practical limitations will depend on your hardware.
 
-![example][exampleimg]
+From release 2022.4.0 a [companion card](https://github.com/rgc99/irrigation-unlimited-card) is available. This card works well on mobile devices.
 
-{% if not installed %}
+![companion card collapsed](./examples/companion_card_collapsed.png)
+
+and expands to
+
+![companion card expanded](./examples/companion_card_expanded.png)
 
 ## Installation
 
 1. Click install.
 2. See the [repository][irrigation_unlimited] for detailed setup instructions.
-
-{% endif %}
 
 ## Configuration is done in the configuration.yaml
 

@@ -85,6 +85,8 @@ Each controller has an associated (master) sensor which shows on/off status and 
 
 Zones also have an associated sensor which, like the master, shows on/off status and various attributes. Zones sensors have service calls that can enable/disable and provide manual runs. Also adjust run times in automation scripts using information from integrations that collect weather data like [OpenWeatherMap](https://www.home-assistant.io/integrations/openweathermap/), [BOM](https://github.com/bremor/bureau_of_meteorology), [weatherunderground](https://www.home-assistant.io/integrations/wunderground/) and many others. Go crazy with projects like [HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation). Easily integrate probes and sensors from [ESPHome](https://esphome.io) for real-time adjustments. Examples provided [below](#9-automation).
 
+View and control your system with the Irrigation Unlimited [companion card](https://github.com/rgc99/irrigation-unlimited-card). A compact card where you can monitor upcoming schedules along with irrigation history.
+
 ## 2. Features
 
 1. Unlimited controllers.
