@@ -1,2 +1,3 @@
 pytest-homeassistant-custom-component
 aiohttp_cors
+crontab
