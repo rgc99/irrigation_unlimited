@@ -150,9 +150,8 @@ class IUExam:
 
     async def setup(self) -> None:
         """Setup the hass environment"""
-        self._config = CONFIG_SCHEMA(
-            load_yaml_config_file(self._config_directory + self._config_file)
-        )
+        _LOGGER.debug("Starting exam: %s", self.config_file_full)
+        self._config = CONFIG_SCHEMA(load_yaml_config_file(self.config_file_full))
         if ha.DOMAIN in self._config:
             await async_process_ha_core_config(self._hass, self._config[ha.DOMAIN])
             self._core_config_changed = True
@@ -169,6 +168,7 @@ class IUExam:
         if self._core_config_changed:
             await reset_hass_config(self._hass)
             self._core_config_changed = False
+        _LOGGER.debug("Finished exam: %s", self.config_file_full)
 
     async def __aenter__(self):
         self._no_check = NO_CHECK
@@ -283,7 +283,7 @@ class IUExam:
                 assert tester.total_errors == 0, "Failed summary errors"
         finally:
             _LOGGER.debug(
-                f"Finished: {config_file}, "
+                f"Summary: {config_file}, "
                 f"tests: {tester.total_tests}, "
                 f"events: {tester.total_events}, "
                 f"checks: {tester.total_checks}, "
