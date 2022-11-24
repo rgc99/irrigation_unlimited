@@ -1289,7 +1289,6 @@ async def test_service_adjust_time_finish(
         )
         await exam.finish_test()
 
-        await exam.begin_test(26)
         await exam.call(
             SERVICE_TIME_ADJUST,
             {
@@ -1298,6 +1297,7 @@ async def test_service_adjust_time_finish(
                 "reset": None,
             },
         )
+        await exam.begin_test(26)
         await exam.finish_test()
 
         exam.check_summary()
