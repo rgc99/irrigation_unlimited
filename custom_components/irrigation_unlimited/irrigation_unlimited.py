@@ -540,7 +540,11 @@ class IUSchedule(IUBase):
         return result
 
     def get_next_run(
-        self, stime: datetime, ftime: datetime, adjusted_duration: timedelta
+        self,
+        stime: datetime,
+        ftime: datetime,
+        adjusted_duration: timedelta,
+        is_running: bool,
     ) -> datetime:
         # pylint: disable=too-many-branches
         """
@@ -554,13 +558,14 @@ class IUSchedule(IUBase):
         final_time = dt.as_local(ftime)
 
         current_time: datetime = None
-        next_run: datetime
+        next_run: datetime = None
+        advancement = timedelta(days=1)
         while True:
 
             if current_time is None:  # Initialise on first pass
                 current_time = local_time
             else:
-                current_time += timedelta(days=1)  # Advance to next day
+                current_time += advancement  # Advance to next day
             next_run = current_time
 
             # Sanity check. Note: Astral events like sunrise might be months
@@ -611,7 +616,9 @@ class IUSchedule(IUBase):
                 next_run -= adjusted_duration
 
             next_run = wash_dt(next_run)
-            if next_run >= local_time:
+            if (is_running and next_run > local_time) or (
+                not is_running and next_run + adjusted_duration > local_time
+            ):
                 break
 
         return dt.as_utc(next_run)
@@ -1164,14 +1171,18 @@ class IUScheduleQueue(IURunQueue):
 
         # See if schedule already exists in run queue. If so get
         # the finish time of the last entry.
-        next_time = self.find_last_date(schedule)
-        if next_time is not None:
-            next_time += granularity_time()
+        last_run = self.find_last_run(schedule)
+        if last_run is not None:
+            next_time = last_run.end_time + granularity_time()
+            is_running = last_run.is_running(stime)
         else:
             next_time = stime
+            is_running = False
 
         duration = self.constrain(adjustment.adjust(schedule.duration))
-        next_run = schedule.get_next_run(next_time, self.last_time(stime), duration)
+        next_run = schedule.get_next_run(
+            next_time, self.last_time(stime), duration, is_running
+        )
 
         if next_run is not None:
             self.add(next_run, duration, zone, schedule, None)
@@ -2211,11 +2222,21 @@ class IUSequenceZoneRun(NamedTuple):
     zone_repeat: int
 
 
+class IUSequenceRunAllocation(NamedTuple):
+    """Irrigation Unlimited sequence zone allocation class"""
+
+    start: datetime
+    duration: timedelta
+    zone: IUZone
+    sequence_zone_run: IUSequenceZoneRun
+
+
 class IUSequenceRun(IUBase):
     """Irrigation Unlimited sequence run manager class. Ties together the
     individual sequence zones"""
 
     # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-public-methods
     def __init__(
         self,
         coordinator: "IUCoordinator",
@@ -2231,12 +2252,14 @@ class IUSequenceRun(IUBase):
         self._sequence = sequence
         self._schedule = schedule
         # Private variables
-        self._runs: Dict[IURun, IUSequenceZoneRun] = weakref.WeakKeyDictionary()
+        self._runs_pre_allocate: list[IUSequenceRunAllocation] = []
+        self._runs: dict[IURun, IUSequenceZoneRun] = weakref.WeakKeyDictionary()
         self._active_zone: IUSequenceZoneRun = None
         self._running = False
         self._start_time: datetime = None
         self._end_time: datetime = None
         self._accumulated_duration = timedelta(0)
+        self._first_zone: IUZone = None
 
     @property
     def sequence(self) -> IUSequence:
@@ -2288,20 +2311,78 @@ class IUSequenceRun(IUBase):
         """Check if this sequence run is expired"""
         return stime >= self._end_time
 
-    def add(
-        self,
-        run: IURun,
-        sequence_zone: IUSequenceZone,
-        sequence_repeat: int,
-        zone_repeat: int,
-    ) -> None:
-        """Adds a sequence zone to the group"""
-        self._runs[run] = IUSequenceZoneRun(sequence_zone, sequence_repeat, zone_repeat)
-        self._accumulated_duration += run.duration
-        if self._start_time is None or run.start_time < self._start_time:
-            self._start_time = run.start_time
-        if self._end_time is None or run.end_time > self._end_time:
-            self._end_time = run.end_time
+    def build(self, duration_factor: float) -> timedelta:
+        """Build out the sequence. Pre allocate runs and determine
+        the duration"""
+        # pylint: disable=too-many-nested-blocks
+        next_run = self._start_time = self._end_time = wash_dt(dt.utcnow())
+        for sequence_repeat in range(self._sequence.repeat):
+            for sequence_zone in self._sequence.zones:
+                if not self._sequence.zone_enabled(sequence_zone):
+                    continue
+                duration = self._sequence.zone_duration_final(
+                    sequence_zone, duration_factor
+                )
+                duration_max = timedelta(0)
+                delay = self._sequence.zone_delay(sequence_zone)
+                for zone in (
+                    self._controller.find_zone_by_zone_id(zone_id)
+                    for zone_id in sequence_zone.zone_ids
+                ):
+                    if zone is not None and zone.enabled:
+                        # Don't adjust manual run and no adjustment on adjustment
+                        # This code should not really be here. It would be a breaking
+                        # change if removed.
+                        if not self.is_manual() and not self._sequence.has_adjustment(
+                            True
+                        ):
+                            duration_adjusted = zone.adjustment.adjust(duration)
+                            duration_adjusted = zone.runs.constrain(duration_adjusted)
+                        else:
+                            duration_adjusted = duration
+
+                        zone_run_time = next_run
+                        for zone_repeat in range(  # pylint: disable=unused-variable
+                            sequence_zone.repeat
+                        ):
+                            self._runs_pre_allocate.append(
+                                IUSequenceRunAllocation(
+                                    zone_run_time,
+                                    duration_adjusted,
+                                    zone,
+                                    IUSequenceZoneRun(
+                                        sequence_zone, sequence_repeat, zone_repeat
+                                    ),
+                                )
+                            )
+                            if self._first_zone is None:
+                                self._first_zone = zone
+                            if zone_run_time + duration_adjusted > self._end_time:
+                                self._end_time = zone_run_time + duration_adjusted
+                            zone_run_time += duration_adjusted + delay
+                        duration_max = max(duration_max, zone_run_time - next_run)
+                next_run += duration_max
+
+        return self._end_time - self._start_time
+
+    def allocate_runs(self, start_time: datetime) -> None:
+        """Allocate runs"""
+        delta = start_time - self._start_time
+        self._start_time += delta
+        self._end_time += delta
+        for item in self._runs_pre_allocate:
+            zone = item.zone
+            run = zone.runs.add(
+                item.start + delta, item.duration, zone, self._schedule, self
+            )
+            self._runs[run] = item.sequence_zone_run
+            self._accumulated_duration += run.duration
+            zone.request_update()
+        self._runs_pre_allocate.clear()
+
+    def first_zone(self) -> IUZone:
+        """Return the first zone"""
+        return self._first_zone
 
     @staticmethod
     def _calc_on_time(runs: List[IURun]) -> timedelta:
@@ -2741,12 +2822,13 @@ class IUController(IUBase):
 
     def sequence_runs(
         self,
+        schedule: IUSchedule,
     ) -> Set[IUSequenceRun]:
         """Gather all the sequence runs"""
         result: Set[IUSequenceRun] = set()
         for zone in self._zones:
             for run in zone.runs:
-                if run.is_sequence:
+                if run.is_sequence and (schedule is None or schedule == run.schedule):
                     result.add(run.sequence_run)
         return result
 
@@ -2754,7 +2836,7 @@ class IUController(IUBase):
         """Return a list of sequences and their next start times filtered"""
         stime = self._coordinator.service_time()
         sequences: Dict[IUSequence, IUSequenceRun] = {}
-        for run in self.sequence_runs():
+        for run in self.sequence_runs(None):
             if run.is_expired(stime):
                 continue
             sample = sequences.get(run.sequence)
@@ -2780,8 +2862,9 @@ class IUController(IUBase):
         sequence: IUSequence,
         schedule: IUSchedule,
         total_time: timedelta = None,
-    ) -> int:
+    ) -> IUSequenceRun:
         # pylint: disable=too-many-locals
+        # pylint: disable=too-many-statements
         """Muster the sequences for the controller"""
 
         def init_run_time(
@@ -2790,14 +2873,35 @@ class IUController(IUBase):
             zone: IUZone,
             total_duration: timedelta,
         ) -> datetime:
+            def is_running(schedule: IUSchedule) -> bool:
+                """Return True is this sequence is currently running"""
+                for srn in self.sequence_runs(schedule):
+                    if srn.running:
+                        return True
+                return False
+
+            def find_last_run(schedule: IUSchedule) -> IURun:
+                result: IURun = None
+                next_time: datetime = None
+                for zone in self._zones:
+                    for run in zone.runs:
+                        if run.is_sequence and run.schedule == schedule:
+                            if next_time is None or run.end_time > next_time:
+                                next_time = run.start_time
+                                result = run
+                return result
+
             if schedule is not None:
-                next_time = zone.runs.find_last_date(schedule)
-                if next_time is not None:
-                    next_time += granularity_time()
+                last_run = find_last_run(schedule)
+                if last_run is not None:
+                    next_time = last_run.sequence_run.end_time
                 else:
                     next_time = stime
                 next_run = schedule.get_next_run(
-                    next_time, zone.runs.last_time(stime), total_duration
+                    next_time,
+                    zone.runs.last_time(stime),
+                    total_duration,
+                    is_running(schedule),
                 )
             else:
                 next_run = stime + granularity_time()
@@ -2807,7 +2911,6 @@ class IUController(IUBase):
             total_time: timedelta, sequence: IUSequence, schedule: IUSchedule
         ) -> timedelta:
             """Calculate the total duration of the sequence"""
-
             if total_time is None:
                 if schedule is not None and schedule.duration is not None:
                     return sequence.total_time_final(schedule.duration)
@@ -2819,63 +2922,17 @@ class IUController(IUBase):
 
         total_time = calc_total_time(total_time, sequence, schedule)
         duration_factor = sequence.duration_factor(total_time)
-        status: int = 0
-        next_run: datetime = None
-        sequence_run: IUSequenceRun = None
-        # pylint: disable=too-many-nested-blocks
-        for sequence_repeat in range(
-            sequence.repeat
-        ):  # pylint: disable=unused-variable
-            for sequence_zone in sequence.zones:
-                if not sequence.zone_enabled(sequence_zone):
-                    continue
-                duration = sequence.zone_duration_final(sequence_zone, duration_factor)
-                duration_max = timedelta(0)
-                delay = sequence.zone_delay(sequence_zone)
-                for zone in (
-                    self.find_zone_by_zone_id(zone_id)
-                    for zone_id in sequence_zone.zone_ids
-                ):
-                    if zone is not None and zone.enabled:
-                        # Initialise on first pass
-                        if next_run is None:
-                            next_run = init_run_time(stime, schedule, zone, total_time)
-                            if next_run is None:
-                                return status  # Exit if queue is full
-                            sequence_run = IUSequenceRun(
-                                self._coordinator, self, sequence, schedule
-                            )
 
-                        # Don't adjust manual run and no adjustment on adjustment
-                        # This code should not really be here. It would be a breaking
-                        # change if removed.
-                        if schedule is not None and not sequence.has_adjustment(True):
-                            duration_adjusted = zone.adjustment.adjust(duration)
-                            duration_adjusted = zone.runs.constrain(duration_adjusted)
-                        else:
-                            duration_adjusted = duration
-
-                        zone_run_time = next_run
-                        for zone_repeat in range(  # pylint: disable=unused-variable
-                            sequence_zone.repeat
-                        ):
-                            run = zone.runs.add(
-                                zone_run_time,
-                                duration_adjusted,
-                                zone,
-                                schedule,
-                                sequence_run,
-                            )
-                            sequence_run.add(
-                                run, sequence_zone, sequence_repeat, zone_repeat
-                            )
-                            zone_run_time += run.duration + delay
-                        zone.request_update()
-                        duration_max = max(duration_max, zone_run_time - next_run)
-                        status |= IURunQueue.RQ_STATUS_EXTENDED
-                if next_run is not None:
-                    next_run += duration_max
-        return status
+        sequence_run = IUSequenceRun(self._coordinator, self, sequence, schedule)
+        total_time = sequence_run.build(duration_factor)
+        if total_time > timedelta(0):
+            start_time = init_run_time(
+                stime, schedule, sequence_run.first_zone(), total_time
+            )
+            if start_time is not None:
+                sequence_run.allocate_runs(start_time)
+                return sequence_run
+        return None
 
     def muster(self, stime: datetime, force: bool) -> int:
         """Calculate run times for this controller. This is where most of the hard yakka
@@ -2899,13 +2956,14 @@ class IUController(IUBase):
         for sequence in self._sequences:
             if sequence.enabled:
                 for schedule in sequence.schedules:
+                    next_time = stime
                     while True:
-                        sequence_status = self.muster_sequence(
-                            stime, sequence, schedule, None
+                        sequence_run = self.muster_sequence(
+                            next_time, sequence, schedule, None
                         )
-                        zone_status |= sequence_status
-                        if sequence_status & IURunQueue.RQ_STATUS_EXTENDED == 0:
+                        if sequence_run is None:
                             break
+                        zone_status |= IURunQueue.RQ_STATUS_EXTENDED
 
         # Process zone schedules
         for zone in self._zones:
