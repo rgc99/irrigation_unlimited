@@ -2045,8 +2045,9 @@ class IUSequence(IUBase):
         last_zone: IUSequenceZone = None
         if len(self._zones) > 0:
             for zone in self._zones:
-                delay += self.zone_delay(zone) * zone.repeat
-                last_zone = zone
+                if self.zone_enabled(zone):
+                    delay += self.zone_delay(zone) * zone.repeat
+                    last_zone = zone
             delay *= self._repeat
             if last_zone is not None:
                 delay -= self.zone_delay(last_zone)
