@@ -79,6 +79,7 @@ from .const import (
     CONF_ALL_ZONES_CONFIG,
     CONF_REFRESH_INTERVAL,
     CONF_OUTPUT_EVENTS,
+    CONF_CRON,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -105,7 +106,12 @@ SUN_SCHEMA = vol.Schema(
     }
 )
 
-time_event = vol.Any(cv.time, SUN_SCHEMA)
+CRON_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_CRON): cv.string,
+    }
+)
+time_event = vol.Any(cv.time, SUN_SCHEMA, CRON_SCHEMA)
 anchor_event = vol.Any(CONF_START, CONF_FINISH)
 month_event = vol.All(cv.ensure_list, [vol.In(MONTHS)])
 

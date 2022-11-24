@@ -9,6 +9,7 @@ from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
 import json
+from crontab import CronTab
 from homeassistant.core import HomeAssistant, HassJob, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import (
@@ -161,6 +162,7 @@ from .const import (
     CONF_FIXED,
     CONF_MAX_LOG_ENTRIES,
     DEFAULT_MAX_LOG_ENTRIES,
+    CONF_CRON,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -609,6 +611,13 @@ class IUSchedule(IUBase):
                     next_run += self._time[CONF_AFTER]
                 if CONF_BEFORE in self._time:
                     next_run -= self._time[CONF_BEFORE]
+            elif isinstance(self._time, dict) and CONF_CRON in self._time:
+                advancement = adjusted_duration
+                cron = CronTab(self._time[CONF_CRON])
+                cron_event = cron.next(
+                    now=local_time, return_datetime=True, default_utc=True
+                )
+                next_run = dt.as_local(cron_event)
             else:  # Some weird error happened
                 return None
 
