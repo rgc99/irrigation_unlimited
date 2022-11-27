@@ -460,11 +460,13 @@ class IUSchedule(IUBase):
     def __init__(
         self,
         hass: HomeAssistant,
+        coordinator: "IUCoordinator",
         schedule_index: int,
     ) -> None:
         super().__init__(schedule_index)
         # Passed parameters
         self._hass = hass
+        self._coordinator = coordinator
         # Config parameters
         self._time = None
         self._duration: timedelta = None
@@ -473,6 +475,7 @@ class IUSchedule(IUBase):
         self._months: list[int] = None
         self._days = None
         self._anchor: str = None
+        self._enabled = True
         # Private variables
         self._dirty: bool = True
 
@@ -491,6 +494,11 @@ class IUSchedule(IUBase):
         """Return the duration"""
         return self._duration
 
+    @property
+    def enabled(self) -> bool:
+        """Return enabled status"""
+        return self._enabled
+
     def clear(self) -> None:
         """Reset this schedule"""
         self._dirty = True
@@ -503,6 +511,7 @@ class IUSchedule(IUBase):
         self._anchor = config[CONF_ANCHOR]
         self._duration = wash_td(config.get(CONF_DURATION, None))
         self._name = config.get(CONF_NAME, f"Schedule {self.index + 1}")
+        self._enabled = config.get(CONF_ENABLED, self._enabled)
 
         if CONF_WEEKDAY in config:
             self._weekdays = []
@@ -549,6 +558,7 @@ class IUSchedule(IUBase):
         is_running: bool,
     ) -> datetime:
         # pylint: disable=too-many-branches
+        # pylint: disable=too-many-statements
         """
         Determine the next start time. Date processing in this routine
         is done in local time and returned as UTC. stime is the current time
@@ -613,11 +623,20 @@ class IUSchedule(IUBase):
                     next_run -= self._time[CONF_BEFORE]
             elif isinstance(self._time, dict) and CONF_CRON in self._time:
                 advancement = adjusted_duration
-                cron = CronTab(self._time[CONF_CRON])
-                cron_event = cron.next(
-                    now=local_time, return_datetime=True, default_utc=True
-                )
-                next_run = dt.as_local(cron_event)
+                try:
+                    cron = CronTab(self._time[CONF_CRON])
+                    cron_event = cron.next(
+                        now=local_time, return_datetime=True, default_utc=True
+                    )
+                    if cron_event is None:
+                        continue
+                    next_run = dt.as_local(cron_event)
+                except ValueError as error:
+                    self._coordinator.logger.log_invalid_crontab(
+                        stime, self, self._time[CONF_CRON], error
+                    )
+                    self._enabled = False  # Shutdown this schedule
+                    return None
             else:  # Some weird error happened
                 return None
 
@@ -1449,7 +1468,7 @@ class IUZone(IUBase):
     def find_add(self, index: int) -> IUSchedule:
         """Look for and add if necessary a new schedule"""
         if index >= len(self._schedules):
-            return self.add(IUSchedule(self._hass, index))
+            return self.add(IUSchedule(self._hass, self._coordinator, index))
         return self._schedules[index]
 
     def clear(self) -> None:
@@ -1563,6 +1582,8 @@ class IUZone(IUBase):
         status: int = 0
 
         for schedule in self._schedules:
+            if not schedule.enabled:
+                continue
             if self._run_queue.merge_fill(stime, self, schedule, self._adjustment):
                 status |= IURunQueue.RQ_STATUS_EXTENDED
 
@@ -2147,7 +2168,7 @@ class IUSequence(IUBase):
     def find_add_schedule(self, index: int) -> IUSchedule:
         """Look for and create if required a schedule"""
         if index >= len(self._schedules):
-            return self.add_schedule(IUSchedule(self._hass, index))
+            return self.add_schedule(IUSchedule(self._hass, self._coordinator, index))
         return self._schedules[index]
 
     def add_zone(self, zone: IUSequenceZone) -> IUSequenceZone:
@@ -2966,6 +2987,8 @@ class IUController(IUBase):
         for sequence in self._sequences:
             if sequence.enabled:
                 for schedule in sequence.schedules:
+                    if not schedule.enabled:
+                        continue
                     next_time = stime
                     while True:
                         sequence_run = self.muster_sequence(
@@ -3993,6 +4016,24 @@ class IULogger:
             f"sequence: {idl[1]}, "
             f"sequence_zone: {idl[2]}, "
             f"zone_id: {zone_id}",
+        )
+
+    def log_invalid_crontab(
+        self,
+        stime: datetime,
+        schedule: IUSchedule,
+        expression: str,
+        msg: str,
+        level=ERROR,
+    ) -> None:
+        # pylint: disable=too-many-arguments
+        """Warn that a crontab expression in the schedule is invalid"""
+        self._output(
+            level,
+            f"CRON [{dt2lstr(stime)}] "
+            f"schedule: {schedule.name}, "
+            f"expression: {expression}, "
+            f"error: {msg}",
         )
 
 

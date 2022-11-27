@@ -13,3 +13,7 @@ async def test_cron(hass: ha.HomeAssistant, skip_history):
     async with IUExam(hass, "test_cron.yaml") as exam:
         await exam.run_all()
         exam.check_summary()
+
+    async with IUExam(hass, "test_cron_error.yaml") as exam:
+        await exam.run_all()
+        exam.check_summary()
