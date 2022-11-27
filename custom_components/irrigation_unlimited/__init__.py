@@ -127,6 +127,7 @@ SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
+        vol.Optional(CONF_ENABLED): cv.boolean,
     }
 )
 
@@ -164,6 +165,7 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
+        vol.Optional(CONF_ENABLED): cv.boolean,
     }
 )
 
