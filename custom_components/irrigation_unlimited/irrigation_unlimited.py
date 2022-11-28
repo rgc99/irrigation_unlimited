@@ -3852,7 +3852,7 @@ class IULogger:
         # pylint: disable=too-many-arguments
         idl = IUBase.idl([controller, zone], "0", 1)
         self._output(
-            DEBUG,
+            INFO,
             f"CALL [{dt2lstr(stime)}] "
             f"service: {service}, "
             f"controller: {idl[0]}, "
