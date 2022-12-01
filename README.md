@@ -27,12 +27,13 @@
   - [5.3. Zone Objects](#53-zone-objects)
   - [5.4. Zone Show Object](#54-zone-show-object)
   - [5.5. Schedule Objects](#55-schedule-objects)
-  - [5.6. Sun Event](#56-sun-event)
-  - [5.7. Sequence Objects](#57-sequence-objects)
-  - [5.8. Sequence Zone Objects](#58-sequence-zone-objects)
-  - [5.9. History Object](#59-history-object)
-    - [5.9.1. Long term statistics (LTS)](#591-long-term-statistics-lts)
-  - [5.10. Clock Object](#510-clock-object)
+    - [5.5.1 Sun Event](#551-sun-event)
+    - [5.5.2 Crontab](#552-crontab)
+  - [5.6. Sequence Objects](#56-sequence-objects)
+  - [5.7. Sequence Zone Objects](#57-sequence-zone-objects)
+  - [5.8. History Object](#58-history-object)
+    - [5.8.1. Long term statistics (LTS)](#581-long-term-statistics-lts)
+  - [5.9. Clock Object](#59-clock-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
   - [6.2. Sun event example](#62-sun-event-example)
@@ -62,7 +63,7 @@
   - [9.3. Overnight watering](#93-overnight-watering)
 - [10. Notifications](#10-notifications)
   - [10.1. Events](#101-events)
-    - [10.1.1. irrigation_unlimited_start, irrigation_unlimited_finish](#1011-irrigation_unlimited_start-irrigation_unlimited_finish)
+    - [10.1.1. irrigation\_unlimited\_start, irrigation\_unlimited\_finish](#1011-irrigation_unlimited_start-irrigation_unlimited_finish)
 - [11. Troubleshooting](#11-troubleshooting)
   - [11.1. Requirements](#111-requirements)
   - [11.2. HA Configuration](#112-ha-configuration)
@@ -91,7 +92,7 @@ View and control your system with the Irrigation Unlimited [companion card](http
 
 1. Unlimited controllers.
 2. Unlimited zones.
-3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
+3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Use cron expressions. Overlapped schedules.
 4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between. A 'playlist' for your zones.
 5. Suitable for indoor (greenhouse, hothouse, undercover areas) and outdoor (gardens, lawns, crops).
 6. Hardware independent. Use your own switches/valve controllers.
@@ -191,10 +192,10 @@ The time type is a string in the format HH:MM or H:MM:SS. Time type must be a po
 | `granularity` | number | 60 | System time boundaries in seconds |
 | `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more responsive display. Increase this number to conserve resources.
 | `rename_entities` | bool | false | DANGER ZONE. Allow the sensor entity_id's to be altered. The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) will be combined to form the new entity_id. Note: Automations, sensors, scripts, front end cards etc. may need to be updated to reflect the new entity_id's of the controllers and zones.
-| `history_span` | number | 7 | Deprecated. See [history](#59-history-object) `span` |
-| `history_refresh` | number | 120 | Deprecated. See [history](#59-history-object) `refresh_interval` |
-| `history` | object | _[History Object](#59-history-object)_ | History data gathering options |
-| `clock` | object | _[Clock Object](#510-clock-object)_ | Clock options |
+| `history_span` | number | 7 | Deprecated. See [history](#58-history-object) `span` |
+| `history_refresh` | number | 120 | Deprecated. See [history](#58-history-object) `refresh_interval` |
+| `history` | object | _[History Object](#58-history-object)_ | History data gathering options |
+| `clock` | object | _[Clock Object](#59-clock-object)_ | Clock options |
 
 ### 5.1. Controller Objects
 
@@ -203,7 +204,7 @@ This is the controller or master object and manages a collection of zones. There
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zones` | list | _[Zone Objects](#53-zone-objects)_ | Zone details (Must have at least one) |
-| `sequences` | list | _[Sequence Objects](#57-sequence-objects)_ | Sequence details |
+| `sequences` | list | _[Sequence Objects](#56-sequence-objects)_ | Sequence details |
 | `name` | string | Controller _N_ | Friendly name for the controller |
 | `controller_id` | string | _N_ | Controller reference. Used to change the default entity name (enable with [rename_entities](#5-configuration)). This should be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
 | `enabled` | bool | true | Enable/disable the controller |
@@ -257,19 +258,18 @@ The schedule can have the commencement or completion fixed to a time or event wi
 
 The parameters `weekday`, `day` and `month` are date filters. If not specified then all dates qualify.
 
-Tip: In some ojects a schedule is required (sequence for example). However if you do not wish it to automatically operate and have it soley for manual operation then add a `month: [feb]` and `day: [31]` filters.
-
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `time` | time/_[Sun Event](#56-sun-event)_ | **Required** | The start time. Either a time (07:30) or sun event |
+| `time` | time/_[Sun Event](#551-sun-event)_/_[Crontab](#552-crontab)_ | **Required** | The start time. Either a time (07:30), sun event or cron expression |
 | `anchor` | string | start | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
 | `duration` | time | | The length of time to run. Required for zones and optional for sequences |
 | `name` | string | Schedule _N_ | Friendly name for the schedule |
 | `weekday` | list | | The days of week to run [mon, tue...sun] |
 | `day` | list | | Days of month to run [1, 2...31]/odd/even |
 | `month` | list | | Months of year to run [jan, feb...dec] |
+| `enabled` | bool | true | Enable/disable the schedule |
 
-### 5.6. Sun Event
+#### 5.5.1 Sun Event
 
 Leave the time value in the _[Schedule Objects](#55-schedule-objects)_ blank and add the following object. An optional `before` or `after` time can be specified.
 
@@ -279,7 +279,15 @@ Leave the time value in the _[Schedule Objects](#55-schedule-objects)_ blank and
 | `before` | time | '00:00' | Time before the event |
 | `after` | time | '00:00' | Time after the event |
 
-### 5.7. Sequence Objects
+#### 5.5.2 Crontab
+
+Leave the time value in the _[Schedule Objects](#55-schedule-objects)_ blank and add the following object.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `cron` | string | **Required** | A valid cron expression. Details can be found [here](https://github.com/josiahcarlson/parse-crontab) |
+
+### 5.6. Sequence Objects
 
 Sequences allow zones to run one at a time in a particular order with a delay in between. This is a type of watering 'playlist'. If a delay is specified and a pump or master valve is operated by the controller then consider the postamble setting in the _[Controller Object](#51-controller-objects)_. Set this to the largest delay to prevent pump on/off operations.
 
@@ -302,29 +310,29 @@ Sequences directly descend from a controller and are loosely connected to a zone
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Must have at least one). Note: `duration` if specified is the total run time for the sequence, see below for more details |
-| `zones` | list | _[Sequence Zone Objects](#58-sequence-zone-objects)_ | Zone details (Must have at least one) |
-| `delay` | time | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#58-sequence-zone-objects)_ |
-| `duration` | time | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#58-sequence-zone-objects)_ |
+| `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Optional). Note: `duration` if specified is the total run time for the sequence, see below for more details |
+| `zones` | list | _[Sequence Zone Objects](#57-sequence-zone-objects)_ | Zone details (Must have at least one) |
+| `delay` | time | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
+| `duration` | time | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
 | `name` | string | Run _N_ | Friendly name for the sequence |
 | `enabled` | bool | true | Enable/disable the sequence |
 
-### 5.8. Sequence Zone Objects
+### 5.7. Sequence Zone Objects
 
 The sequence zone is a reference to the actual zone defined in the _[Zone Objects](#53-zone-objects)_. Ensure the `zone_id`'s match between this object and the zone object. The zone may appear more than once in the case of a split run.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zone_id` | string/list | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#53-zone-objects)_ |
-| `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#57-sequence-objects)_ |
-| `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#57-sequence-objects)_ |
+| `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#56-sequence-objects)_ |
+| `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
 
 Special note for [schedules](#55-schedule-objects) and the `duration` parameter contained within when used with sequences. Each zone in the sequence will be proportionally adjusted to fit the specified duration. For example, if 3 zones were to each run for 10, 20 and 30 minutes respectively (total 1 hour) and the `schedule.duration` parameter specified 30 minutes then each zone would be adjusted to 5, 10 and 15 minutes. Likewise if `schedule.duration` specified 1.5 hours then the zones would be 15, 30 and 45 minutes. Some variation may occur due to rounding of the times to the system boundaries (granularity). This parameter influences the durations specified in the sequence and sequence zone objects.
 
-### 5.9. History Object
+### 5.8. History Object
 
 The `timeline` and `total_today` attributes use history information. This information is read and cached by the history module.
 
@@ -334,12 +342,12 @@ The `timeline` and `total_today` attributes use history information. This inform
 | `span` | number | 7 | Number of days of history data to fetch |
 | `refresh_interval` | number | 120 | History refresh interval in seconds |
 
-#### 5.9.1. Long term statistics (LTS)
+#### 5.8.1. Long term statistics (LTS)
 
 History is typically purged after 10 days. If you wish to retain the `total_today` data beyond this period then setup a Long-Term Statistic sensor. See [here](./packages/irrigation_unlimited_lts.yaml) for an example.
 For more information see [Long-Term Statistics](https://data.home-assistant.io/docs/statistics/)
 
-### 5.10. Clock Object
+### 5.9. Clock Object
 
 This object controls the internal clock mode.
 
@@ -446,6 +454,24 @@ irrigation_unlimited:
         repeat: 12
         schedules:
           - time: "05:00"
+        zones:
+          - zone_id: 1
+```
+
+Similar to above but using the cron scheduler.
+
+```yaml
+# Example to run for 5 min every hour on the hour from 5am to 5pm
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: "switch.my_switch_1"
+    sequences:
+      - name: "On the hour from 5am to 5pm"
+        duration: "00:05"
+        schedules:
+          - time:
+            cron: "0 5-17 * * *"
         zones:
           - zone_id: 1
 ```
