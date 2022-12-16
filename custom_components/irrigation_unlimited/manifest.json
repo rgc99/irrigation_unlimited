@@ -13,5 +13,7 @@
   "codeowners": [
     "@rgc99"
   ],
-  "requirements": []
+  "requirements": [
+    "crontab"
+  ]
 }
