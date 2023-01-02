@@ -29,6 +29,7 @@
   - [5.5. Schedule Objects](#55-schedule-objects)
     - [5.5.1 Sun Event](#551-sun-event)
     - [5.5.2 Crontab](#552-crontab)
+    - [5.5.3 Every `n` days](#553-every-n-days)
   - [5.6. Sequence Objects](#56-sequence-objects)
   - [5.7. Sequence Zone Objects](#57-sequence-zone-objects)
   - [5.8. History Object](#58-history-object)
@@ -265,7 +266,7 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 | `duration` | time | | The length of time to run. Required for zones and optional for sequences |
 | `name` | string | Schedule _N_ | Friendly name for the schedule |
 | `weekday` | list | | The days of week to run [mon, tue...sun] |
-| `day` | list | | Days of month to run [1, 2...31]/odd/even |
+| `day` | list/string/_[Every `n` days](#553-every-n-days)_ | | Days of month to run [1, 2...31]/odd/even/_[Every `n` days](#553-every-n-days)_ |
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | true | Enable/disable the schedule |
 
@@ -286,6 +287,15 @@ Leave the time value in the _[Schedule Objects](#55-schedule-objects)_ blank and
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `cron` | string | **Required** | A valid cron expression. Details can be found [here](https://github.com/josiahcarlson/parse-crontab) |
+
+#### 5.5.3 Every `n` Days
+
+Set the day value in the _[Schedule Objects](#55-schedule-objects)_ to a dictionary with the following keys.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `every_n_days` | number | **Required** | The interval between runs. |
+| `start_n_days` | date | **Required** | The start date for the interval, you can alternate multiple schdules by offseting this by `every_n_days`. |
 
 ### 5.6. Sequence Objects
 
