@@ -69,6 +69,7 @@ class IUHistory:
         self._refresh_remove: CALLBACK_TYPE = None
         self._stime: datetime = None
         self._initialised = False
+        self._fixed_clock = True
 
     def __del__(self):
         self._remove_refresh()
@@ -81,7 +82,7 @@ class IUHistory:
 
     def _get_next_refresh_event(self, utc_time: datetime, force: bool) -> datetime:
         """Calculate the next event time."""
-        if self._history_last is None or force:
+        if self._history_last is None or force or not self._fixed_clock:
             return utc_time
         return utc_time + self._refresh_interval
 
@@ -99,7 +100,8 @@ class IUHistory:
         """Handle history event."""
         # pylint: disable=unused-argument
         self._refresh_remove = None
-        self._schedule_refresh(False)
+        if self._fixed_clock:
+            self._schedule_refresh(False)
         await self._async_update_history(self._stime)
 
     def _initialise(self) -> None:
@@ -226,10 +228,11 @@ class IUHistory:
         if len(entity_ids) > 0:
             self._callback(entity_ids)
 
-    def load(self, config: OrderedDict) -> "IUHistory":
+    def load(self, config: OrderedDict, fixed_clock: bool) -> "IUHistory":
         """Load config data"""
         if config is None:
             config = {}
+        self._fixed_clock = fixed_clock
 
         span_days: int = None
         refresh_seconds: int = None
@@ -265,6 +268,7 @@ class IUHistory:
             force
             or self._stime is None
             or dt.as_local(self._stime).toordinal() != dt.as_local(stime).toordinal()
+            or not self._fixed_clock
         ):
             self._schedule_refresh(True)
 

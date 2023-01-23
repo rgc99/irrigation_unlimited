@@ -4379,7 +4379,7 @@ class IUCoordinator:
         self._muster_required = True
         self.request_update(False)
         self._logger.log_load(config)
-        self._history.load(config)
+        self._history.load(config, self._clock.is_fixed)
 
         self.check_links()
 
