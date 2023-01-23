@@ -96,6 +96,8 @@ CONF_MAX_LOG_ENTRIES = "max_log_entries"
 DEFAULT_MAX_LOG_ENTRIES = 50
 CONF_ALLOW_MANUAL = "allow_manual"
 CONF_CRON = "cron"
+CONF_EVERY_N_DAYS = "every_n_days"
+CONF_START_N_DAYS = "start_n_days"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

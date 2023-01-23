@@ -163,6 +163,8 @@ from .const import (
     CONF_MAX_LOG_ENTRIES,
     DEFAULT_MAX_LOG_ENTRIES,
     CONF_CRON,
+    CONF_EVERY_N_DAYS,
+    CONF_START_N_DAYS
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -600,6 +602,11 @@ class IUSchedule(IUBase):
                         continue
                 elif self._days == CONF_EVEN:
                     if next_run.day % 2 != 0:
+                        continue
+                elif isinstance(self._days, dict) and CONF_EVERY_N_DAYS in self._days:
+                    n_days = self._days[CONF_EVERY_N_DAYS]
+                    start_date = self._days[CONF_START_N_DAYS]
+                    if (next_run.date() - start_date).days % n_days != 0:
                         continue
                 elif next_run.day not in self._days:
                     continue
