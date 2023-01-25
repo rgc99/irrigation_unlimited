@@ -873,6 +873,7 @@ class IURunQueue(List[IURun]):
         self._sorted: bool = False
         self._cancel_request: datetime = None
         self._future_span = wash_td(timedelta(days=self.DAYS_SPAN))
+        self._next_event: datetime = None
 
     @property
     def current_run(self) -> IURun:
@@ -1079,6 +1080,7 @@ class IURunQueue(List[IURun]):
 
         Returns a bit field of changes to queue.
         """
+        # pylint: disable=too-many-branches
         status: int = 0
 
         if self.sort():
@@ -1113,6 +1115,14 @@ class IURunQueue(List[IURun]):
                     status |= self.RQ_STATUS_UPDATED
                     break
 
+        # Figure out the next state change
+        self._next_event = utc_eot()
+        for run in self:
+            if run.is_running(stime):
+                self._next_event = min(run.end_time, self._next_event)
+            else:
+                self._next_event = min(run.start_time, self._next_event)
+
         return status
 
     def update_sensor(self, stime: datetime) -> bool:
@@ -1121,14 +1131,9 @@ class IURunQueue(List[IURun]):
             return False
         return self._current_run.update_time_remaining(stime)
 
-    def next_event(self, stime: datetime) -> datetime:
+    def next_event(self) -> datetime:
         """Return the time of the next state change"""
-        result = utc_eot()
-        for run in self:
-            if not run.is_running(stime):
-                result = min(run.start_time, result)
-            else:
-                result = min(run.end_time, result)
+        result = self._next_event
         if self._cancel_request is not None:
             result = min(self._cancel_request, result)
         return result
@@ -1666,9 +1671,9 @@ class IUZone(IUBase):
 
         return updated
 
-    def next_awakening(self, stime: datetime) -> datetime:
+    def next_awakening(self) -> datetime:
         """Return the next event time"""
-        result = self._run_queue.next_event(stime)
+        result = self._run_queue.next_event()
         if self._is_on and self._sensor_last_update is not None:
             result = min(
                 self._sensor_last_update + self._coordinator.refresh_interval, result
@@ -3130,15 +3135,15 @@ class IUController(IUBase):
         for zone in self._zones:
             zone.update_sensor(stime, True)
 
-    def next_awakening(self, stime: datetime) -> datetime:
+    def next_awakening(self) -> datetime:
         """Return the next event time"""
-        result = self._run_queue.next_event(stime)
+        result = self._run_queue.next_event()
         if self._is_on and self._sensor_last_update is not None:
             result = min(
                 self._sensor_last_update + self._coordinator.refresh_interval, result
             )
         for zone in self._zones:
-            result = min(zone.next_awakening(stime), result)
+            result = min(zone.next_awakening(), result)
         return result
 
     def check_switch(self, resync: bool, stime: datetime) -> bool:
@@ -4114,12 +4119,11 @@ class IUClock:
 
         # Handle testing
         if self._coordinator.tester.is_testing:
-            stime = self._coordinator.tester.virtual_time(atime)
-            next_stime = self._coordinator.next_awakening(stime)
+            next_stime = self._coordinator.next_awakening()
             next_stime = min(next_stime, self._coordinator.tester.current_test.end)
             result = self._coordinator.tester.actual_time(next_stime)
         else:
-            result = self._coordinator.next_awakening(atime)
+            result = self._coordinator.next_awakening()
 
         # Midnight rollover
         if result == utc_eot() or (
@@ -4531,11 +4535,11 @@ class IUCoordinator:
         self.timer(tick)
         self._clock.rearm(atime)
 
-    def next_awakening(self, stime: datetime) -> datetime:
+    def next_awakening(self) -> datetime:
         """Return the next event time"""
         result = utc_eot()
         for controller in self._controllers:
-            result = min(controller.next_awakening(stime), result)
+            result = min(controller.next_awakening(), result)
         return result
 
     def check_switches(self, resync: bool, stime: datetime) -> bool:
