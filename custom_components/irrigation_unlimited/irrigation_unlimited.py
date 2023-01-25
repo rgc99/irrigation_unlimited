@@ -164,7 +164,7 @@ from .const import (
     DEFAULT_MAX_LOG_ENTRIES,
     CONF_CRON,
     CONF_EVERY_N_DAYS,
-    CONF_START_N_DAYS
+    CONF_START_N_DAYS,
 )
 
 _LOGGER: Logger = getLogger(__package__)
