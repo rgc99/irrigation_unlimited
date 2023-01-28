@@ -29,12 +29,13 @@
   - [5.5. Schedule Objects](#55-schedule-objects)
     - [5.5.1 Sun Event](#551-sun-event)
     - [5.5.2 Crontab](#552-crontab)
-    - [5.5.3 Every `n` days](#553-every-n-days)
+    - [5.5.3 Every `n` Days](#553-every-n-days)
   - [5.6. Sequence Objects](#56-sequence-objects)
   - [5.7. Sequence Zone Objects](#57-sequence-zone-objects)
   - [5.8. History Object](#58-history-object)
     - [5.8.1. Long term statistics (LTS)](#581-long-term-statistics-lts)
   - [5.9. Clock Object](#59-clock-object)
+  - [5.10. Check Back Object](#510-check-back-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
   - [6.2. Sun event example](#62-sun-event-example)
@@ -65,6 +66,7 @@
 - [10. Notifications](#10-notifications)
   - [10.1. Events](#101-events)
     - [10.1.1. irrigation\_unlimited\_start, irrigation\_unlimited\_finish](#1011-irrigation_unlimited_start-irrigation_unlimited_finish)
+    - [10.1.2. irrigation\_unlimited\_switch\_error, irrigation\_unlimited\_sync\_error](#1012-irrigation_unlimited_switch_error-irrigation_unlimited_sync_error)
 - [11. Troubleshooting](#11-troubleshooting)
   - [11.1. Requirements](#111-requirements)
   - [11.2. HA Configuration](#112-ha-configuration)
@@ -213,6 +215,7 @@ This is the controller or master object and manages a collection of zones. There
 | `postamble` | time | '00:00' | The time master remains on after all zones are off. This is in effect a run-on timer, controller will turn off after the specified delay. Can be negative to make the controller turn off _before_ the zone - this can reduce water hammering |
 | `entity_id` | string/list | | Switch entity_id(s) for example `switch.my_master_valve_1`. More information [here](#14-switch-entities) |
 | `all_zones_config` | object | _[All Zones Object](#52-all-zone-objects)_ | Shorthand default for all zones |
+| `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 
 ### 5.2. All Zone Objects
 
@@ -225,6 +228,7 @@ This object is useful when the same settings are required for each zone. It is s
 | `future_span` | time | | Run queue look ahead |
 | `allow_manual` | bool | false | Allow manual run even when disabled |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
+| `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 
 ### 5.3. Zone Objects
 
@@ -242,6 +246,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `allow_manual` | bool | false | Allow manual run even when disabled |
 | `entity_id` | string/list | | Switch entity_id(s) for example `switch.my_zone_valve_1`. More information [here](#14-switch-entities) |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
+| `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 
 ### 5.4. Zone Show Object
 
@@ -366,6 +371,17 @@ This object controls the internal clock mode.
 | `mode` | string | seer | `fixed` or `seer`. Set the clock to fixed (game loop) or seer (event loop) |
 | `show_log` | bool | false | Expose the clock ticks via `next_tick` and `tick_log` attributes in the coordinator entity |
 | `max_log_entiries` | number | 50 | Set the number of entires in the tick log history |
+
+### 5.10. Check Back Object
+
+This is used to check the state of the physical switch concurs with the state of the controller or zone. An out of sync can occur due to transmission or communications problems especially with protcols like WiFi or zigbee. The check back will report discrepancies and attempt to resync the switch. Should the resync fail a message will be logged and an [event](#1012-irrigation_unlimited_switch_error-irrigation_unlimited_sync_error) fired. The event can be use for notifications such as an email or phone alert. For more information see [Notifications](#10-notifications)
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `state` | string | all | One of `none`, `all`, `on` or `off` |
+| `delay` | number | 30 | Seconds to wait after switch is turned on or off |
+| `retries` | number | 3 | Number of times to recheck the switch |
+| `resync` | bool | true | Attempt to resync the switch |
 
 ## 6. Configuration examples
 
@@ -1251,6 +1267,18 @@ These events are fired when a sequence starts and finishes. The `trigger.event.d
 | `schedule.index` | The sequential index of the schedule. Note: This maybe blank/empty(None) if it was a manual run - useful as a test. |
 | `schedule.name` | The friendly name of the schedule. |
 | `run.duration` | The run time of the sequence. |
+
+#### 10.1.2. irrigation_unlimited_switch_error, irrigation_unlimited_sync_error
+
+These events are fired during a [check back](#510-check-back-object) operation. A `irrigation_unlimited_sync_error` is fired if the physical switch is found to be out of sync. This message will repeat for each attempted resync. After the specified number of retries have been exhusted a `irrigation_unlimited_switch_error` is fired. Additional information is available that can be used in automation scripts.
+
+| Field | Description |
+| ----- | ----------- |
+| `entity_id` | A CSV list of entities. |
+| `controller.index` | The sequential index of the controller. |
+| `controller.name` | The friendly name of the controller. |
+| `zone.index` | The sequential index of the zone. |
+| `zone.name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
 
 This example displays a [persistent notification](https://www.home-assistant.io/integrations/persistent_notification/) on the front end when a sequence completes. Note the use of [templating](https://www.home-assistant.io/docs/configuration/templating/) to construct a specific message. Although not used here, this platform also supports markdown.
 

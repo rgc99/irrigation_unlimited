@@ -68,6 +68,7 @@ from .const import (
     CONF_ALLOW_MANUAL,
     CONF_CLOCK,
     CONF_CONTROLLER,
+    CONF_ZONE,
     CONF_MODE,
     CONF_RENAME_ENTITIES,
     CONF_ENTITY_BASE,
@@ -165,6 +166,12 @@ from .const import (
     CONF_CRON,
     CONF_EVERY_N_DAYS,
     CONF_START_N_DAYS,
+    CONF_CHECK_BACK,
+    CONF_STATES,
+    CONF_RETRIES,
+    CONF_RESYNC,
+    EVENT_SYNC_ERROR,
+    EVENT_SWITCH_ERROR,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -561,6 +568,7 @@ class IUSchedule(IUBase):
     ) -> datetime:
         # pylint: disable=too-many-branches
         # pylint: disable=too-many-statements
+        # pylint: disable=too-many-locals
         """
         Determine the next start time. Date processing in this routine
         is done in local time and returned as UTC. stime is the current time
@@ -867,12 +875,13 @@ class IURunQueue(List[IURun]):
 
     def __init__(self) -> None:
         super().__init__()
+        # Config parameters
+        self._future_span = wash_td(timedelta(days=self.DAYS_SPAN))
         # Private variables
         self._current_run: IURun = None
         self._next_run: IURun = None
         self._sorted: bool = False
         self._cancel_request: datetime = None
-        self._future_span = wash_td(timedelta(days=self.DAYS_SPAN))
         self._next_event: datetime = None
 
     @property
@@ -1260,6 +1269,128 @@ class IUScheduleQueue(IURunQueue):
         return self
 
 
+class IUSwitch:
+    """Manager for the phsical switch entity"""
+
+    # pylint: disable=too-many-instance-attributes
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        zone: "IUZone",
+    ) -> None:
+        # Passed paramaters
+        self._hass = hass
+        self._coordinator = coordinator
+        self._controller = controller
+        self._zone = zone
+        # Config parameters
+        self._switch_entity_id: list[str]
+        self._check_back_states = "all"
+        self._check_back_delay = timedelta(seconds=30)
+        self._check_back_retries: int = 3
+        self._check_back_resync: bool = True
+        # private variables
+        self._state: bool = None  # This parameter should mirror IUZone._is_on
+        self._check_back_time: timedelta = None
+        self._check_back_resync_count: int = 0
+
+    def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
+        """Make the HA call to physically turn the switch on/off"""
+        self._state = state
+        self._hass.async_create_task(
+            self._hass.services.async_call(
+                HADOMAIN,
+                SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
+                {ATTR_ENTITY_ID: entity_id},
+            )
+        )
+
+    def _check_back(self, atime: datetime) -> None:
+        """Recheck the switch in HA to see if state concurs"""
+        if entities := self.check_switch(self._check_back_resync, atime):
+            self._check_back_resync_count += 1
+            if self._check_back_resync_count < self._check_back_retries:
+                self._check_back_time = atime + self._check_back_delay
+                return
+            self._coordinator.logger.log_switch_error(entities, atime)
+            self._coordinator.notify_switch(
+                EVENT_SWITCH_ERROR, entities, self._controller, self._zone
+            )
+        self._check_back_time = None
+        return
+
+    def next_event(self) -> datetime:
+        """Return the next time of interest"""
+        if self._check_back_time is not None:
+            return self._check_back_time
+        return utc_eot()
+
+    def clear(self) -> None:
+        """Reset this object"""
+        self._state = False
+
+    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
+        """Load switch data from the configuration"""
+        self.clear()
+        delay = self._check_back_delay.total_seconds()
+        if all_zones is not None and CONF_CHECK_BACK in all_zones:
+            cfg: dict = all_zones[CONF_CHECK_BACK]
+            self._check_back_states = cfg.get(CONF_STATES, self._check_back_states)
+            self._check_back_retries = cfg.get(CONF_RETRIES, self._check_back_retries)
+            self._check_back_resync = cfg.get(CONF_RESYNC, self._check_back_resync)
+            delay = cfg.get(CONF_DELAY, delay)
+        self._switch_entity_id = config.get(CONF_ENTITY_ID)
+        self._check_back_states = config.get(CONF_STATES, self._check_back_states)
+        self._check_back_retries = config.get(CONF_RETRIES, self._check_back_retries)
+        self._check_back_resync = config.get(CONF_RESYNC, self._check_back_resync)
+        delay = config.get(CONF_DELAY, delay)
+        self._check_back_delay = wash_td(timedelta(seconds=delay))
+        return self
+
+    def muster(self, stime: datetime) -> int:
+        """Muster this switch"""
+        if self._check_back_time is not None and stime >= self._check_back_time:
+            self._check_back(stime)
+
+    def check_switch(self, resync: bool, stime: datetime) -> list[str]:
+        """Check the linked entity is in sync. Returns a list of entities
+        that are not in sync"""
+        result: list[str] = []
+        if self._switch_entity_id is not None:
+            for entity_id in self._switch_entity_id:
+                is_valid = self._hass.states.is_state(
+                    entity_id, STATE_ON if self._state else STATE_OFF
+                )
+                if not is_valid:
+                    result.append(entity_id)
+                    self._coordinator.logger.log_sync_error(entity_id, stime)
+                    self._coordinator.notify_switch(
+                        EVENT_SYNC_ERROR, [entity_id], self._controller, self._zone
+                    )
+                    if resync:
+                        self._set_switch(entity_id, self._state)
+        return result
+
+    def call_switch(self, state: bool, stime: datetime = None) -> None:
+        """Turn the HA entity on or off"""
+        # pylint: disable=too-many-boolean-expressions
+        if self._switch_entity_id is not None:
+            if self._check_back_time is not None:
+                # Switch state was changed before the recheck. Check now.
+                self.check_switch(False, stime)
+                self._check_back_time = None
+            self._set_switch(self._switch_entity_id, state)
+            if stime is not None and (
+                self._check_back_states == "all"
+                or (self._check_back_states == "on" and state)
+                or (self._check_back_states == "off" and not state)
+            ):
+                self._check_back_resync_count = 0
+                self._check_back_time = stime + self._check_back_delay
+
+
 class IUZone(IUBase):
     """Irrigation Unlimited Zone class"""
 
@@ -1283,7 +1414,6 @@ class IUZone(IUBase):
         self._is_enabled: bool = True
         self._allow_manual: bool = False
         self._name: str = None
-        self._switch_entity_id: list[str] = None
         self._show_config: bool = False
         self._show_timeline: bool = False
         # Private variables
@@ -1297,6 +1427,7 @@ class IUZone(IUBase):
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
         self._dirty: bool = True
+        self._switch = IUSwitch(hass, coordinator, controller, self)
 
     @property
     def unique_id(self) -> str:
@@ -1514,7 +1645,6 @@ class IUZone(IUBase):
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._allow_manual = config.get(CONF_ALLOW_MANUAL, self._allow_manual)
         self._name = config.get(CONF_NAME, None)
-        self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._run_queue.load(config, all_zones)
         if CONF_SHOW in config:
             self._show_config = config[CONF_SHOW].get(CONF_CONFIG, self._show_config)
@@ -1524,6 +1654,7 @@ class IUZone(IUBase):
         if CONF_SCHEDULES in config:
             for sidx, schedule_config in enumerate(config[CONF_SCHEDULES]):
                 self.find_add(sidx).load(schedule_config)
+        self._switch.load(config, all_zones)
         self._dirty = True
         return self
 
@@ -1585,6 +1716,8 @@ class IUZone(IUBase):
         if self._dirty:
             self._run_queue.clear_all()
             status |= IURunQueue.RQ_STATUS_CLEARED
+
+        self._switch.muster(stime)
 
         self._dirty = False
         return status
@@ -1673,39 +1806,20 @@ class IUZone(IUBase):
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""
-        result = self._run_queue.next_event()
+        result = min(self._run_queue.next_event(), self._switch.next_event())
         if self._is_on and self._sensor_last_update is not None:
             result = min(
                 self._sensor_last_update + self._coordinator.refresh_interval, result
             )
         return result
 
-    def check_switch(self, resync: bool, stime: datetime) -> bool:
+    def check_switch(self, resync: bool, stime: datetime) -> list[str]:
         """Check the linked entity is in sync"""
-        result = True
-        if self._switch_entity_id is not None:
-            for entity_id in self._switch_entity_id:
-                state = self._hass.states.is_state(
-                    entity_id, STATE_ON if self._is_on else STATE_OFF
-                )
-                result = result and state
-                if not state:
-                    self._coordinator.logger.log_sync_error(entity_id, stime)
-                    if resync:
-                        self.call_switch(self._is_on, stime)
-
-        return result
+        return self._switch.check_switch(resync, stime)
 
     def call_switch(self, state: bool, stime: datetime = None) -> None:
         """Turn the HA entity on or off"""
-        if self._switch_entity_id is not None:
-            self._hass.async_create_task(
-                self._hass.services.async_call(
-                    HADOMAIN,
-                    SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
-                    {ATTR_ENTITY_ID: self._switch_entity_id},
-                )
-            )
+        self._switch.call_switch(state, stime)
         self._coordinator.status_changed(stime, self._controller, self, state)
 
 
@@ -2598,7 +2712,6 @@ class IUController(IUBase):
         self._is_enabled: bool = True
         self._name: str = None
         self._controller_id: str = None
-        self._switch_entity_id: list[str] = None
         self._preamble: timedelta = None
         self._postamble: timedelta = None
         # Private variables
@@ -2607,6 +2720,7 @@ class IUController(IUBase):
         self._zones: list[IUZone] = []
         self._sequences: list[IUSequence] = []
         self._run_queue = IUZoneQueue()
+        self._switch = IUSwitch(hass, coordinator, self, None)
         self._master_sensor: Entity = None
         self._is_on: bool = False
         self._sensor_update_required: bool = False
@@ -2813,7 +2927,6 @@ class IUController(IUBase):
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._name = config.get(CONF_NAME, f"Controller {self.index + 1}")
         self._controller_id = config.get(CONF_CONTROLLER_ID, str(self.index + 1))
-        self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
         all_zones = config.get(CONF_ALL_ZONES_CONFIG)
@@ -2831,6 +2944,7 @@ class IUController(IUBase):
                     sequence_config
                 )
 
+        self._switch.load(config, None)
         self._dirty = True
         return self
 
@@ -2989,6 +3103,8 @@ class IUController(IUBase):
                 zone.clear_run_queue()
             status |= IURunQueue.RQ_STATUS_CLEARED
 
+        self._switch.muster(stime)
+
         zone_status: int = 0
 
         # Handle initialisation
@@ -3137,7 +3253,7 @@ class IUController(IUBase):
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""
-        result = self._run_queue.next_event()
+        result = min(self._run_queue.next_event(), self._switch.next_event())
         if self._is_on and self._sensor_last_update is not None:
             result = min(
                 self._sensor_last_update + self._coordinator.refresh_interval, result
@@ -3146,35 +3262,17 @@ class IUController(IUBase):
             result = min(zone.next_awakening(), result)
         return result
 
-    def check_switch(self, resync: bool, stime: datetime) -> bool:
+    def check_switch(self, resync: bool, stime: datetime) -> list[str]:
         """Check the linked entity is in sync"""
-        result = True
-        if self._switch_entity_id is not None:
-            for entity_id in self._switch_entity_id:
-                state = self._hass.states.is_state(
-                    entity_id, STATE_ON if self._is_on else STATE_OFF
-                )
-                result = result and state
-                if not state:
-                    self._coordinator.logger.log_sync_error(entity_id, stime)
-                    if resync:
-                        self.call_switch(self._is_on, stime)
-
+        result = self._switch.check_switch(resync, stime)
         for zone in self._zones:
-            result = result & zone.check_switch(resync, stime)
+            result.extend(zone.check_switch(resync, stime))
 
         return result
 
     def call_switch(self, state: bool, stime: datetime = None) -> None:
         """Update the linked entity if enabled"""
-        if self._switch_entity_id is not None:
-            self._hass.async_create_task(
-                self._hass.services.async_call(
-                    HADOMAIN,
-                    SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
-                    {ATTR_ENTITY_ID: self._switch_entity_id},
-                )
-            )
+        self._switch.call_switch(state, stime)
         self._coordinator.status_changed(stime, self, None, state)
 
     def check_item(self, index: int, items: "list[int]") -> bool:
@@ -3983,6 +4081,17 @@ class IULogger:
             f"switch: {switch_entity_id}",
         )
 
+    def log_switch_error(
+        self, switch_entity_id: list[str], vtime: datetime, level=ERROR
+    ) -> None:
+        """Warn that switch(s) was unable to be set"""
+        self._output(
+            level,
+            f"SWITCH_ERROR [{dt2lstr(vtime)}] "
+            f"Unable to set switch state: "
+            f"switch: {','.join(switch_entity_id)}",
+        )
+
     def log_invalid_id(
         self, controller: IUController, zone: IUZone, level=WARNING
     ) -> None:
@@ -4542,11 +4651,11 @@ class IUCoordinator:
             result = min(controller.next_awakening(), result)
         return result
 
-    def check_switches(self, resync: bool, stime: datetime) -> bool:
+    def check_switches(self, resync: bool, stime: datetime) -> list[str]:
         """Check if entities match current status"""
-        result = True
+        result: list[str] = []
         for controller in self._controllers:
-            result = result and controller.check_switch(resync, stime)
+            result.extend(controller.check_switch(resync, stime))
         return result
 
     def notify_sequence(
@@ -4568,6 +4677,24 @@ class IUCoordinator:
             data[CONF_SCHEDULE] = {CONF_INDEX: schedule.index, CONF_NAME: schedule.name}
         else:
             data[CONF_SCHEDULE] = {CONF_INDEX: None, CONF_NAME: RES_MANUAL}
+        self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
+
+    def notify_switch(
+        self,
+        event_type: str,
+        entities: list[str],
+        controller: IUController,
+        zone: IUZone,
+    ) -> None:
+        """Send out notification about switch resync event"""
+        data = {
+            CONF_ENTITY_ID: ",".join(entities),
+            CONF_CONTROLLER: {CONF_INDEX: controller.index, CONF_NAME: controller.name},
+        }
+        if zone is not None:
+            data[CONF_ZONE] = {CONF_INDEX: zone.index, CONF_NAME: zone.name}
+        else:
+            data[CONF_ZONE] = {CONF_INDEX: None, CONF_NAME: None}
         self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
 
     def register_entity(

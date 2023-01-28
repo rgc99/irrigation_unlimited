@@ -98,6 +98,10 @@ CONF_ALLOW_MANUAL = "allow_manual"
 CONF_CRON = "cron"
 CONF_EVERY_N_DAYS = "every_n_days"
 CONF_START_N_DAYS = "start_n_days"
+CONF_CHECK_BACK = "check_back"
+CONF_STATES = "states"
+CONF_RETRIES = "retries"
+CONF_RESYNC = "resync"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
@@ -117,6 +121,8 @@ SERVICE_MANUAL_RUN = "manual_run"
 EVENT_START = "start"
 EVENT_FINISH = "finish"
 EVENT_INCOMPLETE = "incomplete"
+EVENT_SYNC_ERROR = "sync_error"
+EVENT_SWITCH_ERROR = "switch_error"
 
 # Status
 STATUS_DISABLED = "disabled"
