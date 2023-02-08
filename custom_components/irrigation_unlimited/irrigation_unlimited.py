@@ -172,6 +172,7 @@ from .const import (
     CONF_RESYNC,
     EVENT_SYNC_ERROR,
     EVENT_SWITCH_ERROR,
+    CONF_EXPECTED,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -1314,9 +1315,10 @@ class IUSwitch:
             if self._check_back_resync_count < self._check_back_retries:
                 self._check_back_time = atime + self._check_back_delay
                 return
-            self._coordinator.logger.log_switch_error(entities, atime)
+            expected = STATE_ON if self._state else STATE_OFF
+            self._coordinator.logger.log_switch_error(atime, expected, entities)
             self._coordinator.notify_switch(
-                EVENT_SWITCH_ERROR, entities, self._controller, self._zone
+                EVENT_SWITCH_ERROR, expected, entities, self._controller, self._zone
             )
         self._check_back_time = None
         return
@@ -1360,14 +1362,17 @@ class IUSwitch:
         result: list[str] = []
         if self._switch_entity_id is not None:
             for entity_id in self._switch_entity_id:
-                is_valid = self._hass.states.is_state(
-                    entity_id, STATE_ON if self._state else STATE_OFF
-                )
+                expected = STATE_ON if self._state else STATE_OFF
+                is_valid = self._hass.states.is_state(entity_id, expected)
                 if not is_valid:
                     result.append(entity_id)
-                    self._coordinator.logger.log_sync_error(entity_id, stime)
+                    self._coordinator.logger.log_sync_error(stime, expected, entity_id)
                     self._coordinator.notify_switch(
-                        EVENT_SYNC_ERROR, [entity_id], self._controller, self._zone
+                        EVENT_SYNC_ERROR,
+                        expected,
+                        [entity_id],
+                        self._controller,
+                        self._zone,
                     )
                     if resync:
                         self._set_switch(entity_id, self._state)
@@ -4071,24 +4076,26 @@ class IULogger:
         )
 
     def log_sync_error(
-        self, switch_entity_id: str, vtime: datetime, level=WARNING
+        self, vtime: datetime, expected: str, switch_entity_id: str, level=WARNING
     ) -> None:
         """Warn that switch and entity are out of sync"""
         self._output(
             level,
             f"SYNCHRONISATION [{dt2lstr(vtime)}] "
             f"Switch does not match current state: "
+            f"expected: {expected}, "
             f"switch: {switch_entity_id}",
         )
 
     def log_switch_error(
-        self, switch_entity_id: list[str], vtime: datetime, level=ERROR
+        self, vtime: datetime, expected: str, switch_entity_id: list[str], level=ERROR
     ) -> None:
         """Warn that switch(s) was unable to be set"""
         self._output(
             level,
             f"SWITCH_ERROR [{dt2lstr(vtime)}] "
             f"Unable to set switch state: "
+            f"expected: {expected}, "
             f"switch: {','.join(switch_entity_id)}",
         )
 
@@ -4682,12 +4689,15 @@ class IUCoordinator:
     def notify_switch(
         self,
         event_type: str,
+        expected: str,
         entities: list[str],
         controller: IUController,
         zone: IUZone,
     ) -> None:
         """Send out notification about switch resync event"""
+        # pylint: disable=too-many-arguments
         data = {
+            CONF_EXPECTED: expected,
             CONF_ENTITY_ID: ",".join(entities),
             CONF_CONTROLLER: {CONF_INDEX: controller.index, CONF_NAME: controller.name},
         }

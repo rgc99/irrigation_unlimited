@@ -102,6 +102,7 @@ CONF_CHECK_BACK = "check_back"
 CONF_STATES = "states"
 CONF_RETRIES = "retries"
 CONF_RESYNC = "resync"
+CONF_EXPECTED = "expected"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

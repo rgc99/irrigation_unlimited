@@ -86,11 +86,13 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 assert len(switch_event_errors) == 0
                 assert sync_event_errors == [
                     {
+                        "expected": "on",
                         "entity_id": "input_boolean.dummy_switch_c1_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
                     },
                     {
+                        "expected": "on",
                         "entity_id": "input_boolean.dummy_switch_c1_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
@@ -114,6 +116,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 assert len(sync_event_errors) == 3
                 assert switch_event_errors == [
                     {
+                        "expected": "on",
                         "entity_id": "input_boolean.dummy_switch_c1_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
