@@ -307,3 +307,11 @@ def mk_td(time_str: str) -> timedelta:
     """Convert time string to timedelta"""
     tstr = datetime.strptime(time_str, "%H:%M:%S")
     return timedelta(hours=tstr.hour, minutes=tstr.minute, seconds=tstr.second)
+
+
+def parse_utc(adate: str) -> datetime:
+    """Parse a datetime string assumed to be in UTC"""
+    dte = parse_datetime(adate)
+    if dte.tzinfo is None:
+        dte = dte.replace(tzinfo=timezone.utc)
+    return dte
