@@ -173,6 +173,8 @@ from .const import (
     EVENT_SYNC_ERROR,
     EVENT_SWITCH_ERROR,
     CONF_EXPECTED,
+    CONF_ON_STATE,
+    CONF_OFF_STATE,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -1292,6 +1294,8 @@ class IUSwitch:
         self._check_back_delay = timedelta(seconds=30)
         self._check_back_retries: int = 3
         self._check_back_resync: bool = True
+        self._state_on = STATE_ON
+        self._state_off = STATE_OFF
         # private variables
         self._state: bool = None  # This parameter should mirror IUZone._is_on
         self._check_back_time: timedelta = None
@@ -1312,7 +1316,7 @@ class IUSwitch:
         """Recheck the switch in HA to see if state concurs"""
         if self._check_back_resync_count >= self._check_back_retries:
             if entities := self.check_switch(atime, False, False):
-                expected = STATE_ON if self._state else STATE_OFF
+                expected = self._state_on if self._state else self._state_off
                 self._coordinator.logger.log_switch_error(atime, expected, entities)
                 self._coordinator.notify_switch(
                     EVENT_SWITCH_ERROR, expected, entities, self._controller, self._zone
@@ -1344,11 +1348,16 @@ class IUSwitch:
             self._check_back_states = cfg.get(CONF_STATES, self._check_back_states)
             self._check_back_retries = cfg.get(CONF_RETRIES, self._check_back_retries)
             self._check_back_resync = cfg.get(CONF_RESYNC, self._check_back_resync)
+            self._state_on = cfg.get(CONF_ON_STATE, self._state_on)
+            self._state_off = cfg.get(CONF_OFF_STATE, self._state_off)
             delay = cfg.get(CONF_DELAY, delay)
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._check_back_states = config.get(CONF_STATES, self._check_back_states)
         self._check_back_retries = config.get(CONF_RETRIES, self._check_back_retries)
         self._check_back_resync = config.get(CONF_RESYNC, self._check_back_resync)
+        self._state_on = config.get(CONF_ON_STATE, self._state_on)
+        self._state_off = config.get(CONF_OFF_STATE, self._state_off)
+
         delay = config.get(CONF_DELAY, delay)
         self._check_back_delay = wash_td(timedelta(seconds=delay))
         return self
@@ -1364,7 +1373,7 @@ class IUSwitch:
         result: list[str] = []
         if self._switch_entity_id is not None:
             for entity_id in self._switch_entity_id:
-                expected = STATE_ON if self._state else STATE_OFF
+                expected = self._state_on if self._state else self._state_off
                 is_valid = self._hass.states.is_state(entity_id, expected)
                 if not is_valid:
                     result.append(entity_id)
