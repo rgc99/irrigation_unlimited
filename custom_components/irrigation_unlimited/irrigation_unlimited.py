@@ -1310,18 +1310,20 @@ class IUSwitch:
 
     def _check_back(self, atime: datetime) -> None:
         """Recheck the switch in HA to see if state concurs"""
-        if entities := self.check_switch(self._check_back_resync, atime):
-            self._check_back_resync_count += 1
-            if self._check_back_resync_count < self._check_back_retries:
+        if self._check_back_resync_count >= self._check_back_retries:
+            if entities := self.check_switch(atime, False, False):
+                expected = STATE_ON if self._state else STATE_OFF
+                self._coordinator.logger.log_switch_error(atime, expected, entities)
+                self._coordinator.notify_switch(
+                    EVENT_SWITCH_ERROR, expected, entities, self._controller, self._zone
+                )
+            self._check_back_time = None
+        else:
+            if entities := self.check_switch(atime, self._check_back_resync, True):
+                self._check_back_resync_count += 1
                 self._check_back_time = atime + self._check_back_delay
-                return
-            expected = STATE_ON if self._state else STATE_OFF
-            self._coordinator.logger.log_switch_error(atime, expected, entities)
-            self._coordinator.notify_switch(
-                EVENT_SWITCH_ERROR, expected, entities, self._controller, self._zone
-            )
-        self._check_back_time = None
-        return
+            else:
+                self._check_back_time = None
 
     def next_event(self) -> datetime:
         """Return the next time of interest"""
@@ -1356,7 +1358,7 @@ class IUSwitch:
         if self._check_back_time is not None and stime >= self._check_back_time:
             self._check_back(stime)
 
-    def check_switch(self, resync: bool, stime: datetime) -> list[str]:
+    def check_switch(self, stime: datetime, resync: bool, log: bool) -> list[str]:
         """Check the linked entity is in sync. Returns a list of entities
         that are not in sync"""
         result: list[str] = []
@@ -1366,14 +1368,17 @@ class IUSwitch:
                 is_valid = self._hass.states.is_state(entity_id, expected)
                 if not is_valid:
                     result.append(entity_id)
-                    self._coordinator.logger.log_sync_error(stime, expected, entity_id)
-                    self._coordinator.notify_switch(
-                        EVENT_SYNC_ERROR,
-                        expected,
-                        [entity_id],
-                        self._controller,
-                        self._zone,
-                    )
+                    if log:
+                        self._coordinator.logger.log_sync_error(
+                            stime, expected, entity_id
+                        )
+                        self._coordinator.notify_switch(
+                            EVENT_SYNC_ERROR,
+                            expected,
+                            [entity_id],
+                            self._controller,
+                            self._zone,
+                        )
                     if resync:
                         self._set_switch(entity_id, self._state)
         return result
@@ -1384,7 +1389,7 @@ class IUSwitch:
         if self._switch_entity_id is not None:
             if self._check_back_time is not None:
                 # Switch state was changed before the recheck. Check now.
-                self.check_switch(False, stime)
+                self.check_switch(stime, False, True)
                 self._check_back_time = None
             self._set_switch(self._switch_entity_id, state)
             if stime is not None and (
@@ -1820,7 +1825,7 @@ class IUZone(IUBase):
 
     def check_switch(self, resync: bool, stime: datetime) -> list[str]:
         """Check the linked entity is in sync"""
-        return self._switch.check_switch(resync, stime)
+        return self._switch.check_switch(stime, resync, True)
 
     def call_switch(self, state: bool, stime: datetime = None) -> None:
         """Turn the HA entity on or off"""
@@ -3269,7 +3274,7 @@ class IUController(IUBase):
 
     def check_switch(self, resync: bool, stime: datetime) -> list[str]:
         """Check the linked entity is in sync"""
-        result = self._switch.check_switch(resync, stime)
+        result = self._switch.check_switch(stime, resync, True)
         for zone in self._zones:
             result.extend(zone.check_switch(resync, stime))
 
