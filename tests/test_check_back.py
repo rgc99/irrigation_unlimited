@@ -10,7 +10,7 @@ from custom_components.irrigation_unlimited.const import (
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IULogger,
 )
-from tests.iu_test_support import IUExam, mk_utc
+from tests.iu_test_support import IUExam, mk_utc, parse_utc
 
 IUExam.quiet_mode()
 
@@ -30,11 +30,15 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
 
         def handle_sync_events(event: ha.Event) -> None:
             nonlocal sync_event_errors
-            sync_event_errors.append(event.data)
+            data = event.data
+            data["vtime"] = exam.virtual_time
+            sync_event_errors.append(data)
 
         def handle_switch_events(event: ha.Event) -> None:
             nonlocal switch_event_errors
-            switch_event_errors.append(event.data)
+            data = event.data
+            data["vtime"] = exam.virtual_time
+            switch_event_errors.append(data)
 
         hass.bus.async_listen(f"{DOMAIN}_{EVENT_SYNC_ERROR}", handle_sync_events)
         hass.bus.async_listen(f"{DOMAIN}_{EVENT_SWITCH_ERROR}", handle_switch_events)
@@ -86,12 +90,14 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 assert len(switch_event_errors) == 0
                 assert sync_event_errors == [
                     {
+                        "vtime": parse_utc("2021-01-04 15:12:00"),
                         "expected": "on",
                         "entity_id": "input_boolean.dummy_switch_c1_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
                     },
                     {
+                        "vtime": parse_utc("2021-01-04 15:12:30"),
                         "expected": "on",
                         "entity_id": "input_boolean.dummy_switch_c1_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
@@ -113,9 +119,32 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 await exam.finish_test()
                 assert mock_sync_logger.call_count == 3
                 assert mock_switch_logger.call_count == 1
-                assert len(sync_event_errors) == 3
+                assert sync_event_errors == [
+                    {
+                        "vtime": parse_utc("2021-01-04 15:12:00"),
+                        "expected": "on",
+                        "entity_id": "input_boolean.dummy_switch_c1_z3",
+                        "controller": {"index": 0, "name": "Test controller 1"},
+                        "zone": {"index": 1, "name": "Zone 2"},
+                    },
+                    {
+                        "vtime": parse_utc("2021-01-04 15:12:30"),
+                        "expected": "on",
+                        "entity_id": "input_boolean.dummy_switch_c1_z3",
+                        "controller": {"index": 0, "name": "Test controller 1"},
+                        "zone": {"index": 1, "name": "Zone 2"},
+                    },
+                    {
+                        "vtime": parse_utc("2021-01-04 15:13:00"),
+                        "expected": "on",
+                        "entity_id": "input_boolean.dummy_switch_c1_z3",
+                        "controller": {"index": 0, "name": "Test controller 1"},
+                        "zone": {"index": 1, "name": "Zone 2"},
+                    },
+                ]
                 assert switch_event_errors == [
                     {
+                        "vtime": parse_utc("2021-01-04 15:13:30"),
                         "expected": "on",
                         "entity_id": "input_boolean.dummy_switch_c1_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
