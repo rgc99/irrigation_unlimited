@@ -1314,7 +1314,10 @@ class IUSwitch:
 
     def _check_back(self, atime: datetime) -> None:
         """Recheck the switch in HA to see if state concurs"""
-        if self._check_back_resync_count >= self._check_back_retries:
+        if (
+            self._check_back_resync_count >= self._check_back_retries
+            or not self._check_back_resync
+        ):
             if entities := self.check_switch(atime, False, False):
                 expected = self._state_on if self._state else self._state_off
                 self._coordinator.logger.log_switch_error(atime, expected, entities)
