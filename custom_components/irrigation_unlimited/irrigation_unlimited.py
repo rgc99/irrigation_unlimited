@@ -173,8 +173,8 @@ from .const import (
     EVENT_SYNC_ERROR,
     EVENT_SWITCH_ERROR,
     CONF_EXPECTED,
-    CONF_ON_STATE,
-    CONF_OFF_STATE,
+    CONF_STATE_ON,
+    CONF_STATE_OFF,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -1348,15 +1348,15 @@ class IUSwitch:
             self._check_back_states = cfg.get(CONF_STATES, self._check_back_states)
             self._check_back_retries = cfg.get(CONF_RETRIES, self._check_back_retries)
             self._check_back_resync = cfg.get(CONF_RESYNC, self._check_back_resync)
-            self._state_on = cfg.get(CONF_ON_STATE, self._state_on)
-            self._state_off = cfg.get(CONF_OFF_STATE, self._state_off)
+            self._state_on = cfg.get(CONF_STATE_ON, self._state_on)
+            self._state_off = cfg.get(CONF_STATE_OFF, self._state_off)
             delay = cfg.get(CONF_DELAY, delay)
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         self._check_back_states = config.get(CONF_STATES, self._check_back_states)
         self._check_back_retries = config.get(CONF_RETRIES, self._check_back_retries)
         self._check_back_resync = config.get(CONF_RESYNC, self._check_back_resync)
-        self._state_on = config.get(CONF_ON_STATE, self._state_on)
-        self._state_off = config.get(CONF_OFF_STATE, self._state_off)
+        self._state_on = config.get(CONF_STATE_ON, self._state_on)
+        self._state_off = config.get(CONF_STATE_OFF, self._state_off)
 
         delay = config.get(CONF_DELAY, delay)
         self._check_back_delay = wash_td(timedelta(seconds=delay))

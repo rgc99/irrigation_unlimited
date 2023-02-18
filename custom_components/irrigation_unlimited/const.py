@@ -103,8 +103,8 @@ CONF_STATES = "states"
 CONF_RETRIES = "retries"
 CONF_RESYNC = "resync"
 CONF_EXPECTED = "expected"
-CONF_ON_STATE = "on_state"
-CONF_OFF_STATE = "off_state"
+CONF_STATE_ON = "state_on"
+CONF_STATE_OFF = "state_off"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

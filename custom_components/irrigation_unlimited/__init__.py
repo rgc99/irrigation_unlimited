@@ -86,8 +86,8 @@ from .const import (
     CONF_STATES,
     CONF_RETRIES,
     CONF_RESYNC,
-    CONF_ON_STATE,
-    CONF_OFF_STATE,
+    CONF_STATE_ON,
+    CONF_STATE_OFF,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
@@ -155,8 +155,8 @@ CHECK_BACK_SCHEMA = vol.Schema(
         vol.Optional(CONF_DELAY): cv.positive_int,
         vol.Optional(CONF_RETRIES): cv.positive_int,
         vol.Optional(CONF_RESYNC): cv.boolean,
-        vol.Optional(CONF_ON_STATE): cv.string,
-        vol.Optional(CONF_OFF_STATE): cv.string,
+        vol.Optional(CONF_STATE_ON): cv.string,
+        vol.Optional(CONF_STATE_OFF): cv.string,
     }
 )
 
