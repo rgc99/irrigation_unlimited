@@ -374,7 +374,7 @@ This object controls the internal clock mode.
 
 ### 5.10. Check Back Object
 
-This is used to check the state of the physical switch concurs with the state of the controller or zone. An out of sync can occur due to transmission or communications problems especially with protcols like WiFi or zigbee. The check back will report discrepancies and attempt to resync the switch. Should the resync fail a message will be logged and an [event](#1012-irrigation_unlimited_switch_error-irrigation_unlimited_sync_error) fired. The event can be use for notifications such as an email or phone alert. For more information see [Notifications](#10-notifications)
+This is used to check the state of the physical switch concurs with the state of the controller or zone. An out of sync can occur due to transmission or communications problems especially with protcols like WiFi, Zigbee or ZWave. The check back will report discrepancies and attempt to resync the switch. Should the resync fail a message will be logged and an [event](#1012-irrigation_unlimited_switch_error-irrigation_unlimited_sync_error) fired. The event can be use for notifications such as an email or phone alert. For more information see [Notifications](#10-notifications)
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -382,6 +382,8 @@ This is used to check the state of the physical switch concurs with the state of
 | `delay` | number | 30 | Seconds to wait after switch is turned on or off |
 | `retries` | number | 3 | Number of times to recheck the switch |
 | `resync` | bool | true | Attempt to resync the switch |
+| `state_on` | string | `on` | The value that represents the `on` state of the switch |
+| `state_off` | string | `off` | The value that repesents the `off` state of the switch |
 
 ## 6. Configuration examples
 
@@ -1248,7 +1250,7 @@ automation:
 
 ## 10. Notifications
 
-This section shows how to send a notification when a sequence starts or finishes. Messages can be sent for example via email (SMTP), push notification to mobile phones, twitter and many [others](https://www.home-assistant.io/integrations/#notifications). See [here](https://www.home-assistant.io/integrations/notify/) for more information on notifications in Home Assistant. Note that it is not limited to sending notifications but many other [actions](https://www.home-assistant.io/docs/automation/action/) are available.
+This section shows how to send a notification when a sequence starts or finishes. Messages can be sent for example via email (SMTP), push notification to mobile phones, twitter and many [others](https://www.home-assistant.io/integrations/#notifications). See [here](https://www.home-assistant.io/integrations/notify/) for more information on notifications in Home Assistant. Note that it is not limited to sending notifications but many other [actions](https://www.home-assistant.io/docs/automation/action/) are available. There is quite a lot of information on using notifications in Home Assistant on the web. Try Google, YouTube etc. for some great information and tips.
 
 ### 10.1. Events
 
@@ -1267,18 +1269,6 @@ These events are fired when a sequence starts and finishes. The `trigger.event.d
 | `schedule.index` | The sequential index of the schedule. Note: This maybe blank/empty(None) if it was a manual run - useful as a test. |
 | `schedule.name` | The friendly name of the schedule. |
 | `run.duration` | The run time of the sequence. |
-
-#### 10.1.2. irrigation_unlimited_switch_error, irrigation_unlimited_sync_error
-
-These events are fired during a [check back](#510-check-back-object) operation. A `irrigation_unlimited_sync_error` is fired if the physical switch is found to be out of sync. This message will repeat for each attempted resync. After the specified number of retries have been exhusted a `irrigation_unlimited_switch_error` is fired. Additional information is available that can be used in automation scripts.
-
-| Field | Description |
-| ----- | ----------- |
-| `entity_id` | A CSV list of entities. |
-| `controller.index` | The sequential index of the controller. |
-| `controller.name` | The friendly name of the controller. |
-| `zone.index` | The sequential index of the zone. |
-| `zone.name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
 
 This example displays a [persistent notification](https://www.home-assistant.io/integrations/persistent_notification/) on the front end when a sequence completes. Note the use of [templating](https://www.home-assistant.io/docs/configuration/templating/) to construct a specific message. Although not used here, this platform also supports markdown.
 
@@ -1304,7 +1294,43 @@ Here is the notification displayed in the Home Assistant web interface.
 
 ![notification](./examples/persistent_notification.png)
 
-There is quite a lot of information on using notifications in Home Assistant on the web. Try Google, YouTube etc. for some great information and tips.
+#### 10.1.2. irrigation_unlimited_switch_error, irrigation_unlimited_sync_error
+
+These events are fired during a [check back](#510-check-back-object) operation. A `irrigation_unlimited_sync_error` is fired if the physical switch is found to be out of sync. This message will repeat for each attempted resync. After the specified number of retries have been exhusted a `irrigation_unlimited_switch_error` is fired. Additional information is available that can be used in automation scripts.
+
+| Field | Description |
+| ----- | ----------- |
+| `entity_id` | A CSV list of entities. |
+| `expected` | The expected state of the switch. |
+| `controller.index` | The sequential index of the controller. |
+| `controller.name` | The friendly name of the controller. |
+| `zone.index` | The sequential index of the zone. |
+| `zone.name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
+
+Example to send an email on switch failure. There are two parts to this procedure, the first is to setup an email notification for your provider. See [here](https://www.home-assistant.io/integrations/smtp/#google-mail) for a google mail example. The next is to use the notifier.
+
+```yaml
+automation:
+  - id: "IU1653340138435"
+    alias: "Irrigation Unlimited Switch Error"
+    description: "Email a switch syncronisation error"
+    trigger:
+      - platform: event
+        event_type:
+          # - irrigation_unlimited_sync_error
+          - irrigation_unlimited_switch_error
+    action:
+      - service: notify.NOTIFIER_NAME # Make sure this matches the "NOTIFIER_NAME" in the smtp setup
+        data:
+          title: "Irrigation Switch Error"
+          message: |
+            Type: {{ trigger.event.event_type }}
+            Time: {{ as_local(trigger.event.time_fired).strftime('%c') }}
+            Expected: {{ trigger.event.data.expected }}
+            Controller: {{ trigger.event.data.controller.index + 1 }} {{ trigger.event.data.controller.name }}
+            Zone: {{ trigger.event.data.zone.index + 1 }} {{ trigger.event.data.controller.name }}
+            Entity: {{ trigger.event.data.entity_id }}
+```
 
 ## 11. Troubleshooting
 
