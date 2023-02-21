@@ -2299,7 +2299,10 @@ class IUSequence(IUBase):
         be rounded to internal boundaries"""
         total_duration = self.total_duration()
         if total_time is not None and total_duration != timedelta(0):
-            return (total_time - self.total_delay()) / total_duration
+            total_delay = self.total_delay()
+            if total_time > total_delay:
+                return (total_time - total_delay) / total_duration
+            return 0.0
         return 1.0
 
     def clear(self) -> None:
