@@ -1,19 +1,19 @@
 {
   "domain": "irrigation_unlimited",
   "name": "Irrigation Unlimited",
-  "documentation": "https://github.com/rgc99/irrigation_unlimited",
-  "issue_tracker": "https://github.com/rgc99/irrigation_unlimited/issues",
-  "version": "2023.2.1",
+  "codeowners": [
+    "@rgc99"
+  ],
+  "config_flow": false,
   "dependencies": [
     "recorder",
     "history"
   ],
+  "documentation": "https://github.com/rgc99/irrigation_unlimited",
   "iot_class": "local_polling",
-  "config_flow": false,
-  "codeowners": [
-    "@rgc99"
-  ],
+  "issue_tracker": "https://github.com/rgc99/irrigation_unlimited/issues",
   "requirements": [
     "crontab"
-  ]
+  ],
+  "version": "2023.2.1"
 }
