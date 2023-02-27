@@ -57,6 +57,23 @@ irrigation_unlimited:
               duration: "0:06:00"
             - zone_id: 2
               duration: "0:12:00"
+    - name: "Test controller 2"
+      entity_id: input_boolean.dummy_switch_c1_m
+      zones:
+        - name: "Zone 1"
+          entity_id: input_boolean.dummy_switch_c1_z1
+        - name: "Zone 2"
+          entity_id: input_boolean.dummy_switch_c1_z2,input_boolean.dummy_switch_c1_z3,input_boolean.dummy_switch_c1_z4
+      sequences:
+        - name: "Sequence 1"
+          delay: "0:01:00"
+          schedules:
+            - time: "19:05"
+          zones:
+            - zone_id: 1
+              duration: "0:00:15"
+            - zone_id: 2
+              duration: "0:00:15"
   testing:
     enabled: true
     speed: 600.0
@@ -112,3 +129,15 @@ irrigation_unlimited:
           - {t: '2021-01-04 07:12:00', c: 1, z: 2, s: 1}
           - {t: '2021-01-04 07:24:00', c: 1, z: 2, s: 0}
           - {t: '2021-01-04 07:24:00', c: 1, z: 0, s: 0}
+      - name: "5-State change before chack back"
+        start: "2021-01-04 19:00"
+        end: "2021-01-04 20:00"
+        results:
+          - {t: '2021-01-04 19:05:00', c: 2, z: 0, s: 1}
+          - {t: '2021-01-04 19:05:00', c: 2, z: 1, s: 1}
+          - {t: '2021-01-04 19:05:15', c: 2, z: 1, s: 0}
+          - {t: '2021-01-04 19:05:15', c: 2, z: 0, s: 0}
+          - {t: '2021-01-04 19:06:15', c: 2, z: 0, s: 1}
+          - {t: '2021-01-04 19:06:15', c: 2, z: 2, s: 1}
+          - {t: '2021-01-04 19:06:30', c: 2, z: 2, s: 0}
+          - {t: '2021-01-04 19:06:30', c: 2, z: 0, s: 0}

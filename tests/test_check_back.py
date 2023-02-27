@@ -167,5 +167,17 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 mock_logger.call_count == 14
             )  # 8 EVENTS + 3 SYNC + 1 SWITCH + START + END
 
+        # Change switch state before check back completed
+        sync_event_errors.clear()
+        switch_event_errors.clear()
+        with patch.object(IULogger, "log_sync_error") as mock_sync_logger:
+            with patch.object(IULogger, "log_switch_error") as mock_switch_logger:
+
+                await exam.begin_test(5)
+                await kill_c1_z3(mk_utc("2021-01-04 19:06:20"))
+                await exam.finish_test()
+                assert len(sync_event_errors) == 1
+                assert len(switch_event_errors) == 0
+
         # Check the exam results
         exam.check_summary()
