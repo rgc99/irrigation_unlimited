@@ -4,7 +4,7 @@ import weakref
 from datetime import datetime, time, timedelta, timezone
 from collections import deque
 from types import MappingProxyType
-from typing import Dict, OrderedDict, List, Set, NamedTuple, Callable, Awaitable
+from typing import OrderedDict, NamedTuple, Callable, Awaitable
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
@@ -861,7 +861,7 @@ class IURun(IUBase):
         return result
 
 
-class IURunQueue(List[IURun]):
+class IURunQueue(list[IURun]):
     """Irrigation Unlimited class to hold the upcoming runs"""
 
     # pylint: disable=too-many-public-methods
@@ -2567,7 +2567,7 @@ class IUSequenceRun(IUBase):
         return self._first_zone
 
     @staticmethod
-    def _calc_on_time(runs: List[IURun]) -> timedelta:
+    def _calc_on_time(runs: list[IURun]) -> timedelta:
         """Return the total time this list of runs is on. Accounts for
         overlapping time periods"""
         result = timedelta(0)
@@ -2590,7 +2590,7 @@ class IUSequenceRun(IUBase):
         """Return the total time this run is on"""
         return self._calc_on_time(self._runs.keys())
 
-    def zone_runs(self, sequence_zone: IUSequenceZone) -> List[IURun]:
+    def zone_runs(self, sequence_zone: IUSequenceZone) -> list[IURun]:
         """Get the list of runs associated with the sequence zone"""
         return [
             run for run, sqz in self._runs.items() if sqz.sequence_zone == sequence_zone
@@ -3005,19 +3005,19 @@ class IUController(IUBase):
     def sequence_runs(
         self,
         schedule: IUSchedule,
-    ) -> Set[IUSequenceRun]:
+    ) -> set[IUSequenceRun]:
         """Gather all the sequence runs"""
-        result: Set[IUSequenceRun] = set()
+        result: set[IUSequenceRun] = set()
         for zone in self._zones:
             for run in zone.runs:
                 if run.is_sequence and (schedule is None or schedule == run.schedule):
                     result.add(run.sequence_run)
         return result
 
-    def up_next(self) -> Dict[IUSequence, IUSequenceRun]:
+    def up_next(self) -> dict[IUSequence, IUSequenceRun]:
         """Return a list of sequences and their next start times filtered"""
         stime = self._coordinator.service_time()
-        sequences: Dict[IUSequence, IUSequenceRun] = {}
+        sequences: dict[IUSequence, IUSequenceRun] = {}
         for run in self.sequence_runs(None):
             if run.is_expired(stime):
                 continue
@@ -3026,7 +3026,7 @@ class IUController(IUBase):
                 sequences[run.sequence] = run
         return sequences
 
-    def sequence_status(self) -> List[dict]:
+    def sequence_status(self) -> list[dict]:
         """Return the sequence status or run information"""
         result: list[dict] = []
         runs = self.up_next()
