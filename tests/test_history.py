@@ -4,8 +4,14 @@ from datetime import datetime, timedelta
 from typing import OrderedDict, List, Any
 import pytest
 import homeassistant.core as ha
+from homeassistant.util import dt
 from custom_components.irrigation_unlimited.const import (
     SERVICE_DISABLE,
+)
+from custom_components.irrigation_unlimited.history import (
+    midnight,
+    round_seconds_dt,
+    round_seconds_td,
 )
 from tests.iu_test_support import (
     IUExam,
@@ -67,6 +73,39 @@ def hist_data(
     return result
 
 
+def hist_data_2(
+    hass,
+    start_time: datetime,
+    end_time: datetime,
+    entity_ids: List[str],
+    filters: Any = None,
+    include_start_time_state: bool = True,
+    significant_changes_only: bool = True,
+    minimal_response: bool = False,
+    no_attributes: bool = False,
+) -> dict[str, list[ha.State]]:
+    """Return dummy history data. Random off at start and left running at end"""
+
+    result: dict[str, list[ha.State]] = {}
+    idx = "binary_sensor.irrigation_unlimited_c1_z1"
+    result[idx] = []
+    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:00:00")))
+    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-03 04:10:00")))
+    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:15:00")))
+    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-03 04:20:00")))
+    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:25:00")))
+    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-03 04:30:00")))
+    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:35:00")))
+    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:10:00")))
+    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-04 04:15:00")))
+    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:20:00")))
+    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-04 04:25:00")))
+    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:30:00")))
+    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-05 04:10:00")))
+
+    return result
+
+
 @pytest.fixture(name="allow_memory_db")
 def allow_memory_db():
     """Allow in memory DB"""
@@ -75,6 +114,21 @@ def allow_memory_db():
         return_value=True,
     ):
         yield
+
+
+async def test_history_routines():
+    """Test out the history misc routines"""
+    assert round_seconds_dt(datetime(2021, 1, 4, 12, 10, 10, 499999)) == datetime(
+        2021, 1, 4, 12, 10, 10
+    )
+    assert round_seconds_dt(datetime(2021, 1, 4, 12, 10, 10, 500000)) == datetime(
+        2021, 1, 4, 12, 10, 11
+    )
+    assert round_seconds_td(timedelta(0, 10, 499999)) == timedelta(0, 10)
+    assert round_seconds_td(timedelta(0, 10, 500000)) == timedelta(0, 11)
+    assert dt.as_local(
+        midnight(dt.as_local(datetime(2021, 1, 4, 23, 59, 59, 999999)))
+    ) == dt.as_local(datetime(2021, 1, 4))
 
 
 async def test_history(hass: ha.HomeAssistant, allow_memory_db):
@@ -432,3 +486,108 @@ async def test_history_disabled(hass: ha.HomeAssistant, allow_memory_db):
 
             await exam.finish_test()
             exam.check_summary()
+
+
+async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
+    """Test out the IUHistory object"""
+    # pylint: disable=redefined-outer-name
+    # pylint: disable=protected-access
+
+    entity_updates: list[dict] = []
+
+    def service_history(entity_ids: set[str]) -> None:
+        entity_updates.extend(entity_ids)
+
+    async with IUExam(hass, "test_skeleton.yaml") as exam:
+        await exam.load_dependencies()
+
+        stime = mk_utc("2021-01-04 04:32:00")
+        exam.coordinator.history.load(None, False)
+        assert exam.coordinator.history._enabled is True
+        exam.coordinator.history.load({"history": {"enabled": False}}, True)
+        assert exam.coordinator.history._enabled is False
+        exam.coordinator.history.muster(stime, True)
+        assert exam.coordinator.history._initialise() is False
+
+        with patch(
+            "homeassistant.components.recorder.history.get_significant_states"
+        ) as mock:
+            mock.side_effect = hist_data_2
+
+            callback_save = exam.coordinator.history._callback
+            exam.coordinator.history._callback = service_history
+
+            try:
+                # Load history data into cache
+                entity_updates.clear()
+                await exam.coordinator.history._async_update_history(stime)
+                assert entity_updates == ["binary_sensor.irrigation_unlimited_c1_z1"]
+
+                # Check cache working
+                entity_updates.clear()
+                await exam.coordinator.history._async_update_history(stime)
+                assert not entity_updates
+
+                entity_updates.clear()
+                exam.coordinator.history._entity_ids.clear()
+                await exam.coordinator.history._async_update_history(stime)
+                assert not entity_updates
+
+                # Examine cache contents
+                assert exam.coordinator.history._cache == {
+                    "binary_sensor.irrigation_unlimited_c1_z1": {
+                        "timeline": [
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-03 04:10")),
+                                    ("end", mk_utc("2021-01-03 04:15")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-03 04:20")),
+                                    ("end", mk_utc("2021-01-03 04:25")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-03 04:30")),
+                                    ("end", mk_utc("2021-01-03 04:35")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-04 04:10")),
+                                    ("end", mk_utc("2021-01-04 04:15")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-04 04:20")),
+                                    ("end", mk_utc("2021-01-04 04:25")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-04 04:30")),
+                                    ("end", mk_utc("2021-01-04 04:32")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                        ],
+                        "today_on": timedelta(seconds=720),
+                    }
+                }
+            finally:
+                exam.coordinator.history._callback = callback_save
