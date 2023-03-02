@@ -47,7 +47,7 @@ def round_seconds_dt(atime: datetime) -> datetime:
 
 def round_seconds_td(duration: timedelta) -> timedelta:
     """Round the timedelta to the nearest second"""
-    return timedelta(seconds=round(duration.total_seconds()))
+    return timedelta(seconds=int(duration.total_seconds() + 0.5))
 
 
 class IUHistory:
