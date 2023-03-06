@@ -93,6 +93,21 @@ def mock_state_coordinator_is_on():
         yield
 
 
+@pytest.fixture(name="mock_state_coordinator_invalid")
+def mock_state_coordinator_invalid():
+    """Patch HA history"""
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
+    ) as mock:
+        mock.return_value = ha.State(
+            "irrigation_unlimited.coordinator",
+            "ok",
+            {"configuration": None},
+            mk_utc("2021-01-04 04:30:00"),
+        )
+        yield
+
+
 # pylint: disable=unused-argument
 # pylint: disable=redefined-outer-name
 async def test_restore_none(
@@ -196,10 +211,12 @@ async def test_restore_coordinator(
         )
 
         # Bad data
+        IURestore(None, exam.coordinator)
         data = {
             "controllers": [
                 {
                     "index": 0,
+                    "state": "on",
                     "zones": [
                         {},
                     ],
@@ -212,6 +229,55 @@ async def test_restore_coordinator(
                                 {
                                     "index": 0,
                                     "state": "xxx",
+                                    "zones": "dummy",
+                                },
+                                {
+                                    "index": 1,
+                                    "state": "on",
+                                    "zones": "dummy",
+                                },
+                                {
+                                    "index": 999,
+                                    "state": "on",
+                                    "zones": "dummy",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                {
+                    "index": 999,
+                    "state": "on",
+                    "zones": [
+                        {},
+                    ],
+                },
+            ]
+        }
+        IURestore(data, exam.coordinator)
+
+        data = {
+            "controllers": [
+                {
+                    "index": 999,
+                    "state": "on",
+                    "zones": [
+                        {},
+                    ],
+                    "sequences": [
+                        {
+                            "index": 0,
+                            "state": "on",
+                            "enabled": True,
+                            "sequence_zones": [
+                                {
+                                    "index": 0,
+                                    "state": "xxx",
+                                    "zones": "dummy",
+                                },
+                                {
+                                    "index": 1,
+                                    "state": "on",
                                     "zones": "dummy",
                                 },
                                 {
@@ -412,3 +478,15 @@ async def test_restore_coordinator_events(
 
         # This is work in progress. No event is currently fired.
         assert not event_data
+
+
+async def test_restore_coordinator_invalid(
+    hass: ha.HomeAssistant,
+    skip_dependencies,
+    skip_history,
+    mock_state_coordinator_invalid,
+):
+    "Test restoring coordinator with invalid configuration data"
+
+    async with IUExam(hass, "test_restore_entity_sequence.yaml"):
+        pass
