@@ -7,7 +7,7 @@ from homeassistant.helpers.entity_platform import (
     current_platform,
     async_get_platforms,
 )
-import homeassistant.util.dt as dt
+from homeassistant.util import dt
 
 from .irrigation_unlimited import IUCoordinator
 from .entity import IUEntity

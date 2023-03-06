@@ -3,7 +3,7 @@ import json
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import ServiceCall
 from homeassistant.helpers.restore_state import RestoreEntity
-import homeassistant.util.dt as dt
+from homeassistant.util import dt
 
 from homeassistant.const import (
     CONF_STATE,
