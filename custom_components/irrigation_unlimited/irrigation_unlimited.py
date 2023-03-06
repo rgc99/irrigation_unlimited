@@ -4779,6 +4779,9 @@ class IUCoordinator:
         changed = True
         stime = self.service_time()
 
+        if controller is None:
+            return
+
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
             if zone is not None:
                 if changed := zone.service_call(data, stime, service):
