@@ -41,6 +41,7 @@ def quiet_mode() -> None:
     logging.getLogger("pytest_homeassistant_custom_component.common").setLevel(
         logging.WARNING
     )
+    logging.getLogger("homeassistant.loader").setLevel(logging.ERROR)
 
 
 async def reset_hass_config(hass: ha.HomeAssistant) -> None:
