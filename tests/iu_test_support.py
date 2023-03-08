@@ -178,6 +178,7 @@ class IUExam:
     async def __aexit__(self, *args):
         global NO_CHECK
         NO_CHECK = self._no_check
+        self._coordinator._clock.stop()
         await self.restore()
 
     async def begin_test(self, test_no: int) -> None:
