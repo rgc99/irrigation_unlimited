@@ -3493,15 +3493,6 @@ class IUEvent:
         self._crumbs = crumbs
         return self
 
-    def as_dict(self) -> dict:
-        """Return this object as a dict"""
-        return {
-            "t": self._time,
-            "c": self._controller,
-            "z": self._zone,
-            "s": self._state,
-        }
-
 
 class IUTest(IUBase):
     """This class represents a single test. Contains a list of
@@ -3565,11 +3556,6 @@ class IUTest(IUBase):
     def virtual_duration(self) -> timedelta:
         """Return the real duration"""
         return (self._end - self._start) / self._speed
-
-    @property
-    def current_result(self) -> int:
-        """Return the index of the next result to check"""
-        return self._current_result
 
     @property
     def total_results(self) -> int:
