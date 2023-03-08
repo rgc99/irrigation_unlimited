@@ -14,7 +14,7 @@ irrigation_unlimited:
   clock:
     mode: seer
     max_log_entries: 100
-    show_log: false
+    show_log: true
   testing:
     enabled: true
     speed: 600.0
