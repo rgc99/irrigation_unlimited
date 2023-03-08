@@ -1,6 +1,7 @@
 """Test irrigation_unlimited history."""
 from unittest.mock import patch
 from datetime import datetime, timedelta
+from collections import Counter
 from typing import OrderedDict, List, Any
 import pytest
 import homeassistant.core as ha
@@ -37,6 +38,20 @@ def hist_data(
     """Return dummy history data"""
 
     result: dict[str, list[ha.State]] = {}
+    idx = "binary_sensor.irrigation_unlimited_c1_m"
+    if idx in entity_ids:
+        result[idx] = []
+        if start_time >= mk_utc("2020-12-28 00:00:00") and end_time <= mk_utc(
+            "2021-01-04 23:59:59"
+        ):
+            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:29:00")))
+            result[idx].append(
+                ha.State(idx, "off", None, mk_utc("2021-01-04 04:33:00"))
+            )
+            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 05:29:00")))
+            result[idx].append(
+                ha.State(idx, "off", None, mk_utc("2021-01-04 05:33:00"))
+            )
     idx = "binary_sensor.irrigation_unlimited_c1_z1"
     if idx in entity_ids:
         result[idx] = []
@@ -87,21 +102,43 @@ def hist_data_2(
     """Return dummy history data. Random off at start and left running at end"""
 
     result: dict[str, list[ha.State]] = {}
-    idx = "binary_sensor.irrigation_unlimited_c1_z1"
-    result[idx] = []
-    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:00:00")))
-    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-03 04:10:00")))
-    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:15:00")))
-    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-03 04:20:00")))
-    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:25:00")))
-    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-03 04:30:00")))
-    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-03 04:35:00")))
-    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:10:00")))
-    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-04 04:15:00")))
-    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:20:00")))
-    result[idx].append(ha.State(idx, "off", None, mk_utc("2021-01-04 04:25:00")))
-    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:30:00")))
-    result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-05 04:10:00")))
+    idm = "binary_sensor.irrigation_unlimited_c1_m"
+    idz = "binary_sensor.irrigation_unlimited_c1_z1"
+    result[idm] = []
+    result[idz] = []
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:00:00")))
+    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:00:00")))
+
+    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-03 04:09:00")))
+    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-03 04:10:00")))
+    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:15:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:16:00")))
+
+    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-03 04:19:00")))
+    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-03 04:20:00")))
+    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:25:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:26:00")))
+
+    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-03 04:29:00")))
+    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-03 04:30:00")))
+    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:35:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:36:00")))
+
+    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-04 04:09:00")))
+    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-04 04:10:00")))
+    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-04 04:15:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-04 04:16:00")))
+
+    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-04 04:19:00")))
+    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-04 04:20:00")))
+    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-04 04:25:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-04 04:26:00")))
+
+    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-04 04:29:00")))
+    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-04 04:30:00")))
+
+    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-05 04:09:00")))
+    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-05 04:10:00")))
 
     return result
 
@@ -521,7 +558,12 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                 # Load history data into cache
                 entity_updates.clear()
                 await exam.coordinator.history._async_update_history(stime)
-                assert entity_updates == ["binary_sensor.irrigation_unlimited_c1_z1"]
+                assert Counter(entity_updates) == Counter(
+                    [
+                        "binary_sensor.irrigation_unlimited_c1_m",
+                        "binary_sensor.irrigation_unlimited_c1_z1",
+                    ]
+                )
 
                 # Check cache working
                 entity_updates.clear()
@@ -535,6 +577,59 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
 
                 # Examine cache contents
                 assert exam.coordinator.history._cache == {
+                    "binary_sensor.irrigation_unlimited_c1_m": {
+                        "timeline": [
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-03 04:09")),
+                                    ("end", mk_utc("2021-01-03 04:16")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-03 04:19")),
+                                    ("end", mk_utc("2021-01-03 04:26")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-03 04:29")),
+                                    ("end", mk_utc("2021-01-03 04:36")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-04 04:09")),
+                                    ("end", mk_utc("2021-01-04 04:16")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-04 04:19")),
+                                    ("end", mk_utc("2021-01-04 04:26")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                            OrderedDict(
+                                [
+                                    ("start", mk_utc("2021-01-04 04:29")),
+                                    ("end", mk_utc("2021-01-04 04:32")),
+                                    ("schedule_name", None),
+                                    ("adjustment", ""),
+                                ]
+                            ),
+                        ],
+                        "today_on": timedelta(seconds=1020),
+                    },
                     "binary_sensor.irrigation_unlimited_c1_z1": {
                         "timeline": [
                             OrderedDict(
@@ -587,7 +682,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                         ],
                         "today_on": timedelta(seconds=720),
-                    }
+                    },
                 }
             finally:
                 exam.coordinator.history._callback = callback_save
