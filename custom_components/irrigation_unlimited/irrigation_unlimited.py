@@ -4119,19 +4119,6 @@ class IULogger:
             f"switch: {','.join(switch_entity_id)}",
         )
 
-    def log_invalid_id(
-        self, controller: IUController, zone: IUZone, level=WARNING
-    ) -> None:
-        """Warn that the zone_id is not valid"""
-        idl = IUBase.idl([controller, zone], "0", 1)
-        self._output(
-            level,
-            f"INVALID_ID Invalid ID (use snake_case format): "
-            f"controller: {idl[0]}, "
-            f"zone: {idl[1]}, "
-            f"zone_id: {zone.zone_id}",
-        )
-
     def log_duplicate_id(
         self, controller: IUController, zone: IUZone, level=WARNING
     ) -> None:
