@@ -2469,13 +2469,6 @@ class IUSequenceRun(IUBase):
         return self._end_time - self._start_time
 
     @property
-    def accumulated_duration(self) -> timedelta:
-        """Return the accumulated time. This is the sum
-        of all durations which may overlap. Handy to check if
-        this sequence runs at all."""
-        return self._accumulated_duration
-
-    @property
     def running(self) -> bool:
         """Indicate if this sequence is running"""
         return self._running
