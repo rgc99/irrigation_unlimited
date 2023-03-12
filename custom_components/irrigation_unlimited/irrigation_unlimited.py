@@ -2908,13 +2908,11 @@ class IUController(IUBase):
             return self._sequences[index]
         return None
 
-    def find_add_sequence(
-        self, coordinator: "IUCoordinator", controller: "IUController", index: int
-    ) -> IUSequence:
+    def find_add_sequence(self, index: int) -> IUSequence:
         """Locate and create if required a sequence"""
         if index >= len(self._sequences):
             return self.add_sequence(
-                IUSequence(self._hass, coordinator, controller, index)
+                IUSequence(self._hass, self._coordinator, self, index)
             )
         return self._sequences[index]
 
@@ -2965,9 +2963,7 @@ class IUController(IUBase):
 
         if CONF_SEQUENCES in config:
             for qidx, sequence_config in enumerate(config[CONF_SEQUENCES]):
-                self.find_add_sequence(self._coordinator, self, qidx).load(
-                    sequence_config
-                )
+                self.find_add_sequence(qidx).load(sequence_config)
 
         self._switch.load(config, None)
         self._dirty = True
