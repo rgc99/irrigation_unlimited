@@ -2853,11 +2853,6 @@ class IUController(IUBase):
             return ICON_CONTROLLER_OFF
         return ICON_DISABLED
 
-    @property
-    def configuration(self) -> str:
-        """Return this controller as JSON"""
-        return json.dumps(self.as_dict(), cls=IUJSONEncoder)
-
     def _status(self) -> str:
         """Return status of the controller"""
         if self._initialised:
