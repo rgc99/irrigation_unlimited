@@ -8,13 +8,18 @@ irrigation_unlimited:
           schedules:
             time:
               cron: "*/20 2-4 * * *"
+            month: [jan]
             duration: "00:10"
         - name: "South"
         - name: "North"
       sequences:
           schedules:
-            time:
-              cron: "25 6-9 * * *"
+            - time:
+                cron: "25 6-9 * * *"
+              month: [jan]
+            - time:
+                cron: "* * 30 2 *"
+              month: [feb,mar]
           duration: "00:30"
           delay: "00:02"
           zones:
@@ -96,3 +101,7 @@ irrigation_unlimited:
           - {t: '2021-01-04 09:29:00', c: 1, z: 3, s: 1}
           - {t: '2021-01-04 09:59:00', c: 1, z: 3, s: 0}
           - {t: '2021-01-04 09:59:00', c: 1, z: 0, s: 0}
+      - name: "3-Cron never runs"
+        start: "2021-02-27 00:00"
+        end: "2021-03-04 23:59"
+        results: []
