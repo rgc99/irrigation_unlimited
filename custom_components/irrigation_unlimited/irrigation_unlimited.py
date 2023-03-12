@@ -3925,28 +3925,38 @@ class IULogger:
         """Send out the message"""
         self._logger.log(level, msg)
 
+    def _format(
+        self, level, area: str, stime: datetime = None, data: str = None
+    ) -> None:
+        """Format and send out message"""
+        msg = area
+        if stime is not None:
+            msg += f" [{dt2lstr(stime)}]"
+        if data is not None:
+            msg += " " + data
+        self._output(level, msg)
+
     def log_start(self) -> None:
         """Message for system clock starting"""
-        self._output(DEBUG, "START")
+        self._format(DEBUG, "START")
 
     def log_stop(self) -> None:
         """Message for system clock stopping"""
-        self._output(DEBUG, "STOP")
+        self._format(DEBUG, "STOP")
 
     def log_load(self, data: OrderedDict) -> None:
         """Message that the config is loaded"""
         # pylint: disable=unused-argument
-        self._output(DEBUG, "LOAD")
+        self._format(DEBUG, "LOAD")
 
     def log_initialised(self) -> None:
         """Message that the system is initialised and ready to go"""
-        self._output(DEBUG, "INITIALISED")
+        self._format(DEBUG, "INITIALISED")
 
     def log_event(self, event: IUEvent, level=DEBUG) -> None:
         """Message that an event has occurred - controller or zone turning on or off"""
         if len(event.crumbs) != 0:
             result = (
-                f"EVENT [{dt2lstr(event.time)}] "
                 f"controller: {event.controller:d}, "
                 f"zone: {event.zone:d}, "
                 f"state: {str(int(event.state))}, "
@@ -3954,12 +3964,11 @@ class IULogger:
             )
         else:
             result = (
-                f"EVENT [{dt2lstr(event.time)}] "
                 f"controller: {event.controller:d}, "
                 f"zone: {event.zone:d}, "
                 f"state: {str(int(event.state))}"
             )
-        self._output(level, result)
+        self._format(level, "EVENT", event.time, result)
 
     def log_service_call(
         self,
@@ -3972,9 +3981,10 @@ class IULogger:
         """Message that we have received a service call"""
         # pylint: disable=too-many-arguments
         idl = IUBase.idl([controller, zone], "0", 1)
-        self._output(
+        self._format(
             INFO,
-            f"CALL [{dt2lstr(stime)}] "
+            "CALL",
+            stime,
             f"service: {service}, "
             f"controller: {idl[0]}, "
             f"zone: {idl[1]}, "
@@ -3986,12 +3996,11 @@ class IULogger:
     ) -> None:
         """Message that HA has registered an entity"""
         idl = IUBase.idl([controller, zone], "0", 1)
-        self._output(
+        self._format(
             DEBUG,
-            f"REGISTER [{dt2lstr(stime)}] "
-            f"controller: {idl[0]}, "
-            f"zone: {idl[1]}, "
-            f"entity: {entity.entity_id}",
+            "REGISTER",
+            stime,
+            f"controller: {idl[0]}, " f"zone: {idl[1]}, " f"entity: {entity.entity_id}",
         )
 
     def log_deregister_entity(
@@ -3999,19 +4008,19 @@ class IULogger:
     ) -> None:
         """Message that HA is removing an entity"""
         idl = IUBase.idl([controller, zone], "0", 1)
-        self._output(
+        self._format(
             DEBUG,
-            f"DEREGISTER [{dt2lstr(stime)}] "
-            f"controller: {idl[0]}, "
-            f"zone: {idl[1]}, "
-            f"entity: {entity.entity_id}",
+            "DEREGISTER",
+            stime,
+            f"controller: {idl[0]}, " f"zone: {idl[1]}, " f"entity: {entity.entity_id}",
         )
 
     def log_test_start(self, vtime: datetime, test: IUTest, level=DEBUG) -> None:
         """Message that a test is starting"""
-        self._output(
+        self._format(
             level,
-            f"TEST_START [{dt2lstr(vtime)}] "
+            "TEST_START",
+            vtime,
             f"test: {test.index + 1:d}, "
             f"start: {dt2lstr(test.start)}, "
             f"end: {dt2lstr(test.end)}",
@@ -4019,47 +4028,51 @@ class IULogger:
 
     def log_test_end(self, vtime: datetime, test: IUTest, level=DEBUG) -> None:
         """Message that a test has finished"""
-        self._output(level, f"TEST_END [{dt2lstr(vtime)}] test: {test.index + 1:d}")
+        self._format(level, "TEST_END", vtime, f"test: {test.index + 1:d}")
 
     def log_test_error(
         self, test: IUTest, actual: IUEvent, expected: IUEvent, level=DEBUG
     ) -> None:
         """Message that an event did not meet expected result"""
-        self._output(
+        self._format(
             level,
-            f"TEST_ERROR test: {test.index + 1:d}, "
+            "TEST_ERROR",
+            None,
+            f"test: {test.index + 1:d}, "
             f"actual: {str(actual)}, "
             f"expected: {str(expected)}",
         )
 
     def log_test_completed(self, checks: int, errors: int, level=DEBUG) -> None:
         """Message that all tests have been completed"""
-        self._output(
+        self._format(
             level,
-            f"TEST_COMPLETED (Idle): checks: {checks:d}, errors: {errors:d}",
+            "TEST_COMPLETED",
+            None,
+            f"(Idle): checks: {checks:d}, errors: {errors:d}",
         )
 
     def log_sequence_entity(self, vtime: datetime, level=WARNING) -> None:
         """Warn that a service call involved a sequence but was not directed
         at the controller"""
-        self._output(
-            level, f"ENTITY [{dt2lstr(vtime)}] Sequence specified but entity_id is zone"
-        )
+        self._format(level, "ENTITY", vtime, "Sequence specified but entity_id is zone")
 
     def log_invalid_sequence(
         self, vtime: datetime, controller: IUController, sequence_id: int, level=WARNING
     ) -> None:
         """Warn that a service call with a sequence_id is invalid"""
-        self._output(
+        self._format(
             level,
-            f"SEQUENCE_ID [{dt2lstr(vtime)}] Invalid sequence id: "
+            "SEQUENCE_ID",
+            vtime,
+            f"Invalid sequence id: "
             f"controller: {IUBase.ids(controller, '0', 1)}, "
             f"sequence: {sequence_id}",
         )
 
     def log_invalid_restore_data(self, msg: str, data: str, level=WARNING) -> None:
         """Warn invalid restore data"""
-        self._output(level, f"RESTORE Invalid data: msg: {msg}, data: {data}")
+        self._format(level, "RESTORE", None, f"Invalid data: msg: {msg}, data: {data}")
 
     def log_incomplete_cycle(
         self,
@@ -4072,9 +4085,11 @@ class IULogger:
         """Warn that a cycle did not complete"""
         # pylint: disable=too-many-arguments
         idl = IUBase.idl([controller, zone, sequence, sequence_zone], "-", 1)
-        self._output(
+        self._format(
             level,
-            f"INCOMPLETE Cycle did not complete: "
+            "INCOMPLETE",
+            None,
+            f"Cycle did not complete: "
             f"controller: {idl[0]}, "
             f"zone: {idl[1]}, "
             f"sequence: {idl[2]}, "
@@ -4085,9 +4100,10 @@ class IULogger:
         self, vtime: datetime, expected: str, switch_entity_id: str, level=WARNING
     ) -> None:
         """Warn that switch and entity are out of sync"""
-        self._output(
+        self._format(
             level,
-            f"SYNCHRONISATION [{dt2lstr(vtime)}] "
+            "SYNCHRONISATION",
+            vtime,
             f"Switch does not match current state: "
             f"expected: {expected}, "
             f"switch: {switch_entity_id}",
@@ -4097,9 +4113,10 @@ class IULogger:
         self, vtime: datetime, expected: str, switch_entity_id: list[str], level=ERROR
     ) -> None:
         """Warn that switch(s) was unable to be set"""
-        self._output(
+        self._format(
             level,
-            f"SWITCH_ERROR [{dt2lstr(vtime)}] "
+            "SWITCH_ERROR",
+            vtime,
             f"Unable to set switch state: "
             f"expected: {expected}, "
             f"switch: {','.join(switch_entity_id)}",
@@ -4110,9 +4127,11 @@ class IULogger:
     ) -> None:
         """Warn a controller/zone has a duplicate id"""
         idl = IUBase.idl([controller, zone], "0", 1)
-        self._output(
+        self._format(
             level,
-            f"DUPLICATE_ID Duplicate ID: "
+            "DUPLICATE_ID",
+            None,
+            f"Duplicate ID: "
             f"controller: {idl[0]}, "
             f"controller_id: {controller.controller_id}, "
             f"zone: {idl[1]}, "
@@ -4130,9 +4149,11 @@ class IULogger:
         # pylint: disable=too-many-arguments
         """Warn a zone_id reference is orphaned"""
         idl = IUBase.idl([controller, sequence, sequence_zone], "0", 1)
-        self._output(
+        self._format(
             level,
-            f"ORPHAN_ID Invalid reference ID: "
+            "ORPHAN_ID",
+            None,
+            f"Invalid reference ID: "
             f"controller: {idl[0]}, "
             f"sequence: {idl[1]}, "
             f"sequence_zone: {idl[2]}, "
@@ -4149,9 +4170,10 @@ class IULogger:
     ) -> None:
         # pylint: disable=too-many-arguments
         """Warn that a crontab expression in the schedule is invalid"""
-        self._output(
+        self._format(
             level,
-            f"CRON [{dt2lstr(stime)}] "
+            "CRON",
+            stime,
             f"schedule: {schedule.name}, "
             f"expression: {expression}, "
             f"error: {msg}",
