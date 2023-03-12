@@ -1,5 +1,6 @@
 """Test integration_unlimited service calls."""
 # pylint: disable=too-many-lines
+from unittest.mock import patch
 import json
 import homeassistant.core as ha
 from tests.iu_test_support import (
@@ -12,6 +13,9 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
     SERVICE_TOGGLE,
+)
+from custom_components.irrigation_unlimited.irrigation_unlimited import (
+    IULogger,
 )
 
 IUExam.quiet_mode()
@@ -619,6 +623,24 @@ async def test_service_manual_run(
             },
         )
         await exam.finish_test()
+
+        with patch.object(IULogger, "_format") as mock:
+            await exam.begin_test(5)
+            await exam.call(
+                SERVICE_MANUAL_RUN,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c2_m",
+                    "time": "00:01",
+                    "sequence_id": 2,
+                },
+            )
+            await exam.finish_test()
+            assert (
+                sum(
+                    [1 for call in mock.call_args_list if call.args[1] == "SEQUENCE_ID"]
+                )
+                == 1
+            )
 
         exam.check_summary()
 
@@ -1664,5 +1686,23 @@ async def test_service_enable_disable_sequence(
         assert data["controllers"][0]["sequences"][0]["enabled"] is True
         assert data["controllers"][0]["sequences"][1]["enabled"] is True
         await exam.finish_test()
+
+        # Disable non existant sequence
+        with patch.object(IULogger, "_format") as mock:
+            await exam.begin_test(15)
+            await exam.call(
+                SERVICE_DISABLE,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "sequence_id": 3,
+                },
+            )
+            await exam.finish_test()
+            assert (
+                sum(
+                    [1 for call in mock.call_args_list if call.args[1] == "SEQUENCE_ID"]
+                )
+                == 1
+            )
 
         exam.check_summary()
