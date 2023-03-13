@@ -1615,8 +1615,10 @@ class IUZone(IUBase):
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Add a manual run."""
         if (self._is_enabled or self._allow_manual) and self._controller.enabled:
-            nst = wash_dt(stime + granularity_time())
-            if self._controller.preamble is not None:
+            nst = wash_dt(stime)
+            if not self._is_on:
+                nst += granularity_time()
+            if self._controller.preamble is not None and not self._controller.is_on:
                 nst += self._controller.preamble
             self._run_queue.add_manual(nst, wash_td(data[CONF_TIME]), self)
 
