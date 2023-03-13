@@ -640,14 +640,13 @@ class IUSchedule(IUBase):
                 if CONF_BEFORE in self._time:
                     next_run -= self._time[CONF_BEFORE]
             elif isinstance(self._time, dict) and CONF_CRON in self._time:
-                advancement = adjusted_duration
                 try:
                     cron = CronTab(self._time[CONF_CRON])
                     cron_event = cron.next(
                         now=local_time, return_datetime=True, default_utc=True
                     )
                     if cron_event is None:
-                        continue
+                        return None
                     next_run = dt.as_local(cron_event)
                 except ValueError as error:
                     self._coordinator.logger.log_invalid_crontab(
