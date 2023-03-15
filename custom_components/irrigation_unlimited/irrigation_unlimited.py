@@ -1009,13 +1009,6 @@ class IURunQueue(list[IURun]):
             return self[i]
         return None
 
-    def find_last_date(self, schedule: IUSchedule) -> datetime:
-        """Find the last time in the queue for the supplied schedule"""
-        run = self.find_last_run(schedule)
-        if run is not None:
-            return run.end_time
-        return None
-
     def find_manual(self) -> IURun:
         """Find any manual run"""
         for run in self:
