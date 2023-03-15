@@ -591,6 +591,10 @@ async def test_service_manual_run(
             SERVICE_MANUAL_RUN,
             {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "time": "00:10"},
         )
+        await exam.run_until("2021-01-04 06:05:00")
+        run = exam.coordinator.controllers[0].runs.current_run
+        assert run.schedule_name == "Manual"
+        assert run.sequence_adjustment() is None
         await exam.finish_test()
 
         await exam.begin_test(2)
@@ -641,6 +645,39 @@ async def test_service_manual_run(
                 )
                 == 1
             )
+
+        await exam.begin_test(6)
+        await exam.run_until("2021-01-04 06:15:00")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2", "time": "00:10"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(7)
+        await exam.run_until("2021-01-04 06:15:00")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2", "time": "00:10"},
+        )
+        await exam.run_until("2021-01-04 06:20:00")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2", "time": "00:10"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(8)
+        await exam.run_until("2021-01-04 06:15:00")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2", "time": "00:10"},
+        )
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2", "time": "00:10"},
+        )
+        await exam.finish_test()
 
         exam.check_summary()
 
