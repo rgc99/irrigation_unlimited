@@ -928,7 +928,11 @@ class IURunQueue(list[IURun]):
     def find_active_sequence_zone(self, sequence_zone: "IUSequenceZone") -> IURun:
         """Find the running sequence zone"""
         for run in self:
-            if run.sequence_running and run.sequence_run.active_zone == sequence_zone:
+            if (
+                run.sequence_running
+                and run.sequence_run.active_zone is not None
+                and run.sequence_run.active_zone.sequence_zone == sequence_zone
+            ):
                 return run
         return None
 
