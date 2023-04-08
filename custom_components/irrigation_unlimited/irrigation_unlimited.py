@@ -9,9 +9,11 @@ from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
 import json
+import voluptuous as vol
 from crontab import CronTab
 from homeassistant.core import HomeAssistant, HassJob, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.template import Template
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_call_later,
@@ -19,6 +21,7 @@ from homeassistant.helpers.event import (
 )
 from homeassistant.helpers import sun
 from homeassistant.util import dt
+from homeassistant.helpers import config_validation as cv
 
 from homeassistant.const import (
     ATTR_ICON,
@@ -277,6 +280,24 @@ def str_to_td(atime: str) -> timedelta:
 def utc_eot() -> datetime:
     """Return the end of time in UTC format"""
     return datetime.max.replace(tzinfo=timezone.utc)
+
+
+def render_positive_time_period(hass: HomeAssistant, data: dict, key: str) -> None:
+    """Resolve a template that specifies a timedelta"""
+    if isinstance(data.get(key), Template):
+        template: Template = data[key]
+        template.hass = hass
+        schema = vol.Schema({key: cv.positive_time_period})
+        data[key] = schema({key: template.async_render()})[key]
+
+
+def render_positive_float(hass: HomeAssistant, data: dict, key: str) -> None:
+    """Resolve a template that specifies a float"""
+    if isinstance(data.get(key), Template):
+        template: Template = data[key]
+        template.hass = hass
+        schema = vol.Schema({key: cv.positive_float})
+        data[key] = schema({key: template.async_render()})[key]
 
 
 class IUJSONEncoder(json.JSONEncoder):
@@ -4759,29 +4780,38 @@ class IUCoordinator:
         if controller is None:
             return
 
+        data1 = dict(data)
+        render_positive_time_period(self._hass, data1, CONF_TIME)
+        render_positive_time_period(self._hass, data1, CONF_ACTUAL)
+        render_positive_time_period(self._hass, data1, CONF_INCREASE)
+        render_positive_time_period(self._hass, data1, CONF_DECREASE)
+        render_positive_time_period(self._hass, data1, CONF_MINIMUM)
+        render_positive_time_period(self._hass, data1, CONF_MAXIMUM)
+        render_positive_float(self._hass, data1, CONF_PERCENTAGE)
+
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
             if zone is not None:
-                if changed := zone.service_call(data, stime, service):
+                if changed := zone.service_call(data1, stime, service):
                     controller.clear_sequence_runs(stime)
             else:
-                changed = controller.service_call(data, stime, service)
+                changed = controller.service_call(data1, stime, service)
         elif service == SERVICE_CANCEL:
             if zone is not None:
-                zone.service_cancel(data, stime)
+                zone.service_cancel(data1, stime)
             else:
-                controller.service_cancel(data, stime)
+                controller.service_cancel(data1, stime)
         elif service == SERVICE_TIME_ADJUST:
             if zone is not None:
-                changed = zone.service_adjust_time(data, stime)
+                changed = zone.service_adjust_time(data1, stime)
             else:
-                changed = controller.service_adjust_time(data, stime)
+                changed = controller.service_adjust_time(data1, stime)
         elif service == SERVICE_MANUAL_RUN:
             if zone is not None:
-                zone.service_manual_run(data, stime)
+                zone.service_manual_run(data1, stime)
             else:
-                controller.service_manual_run(data, stime)
+                controller.service_manual_run(data1, stime)
         if changed:
-            self._logger.log_service_call(service, stime, controller, zone, data)
+            self._logger.log_service_call(service, stime, controller, zone, data1)
             async_call_later(self._hass, 0, self._async_replay_last_timer)
 
     def service_history(self, entity_ids: set[str]) -> None:

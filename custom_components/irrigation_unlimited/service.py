@@ -32,10 +32,12 @@ from .const import (
     SERVICE_TOGGLE,
 )
 
+positive_float_template = vol.Any(cv.positive_float, cv.template)
+
 ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
 
 ENABLE_DISABLE_SCHEMA = {
-    vol.Required(CONF_ENTITY_ID): cv.entity_id,
+    vol.Required(CONF_ENTITY_ID): cv.entity_ids,
     vol.Optional(CONF_ZONES): cv.ensure_list,
     vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
 }
@@ -43,14 +45,20 @@ ENABLE_DISABLE_SCHEMA = {
 TIME_ADJUST_SCHEMA = vol.All(
     vol.Schema(
         {
-            vol.Required(CONF_ENTITY_ID): cv.entity_id,
-            vol.Exclusive(CONF_ACTUAL, "adjust_method"): cv.positive_time_period,
-            vol.Exclusive(CONF_PERCENTAGE, "adjust_method"): cv.positive_float,
-            vol.Exclusive(CONF_INCREASE, "adjust_method"): cv.positive_time_period,
-            vol.Exclusive(CONF_DECREASE, "adjust_method"): cv.positive_time_period,
+            vol.Required(CONF_ENTITY_ID): cv.entity_ids,
+            vol.Exclusive(
+                CONF_ACTUAL, "adjust_method"
+            ): cv.positive_time_period_template,
+            vol.Exclusive(CONF_PERCENTAGE, "adjust_method"): positive_float_template,
+            vol.Exclusive(
+                CONF_INCREASE, "adjust_method"
+            ): cv.positive_time_period_template,
+            vol.Exclusive(
+                CONF_DECREASE, "adjust_method"
+            ): cv.positive_time_period_template,
             vol.Exclusive(CONF_RESET, "adjust_method"): None,
-            vol.Optional(CONF_MINIMUM): cv.positive_time_period,
-            vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
+            vol.Optional(CONF_MINIMUM): cv.positive_time_period_template,
+            vol.Optional(CONF_MAXIMUM): cv.positive_time_period_template,
             vol.Optional(CONF_ZONES): cv.ensure_list,
             vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
         }
@@ -61,8 +69,8 @@ TIME_ADJUST_SCHEMA = vol.All(
 )
 
 MANUAL_RUN_SCHEMA = {
-    vol.Required(CONF_ENTITY_ID): cv.entity_id,
-    vol.Required(CONF_TIME): cv.positive_time_period,
+    vol.Required(CONF_ENTITY_ID): cv.entity_ids,
+    vol.Required(CONF_TIME): cv.positive_time_period_template,
     vol.Optional(CONF_ZONES): cv.ensure_list,
     vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
 }
