@@ -342,24 +342,3 @@ MANUAL_RUN_SCHEMA = {
 }
 
 RELOAD_SERVICE_SCHEMA = vol.Schema({})
-
-SUN_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_SUN): cv.sun_event,
-        vol.Optional(CONF_BEFORE): cv.positive_time_period,
-        vol.Optional(CONF_AFTER): cv.positive_time_period,
-    }
-)
-
-CRON_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_CRON): cv.string,
-    }
-)
-
-EVERY_N_DAYS_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_EVERY_N_DAYS): cv.positive_int,
-        vol.Required(CONF_START_N_DAYS): cv.date,
-    }
-)
