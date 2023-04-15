@@ -569,8 +569,10 @@ class IUSchedule(IUBase):
         result = OrderedDict()
 
         result[CONF_TIME] = self._time
+        result[CONF_ANCHOR] = self._anchor
         result[CONF_DURATION] = self._duration
         result[CONF_NAME] = self._name
+        result[CONF_ENABLED] = self._enabled
         if self._weekdays is not None:
             result[CONF_WEEKDAY] = []
             for item in self._weekdays:
