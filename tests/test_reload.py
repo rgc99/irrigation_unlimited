@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 import homeassistant.core as ha
 from homeassistant.const import SERVICE_RELOAD
-from tests.iu_test_support import IUExam, mk_utc
+from tests.iu_test_support import IUExam
 
 IUExam.quiet_mode()
 
