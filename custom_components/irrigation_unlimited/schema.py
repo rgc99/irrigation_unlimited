@@ -57,7 +57,6 @@ from .const import (
     CONF_TIMELINE,
     CONF_CONTROLLER_ID,
     CONF_ZONE_ID,
-    CONF_SCHEDULE_ID,
     CONF_SEQUENCES,
     CONF_ALL_ZONES_CONFIG,
     CONF_REFRESH_INTERVAL,
@@ -75,6 +74,7 @@ from .const import (
     CONF_INCREASE,
     CONF_DECREASE,
     CONF_RESET,
+    CONF_SEQUENCE_ID,
     CONF_STATES,
 )
 
