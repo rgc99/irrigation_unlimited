@@ -503,14 +503,14 @@ class IUSchedule(IUBase):
         # Config parameters
         self._time = None
         self._duration: timedelta = None
-        self._name: str = None
+        self._name: str = f"Schedule {schedule_index + 1}"
         self._weekdays: list[int] = None
         self._months: list[int] = None
         self._days = None
         self._anchor: str = None
         self._enabled = True
         # Private variables
-        self._dirty: bool = True
+
 
     @property
     def name(self) -> str:
@@ -532,18 +532,12 @@ class IUSchedule(IUBase):
         """Return enabled status"""
         return self._enabled
 
-    def clear(self) -> None:
-        """Reset this schedule"""
-        self._dirty = True
-
     def load(self, config: OrderedDict) -> "IUSchedule":
         """Load schedule data from config"""
-        self.clear()
-
-        self._time = config[CONF_TIME]
-        self._anchor = config[CONF_ANCHOR]
-        self._duration = wash_td(config.get(CONF_DURATION, None))
-        self._name = config.get(CONF_NAME, f"Schedule {self.index + 1}")
+        self._time = config.get(CONF_TIME, self._time)
+        self._anchor = config.get(CONF_ANCHOR, self._anchor)
+        self._duration = wash_td(config.get(CONF_DURATION, self._duration))
+        self._name = config.get(CONF_NAME, self._name)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
 
         if CONF_WEEKDAY in config:
