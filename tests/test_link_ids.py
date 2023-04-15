@@ -17,7 +17,7 @@ async def test_link_ids(hass: ha.HomeAssistant, skip_dependencies, skip_history)
     with patch.object(IULogger, "log_duplicate_id") as mock_duplicate:
         with patch.object(IULogger, "log_orphan_id") as mock_orphan:
             async with IUExam(hass, "test_ids.yaml"):
-                assert mock_duplicate.call_count == 4
+                assert mock_duplicate.call_count == 6
                 assert mock_orphan.call_count == 1
 
     with patch.object(IULogger, "_format") as mock:
@@ -30,7 +30,7 @@ async def test_link_ids(hass: ha.HomeAssistant, skip_dependencies, skip_history)
                         if call.args[1] == "DUPLICATE_ID"
                     ]
                 )
-                == 4
+                == 6
             )
             assert (
                 sum([1 for call in mock.call_args_list if call.args[1] == "ORPHAN_ID"])
