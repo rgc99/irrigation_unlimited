@@ -105,6 +105,7 @@ CONF_RESYNC = "resync"
 CONF_EXPECTED = "expected"
 CONF_STATE_ON = "state_on"
 CONF_STATE_OFF = "state_off"
+CONF_SCHEDULE_ID = "schedule_id"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

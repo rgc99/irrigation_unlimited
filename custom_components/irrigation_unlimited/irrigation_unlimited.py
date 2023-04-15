@@ -178,6 +178,7 @@ from .const import (
     CONF_EXPECTED,
     CONF_STATE_ON,
     CONF_STATE_OFF,
+    CONF_SCHEDULE_ID,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -501,6 +502,7 @@ class IUSchedule(IUBase):
         self._hass = hass
         self._coordinator = coordinator
         # Config parameters
+        self._schedule_id: str = None
         self._time = None
         self._duration: timedelta = None
         self._name: str = f"Schedule {schedule_index + 1}"
@@ -511,6 +513,10 @@ class IUSchedule(IUBase):
         self._enabled = True
         # Private variables
 
+    @property
+    def schedule_id(self) -> str:
+        """Return the unique id for this schedule"""
+        return self._schedule_id
 
     @property
     def name(self) -> str:
@@ -534,6 +540,7 @@ class IUSchedule(IUBase):
 
     def load(self, config: OrderedDict) -> "IUSchedule":
         """Load schedule data from config"""
+        self._schedule_id = config.get(CONF_SCHEDULE_ID, self.schedule_id)
         self._time = config.get(CONF_TIME, self._time)
         self._anchor = config.get(CONF_ANCHOR, self._anchor)
         self._duration = wash_td(config.get(CONF_DURATION, self._duration))

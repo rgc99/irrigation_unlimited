@@ -76,6 +76,7 @@ from .const import (
     CONF_RESET,
     CONF_SEQUENCE_ID,
     CONF_STATES,
+    CONF_SCHEDULE_ID,
 )
 
 
@@ -128,6 +129,7 @@ SCHEDULE_SCHEMA = vol.Schema(
         vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
         vol.Required(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_SCHEDULE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
@@ -141,6 +143,7 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
         vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
         vol.Optional(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_SCHEDULE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
