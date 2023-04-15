@@ -3232,7 +3232,7 @@ class IUController(IUBase):
         zone_ids = set()
         for zone in self._zones:
             if zone.zone_id in zone_ids:
-                self._coordinator.logger.log_duplicate_id(self, zone)
+                self._coordinator.logger.log_duplicate_id(self, zone, None)
                 result = False
             else:
                 zone_ids.add(zone.zone_id)
@@ -4129,20 +4129,58 @@ class IULogger:
         )
 
     def log_duplicate_id(
-        self, controller: IUController, zone: IUZone, level=WARNING
+        self,
+        controller: IUController,
+        zone: IUZone,
+        schedule: IUSchedule,
+        level=WARNING,
     ) -> None:
-        """Warn a controller/zone has a duplicate id"""
-        idl = IUBase.idl([controller, zone], "0", 1)
-        self._format(
-            level,
-            "DUPLICATE_ID",
-            None,
-            f"Duplicate ID: "
-            f"controller: {idl[0]}, "
-            f"controller_id: {controller.controller_id}, "
-            f"zone: {idl[1]}, "
-            f"zone_id: {zone.zone_id if zone else ''}",
-        )
+        """Warn a controller/zone/schedule has a duplicate id"""
+        idl = IUBase.idl([controller, zone, schedule], "0", 1)
+        if not zone and not schedule:
+            self._format(
+                level,
+                "DUPLICATE_ID",
+                None,
+                f"Duplicate Controller ID: "
+                f"controller: {idl[0]}, "
+                f"controller_id: {controller.controller_id}",
+            )
+        elif zone and not schedule:
+            self._format(
+                level,
+                "DUPLICATE_ID",
+                None,
+                f"Duplicate Zone ID: "
+                f"controller: {idl[0]}, "
+                f"controller_id: {controller.controller_id}, "
+                f"zone: {idl[1]}, "
+                f"zone_id: {zone.zone_id if zone else ''}",
+            )
+        elif zone and schedule:
+            self._format(
+                level,
+                "DUPLICATE_ID",
+                None,
+                f"Duplicate Schedule ID (zone): "
+                f"controller: {idl[0]}, "
+                f"controller_id: {controller.controller_id}, "
+                f"zone: {idl[1]}, "
+                f"zone_id: {zone.zone_id if zone else ''}, "
+                f"schedule: {idl[2]}, "
+                f"schedule_id: {schedule.schedule_id if schedule else ''}",
+            )
+        else:  # not zone and schedule
+            self._format(
+                level,
+                "DUPLICATE_ID",
+                None,
+                f"Duplicate Schedule ID (sequence): "
+                f"controller: {idl[0]}, "
+                f"controller_id: {controller.controller_id}, "
+                f"schedule: {idl[2]}, "
+                f"schedule_id: {schedule.schedule_id if schedule else ''}",
+            )
 
     def log_orphan_id(
         self,
@@ -4566,17 +4604,38 @@ class IUCoordinator:
 
     def check_links(self) -> bool:
         """Check inter object links"""
-
+        # pylint: disable=too-many-branches
         result = True
+
         controller_ids = set()
         for controller in self._controllers:
             if controller.controller_id in controller_ids:
-                self._logger.log_duplicate_id(controller, None)
+                self._logger.log_duplicate_id(controller, None, None)
                 result = False
             else:
                 controller_ids.add(controller.controller_id)
             if not controller.check_links():
                 result = False
+
+        schedule_ids = set()
+        for controller in self._controllers:
+            for zone in controller.zones:
+                for schedule in zone.schedules:
+                    if schedule.schedule_id is not None:
+                        if schedule.schedule_id in schedule_ids:
+                            self._logger.log_duplicate_id(controller, zone, schedule)
+                            result = False
+                        else:
+                            schedule_ids.add(schedule.schedule_id)
+            for sequence in controller.sequences:
+                for schedule in sequence.schedules:
+                    if schedule.schedule_id is not None:
+                        if schedule.schedule_id in schedule_ids:
+                            self._logger.log_duplicate_id(controller, None, schedule)
+                            result = False
+                        else:
+                            schedule_ids.add(schedule.schedule_id)
+
         return result
 
     def request_update(self, deep: bool) -> None:
