@@ -158,6 +158,7 @@ from .const import (
     SERVICE_TOGGLE,
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
+    SERVICE_LOAD_SCHEDULE,
     STATUS_BLOCKED,
     STATUS_PAUSED,
     STATUS_DISABLED,
@@ -4827,6 +4828,22 @@ class IUCoordinator:
             result = dt.utcnow()
         return wash_dt(result)
 
+    def service_load_schedule(self, data: MappingProxyType, stime: datetime) -> None:
+        """Handle the load_schedule service call"""
+        for controller in self._controllers:
+            for zone in controller.zones:
+                for schedule in zone.schedules:
+                    if schedule.schedule_id == data[CONF_SCHEDULE_ID]:
+                        schedule.load(data)
+                        zone.runs.clear(stime)
+                        return
+            for sequence in controller.sequences:
+                for schedule in sequence.schedules:
+                    if schedule.schedule_id == data[CONF_SCHEDULE_ID]:
+                        schedule.load(data)
+                        controller.clear_sequence_runs(stime, sequence.zone_ids())
+                        return
+
     def service_call(
         self,
         service: str,
@@ -4872,6 +4889,12 @@ class IUCoordinator:
                 zone.service_manual_run(data1, stime)
             else:
                 controller.service_manual_run(data1, stime)
+        elif service == SERVICE_LOAD_SCHEDULE:
+            render_positive_time_period(self._hass, data1, CONF_DURATION)
+            self.service_load_schedule(data1, stime)
+        else:
+            return
+
         if changed:
             self._logger.log_service_call(service, stime, controller, zone, data1)
             async_call_later(self._hass, 0, self._async_replay_last_timer)
