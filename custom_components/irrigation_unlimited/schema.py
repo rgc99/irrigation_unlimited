@@ -151,6 +151,20 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
     }
 )
 
+LOAD_SCHEDULE_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_SCHEDULE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
+        vol.Optional(CONF_TIME): time_event,
+        vol.Optional(CONF_ANCHOR): anchor_event,
+        vol.Optional(CONF_DURATION): cv.positive_time_period_template,
+        vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_WEEKDAY): cv.weekdays,
+        vol.Optional(CONF_MONTH): month_event,
+        vol.Optional(CONF_DAY): day_event,
+        vol.Optional(CONF_ENABLED): cv.boolean,
+    }
+)
+
 CHECK_BACK_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_STATES): vol.Any("none", "all", "on", "off"),

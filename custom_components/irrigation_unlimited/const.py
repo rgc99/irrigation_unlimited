@@ -120,6 +120,7 @@ SERVICE_TOGGLE = "toggle"
 SERVICE_CANCEL = "cancel"
 SERVICE_TIME_ADJUST = "adjust_time"
 SERVICE_MANUAL_RUN = "manual_run"
+SERVICE_LOAD_SCHEDULE = "load_schedule"
 
 # Events
 EVENT_START = "start"

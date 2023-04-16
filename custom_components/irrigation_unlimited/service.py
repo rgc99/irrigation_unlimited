@@ -15,6 +15,7 @@ from .schema import (
     TIME_ADJUST_SCHEMA,
     MANUAL_RUN_SCHEMA,
     RELOAD_SERVICE_SCHEMA,
+    LOAD_SCHEDULE_SCHEMA,
 )
 
 from .const import (
@@ -25,6 +26,7 @@ from .const import (
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
     SERVICE_TOGGLE,
+    SERVICE_LOAD_SCHEDULE,
 )
 
 
@@ -81,4 +83,16 @@ def register_component_services(
         SERVICE_RELOAD,
         reload_service_handler,
         schema=RELOAD_SERVICE_SCHEMA,
+    )
+
+    @callback
+    async def load_schedule_service_handler(call: ServiceCall) -> None:
+        """Reload schedule."""
+        coordinator.service_call(call.service, None, None, call.data)
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_LOAD_SCHEDULE,
+        load_schedule_service_handler,
+        LOAD_SCHEDULE_SCHEMA,
     )
