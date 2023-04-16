@@ -4856,17 +4856,7 @@ class IUCoordinator:
         changed = True
         stime = self.service_time()
 
-        if controller is None:
-            return
-
         data1 = dict(data)
-        render_positive_time_period(self._hass, data1, CONF_TIME)
-        render_positive_time_period(self._hass, data1, CONF_ACTUAL)
-        render_positive_time_period(self._hass, data1, CONF_INCREASE)
-        render_positive_time_period(self._hass, data1, CONF_DECREASE)
-        render_positive_time_period(self._hass, data1, CONF_MINIMUM)
-        render_positive_time_period(self._hass, data1, CONF_MAXIMUM)
-        render_positive_float(self._hass, data1, CONF_PERCENTAGE)
 
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
             if zone is not None:
@@ -4880,11 +4870,18 @@ class IUCoordinator:
             else:
                 controller.service_cancel(data1, stime)
         elif service == SERVICE_TIME_ADJUST:
+            render_positive_time_period(self._hass, data1, CONF_ACTUAL)
+            render_positive_time_period(self._hass, data1, CONF_INCREASE)
+            render_positive_time_period(self._hass, data1, CONF_DECREASE)
+            render_positive_time_period(self._hass, data1, CONF_MINIMUM)
+            render_positive_time_period(self._hass, data1, CONF_MAXIMUM)
+            render_positive_float(self._hass, data1, CONF_PERCENTAGE)
             if zone is not None:
                 changed = zone.service_adjust_time(data1, stime)
             else:
                 changed = controller.service_adjust_time(data1, stime)
         elif service == SERVICE_MANUAL_RUN:
+            render_positive_time_period(self._hass, data1, CONF_TIME)
             if zone is not None:
                 zone.service_manual_run(data1, stime)
             else:
