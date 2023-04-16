@@ -13,6 +13,7 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
     SERVICE_TOGGLE,
+    SERVICE_LOAD_SCHEDULE,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IULogger,
@@ -726,13 +727,13 @@ async def test_service_adjust_time_while_running(
 
         # Run next test which should be 200%
         await exam.begin_test(2)
-        await exam.finish_test()
-
+        await exam.run_until("2021-01-04 07:55")
         # Reset adjustments
         await exam.call(
             SERVICE_TIME_ADJUST,
             {"entity_id": "binary_sensor.irrigation_unlimited_c1_m", "reset": None},
         )
+        await exam.finish_test()
 
         # Start a sequence
         await exam.begin_test(3)
@@ -1741,5 +1742,33 @@ async def test_service_enable_disable_sequence(
                 )
                 == 1
             )
+
+        exam.check_summary()
+
+
+async def test_service_load_schedule(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test load_schedule service call."""
+
+    async with IUExam(hass, "service_load_schedule.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.call(
+            SERVICE_LOAD_SCHEDULE,
+            {"schedule_id": "zone_1_schedule_1", "time": "06:05", "duration": "00:15"},
+        )
+        await hass.async_block_till_done()
+        await exam.finish_test()
+
+        await exam.begin_test(2)
+        await exam.call(
+            SERVICE_LOAD_SCHEDULE,
+            {
+                "schedule_id": "sequence_1_schedule_1",
+                "time": "08:05",
+                "duration": "00:47",
+            },
+        )
+        await exam.finish_test()
 
         exam.check_summary()

@@ -267,6 +267,7 @@ class IUExam:
     async def call(self, service: str, data: dict[str, Any] = None) -> None:
         """Call IU service"""
         await self._hass.services.async_call(DOMAIN, service, data, True)
+        await self._hass.async_block_till_done()
 
     def check_summary(self, config_file: str = None) -> None:
         """Check the test results"""
