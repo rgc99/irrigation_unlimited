@@ -499,7 +499,7 @@ irrigation_unlimited:
         duration: "00:05"
         schedules:
           - time:
-            cron: "0 5-17 * * *"
+              cron: "0 5-17 * * *"
         zones:
           - zone_id: 1
 ```
