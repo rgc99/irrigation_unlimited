@@ -1,4 +1,4 @@
-pytest-homeassistant-custom-component
+pytest-homeassistant-custom-component==0.13.32
 aiohttp_cors
 crontab
 pytest-asyncio
