@@ -4403,6 +4403,9 @@ class IUClock:
 
         return self
 
+    def finalise(self):
+        """finalise this unit"""
+        self._remove_timer()
 
 class IUCoordinator:
     """Irrigation Unlimited Coordinator class"""
@@ -4700,6 +4703,8 @@ class IUCoordinator:
         """Tear down the system and clean up"""
         for controller in self._controllers:
             controller.finalise(turn_off)
+        self._clock.finalise()
+        self._history.finalise()
 
     async def _async_shutdown_listener(self, event: HAEvent) -> None:
         """Home Assistant is shutting down. Attempting to turn off any running

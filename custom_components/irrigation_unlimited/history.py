@@ -120,6 +120,10 @@ class IUHistory:
         self._initialised = True
         return True
 
+    def finalise(self):
+        """Finalise this unit"""
+        self._remove_refresh()
+
     def _clear_cache(self) -> None:
         self._cache = {}
 
@@ -132,7 +136,6 @@ class IUHistory:
         start = midnight(stime)
 
         for item in data:
-
             # Filter data
             if item.last_changed < start:
                 continue
@@ -173,7 +176,6 @@ class IUHistory:
         front_marker: State = None
 
         for item in data:
-
             # Look for an on state
             if front_marker is None:
                 if item.state == STATE_ON:
