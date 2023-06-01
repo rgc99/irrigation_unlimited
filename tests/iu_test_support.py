@@ -31,6 +31,7 @@ TEST_CONFIG_DIR = "tests/configs/"
 
 NO_CHECK: bool = False
 
+
 # Shh, quiet now.
 def quiet_mode() -> None:
     """Trun off a lot of noise"""
@@ -123,7 +124,6 @@ class IUExam:
 
     def no_check(self, check_off: bool = True) -> None:
         """Disable checking results"""
-        # pylint: disable=no-self-use
         global NO_CHECK
         NO_CHECK = check_off
         if NO_CHECK:
@@ -230,8 +230,8 @@ class IUExam:
         while self._coordinator.tester.is_testing and self._current_time <= astop_at:
             # Get next scheduled clock tick
             next_awakening = self._coordinator.clock.next_awakening(self._current_time)
-            if self._coordinator.clock.test_ticker_update(next_awakening):
-                await self._hass.async_block_till_done()
+            self._coordinator.clock.test_ticker_update(next_awakening)
+            await self._hass.async_block_till_done()
             self._coordinator.tester.ticker = min(next_awakening, astop_at)
             if next_awakening <= astop_at:
                 self._coordinator.timer(next_awakening)
