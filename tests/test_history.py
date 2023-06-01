@@ -3,7 +3,6 @@ from unittest.mock import patch
 from datetime import datetime, timedelta
 from collections import Counter
 from typing import OrderedDict, List, Any
-import pytest
 import homeassistant.core as ha
 from homeassistant.util import dt
 from custom_components.irrigation_unlimited.const import (
@@ -141,16 +140,6 @@ def hist_data_2(
     result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-05 04:10:00")))
 
     return result
-
-
-@pytest.fixture(name="allow_memory_db")
-def allow_memory_db():
-    """Allow in memory DB"""
-    with patch(
-        "homeassistant.components.recorder.ALLOW_IN_MEMORY_DB",
-        return_value=True,
-    ):
-        yield
 
 
 async def test_history_routines():
