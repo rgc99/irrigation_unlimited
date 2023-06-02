@@ -1745,6 +1745,32 @@ async def test_service_enable_disable_sequence(
 
         exam.check_summary()
 
+async def test_service_manual_run_sequence(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test manual_run service call on a sequence"""
+
+    async with IUExam(hass, "service_manual_run_sequence.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "time": "0:20:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(2)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+            },
+        )
+        await exam.finish_test()
+
+        exam.check_summary()
 
 async def test_service_load_schedule(
     hass: ha.HomeAssistant, skip_dependencies, skip_history

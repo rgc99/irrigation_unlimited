@@ -1,0 +1,64 @@
+irrigation_unlimited:
+  refresh_interval: 2000
+  testing:
+    enabled: true
+    speed: 1.0
+    output_events: false
+    show_log: false
+    autoplay: false
+    times:
+      - name: '1-Manual run sequence 1'
+        start: '2021-01-04 14:00'
+        end: '2021-01-04 15:00'
+        results:
+          - {t: '2021-01-04 14:00:01', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 14:01:01', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 14:04:01', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 14:05:01', c: 1, z: 2, s: 1}
+          - {t: '2021-01-04 14:05:01', c: 1, z: 3, s: 1}
+          - {t: '2021-01-04 14:11:01', c: 1, z: 2, s: 0}
+          - {t: '2021-01-04 14:11:01', c: 1, z: 3, s: 0}
+          - {t: '2021-01-04 14:12:01', c: 1, z: 4, s: 1}
+          - {t: '2021-01-04 14:21:01', c: 1, z: 4, s: 0}
+          - {t: '2021-01-04 14:22:01', c: 1, z: 0, s: 0}
+      - name: '2-Manual run no time'
+        start: '2021-01-04 14:00'
+        end: '2021-01-04 15:00'
+        results:
+          - {t: '2021-01-04 14:00:01', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 14:01:01', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 14:07:01', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 14:08:01', c: 1, z: 2, s: 1}
+          - {t: '2021-01-04 14:08:01', c: 1, z: 3, s: 1}
+          - {t: '2021-01-04 14:20:01', c: 1, z: 2, s: 0}
+          - {t: '2021-01-04 14:20:01', c: 1, z: 3, s: 0}
+          - {t: '2021-01-04 14:21:01', c: 1, z: 4, s: 1}
+          - {t: '2021-01-04 14:39:01', c: 1, z: 4, s: 0}
+          - {t: '2021-01-04 14:40:01', c: 1, z: 0, s: 0}
+  controllers:
+    - name: "Test controller 1"
+      preamble: "00:01"
+      postamble: "00:01"
+      zones:
+        - name: "Zone 1"
+          schedules:
+            - time: "07:10"
+              duration: "0:10:00"
+        - name: "Zone 2"
+          schedules:
+            - time: "08:10"
+              duration: "00:10"
+        - name: "Zone 3"
+        - name: "Zone 4"
+      sequences:
+        - name: "Seq 1"
+          delay: "0:01:00"
+          schedules:
+            - time: "12:00"
+          zones:
+            - zone_id: 1
+              duration: "0:06:00"
+            - zone_id: [2, 3]
+              duration: "0:12:00"
+            - zone_id: 4
+              duration: "0:18:00"
