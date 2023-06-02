@@ -244,7 +244,7 @@ load_schedule:
       example: '06:30'
       required: false
       selector:
-        object:
+        time:
     anchor:
       description: Start or finish at the specified time
       example: start
@@ -271,34 +271,36 @@ load_schedule:
       example: mon
       required: false
       selector:
-        multiple: true
-        options:
-          - mon
-          - tue
-          - wed
-          - thu
-          - fri
-          - sat
-          - sun
+        select:
+          multiple: true
+          options:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
     month:
       description: Months to run
       example: jan
       required: false
       selector:
-        multiple: true
-        options:
-          - jan
-          - feb
-          - mar
-          - apr
-          - may
-          - jun
-          - jul
-          - aug
-          - sep
-          - oct
-          - nov
-          - dec
+        select:
+          multiple: true
+          options:
+            - jan
+            - feb
+            - mar
+            - apr
+            - may
+            - jun
+            - jul
+            - aug
+            - sep
+            - oct
+            - nov
+            - dec
     day:
       description: Day of month to run
       example: 1
