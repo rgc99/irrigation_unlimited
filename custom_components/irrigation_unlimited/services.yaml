@@ -126,7 +126,7 @@ adjust_time:
           domain: binary_sensor
 
     sequence_id:
-      description: Id of the sequence to run (entity_id should be the controller).
+      description: Id of the sequence to adjust (entity_id should be the controller).
       example: 1
       required: false
       selector:
