@@ -165,35 +165,35 @@ adjust_time:
       example: "00:15"
       required: false
       selector:
-        time:
+        duration:
 
     increase:
       description: Increase the run time.
       example: "00:02"
       required: false
       selector:
-        time:
+        duration:
 
     decrease:
       description: Decrease the run time.
       example: "00:02"
       required: false
       selector:
-        time:
+        duration:
 
     minimum:
       description: Minimum run time.
       example: "00:01"
       required: false
       selector:
-        time:
+        duration:
 
     maximum:
       description: Maximum run time.
       example: "01:00"
       required: false
       selector:
-        time:
+        duration:
 
 manual_run:
   name: Manual run
@@ -213,7 +213,7 @@ manual_run:
       example: "00:10"
       required: false
       selector:
-        time:
+        duration:
 
     sequence_id:
       description: Id of the sequence to run.
