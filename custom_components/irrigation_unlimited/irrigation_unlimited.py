@@ -1640,12 +1640,11 @@ class IUZone(IUBase):
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Add a manual run."""
         if (self._is_enabled or self._allow_manual) and self._controller.enabled:
-            nst = wash_dt(stime)
-            if not self._is_on:
-                nst += granularity_time()
-            if self._controller.preamble is not None and not self._controller.is_on:
-                nst += self._controller.preamble
-            self._run_queue.add_manual(nst, wash_td(data.get(CONF_TIME)), self)
+            self._run_queue.add_manual(
+                self._controller.manual_run_start(stime),
+                wash_td(data.get(CONF_TIME)),
+                self,
+            )
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> None:
         """Cancel the current running schedule"""
@@ -3097,7 +3096,7 @@ class IUController(IUBase):
                     is_running(schedule),
                 )
             else:
-                next_run = stime + granularity_time()
+                next_run = stime
             return next_run
 
         def calc_total_time(
@@ -3113,8 +3112,6 @@ class IUController(IUBase):
                 return sequence.total_time_final(total_time)
             return total_time
 
-        if self.preamble is not None and not self.is_on:
-            stime += self.preamble
         total_time = calc_total_time(total_time, sequence, schedule)
         duration_factor = sequence.duration_factor(total_time)
 
@@ -3321,6 +3318,15 @@ class IUController(IUBase):
             items is None or (items is not None and items == [0]) or index + 1 in items
         )
 
+    def manual_run_start(self, stime: datetime) -> datetime:
+        """Determine the next available start time for a manual run"""
+        nst = wash_dt(stime)
+        if not self._is_on:
+            nst += granularity_time()
+        if self.preamble is not None and not self.is_on:
+            nst += self.preamble
+        return nst
+
     def service_call(
         self, data: MappingProxyType, stime: datetime, service: str
     ) -> bool:
@@ -3425,7 +3431,9 @@ class IUController(IUBase):
                 duration = wash_td(data.get(CONF_TIME))
                 if duration is not None and duration == timedelta(0):
                     duration = None
-                self.muster_sequence(stime, sequence, None, duration)
+                self.muster_sequence(
+                    self.manual_run_start(stime), sequence, None, duration
+                )
             else:
                 self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
 
