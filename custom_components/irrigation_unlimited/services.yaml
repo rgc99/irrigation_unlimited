@@ -211,7 +211,7 @@ manual_run:
     time:
       description: The amount of time to run.
       example: "00:10"
-      required: true
+      required: false
       selector:
         time:
 

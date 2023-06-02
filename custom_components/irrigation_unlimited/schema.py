@@ -350,7 +350,7 @@ TIME_ADJUST_SCHEMA = vol.All(
 
 MANUAL_RUN_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,
-    vol.Required(CONF_TIME): cv.positive_time_period_template,
+    vol.Optional(CONF_TIME): cv.positive_time_period_template,
     vol.Optional(CONF_ZONES): cv.ensure_list,
     vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
 }

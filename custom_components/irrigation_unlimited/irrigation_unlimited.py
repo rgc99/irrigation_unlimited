@@ -1217,6 +1217,10 @@ class IUScheduleQueue(IURunQueue):
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
 
+        # There is no default duration on a zone. Ignore request
+        if duration is None:
+            return None
+
         if self._current_run is not None:
             self.pop(0)
 
@@ -1641,7 +1645,7 @@ class IUZone(IUBase):
                 nst += granularity_time()
             if self._controller.preamble is not None and not self._controller.is_on:
                 nst += self._controller.preamble
-            self._run_queue.add_manual(nst, wash_td(data[CONF_TIME]), self)
+            self._run_queue.add_manual(nst, wash_td(data.get(CONF_TIME)), self)
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> None:
         """Cancel the current running schedule"""
@@ -3416,7 +3420,10 @@ class IUController(IUBase):
         else:
             sequence = self.get_sequence(sequence_id - 1)
             if sequence is not None:
-                self.muster_sequence(stime, sequence, None, wash_td(data[CONF_TIME]))
+                duration = wash_td(data.get(CONF_TIME))
+                if duration is not None and duration == timedelta(0):
+                    duration = None
+                self.muster_sequence(stime, sequence, None, duration)
             else:
                 self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
 
