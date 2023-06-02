@@ -1,11 +1,11 @@
 default_config:
 
 irrigation_unlimited:
-  refresh_interval: 30
+  refresh_interval: 2000
   testing:
     enabled: true
     speed: 1.0
-    output_events: true
+    output_events: false
     show_log: false
     autoplay: false
     times:
