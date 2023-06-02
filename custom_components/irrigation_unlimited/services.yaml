@@ -228,3 +228,86 @@ manual_run:
 reload:
   name: Reload
   description: Reload the configuration
+
+load_schedule:
+  name: Load schedule
+  description: Load a schedule.
+  fields:
+    schedule_id:
+      description: Id of the schedule
+      example: schedule_1
+      required: true
+      selector:
+        text:
+    time:
+      description: Time of day
+      example: '06:30'
+      required: false
+      selector:
+        object:
+    anchor:
+      description: Start or finish at the specified time
+      example: start
+      required: false
+      selector:
+        select:
+          options:
+            - start
+            - finish
+    duration:
+      description: The length of time to run
+      example: '00:10:00'
+      required: false
+      selector:
+        duration:
+    name:
+      description: Friendly name of the schedule
+      example: Sunrise
+      required: false
+      selector:
+        text:
+    weekday:
+      description: Days of week to run
+      example: mon
+      required: false
+      selector:
+        multiple: true
+        options:
+          - mon
+          - tue
+          - wed
+          - thu
+          - fri
+          - sat
+          - sun
+    month:
+      description: Months to run
+      example: jan
+      required: false
+      selector:
+        multiple: true
+        options:
+          - jan
+          - feb
+          - mar
+          - apr
+          - may
+          - jun
+          - jul
+          - aug
+          - sep
+          - oct
+          - nov
+          - dec
+    day:
+      description: Day of month to run
+      example: 1
+      required: false
+      selector:
+        object:
+    enabled:
+      description: Enable/disable this schedule
+      example: true
+      required: false
+      selector:
+        boolean:
