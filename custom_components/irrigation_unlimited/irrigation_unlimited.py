@@ -3113,6 +3113,8 @@ class IUController(IUBase):
                 return sequence.total_time_final(total_time)
             return total_time
 
+        if self.preamble is not None and not self.is_on:
+            stime += self.preamble
         total_time = calc_total_time(total_time, sequence, schedule)
         duration_factor = sequence.duration_factor(total_time)
 
