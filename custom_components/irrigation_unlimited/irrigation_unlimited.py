@@ -184,6 +184,7 @@ from .const import (
 
 _LOGGER: Logger = getLogger(__package__)
 
+
 # Useful time manipulation routine
 def time_to_timedelta(offset: time) -> timedelta:
     """Create a timedelta from a time object"""
@@ -611,7 +612,6 @@ class IUSchedule(IUBase):
         next_run: datetime = None
         advancement = timedelta(days=1)
         while True:
-
             if current_time is None:  # Initialise on first pass
                 current_time = local_time
             else:
@@ -4423,6 +4423,7 @@ class IUClock:
     def finalise(self):
         """finalise this unit"""
         self._remove_timer()
+
 
 class IUCoordinator:
     """Irrigation Unlimited Coordinator class"""
