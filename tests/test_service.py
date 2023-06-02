@@ -21,6 +21,7 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
 
 IUExam.quiet_mode()
 
+
 # pylint: disable=unused-argument
 # pylint: disable=too-many-statements
 async def test_service_adjust_time_basic(
@@ -1745,7 +1746,10 @@ async def test_service_enable_disable_sequence(
 
         exam.check_summary()
 
-async def test_service_manual_run_sequence(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+
+async def test_service_manual_run_sequence(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
     """Test manual_run service call on a sequence"""
 
     async with IUExam(hass, "service_manual_run_sequence.yaml") as exam:
@@ -1771,6 +1775,7 @@ async def test_service_manual_run_sequence(hass: ha.HomeAssistant, skip_dependen
         await exam.finish_test()
 
         exam.check_summary()
+
 
 async def test_service_load_schedule(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
