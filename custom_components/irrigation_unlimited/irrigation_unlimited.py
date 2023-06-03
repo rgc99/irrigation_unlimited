@@ -1217,10 +1217,6 @@ class IUScheduleQueue(IURunQueue):
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
 
-        # There is no default duration on a zone. Ignore request
-        if duration is None:
-            return None
-
         if self._current_run is not None:
             self.pop(0)
 
@@ -1463,6 +1459,7 @@ class IUZone(IUBase):
         self._name: str = None
         self._show_config: bool = False
         self._show_timeline: bool = False
+        self._duration: timedelta = None
         # Private variables
         self._initialised: bool = False
         self._finalised: bool = False
@@ -1640,9 +1637,14 @@ class IUZone(IUBase):
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Add a manual run."""
         if (self._is_enabled or self._allow_manual) and self._controller.enabled:
+            duration = wash_td(data.get(CONF_TIME))
+            if duration is None or duration == timedelta(0):
+                duration = self._duration
+                if duration is None:
+                    return
             self._run_queue.add_manual(
                 self._controller.manual_run_start(stime),
-                wash_td(data.get(CONF_TIME)),
+                duration,
                 self,
             )
 
@@ -1682,6 +1684,7 @@ class IUZone(IUBase):
         self.clear()
         if all_zones is not None:
             self._allow_manual = all_zones.get(CONF_ALLOW_MANUAL, self._allow_manual)
+            self._duration = all_zones.get(CONF_DURATION, self._duration)
             if CONF_SHOW in all_zones:
                 self._show_config = all_zones[CONF_SHOW].get(
                     CONF_CONFIG, self._show_config
@@ -1692,6 +1695,7 @@ class IUZone(IUBase):
         self._zone_id = config.get(CONF_ZONE_ID, str(self.index + 1))
         self._is_enabled = config.get(CONF_ENABLED, True)
         self._allow_manual = config.get(CONF_ALLOW_MANUAL, self._allow_manual)
+        self._duration = config.get(CONF_DURATION, self._duration)
         self._name = config.get(CONF_NAME, None)
         self._run_queue.load(config, all_zones)
         if CONF_SHOW in config:

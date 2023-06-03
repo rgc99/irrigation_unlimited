@@ -681,6 +681,46 @@ async def test_service_manual_run(
         )
         await exam.finish_test()
 
+        await exam.begin_test(9)
+        await exam.run_until("2021-01-04 08:14:59")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(10)
+        await exam.run_until("2021-01-04 08:14:59")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "time": "00:00"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(11)
+        await exam.run_until("2021-01-04 08:14:59")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(12)
+        await exam.run_until("2021-01-04 08:14:59")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z2", "time": "00:00"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(13)
+        await exam.run_until("2021-01-04 08:14:59")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c2_z1"},
+        )
+        await exam.finish_test()
+
         exam.check_summary()
 
 
@@ -1770,6 +1810,17 @@ async def test_service_manual_run_sequence(
             {
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
                 "sequence_id": 1,
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(3)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "time": "0:00:00",
             },
         )
         await exam.finish_test()

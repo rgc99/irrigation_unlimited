@@ -92,14 +92,54 @@ irrigation_unlimited:
           - {t: '2021-01-04 06:10:00', c: 1, z: 2, s: 1}
           - {t: '2021-01-04 06:25:00', c: 1, z: 2, s: 0}
           - {t: '2021-01-04 06:26:00', c: 1, z: 0, s: 0}
+      - name: '9-Manual run with no time Zone 1'
+        start: '2021-01-04 08:00'
+        end: '2021-01-04 09:00'
+        results:
+          - {t: '2021-01-04 08:15:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 08:16:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 08:31:00', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 08:32:00', c: 1, z: 0, s: 0}
+      - name: '10-Manual run with no time Zone 1'
+        start: '2021-01-04 08:00'
+        end: '2021-01-04 09:00'
+        results:
+          - {t: '2021-01-04 08:15:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 08:16:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 08:31:00', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 08:32:00', c: 1, z: 0, s: 0}
+      - name: '11-Manual run with no time Zone 2'
+        start: '2021-01-04 08:00'
+        end: '2021-01-04 09:00'
+        results:
+          - {t: '2021-01-04 08:15:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 08:16:00', c: 1, z: 2, s: 1}
+          - {t: '2021-01-04 08:26:00', c: 1, z: 2, s: 0}
+          - {t: '2021-01-04 08:27:00', c: 1, z: 0, s: 0}
+      - name: '12-Manual run with no time Zone 2'
+        start: '2021-01-04 08:00'
+        end: '2021-01-04 09:00'
+        results:
+          - {t: '2021-01-04 08:15:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 08:16:00', c: 1, z: 2, s: 1}
+          - {t: '2021-01-04 08:26:00', c: 1, z: 2, s: 0}
+          - {t: '2021-01-04 08:27:00', c: 1, z: 0, s: 0}
+      - name: '13-Manual run with no time Controller 2'
+        start: '2021-01-04 08:00'
+        end: '2021-01-04 09:00'
+        results: []
   controllers:
     - name: "Test controller 1"
       preamble: "00:01"
       postamble: "00:01"
+      all_zones_config:
+        duration: '00:10'
       zones:
-        - schedules:
-          - time: "12:00"
-            duration: "0:10:00"
+        - name: "Zone 1"
+          duration: "00:15"
+          schedules:
+            - time: "12:00"
+              duration: "0:10:00"
         - schedules:
           - time: "06:10"
             duration: "00:10"

@@ -189,6 +189,7 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
         vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
         vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
+        vol.Optional(CONF_DURATION): cv.positive_time_period_template,
     }
 )
 
@@ -200,6 +201,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
         vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
         vol.Optional(CONF_ALLOW_MANUAL): cv.boolean,
         vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
+        vol.Optional(CONF_DURATION): cv.positive_time_period_template,
     }
 )
 
