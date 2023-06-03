@@ -1,5 +1,5 @@
 """This module handles the HA service call interface"""
-from homeassistant.core import ServiceCall, callback
+from homeassistant.util import dt
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
@@ -75,6 +75,7 @@ def register_component_services(
             conf = {DOMAIN: {}}
         coordinator.load(conf[DOMAIN])
         await async_reload_platform(component, coordinator)
+        coordinator.timer(dt.utcnow())
         coordinator.clock.start()
 
     async_register_admin_service(

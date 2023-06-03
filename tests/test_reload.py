@@ -7,6 +7,7 @@ from tests.iu_test_support import IUExam
 
 IUExam.quiet_mode()
 
+
 # pylint: disable=unused-argument
 async def test_service_reload(
     hass: ha.HomeAssistant,
@@ -16,12 +17,28 @@ async def test_service_reload(
     """Test reload service call."""
 
     async with IUExam(hass, "mock_config.yaml") as exam:
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+        assert sta.attributes["friendly_name"] == "Controller 1"
+        assert sta.attributes["zone_count"] == 1
+
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        assert sta.attributes["friendly_name"] == "Zone 1"
+        assert sta.attributes["schedule_count"] == 1
+
         full_path = exam.config_directory + "service_reload.yaml"
         with patch(
             "homeassistant.core.Config.path",
             return_value=full_path,
         ):
             await exam.call(SERVICE_RELOAD)
+            sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+            assert sta.attributes["friendly_name"] == "The First Controller"
+            assert sta.attributes["zone_count"] == 1
+
+            sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+            assert sta.attributes["friendly_name"] == "The First Zone"
+            assert sta.attributes["schedule_count"] == 2
+
             await exam.begin_test(1)
             await exam.finish_test()
 

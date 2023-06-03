@@ -17,7 +17,11 @@ irrigation_unlimited:
           - {t: '2021-01-04 06:20:00', c: 1, z: 1, s: 0}
           - {t: '2021-01-04 06:20:00', c: 1, z: 0, s: 0}
   controllers:
-    zones:
-      - schedules:
-        - time: "06:10"
-          duration: "00:10"
+    - name: "The First Controller"
+      zones:
+        - name: "The First Zone"
+          schedules:
+            - time: "06:10"
+              duration: "00:10"
+            - time: "08:10"
+              duration: "00:20"
