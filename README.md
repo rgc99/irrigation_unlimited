@@ -50,9 +50,9 @@
   - [7.2. Service `cancel`](#72-service-cancel)
   - [7.3. Service `manual_run`](#73-service-manual_run)
   - [7.4. Service `adjust_time`](#74-service-adjust_time)
-    - [7.4.1. Tip](#741-tip)
-  - [7.5. Service `reload`](#75-service-reload)
-  - [7.6. Service call access roadmap](#76-service-call-access-roadmap)
+  - [7.5. Service `load_schedule`](#75-service-load_schedule)
+  - [7.6. Service `reload`](#76-service-reload)
+  - [7.7. Service call access roadmap](#77-service-call-access-roadmap)
 - [8. Frontend](#8-frontend)
   - [8.1. Generic Cards](#81-generic-cards)
   - [8.2. Timeline](#82-timeline)
@@ -74,7 +74,14 @@
   - [11.4. Last but not least](#114-last-but-not-least)
 - [12. Notes](#12-notes)
 - [13. Snake case](#13-snake-case)
-- [14. Switch entities](#14-switch-entities)
+- [14. Parameter Types](#14-parameter-types)
+  - [14.1 Irrigation Unlimited Entities](#141-irrigation-unlimited-entities)
+  - [14.2 Duration (Time Period)](#142-duration-time-period)
+  - [14.3 Switch entities](#143-switch-entities)
+  - [14.4 Templating](#144-templating)
+  - [14.5 Sequence](#145-sequence)
+  - [14.6 Zones](#146-zones)
+  - [14.7 Time (Time of Day)](#147-time-time-of-day)
 - [15. Contributions are welcome](#15-contributions-are-welcome)
 - [16. Credits](#16-credits)
 <!-- /TOC -->
@@ -179,15 +186,14 @@ custom_components/irrigation_unlimited/entity.py
 custom_components/irrigation_unlimited/history.py
 custom_components/irrigation_unlimited/irrigation_unlimited.py
 custom_components/irrigation_unlimited/manifest.json
+custom_components/irrigation_unlimited/schema.py
 custom_components/irrigation_unlimited/service.py
 custom_components/irrigation_unlimited/services.yaml
 ```
 
 ## 5. Configuration
 
-Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#75-service-reload) for details and limitations.
-
-The time type is a string in the format HH:MM or H:MM:SS. Time type must be a positive value. Seconds can be specified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). This is the heart beat or system pulse. All times will be synchronised to these boundaries.
+Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#76-service-reload) for details and limitations.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
@@ -209,11 +215,11 @@ This is the controller or master object and manages a collection of zones. There
 | `zones` | list | _[Zone Objects](#53-zone-objects)_ | Zone details (Must have at least one) |
 | `sequences` | list | _[Sequence Objects](#56-sequence-objects)_ | Sequence details |
 | `name` | string | Controller _N_ | Friendly name for the controller |
-| `controller_id` | string | _N_ | Controller reference. Used to change the default entity name (enable with [rename_entities](#5-configuration)). This should be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
+| `controller_id` | string | _N_ | Controller reference. Used to change the default entity name (enable with [rename_entities](#5-configuration)). This must be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
 | `enabled` | bool | true | Enable/disable the controller |
-| `preamble` | time | '00:00' | The time master turns on before any zone turns on. This is in effect a delay-start timer, controller will turn on before the zones. Can be negative to make the controller turn on _after_ the zone |
-| `postamble` | time | '00:00' | The time master remains on after all zones are off. This is in effect a run-on timer, controller will turn off after the specified delay. Can be negative to make the controller turn off _before_ the zone - this can reduce water hammering |
-| `entity_id` | string/list | | Switch entity_id(s) for example `switch.my_master_valve_1`. More information [here](#14-switch-entities) |
+| `preamble` | [duration](#142-duration-time-period) | '00:00' | The time master turns on before any zone turns on. This is in effect a delay-start timer, controller will turn on before the zones. Can be negative to make the controller turn on _after_ the zone |
+| `postamble` | [duration](#142-duration-time-period) | '00:00' | The time master remains on after all zones are off. This is in effect a run-on timer, controller will turn off after the specified delay. Can be negative to make the controller turn off _before_ the zone - this can reduce water hammering |
+| `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_master_valve_1` |
 | `all_zones_config` | object | _[All Zones Object](#52-all-zone-objects)_ | Shorthand default for all zones |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 
@@ -223,9 +229,10 @@ This object is useful when the same settings are required for each zone. It is s
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `minimum` | time | | The minimum run time |
-| `maximum` | time | | The maximum run time |
-| `future_span` | time | | Run queue look ahead |
+| `minimum` | [duration](#142-duration-time-period) | | The minimum run time |
+| `maximum` | [duration](#142-duration-time-period) | | The maximum run time |
+| `duration` | [duration](#142-duration-time-period) | | The default run time |
+| `future_span` | number | 3 | Run queue look ahead in days |
 | `allow_manual` | bool | false | Allow manual run even when disabled |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
@@ -237,14 +244,15 @@ The zone object manages a collection of schedules. There must be at least one zo
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Optional) |
-| `zone_id` | string | _N_ | Zone reference. Used for sequencing and to rename the entity. This should be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number. Set [rename_entities](#5-configuration) to alter the entity _id of the sensor |
+| `zone_id` | string | _N_ | Zone reference. Used for sequencing and to rename the entity. This must be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number. Set [rename_entities](#5-configuration) to alter the entity _id of the sensor |
 | `name` | string | Zone _N_ | Friendly name for the zone |
 | `enabled` | bool | true | Enable/disable the zone |
-| `minimum` | time | '00:01' | The minimum run time |
-| `maximum` | time | | The maximum run time |
+| `minimum` | [duration](#142-duration-time-period) | '00:01' | The minimum run time |
+| `maximum` | [duration](#142-duration-time-period) | | The maximum run time |
+| `duration` | [duration](#142-duration-time-period) | | The default run time. Used when no `time` is provided for a manual run |
 | `future_span` | number | 3 | Number of days to look ahead |
 | `allow_manual` | bool | false | Allow manual run even when disabled |
-| `entity_id` | string/list | | Switch entity_id(s) for example `switch.my_zone_valve_1`. More information [here](#14-switch-entities) |
+| `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_zone_valve_1` |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 
@@ -266,9 +274,9 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `time` | time/_[Sun Event](#551-sun-event)_/_[Crontab](#552-crontab)_ | **Required** | The start time. Either a time (07:30), sun event or cron expression |
+| `time` | [time](#147-time-time-of-day)/_[Sun Event](#551-sun-event)_/_[Crontab](#552-crontab)_ | **Required** | The start time. Either a time (07:30), sun event or cron expression |
 | `anchor` | string | start | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
-| `duration` | time | | The length of time to run. Required for zones and optional for sequences |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. Required for zones and optional for sequences |
 | `name` | string | Schedule _N_ | Friendly name for the schedule |
 | `weekday` | list | | The days of week to run [mon, tue...sun] |
 | `day` | list/string/_[Every `n` days](#553-every-n-days)_ | | Days of month to run [1, 2...31]/odd/even/_[Every `n` days](#553-every-n-days)_ |
@@ -282,8 +290,8 @@ Leave the time value in the _[Schedule Objects](#55-schedule-objects)_ blank and
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `sun` | string | **Required** | `sunrise` or `sunset` |
-| `before` | time | '00:00' | Time before the event |
-| `after` | time | '00:00' | Time after the event |
+| `before` | [duration](#142-duration-time-period) | '00:00' | Time before the event |
+| `after` | [duration](#142-duration-time-period) | '00:00' | Time after the event |
 
 #### 5.5.2 Crontab
 
@@ -327,8 +335,8 @@ Sequences directly descend from a controller and are loosely connected to a zone
 | ---- | ---- | ------- | ----------- |
 | `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Optional). Note: `duration` if specified is the total run time for the sequence, see below for more details |
 | `zones` | list | _[Sequence Zone Objects](#57-sequence-zone-objects)_ | Zone details (Must have at least one) |
-| `delay` | time | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
-| `duration` | time | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
+| `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
 | `name` | string | Run _N_ | Friendly name for the sequence |
 | `enabled` | bool | true | Enable/disable the sequence |
@@ -340,8 +348,8 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zone_id` | string/list | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#53-zone-objects)_ |
-| `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#56-sequence-objects)_ |
-| `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_ |
+| `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#56-sequence-objects)_ |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
 
@@ -647,7 +655,7 @@ For a more comprehensive example refer to [here](./examples/all_the_bells_and_wh
 
 ## 7. Services
 
-The binary sensor associated with each controller and zone provide several services. The sensors offer the following services:
+The binary sensor associated with each controller and zone provide several services. These sensors offer the following services:
 
 - `enable`
 - `disable`
@@ -655,6 +663,7 @@ The binary sensor associated with each controller and zone provide several servi
 - `cancel`
 - `manual_run`
 - `adjust_time`
+- `load_schedule`
 
 If a controller sensor is targetted then it will effect all its children zones.
 
@@ -662,58 +671,74 @@ If a controller sensor is targetted then it will effect all its children zones.
 
 Enables/disables/toggles the controller, zone, sequence or sequence zone respectively.
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to enable/disable/toggle. |
-| `sequence_id` | yes | Sequence to enable/disable/toggle (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. |
-| `zones` | yes | Zones to enable/disable/toggle (1, 2..N). Within a sequence, zones are numbered by their position starting a 1. A value of 0 means all zones. |
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to enable/disable/toggle. |
+| `sequence_id` | [number](#145-sequence) | no | Sequence to enable/disable/toggle. |
+| `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
 
 ### 7.2. Service `cancel`
 
 Cancels the current running schedule.
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to cancel.
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to cancel. |
 
 ### 7.3. Service `manual_run`
 
 Turn on the controller or zone for a period of time. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence. Zone times are calculated and rounded to the nearest time boundary. This means the total run time may vary from the specified time.
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to run.
-| `time` | no | Total time to run.
-| `sequence_id` | yes | Sequence to run (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
+| `time` | [duration](#142-duration-time-period) | no | Total time to run. Supports [templating](#144-templating). If not provided or is "0:00:00" then adjusted defaults will be applied |
+| `sequence_id` | [number](#145-sequence) | no | Sequence to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. |
 
 ### 7.4. Service `adjust_time`
 
-Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
+Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
 A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day. Adjustments must be made _before_ the scheduled start time. Running schedules will be not affected.
 
-#### 7.4.1. Tip
+Tip: Use forecast and observation data collected by weather integrations in automations to adjust the run times. See [below](#9-automation) for more information.
 
-Use forecast and observation data collected by weather integrations in automations to adjust the run times. See [below](#9-automation) for more information.
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
+| `actual` | [duration](#142-duration-time-period) | see below* | Specify a new run time. This will replace the existing duration. Supports [templating](#144-templating). |
+| `percentage` | float | see below* | Adjust time by a percentage. Values less than 100 will decrease the run time while values greater than 100 will increase the run time. Supports [templating](#144-templating). |
+| `increase` | [duration](#142-duration-time-period) | see below* | Increase the run time by the specified time. A value of '00:10' will increase the duration by 10 minutes. Value will be capped by the `maximum` setting. Supports [templating](#144-templating). |
+| `decrease` | [duration](#142-duration-time-period) | see below* | Decrease the run time by the specified time. A value of '00:05' will decrease the run time by 5 minutes. Value will be limited by the `minimum` setting. Supports [templating](#144-templating). |
+| `reset` | none | see below* | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings). |
+| `minimum` | [duration](#142-duration-time-period) | no | Set the minimum run time. Supports [templating](#144-templating). |
+| `maximum` | [duration](#142-duration-time-period) | no | Set the maximum run time. Note: The default is no limit. Supports [templating](#144-templating). |
+| `sequence_id` | [number](#145-sequence) | no | Sequence to adjust. |
+| `zones` | [number/list](#146-zones) | no | Zones to adjust. |
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to run.
-| `actual` | yes | Specify a new time time. This will replace the existing duration. A time value is required '00:30'.
-| `percentage` | yes | Adjust time by a percentage. A positive float value. Values less than 1 will decrease the run time while values greater than 1 will increase the run time.
-| `increase` | yes | Increase the run time by the specified time. A value of '00:10' will increase the duration by 10 minutes. Value will be capped by the `maximum` setting.
-| `decrease` | yes | Decrease the run time by the specified time. A value of '00:05' will decrease the run time by 5 minutes. Value will be limited by the `minimum` setting.
-| `reset` | yes | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings).
-| `minimum` | yes | Set the minimum run time.
-| `maximum` | yes | Set the maximum run time. Note: The default is no limit.
-| `sequence_id` | yes | Sequence to adjust (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
-| `zones` | yes | Zones to adjust (1, 2..N). Within a sequence, zones are numbered by their position starting a 1. A value of 0 means all zones.
+\* Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`.
 
-### 7.5. Service `reload`
+### 7.5. Service `load_schedule`
+
+Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `schedule_id` | string | **Required** | A unique identifier |
+| `time` | [time](#147-time-time-of-day)/_[Sun Event](#551-sun-event)_/_[Crontab](#552-crontab)_ | | The start time. Either a time (07:30), sun event or cron expression |
+| `anchor` | string | | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. Required for zones and optional for sequences |
+| `name` | string | | Friendly name for the schedule |
+| `weekday` | list | | The days of week to run [mon, tue...sun] |
+| `day` | list/string/_[Every `n` days](#553-every-n-days)_ | | Days of month to run [1, 2...31]/odd/even/_[Every `n` days](#553-every-n-days)_ |
+| `month` | list | | Months of year to run [jan, feb...dec] |
+| `enabled` | bool | | Enable/disable the schedule |
+
+### 7.6. Service `reload`
 
 Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading. Note: since version 2021.10.0 all settings can be changed including new controllers and zones.
 
-### 7.6. Service call access roadmap
+### 7.7. Service call access roadmap
 
 A reminder that sequences directly descend from a controller. Therefore service calls that manipulate a sequence should address the parent controller. An entity_id of a zone when trying to adjust a sequence will most likely not have the desired effect.
 
@@ -1387,9 +1412,55 @@ If all else fails please open an [issue](https://github.com/rgc99/irrigation_unl
 
  The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) identifiers need to be in snake_case like `my_garden`, `vege_patch`, `rose_bed`, `front_lawn`. The allowable characters are lower case alphabet, numerals and the underscore. The underscore cannot be used as a leading or trailing character and not more than one together. For more information see [here](https://en.wikipedia.org/wiki/Snake_case)
 
-## 14. Switch entities
+## 14. Parameter Types
 
-These can be any entity from the `switch` or `light` platforms or anything that supports the `turn_on` and `turn_off` actions. In case you wish to control some other device like a motorised valve that presents itself in Home Assistant as a cover then adapt the following automation.
+### 14.1 Irrigation Unlimited Entities
+
+This parameter specifies one or more Irrigation Unlimited entities such as 'binary_sensor.irrigation_unlimited_c1_z1'. Multiple entities can be a CSV string or a list. Here is a code snippet to show different ways to specify the entity_ids.
+
+```yaml
+  ...
+  entity_id: binary_sensor.irrigation_unlimited_c1_z1
+  entity_id: binary_sensor.irrigation_unlimited_c1_z1,binary_sensor.irrigation_unlimited_c1_z2
+  entity_id:
+    - binary_sensor.irrigation_unlimited_c1_z1
+    - binary_sensor.irrigation_unlimited_c1_z2
+  ...
+```
+
+### 14.2 Duration (Time Period)
+
+The time period (duration) type is a string in the format HH:MM, HH:MM:SS, the number of seconds or a dictionary. Time type must be a positive value unless otherwise noted. The value will be rounded down to the system granularity. The default granularity is one second. This is the heart beat or system pulse. All times will be synchronised to these boundaries. Here are different ways to specify 10 minutes.
+
+```yaml
+  ...
+  time: '00:10' # HH:MM
+  time: '0:10:00' # H:MM:SS
+  time: '00:10:00' # HH:MM:SS
+  time: 600 # Seconds
+  time: # One or more or the following
+    days: 0
+    hours: 0
+    minutes: 10
+    seconds: 0
+  ...
+```
+
+### 14.3 Switch entities
+
+These can be any entity from the `switch` or `light` platforms or anything that supports the `turn_on` and `turn_off` actions. Multiple entities can be a CSV string or a list. Here is a code snippet to show different ways to specify the entity_ids.
+
+```yaml
+  ...
+  entity_id: switch.valve_1
+  entity_id: light.valve_1,light.valve_2
+  entity_id:
+    - switch.valve_1
+    - light.valve_2
+  ...
+```
+
+In case you wish to control some other device like a motorised valve that presents itself in Home Assistant as a cover then adapt the following automation.
 
 ```yaml
 automation:
@@ -1410,6 +1481,37 @@ automation:
         entity_id: cover.my_cover_1
     mode: single
 ```
+
+### 14.4 Templating
+
+Some parameters support [templating](https://www.home-assistant.io/docs/configuration/templating). Actual support is noted in the relevant documentation.
+
+Templating is an advanced Home Assistant scripting technique. In many cases such as scripts and automations templating is built in. In other situations like the tap action from a button card, templating is not available but the string will be passed to the service call. Irrigation Unlimited will detect the string contains a template and convert it. Here are some examples that retrieve data from an input text box and pass it to a service call.
+
+```yaml
+  ...
+  action:
+    service: irrigation_unlimited.adjust_time
+    service_data:
+      percentage: "{{ states('input_text.adjustment') | float(100) }}"
+  ...
+  action:
+    service: irrigation_unlimited.manual_run
+    service_data:
+      time: "{{ states('input_text.run_time') | default('00:00') }}"
+```
+
+### 14.5 Sequence
+
+Sequence to adjust, a number (1, 2..N). This is the position number of the sequence under the controller. Within a controller, sequences are numbered by their position starting at 1. `sequence_id: 1` is the first, 2 is the second and so on. Only relevant when entity_id is a controller/master. An error message will be generated if a `sequence_id` is specified and `entity_id` is not a controller/master.
+
+### 14.6 Zones
+
+Zone(s) to adjust, number/list (1, 2..N). This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zones. Within a sequence, zones are numbered by their position starting a 1.
+
+### 14.7 Time (Time of Day)
+
+The time of day type is a string in the format HH:MM or HH:MM:SS. It is assumed to be in the local time.
 
 ## 15. Contributions are welcome
 
