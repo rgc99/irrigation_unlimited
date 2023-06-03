@@ -1,4 +1,5 @@
 """This module handles the HA service call interface"""
+from homeassistant.core import ServiceCall, callback
 from homeassistant.util import dt
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
