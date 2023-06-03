@@ -100,7 +100,7 @@ irrigation_unlimited:
           - {t: '2021-01-04 08:16:00', c: 1, z: 1, s: 1}
           - {t: '2021-01-04 08:31:00', c: 1, z: 1, s: 0}
           - {t: '2021-01-04 08:32:00', c: 1, z: 0, s: 0}
-      - name: '10-Manual run with no time Zone 1'
+      - name: '10-Manual run with zero time Zone 1'
         start: '2021-01-04 08:00'
         end: '2021-01-04 09:00'
         results:
@@ -116,7 +116,7 @@ irrigation_unlimited:
           - {t: '2021-01-04 08:16:00', c: 1, z: 2, s: 1}
           - {t: '2021-01-04 08:26:00', c: 1, z: 2, s: 0}
           - {t: '2021-01-04 08:27:00', c: 1, z: 0, s: 0}
-      - name: '12-Manual run with no time Zone 2'
+      - name: '12-Manual run with zero time Zone 2'
         start: '2021-01-04 08:00'
         end: '2021-01-04 09:00'
         results:
@@ -128,6 +128,14 @@ irrigation_unlimited:
         start: '2021-01-04 08:00'
         end: '2021-01-04 09:00'
         results: []
+      - name: '14-Manual run with no time Zone 1 adjusted 50%'
+        start: '2021-01-04 08:00'
+        end: '2021-01-04 09:00'
+        results:
+          - {t: '2021-01-04 08:15:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 08:16:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 08:23:30', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 08:24:30', c: 1, z: 0, s: 0}
   controllers:
     - name: "Test controller 1"
       preamble: "00:01"

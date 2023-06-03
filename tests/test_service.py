@@ -721,6 +721,23 @@ async def test_service_manual_run(
         )
         await exam.finish_test()
 
+        await exam.begin_test(14)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "percentage": 50},
+        )
+        await exam.run_until("2021-01-04 08:14:59")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        )
+        await exam.run_until("2021-01-04 08:30:00")
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "reset": None},
+        )
+        await exam.finish_test()
+
         exam.check_summary()
 
 

@@ -1642,6 +1642,7 @@ class IUZone(IUBase):
                 duration = self._duration
                 if duration is None:
                     return
+                duration = self._adjustment.adjust(duration)
             self._run_queue.add_manual(
                 self._controller.manual_run_start(stime),
                 duration,
