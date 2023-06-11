@@ -208,7 +208,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
 SEQUENCE_ZONE_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_ZONE_ID): vol.All(cv.ensure_list, [cv.string]),
-        vol.Optional(CONF_DELAY): cv.positive_time_period,
+        vol.Optional(CONF_DELAY): cv.time_period,
         vol.Optional(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_REPEAT): cv.positive_int,
         vol.Optional(CONF_ENABLED): cv.boolean,
@@ -224,7 +224,7 @@ SEQUENCE_SCHEMA = vol.Schema(
             cv.ensure_list, [SEQUENCE_SCHEDULE_SCHEMA]
         ),
         vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_DELAY): cv.positive_time_period,
+        vol.Optional(CONF_DELAY): cv.time_period,
         vol.Optional(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_REPEAT): cv.positive_int,
         vol.Optional(CONF_ENABLED): cv.boolean,
