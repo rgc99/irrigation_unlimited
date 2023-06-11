@@ -25,6 +25,7 @@ from custom_components.irrigation_unlimited.const import (
 from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 # pylint: disable=global-statement
 TEST_CONFIG_DIR = "tests/configs/"
@@ -43,6 +44,9 @@ def quiet_mode() -> None:
         logging.WARNING
     )
     logging.getLogger("homeassistant.loader").setLevel(logging.ERROR)
+
+
+logging.getLogger("custom_components.irrigation_unlimited").setLevel(logging.DEBUG)
 
 
 async def reset_hass_config(hass: ha.HomeAssistant) -> None:
