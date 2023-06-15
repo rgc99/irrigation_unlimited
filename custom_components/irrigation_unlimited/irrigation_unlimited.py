@@ -1669,8 +1669,6 @@ class IUZone(IUBase):
         """Reset this zone"""
         self._schedules.clear()
         self.clear_run_queue()
-        self._adjustment = IUAdjustment()
-        self._is_on = False
 
     def clear_runs(self, stime: datetime) -> None:
         """Clear out the run queue except for current or manual runs"""
@@ -1694,7 +1692,7 @@ class IUZone(IUBase):
                     CONF_TIMELINE, self._show_timeline
                 )
         self._zone_id = config.get(CONF_ZONE_ID, str(self.index + 1))
-        self._is_enabled = config.get(CONF_ENABLED, True)
+        self._is_enabled = config.get(CONF_ENABLED, self._is_enabled)
         self._allow_manual = config.get(CONF_ALLOW_MANUAL, self._allow_manual)
         self._duration = config.get(CONF_DURATION, self._duration)
         self._name = config.get(CONF_NAME, None)
@@ -1969,7 +1967,7 @@ class IUSequenceZone(IUBase):
         self._repeat: int = None
         self._enabled: bool = True
         # Private variables
-        self.clear()
+        self._adjustment = IUAdjustment()
 
     @property
     def zone_ids(self) -> "list[str]":
@@ -2042,13 +2040,8 @@ class IUSequenceZone(IUBase):
                 return STATUS_DISABLED
         return STATUS_BLOCKED
 
-    def clear(self) -> None:
-        """Reset this sequence zone"""
-        self._adjustment = IUAdjustment()
-
     def load(self, config: OrderedDict) -> "IUSequenceZone":
         """Load sequence zone data from the configuration"""
-        self.clear()
         self._zone_ids = config[CONF_ZONE_ID]
         self._delay = wash_td(config.get(CONF_DELAY))
         self._duration = wash_td(config.get(CONF_DURATION))
@@ -2339,8 +2332,6 @@ class IUSequence(IUBase):
     def clear(self) -> None:
         """Reset this sequence"""
         self._schedules.clear()
-        self._zones.clear()
-        self._adjustment.clear()
 
     def add_schedule(self, schedule: IUSchedule) -> IUSchedule:
         """Add a new schedule to the sequence"""
@@ -2388,8 +2379,11 @@ class IUSequence(IUBase):
         self._duration = wash_td(config.get(CONF_DURATION))
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
+        zidx: int = 0
         for zidx, zone_config in enumerate(config[CONF_ZONES]):
             self.find_add_zone(zidx).load(zone_config)
+        while zidx < len(self._zones) - 1:
+            self._zones.pop()
         if CONF_SCHEDULES in config:
             for sidx, schedule_config in enumerate(config[CONF_SCHEDULES]):
                 self.find_add_schedule(sidx).load(schedule_config)
@@ -2947,8 +2941,6 @@ class IUController(IUBase):
         # Don't clear zones
         # self._zones.clear()
         self._run_queue.clear_all()
-        self._sequences.clear()
-        self._is_on = False
 
     def clear_sequence_runs(
         self, stime: datetime, zone_ids: "list[str]" = None
@@ -2966,7 +2958,7 @@ class IUController(IUBase):
     def load(self, config: OrderedDict) -> "IUController":
         """Load config data for the controller"""
         self.clear()
-        self._is_enabled = config.get(CONF_ENABLED, True)
+        self._is_enabled = config.get(CONF_ENABLED, self._is_enabled)
         self._name = config.get(CONF_NAME, f"Controller {self.index + 1}")
         self._controller_id = config.get(CONF_CONTROLLER_ID, str(self.index + 1))
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
@@ -2981,8 +2973,13 @@ class IUController(IUBase):
             self._zones.pop().finalise(True)
 
         if CONF_SEQUENCES in config:
+            qidx: int = 0
             for qidx, sequence_config in enumerate(config[CONF_SEQUENCES]):
                 self.find_add_sequence(qidx).load(sequence_config)
+            while qidx < len(self._sequences) - 1:
+                self._sequences.pop()
+        else:
+            self._sequences.clear()
 
         self._switch.load(config, None)
         self._dirty = True
