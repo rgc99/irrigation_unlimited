@@ -4269,6 +4269,7 @@ class IUClock:
         self._next_tick: datetime = None
         self._fixed_clock = False
         self._show_log = False
+        self._finalised = False
 
     @property
     def is_fixed(self) -> bool:
@@ -4310,6 +4311,8 @@ class IUClock:
 
     def next_awakening(self, atime: datetime) -> datetime:
         """Return the time for the next event"""
+        if self._finalised:
+            return utc_eot()
         if not self._coordinator.initialised:
             return atime + timedelta(seconds=5)
         if self._fixed_clock:
@@ -4427,7 +4430,9 @@ class IUClock:
 
     def finalise(self):
         """finalise this unit"""
-        self._remove_timer()
+        if not self._finalised:
+            self._remove_timer()
+            self._finalised = True
 
 
 class IUCoordinator:
@@ -4459,6 +4464,7 @@ class IUCoordinator:
         self._restored_from_configuration: bool = False
         self._sync_switches: bool = True
         self._rename_entities = False
+        self._finalised = False
 
     @property
     def entity_id(self) -> str:
@@ -4509,6 +4515,11 @@ class IUCoordinator:
     def initialised(self) -> bool:
         """Return True if we are initialised"""
         return self._initialised
+
+    @property
+    def finalised(self) -> bool:
+        """Return True if we have been finalised"""
+        return self._finalised
 
     @property
     def configuration(self) -> str:
@@ -4724,10 +4735,12 @@ class IUCoordinator:
 
     def finalise(self, turn_off: bool) -> None:
         """Tear down the system and clean up"""
-        for controller in self._controllers:
-            controller.finalise(turn_off)
-        self._clock.finalise()
-        self._history.finalise()
+        if not self._finalised:
+            for controller in self._controllers:
+                controller.finalise(turn_off)
+            self._clock.finalise()
+            self._history.finalise()
+            self._finalised = True
 
     async def _async_shutdown_listener(self, event: HAEvent) -> None:
         """Home Assistant is shutting down. Attempting to turn off any running
