@@ -1,7 +1,9 @@
 """Irrigation Unlimited test support routines"""
+from unittest.mock import patch
 import logging
 from typing import Any
 from datetime import datetime, timedelta, timezone
+from homeassistant.const import SERVICE_RELOAD
 import homeassistant.core as ha
 from homeassistant.config import (
     load_yaml_config_file,
@@ -272,6 +274,15 @@ class IUExam:
         """Call IU service"""
         await self._hass.services.async_call(DOMAIN, service, data, True)
         await self._hass.async_block_till_done()
+
+    async def reload(self, config: str) -> None:
+        """Reload the specified config file"""
+        self._config_file = config
+        with patch(
+            "homeassistant.core.Config.path",
+            return_value=self.config_file_full,
+        ):
+            await self.call(SERVICE_RELOAD)
 
     def check_summary(self, config_file: str = None) -> None:
         """Check the test results"""
