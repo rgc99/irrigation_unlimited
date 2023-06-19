@@ -115,9 +115,26 @@ async def test_service_reload_survival(
         assert exam.coordinator.controllers[0].zones[0].enabled is False
         assert str(exam.coordinator.controllers[0].zones[0].adjustment) == "%50.0"
 
-        await exam.begin_test(1)
-        await exam.finish_test()
+        await exam.run_test(1)
 
+        exam.check_summary()
+
+
+async def test_service_reload_while_on(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test reload while zone is on"""
+    async with IUExam(hass, "mock_config.yaml") as exam:
+        # Reload while entities are on.
+        await exam.reload("service_reload_1.yaml")
+        await exam.begin_test(1)
+        await exam.run_until("2021-01-04 06:10:00")
+        assert exam.coordinator.controllers[0].is_on is True
+        assert exam.coordinator.controllers[0].zones[0].is_on is True
+        await exam.reload("service_reload_1.yaml")
+        assert exam.coordinator.controllers[0].is_on is False
+        assert exam.coordinator.controllers[0].zones[0].is_on is False
+        await exam.run_test(1)
         exam.check_summary()
 
 
