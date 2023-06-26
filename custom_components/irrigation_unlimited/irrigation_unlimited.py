@@ -1541,6 +1541,11 @@ class IUZone(IUBase):
             self.request_update()
 
     @property
+    def allow_manual(self) -> bool:
+        """Return True if manual overide allowed"""
+        return self._allow_manual
+
+    @property
     def zone_sensor(self) -> Entity:
         """Return the HA entity associated with this zone"""
         return self._zone_sensor
