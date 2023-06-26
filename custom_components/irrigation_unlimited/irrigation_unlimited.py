@@ -399,13 +399,6 @@ class IUAdjustment:
         """Return True if an adjustment is in play"""
         return self._method is not None
 
-    def clear(self) -> None:
-        """Reset the adjustment"""
-        self._method = None
-        self._time_adjustment = None
-        self._minimum = None
-        self._maximum = None
-
     def load(self, data: MappingProxyType) -> bool:
         """Read the adjustment configuration. Return true if anything has changed"""
 
@@ -430,6 +423,8 @@ class IUAdjustment:
         elif CONF_RESET in data:
             self._method = None
             self._time_adjustment = None
+            self._minimum = None
+            self._maximum = None
 
         self._minimum = wash_td(data.get(CONF_MINIMUM, None))
         if self._minimum is not None:
