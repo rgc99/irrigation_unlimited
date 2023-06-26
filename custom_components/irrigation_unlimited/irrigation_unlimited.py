@@ -4003,12 +4003,13 @@ class IULogger:
         controller: IUController,
         zone: IUZone,
         data: MappingProxyType,
+        level=INFO,
     ) -> None:
         """Message that we have received a service call"""
         # pylint: disable=too-many-arguments
         idl = IUBase.idl([controller, zone], "0", 1)
         self._format(
-            INFO,
+            level,
             "CALL",
             stime,
             f"service: {service}, "
@@ -4933,6 +4934,10 @@ class IUCoordinator:
         if changed:
             self._logger.log_service_call(service, stime, controller, zone, data1)
             async_call_later(self._hass, 0, self._async_replay_last_timer)
+        else:
+            self._logger.log_service_call(
+                service, stime, controller, zone, data1, DEBUG
+            )
 
     def service_history(self, entity_ids: set[str]) -> None:
         """History service call entry point. The history has changed
