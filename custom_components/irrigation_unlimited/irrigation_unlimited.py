@@ -1641,7 +1641,7 @@ class IUZone(IUBase):
 
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Add a manual run."""
-        if (self._is_enabled or self._allow_manual) and self._controller.enabled:
+        if self._allow_manual or (self._is_enabled and self._controller.enabled):
             duration = wash_td(data.get(CONF_TIME))
             if duration is None or duration == timedelta(0):
                 duration = self._duration
@@ -3208,12 +3208,15 @@ class IUController(IUBase):
         """Check the run status and update sensors. Return flag
         if anything has changed."""
         zones_changed: list[int] = []
-        is_running: bool = False
-        state_changed: bool = False
+
+        run = self._run_queue.current_run
+        is_enabled = self._is_enabled or (run is not None and run.is_manual())
+        is_running = is_enabled and run is not None
+        state_changed = is_running ^ self._is_on
 
         # Gather zones that have changed status
         for zone in self._zones:
-            if zone.check_run(stime, self._is_enabled):
+            if zone.check_run(stime, is_enabled):
                 zones_changed.append(zone.index)
 
         # Handle off zones before master
@@ -3222,8 +3225,6 @@ class IUController(IUBase):
                 zone.call_switch(zone.is_on, stime)
 
         # Check if master has changed and update
-        is_running = self._is_enabled and self._run_queue.current_run is not None
-        state_changed = is_running ^ self._is_on
         if state_changed:
             self._is_on = not self._is_on
             self.request_update(False)
