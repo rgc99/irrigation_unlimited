@@ -1,3 +1,4 @@
+# A config with one of everything; controllers, zones, schedules, sequences
 irrigation_unlimited:
   granularity: 10
   refresh_interval: 2000
@@ -16,10 +17,25 @@ irrigation_unlimited:
           - { t: "2021-01-04 06:05:00", c: 1, z: 1, s: 1 }
           - { t: "2021-01-04 06:15:00", c: 1, z: 1, s: 0 }
           - { t: "2021-01-04 06:15:00", c: 1, z: 0, s: 0 }
+      - name: "2-Reload sequence"
+        start: "2021-01-04 07:00"
+        end: "2021-01-04 08:00"
+        results:
+          - {t: '2021-01-04 07:05:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 07:05:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 07:15:00', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 07:15:00', c: 1, z: 0, s: 0}
   controllers:
     - name: "Contoller 1"
       zones:
         - name: "C1-Z1"
           schedules:
             - time: "06:05"
+              duration: "00:10"
+      sequences:
+        - name: "C1-S1"
+          schedules:
+            - time: "07:05"
+          zones:
+            - zone_id: 1
               duration: "00:10"

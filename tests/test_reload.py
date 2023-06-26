@@ -134,7 +134,7 @@ async def test_service_reload_while_on(
         await exam.reload("service_reload_1.yaml")
         assert exam.coordinator.controllers[0].is_on is False
         assert exam.coordinator.controllers[0].zones[0].is_on is False
-        await exam.run_test(1)
+        await exam.run_all()
         exam.check_summary()
 
 
@@ -159,18 +159,15 @@ async def test_service_reload_extend_shrink(
 
     async with IUExam(hass, "mock_config.yaml") as exam:
         await exam.reload("service_reload_2.yaml")
-        await exam.begin_test(1)
-        await exam.finish_test()
+        await exam.run_all()
         exam.check_summary()
 
         await exam.reload("service_reload_3.yaml")
-        await exam.begin_test(1)
-        await exam.finish_test()
+        await exam.run_all()
         exam.check_summary()
 
         await exam.reload("service_reload_1.yaml")
-        await exam.begin_test(1)
-        await exam.finish_test()
+        await exam.run_all()
         exam.check_summary()
 
 
