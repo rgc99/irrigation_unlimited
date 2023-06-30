@@ -36,6 +36,8 @@ A clear and concise description of what the bug is.
 
 ## Debug log
 
+These messages are very important in helping to determine the problem. Go into Settings -> System -> Logs. In the search box put in `irrigation_unlimited` (Note the underscore between the two words) and press the **LOAD FULL LOGS** button. Copy and paste below.
+
 <!-- To enable debug logs check this https://www.home-assistant.io/components/logger/ -->
 
 ```text
