@@ -335,7 +335,7 @@ Sequences directly descend from a controller and are loosely connected to a zone
 | ---- | ---- | ------- | ----------- |
 | `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Optional). Note: `duration` if specified is the total run time for the sequence, see below for more details |
 | `zones` | list | _[Sequence Zone Objects](#57-sequence-zone-objects)_ | Zone details (Must have at least one) |
-| `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
+| `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_. Can be negative to make the next zone on _before_ the current zone has finished |
 | `duration` | [duration](#142-duration-time-period) | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
 | `name` | string | Run _N_ | Friendly name for the sequence |
@@ -349,7 +349,7 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | ---- | ---- | ------- | ----------- |
 | `zone_id` | string/list | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#53-zone-objects)_ |
 | `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#56-sequence-objects)_ |
-| `duration` | [duration](#142-duration-time-period) | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_ |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_. Can be negative to make the next zone on _before_ the current zone has finished. |
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
 
