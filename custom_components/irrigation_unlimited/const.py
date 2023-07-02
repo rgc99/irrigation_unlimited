@@ -5,7 +5,7 @@ DOMAIN = "irrigation_unlimited"
 DOMAIN_DATA = f"{DOMAIN}_data"
 COORDINATOR = "coordinator"
 COMPONENT = "component"
-VERSION = "2023.6.1"
+VERSION = "2023.7.0"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 ISSUE_URL = "https://github.com/rgc99/irrigation_unlimited/issues"
 
