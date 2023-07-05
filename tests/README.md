@@ -164,6 +164,7 @@ Run to a point in time.
 Parameter Name | Type | Description
 ---- | ---- | -----------
 stop_at | datetime | The virtual time.
+stop_at | string | The virtual time "YYYY-MM-DD HH:MM:SS"
 
 #### run_for(duration)
 
@@ -172,6 +173,7 @@ Run for a period of time.
 Parameter Name | Type | Description
 ---- | ---- | -----------
 duration | timedelta | The virtual duration.
+duration | string | The virtual durarion "HH:MM:SS"
 
 #### run_for_1_tick()
 

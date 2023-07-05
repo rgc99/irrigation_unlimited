@@ -28,6 +28,7 @@ from custom_components.irrigation_unlimited.__init__ import CONFIG_SCHEMA
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
+logging.getLogger("custom_components.irrigation_unlimited").setLevel(logging.DEBUG)
 
 # pylint: disable=global-statement
 TEST_CONFIG_DIR = "tests/configs/"
@@ -247,7 +248,7 @@ class IUExam:
             else:
                 break
 
-    async def run_for(self, duration: timedelta) -> None:
+    async def run_for(self, duration: timedelta | str) -> None:
         """Run for a period of time"""
         if isinstance(duration, str):
             duration = mk_td(duration)
