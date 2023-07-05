@@ -311,7 +311,7 @@ class IUJSONEncoder(json.JSONEncoder):
             return dt.as_local(o).isoformat()
         if isinstance(o, timedelta):
             return round(o.total_seconds())
-        return o.__str__()
+        return str(o)
 
 
 class IUBase:
