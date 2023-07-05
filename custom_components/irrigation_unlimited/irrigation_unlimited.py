@@ -1449,7 +1449,7 @@ class IUZone(IUBase):
         self._controller = controller
         # Config parameters
         self._zone_id: str = None
-        self._is_enabled: bool = True
+        self._enabled: bool = True
         self._allow_manual: bool = False
         self._name: str = None
         self._show_config: bool = False
@@ -1525,13 +1525,13 @@ class IUZone(IUBase):
     @property
     def enabled(self) -> bool:
         """Return true if this zone is enabled"""
-        return self._is_enabled
+        return self._enabled
 
     @enabled.setter
     def enabled(self, value: bool) -> None:
         """Enable/disable zone"""
-        if value != self._is_enabled:
-            self._is_enabled = value
+        if value != self._enabled:
+            self._enabled = value
             self._dirty = True
             self.request_update()
 
@@ -1598,7 +1598,7 @@ class IUZone(IUBase):
         """Return status of zone"""
         if self._initialised:
             if self._controller.enabled:
-                if self._is_enabled:
+                if self._enabled:
                     if self._is_on:
                         return STATE_ON
                     return STATE_OFF
@@ -1636,7 +1636,7 @@ class IUZone(IUBase):
 
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Add a manual run."""
-        if self._allow_manual or (self._is_enabled and self._controller.enabled):
+        if self._allow_manual or (self._enabled and self._controller.enabled):
             duration = wash_td(data.get(CONF_TIME))
             if duration is None or duration == timedelta(0):
                 duration = self._duration
@@ -1692,7 +1692,7 @@ class IUZone(IUBase):
                     CONF_TIMELINE, self._show_timeline
                 )
         self._zone_id = config.get(CONF_ZONE_ID, str(self.index + 1))
-        self._is_enabled = config.get(CONF_ENABLED, self._is_enabled)
+        self._enabled = config.get(CONF_ENABLED, self._enabled)
         self._allow_manual = config.get(CONF_ALLOW_MANUAL, self._allow_manual)
         self._duration = config.get(CONF_DURATION, self._duration)
         self._name = config.get(CONF_NAME, None)
@@ -1795,7 +1795,7 @@ class IUZone(IUBase):
 
         is_running = parent_enabled and (
             (
-                self._is_enabled
+                self._enabled
                 and self._run_queue.current_run is not None
                 and self._run_queue.current_run.is_running(stime)
             )
@@ -2792,7 +2792,7 @@ class IUController(IUBase):
         self._hass = hass
         self._coordinator = coordinator  # Parent
         # Config parameters
-        self._is_enabled: bool = True
+        self._enabled: bool = True
         self._name: str = None
         self._controller_id: str = None
         self._preamble: timedelta = None
@@ -2865,13 +2865,13 @@ class IUController(IUBase):
     @property
     def enabled(self) -> bool:
         """Return true is this controller is enabled"""
-        return self._is_enabled
+        return self._enabled
 
     @enabled.setter
     def enabled(self, value: bool) -> None:
         """Enable/disable this controller"""
-        if value != self._is_enabled:
-            self._is_enabled = value
+        if value != self._enabled:
+            self._enabled = value
             self._dirty = True
             self.request_update(True)
 
@@ -2914,7 +2914,7 @@ class IUController(IUBase):
     def _status(self) -> str:
         """Return status of the controller"""
         if self._initialised:
-            if self._is_enabled:
+            if self._enabled:
                 if self._is_on:
                     return STATE_ON
                 if self._run_queue.in_sequence:
@@ -2998,7 +2998,7 @@ class IUController(IUBase):
     def load(self, config: OrderedDict) -> "IUController":
         """Load config data for the controller"""
         self.clear()
-        self._is_enabled = config.get(CONF_ENABLED, self._is_enabled)
+        self._enabled = config.get(CONF_ENABLED, self._enabled)
         self._name = config.get(CONF_NAME, f"Controller {self.index + 1}")
         self._controller_id = config.get(CONF_CONTROLLER_ID, str(self.index + 1))
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
@@ -3043,7 +3043,7 @@ class IUController(IUBase):
         result[CONF_CONTROLLER_ID] = self._controller_id
         result[CONF_ENTITY_BASE] = self.entity_base
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
-        result[CONF_ENABLED] = self._is_enabled
+        result[CONF_ENABLED] = self._enabled
         result[CONF_ICON] = self.icon
         result[ATTR_STATUS] = self.status
         result[CONF_ZONES] = []
@@ -3232,7 +3232,7 @@ class IUController(IUBase):
         zones_changed: list[int] = []
 
         run = self._run_queue.current_run
-        is_enabled = self._is_enabled or (run is not None and run.is_manual())
+        is_enabled = self._enabled or (run is not None and run.is_manual())
         is_running = is_enabled and run is not None
         state_changed = is_running ^ self._is_on
 
