@@ -1353,7 +1353,9 @@ automation:
             Time: {{ as_local(trigger.event.time_fired).strftime('%c') }}
             Expected: {{ trigger.event.data.expected }}
             Controller: {{ trigger.event.data.controller.index + 1 }} {{ trigger.event.data.controller.name }}
-            Zone: {{ trigger.event.data.zone.index + 1 }} {{ trigger.event.data.zone.name }}
+            {% if trigger.event.data.zone.index is not none %}
+              Zone: {{ trigger.event.data.zone.index + 1 }} {{ trigger.event.data.zone.name }}
+            {% endif %}
             Entity: {{ trigger.event.data.entity_id }}
 ```
 
