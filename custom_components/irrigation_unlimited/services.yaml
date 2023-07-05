@@ -14,7 +14,7 @@ enable:
           domain: binary_sensor
 
     sequence_id:
-      description: Id of the sequence to run (entity_id should be the controller).
+      description: Id of the sequence to enable (entity_id should be the controller).
       example: 1
       required: false
       selector:
@@ -47,7 +47,7 @@ disable:
           domain: binary_sensor
 
     sequence_id:
-      description: Id of the sequence to run (entity_id should be the controller).
+      description: Id of the sequence to disable (entity_id should be the controller).
       example: 1
       required: false
       selector:
@@ -80,7 +80,8 @@ toggle:
           domain: binary_sensor
 
     sequence_id:
-      description: Id of the sequence to run (entity_id should be the controller).
+      description: Id of the sequence to toggle (entity_id should be the controller).
+      example: 1
       example: 1
       required: false
       selector:
