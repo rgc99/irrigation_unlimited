@@ -82,7 +82,6 @@ toggle:
     sequence_id:
       description: Id of the sequence to toggle (entity_id should be the controller).
       example: 1
-      example: 1
       required: false
       selector:
         number:
