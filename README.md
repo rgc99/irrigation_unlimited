@@ -282,6 +282,7 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 | `day` | list/string/_[Every `n` days](#553-every-n-days)_ | | Days of month to run [1, 2...31]/odd/even/_[Every `n` days](#553-every-n-days)_ |
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | true | Enable/disable the schedule |
+| `schedule_id` | string | | A unique identifier across all schedules. This must be in [snake_case](#13-snake-case) style. |
 
 #### 5.5.1 Sun Event
 
@@ -724,7 +725,7 @@ Reload a schedule. This will allow an edit to an existing schedule. All fields a
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `schedule_id` | string | **Required** | A unique identifier |
+| `schedule_id` | string | **Required** | The unique schedule identifier. The target [schedule](#55-schedule-objects) must have the unique `schedule_id` set |
 | `time` | [time](#147-time-time-of-day)/_[Sun Event](#551-sun-event)_/_[Crontab](#552-crontab)_ | | The start time. Either a time (07:30), sun event or cron expression |
 | `anchor` | string | | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
 | `duration` | [duration](#142-duration-time-period) | | The length of time to run. Required for zones and optional for sequences |
@@ -1412,7 +1413,7 @@ If all else fails please open an [issue](https://github.com/rgc99/irrigation_unl
 
 ## 13. Snake case
 
- The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) identifiers need to be in snake_case like `my_garden`, `vege_patch`, `rose_bed`, `front_lawn`. The allowable characters are lower case alphabet, numerals and the underscore. The underscore cannot be used as a leading or trailing character and not more than one together. For more information see [here](https://en.wikipedia.org/wiki/Snake_case)
+ The [controller_id](#51-controller-objects), [zone_id](#53-zone-objects) and [schedule_id](#55-schedule-objects) identifiers need to be in snake_case like `my_garden`, `vege_patch`, `rose_bed`, `front_lawn`, `before_dawn`. The allowable characters are lower case alphabet, numerals and the underscore. The underscore cannot be used as a leading or trailing character and not more than one together. For more information see [here](https://en.wikipedia.org/wiki/Snake_case)
 
 ## 14. Parameter Types
 
