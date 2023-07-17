@@ -3353,7 +3353,11 @@ class IUController(IUBase):
         nst = wash_dt(stime)
         if not self._is_on:
             nst += granularity_time()
-        if self.preamble is not None and not self.is_on:
+        if (
+            self.preamble is not None
+            and self.preamble > timedelta(0)
+            and not self.is_on
+        ):
             nst += self.preamble
         return nst
 

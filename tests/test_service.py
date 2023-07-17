@@ -1871,3 +1871,90 @@ async def test_service_load_schedule(
         await exam.finish_test()
 
         exam.check_summary()
+
+
+async def test_service_manual_run_negative_preamble(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test manual_run service call on a sequence with negative preamble"""
+
+    async with IUExam(hass, "service_manual_run_negative_preamble.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1", "time": "00:10"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(2)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(3)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+                "time": "0:00:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(4)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "time": "0:22:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(5)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(6)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "time": "0:00:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(7)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 2,
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(8)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 3,
+            },
+        )
+        await exam.finish_test()
+
+        exam.check_summary()
+
+
