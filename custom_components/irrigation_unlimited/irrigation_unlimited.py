@@ -14,7 +14,7 @@ from crontab import CronTab
 from homeassistant.core import HomeAssistant, HassJob, CALLBACK_TYPE, DOMAIN as HADOMAIN
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.template import Template
-from homeassistant.helpers.event import (
+from homeassistant.core import (
     async_track_point_in_utc_time,
     async_call_later,
     Event as HAEvent,
