@@ -15,10 +15,10 @@ from homeassistant.core import HomeAssistant, HassJob, CALLBACK_TYPE, DOMAIN as 
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.template import Template
 from homeassistant.core import (
-    async_track_point_in_utc_time,
-    async_call_later,
     Event as HAEvent,
 )
+from homeassistant.helpers.event import async_track_point_in_utc_time, async_call_later as HAEvent
+
 from homeassistant.helpers import sun
 from homeassistant.util import dt
 from homeassistant.helpers import config_validation as cv
