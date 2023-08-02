@@ -79,6 +79,8 @@ from .const import (
     CONF_SCHEDULE_ID,
 )
 
+IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
+
 
 def _list_is_not_empty(value):
     if value is None or len(value) < 1:
@@ -129,7 +131,7 @@ SCHEDULE_SCHEMA = vol.Schema(
         vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
         vol.Required(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_SCHEDULE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
+        vol.Optional(CONF_SCHEDULE_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
@@ -143,7 +145,7 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
         vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
         vol.Optional(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_SCHEDULE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
+        vol.Optional(CONF_SCHEDULE_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
@@ -153,7 +155,7 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
 
 LOAD_SCHEDULE_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_SCHEDULE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
+        vol.Required(CONF_SCHEDULE_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_TIME): time_event,
         vol.Optional(CONF_ANCHOR): anchor_event,
         vol.Optional(CONF_DURATION): cv.positive_time_period_template,
@@ -179,7 +181,7 @@ CHECK_BACK_SCHEMA = vol.Schema(
 ZONE_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_SCHEDULES): vol.All(cv.ensure_list, [SCHEDULE_SCHEMA]),
-        vol.Optional(CONF_ZONE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
+        vol.Optional(CONF_ZONE_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
         vol.Optional(CONF_ENABLED): cv.boolean,
@@ -240,7 +242,7 @@ CONTROLLER_SCHEMA = vol.Schema(
             cv.ensure_list, [SEQUENCE_SCHEMA], _list_is_not_empty
         ),
         vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_CONTROLLER_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
+        vol.Optional(CONF_CONTROLLER_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
         vol.Optional(CONF_PREAMBLE): cv.time_period,
         vol.Optional(CONF_POSTAMBLE): cv.time_period,
