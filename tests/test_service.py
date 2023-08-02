@@ -14,6 +14,7 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_TIME_ADJUST,
     SERVICE_TOGGLE,
     SERVICE_LOAD_SCHEDULE,
+    SERVICE_SUSPEND,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IULogger,
@@ -1856,7 +1857,6 @@ async def test_service_load_schedule(
             SERVICE_LOAD_SCHEDULE,
             {"schedule_id": "zone_1_schedule_1", "time": "06:05", "duration": "00:15"},
         )
-        await hass.async_block_till_done()
         await exam.finish_test()
 
         await exam.begin_test(2)
@@ -1958,3 +1958,261 @@ async def test_service_manual_run_negative_preamble(
         exam.check_summary()
 
 
+async def test_service_suspend_controller_and_zone(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test suspend service call."""
+
+    async with IUExam(hass, "service_suspend.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.run_for("01:00:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "for": "24:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(2)
+        await exam.run_for("01:00:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(3)
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.run_until("2021-01-05 06:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "reset": None,
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(4)
+        await exam.run_until("2021-01-05 06:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+                "for": "24:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(5)
+        await exam.run_for("01:00:00")
+        # await exam.run_until("2021-01-05 06:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(6)
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.run_until("2021-01-05 06:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+                "reset": None,
+            },
+        )
+        await exam.finish_test()
+
+        exam.check_summary()
+
+
+async def test_service_suspend_sequence_bad(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test bad calls to the suspend service"""
+
+    async with IUExam(hass, "service_suspend_sequence_bad.yaml") as exam:
+        await exam.begin_test(1)
+        with patch.object(IULogger, "_format") as mock:
+            await exam.call(
+                SERVICE_SUSPEND,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "sequence_id": 999,
+                    "reset": None,
+                },
+            )
+        await exam.finish_test()
+        assert (
+            sum([1 for call in mock.call_args_list if call.args[1] == "SEQUENCE_ID"])
+            == 1
+        )
+
+        # Service call for sequence but targetting a zone entity
+        await exam.begin_test(2)
+        with patch.object(IULogger, "_format") as mock:
+            await exam.call(
+                SERVICE_SUSPEND,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+                    "sequence_id": 1,
+                    "reset": None,
+                },
+            )
+        await exam.finish_test()
+        assert sum([1 for call in mock.call_args_list if call.args[1] == "ENTITY"]) == 1
+
+        # Duplicate service call
+        await exam.begin_test(3)
+        with patch.object(IULogger, "_format") as mock:
+            await exam.call(
+                SERVICE_SUSPEND,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "sequence_id": 1,
+                    "for": "01:00",
+                },
+            )
+            await exam.call(
+                SERVICE_SUSPEND,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "sequence_id": 1,
+                    "for": "01:00",
+                },
+            )
+        await exam.finish_test()
+        print(mock.call_args_list)
+        assert (
+            sum(
+                [
+                    1
+                    for call in mock.call_args_list
+                    if call.args[0] == 20 and call.args[1] == "CALL"
+                ]
+            )
+            == 1
+        )
+
+
+async def test_service_suspend_sequence(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test suspend service call on sequences."""
+
+    async with IUExam(hass, "service_suspend_sequence.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.run_for("01:00:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "for": "24:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(2)
+        await exam.run_for("01:00:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(3)
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.run_until("2021-01-05 06:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "reset": None,
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(4)
+        await exam.run_for("01:00:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "zones": 1,
+                "for": "24:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(5)
+        await exam.run_for("01:00:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "zones": 1,
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(6)
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "zones": 1,
+                "until": "2021-01-06 06:00",
+            },
+        )
+        await exam.run_until("2021-01-05 06:00")
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "zones": 1,
+                "reset": None,
+            },
+        )
+        await exam.finish_test()
+
+        exam.check_summary()

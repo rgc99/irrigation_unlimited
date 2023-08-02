@@ -99,6 +99,58 @@ toggle:
           max: 9999
           mode: box
 
+suspend:
+  name: Suspend
+  description: Suspend the controller or zone
+  fields:
+    entity_id:
+      description: Name of the Irrigation Unlimited entity.
+      example: "binary_sensor.irrigation_unlimited_c1_z1"
+      required: true
+      selector:
+        entity:
+          integration: irrigation_unlimited
+          domain: binary_sensor
+
+    sequence_id:
+      description: Id of the sequence to suspend (entity_id should be the controller).
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
+    zones:
+      description: Id(s) of the zone
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+          mode: box
+
+    for:
+      description: The amount of time to suspend
+      example: "01:00"
+      required: false
+      selector:
+        duration:
+
+    until:
+      description: The date and time to restart
+      example: "2023-01-01 10:00"
+      required: false
+      selector:
+        datetime:
+
+    reset:
+      description: Cancel any suspension
+      example: ""
+      required: false
+
 cancel:
   name: Cancel
   description: Cancel the current run.

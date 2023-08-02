@@ -1,4 +1,5 @@
 """Irrigation Unlimited test support routines"""
+import os
 from unittest.mock import patch
 import logging
 from typing import Any
@@ -75,11 +76,12 @@ class IUExam:
 
     def __init__(self, hass: ha.HomeAssistant, config_file: str) -> None:
         self._hass = hass
-        self._config_file = config_file
+        self._config_directory, self._config_file = os.path.split(config_file)
+        if self._config_directory == "":
+            self._config_directory = type(self).default_config_dir
         self._coordinator: IUCoordinator = None
         self._current_time: datetime = None
         self._core_config_changed = False
-        self._config_directory = type(self).default_config_dir
         self._no_check = False
         self._config: ConfigType = None
 
@@ -106,7 +108,7 @@ class IUExam:
     @property
     def config_file_full(self) -> str:
         """Return the full path to the config file"""
-        return self._config_directory + self._config_file
+        return os.path.join(self._config_directory, self._config_file)
 
     @property
     def virtual_time(self) -> datetime:
@@ -289,7 +291,7 @@ class IUExam:
         """Check the test results"""
         # pylint: disable=logging-fstring-interpolation
         if config_file is None:
-            config_file = self._config_directory + self._config_file
+            config_file = self.config_file_full
         tester = self._coordinator.tester
         try:
             if not NO_CHECK:

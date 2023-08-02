@@ -1,8 +1,11 @@
 """Test integration_unlimited reload service calls."""
+from datetime import timedelta
 import pytest
 import homeassistant.core as ha
+from homeassistant.util import dt
 from custom_components.irrigation_unlimited.const import (
     SERVICE_DISABLE,
+    SERVICE_SUSPEND,
     SERVICE_TIME_ADJUST,
 )
 from tests.iu_test_support import IUExam
@@ -49,6 +52,7 @@ async def test_service_reload_survival(
     """Test reload preserves current state"""
 
     async with IUExam(hass, "mock_config.yaml") as exam:
+        adate = dt.now().replace(microsecond=0)
         await exam.call(
             SERVICE_TIME_ADJUST,
             {
@@ -64,6 +68,16 @@ async def test_service_reload_survival(
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
                 "sequence_id": 1,
                 "zones": 1,
+            },
+        )
+
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "zones": 1,
+                "until": adate + timedelta(hours=6),
             },
         )
 
@@ -84,6 +98,15 @@ async def test_service_reload_survival(
         )
 
         await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+                "until": adate + timedelta(hours=12),
+            },
+        )
+
+        await exam.call(
             SERVICE_TIME_ADJUST,
             {
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
@@ -98,21 +121,46 @@ async def test_service_reload_survival(
         )
 
         await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z1",
+                "until": adate + timedelta(hours=18),
+            },
+        )
+
+        await exam.call(
             SERVICE_DISABLE,
             {
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
             },
         )
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "until": adate + timedelta(hours=24),
+            },
+        )
         await exam.reload("service_reload_survival.yaml")
         assert exam.coordinator.controllers[0].enabled is False
+        assert exam.coordinator.controllers[0].suspended == adate + timedelta(hours=24)
         assert exam.coordinator.controllers[0].sequences[0].enabled is False
+        assert exam.coordinator.controllers[0].sequences[
+            0
+        ].suspended == adate + timedelta(hours=12)
         assert str(exam.coordinator.controllers[0].sequences[0].adjustment) == "%25.0"
         assert exam.coordinator.controllers[0].sequences[0].zones[0].enabled is False
+        assert exam.coordinator.controllers[0].sequences[0].zones[
+            0
+        ].suspended == adate + timedelta(hours=6)
         assert (
             str(exam.coordinator.controllers[0].sequences[0].zones[0].adjustment)
             == "%15.0"
         )
         assert exam.coordinator.controllers[0].zones[0].enabled is False
+        assert exam.coordinator.controllers[0].zones[0].suspended == adate + timedelta(
+            hours=18
+        )
         assert str(exam.coordinator.controllers[0].zones[0].adjustment) == "%50.0"
 
         await exam.run_test(1)

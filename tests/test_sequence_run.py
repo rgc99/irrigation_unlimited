@@ -1,12 +1,15 @@
 """irrigation_unlimited test unit for IUSequenceRun object"""
+# pylint: disable=too-many-lines
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
+    SERVICE_ENABLE,
     SERVICE_DISABLE,
+    SERVICE_SUSPEND,
     SERVICE_TIME_ADJUST,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import IUSequenceRun
-from tests.iu_test_support import IUExam, mk_local
+from tests.iu_test_support import IUExam, mk_local, mk_utc
 
 IUExam.quiet_mode()
 
@@ -16,7 +19,6 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
     # pylint: disable=unused-argument
 
     async with IUExam(hass, "test_sequence_run.yaml") as exam:
-
         # Basic check
         assert len(exam.coordinator.controllers[0].sequence_status()) == 2
 
@@ -47,6 +49,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             {
                 "index": 0,
                 "enabled": True,
+                "suspended": None,
                 "name": "Seq 1",
                 "start": mk_local("2021-01-04 06:05"),
                 "duration": 2160,
@@ -61,6 +64,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
@@ -70,6 +74,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -79,6 +84,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -90,6 +96,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             {
                 "index": 1,
                 "enabled": True,
+                "suspended": None,
                 "name": "Seq 2",
                 "start": mk_local("2021-01-04 06:10"),
                 "duration": 2160,
@@ -104,6 +111,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
@@ -113,6 +121,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -122,6 +131,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -140,6 +150,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "name": "Seq 1",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:05"),
@@ -150,6 +161,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 360,
@@ -159,6 +171,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -168,6 +181,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -180,6 +194,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "name": "Seq 2",
                 "enabled": True,
+                "suspended": None,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "start": mk_local("2021-01-04 06:10"),
@@ -190,6 +205,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
@@ -199,6 +215,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -208,6 +225,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -226,6 +244,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "name": "Seq 1",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:05"),
@@ -236,6 +255,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -245,6 +265,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 720,
@@ -254,6 +275,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -266,6 +288,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "name": "Seq 2",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:10"),
@@ -276,6 +299,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 360,
@@ -285,6 +309,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -294,6 +319,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -312,6 +338,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "name": "Seq 1",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:05"),
@@ -322,6 +349,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -331,6 +359,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 720,
@@ -340,6 +369,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -352,6 +382,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "name": "Seq 2",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:10"),
@@ -362,6 +393,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -371,6 +403,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 720,
@@ -380,6 +413,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -398,6 +432,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "name": "Seq 1",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:05"),
@@ -408,6 +443,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -417,6 +453,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -426,6 +463,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 1080,
@@ -438,6 +476,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "name": "Seq 2",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:10"),
@@ -448,6 +487,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -457,6 +497,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 720,
@@ -466,6 +507,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -484,6 +526,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "name": "Seq 1",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:05"),
@@ -494,6 +537,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -503,6 +547,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -512,6 +557,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 1080,
@@ -524,6 +570,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "name": "Seq 2",
                 "enabled": True,
+                "suspended": None,
                 "status": "on",
                 "icon": "mdi:play-circle-outline",
                 "start": mk_local("2021-01-04 06:10"),
@@ -534,6 +581,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -543,6 +591,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -552,6 +601,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
                         "duration": 1080,
@@ -570,6 +620,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 0,
                 "name": "Seq 1",
                 "enabled": True,
+                "suspended": None,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "start": mk_local("2021-01-05 06:05"),
@@ -580,6 +631,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
@@ -589,6 +641,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -598,6 +651,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -610,6 +664,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "index": 1,
                 "name": "Seq 2",
                 "enabled": True,
+                "suspended": None,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "start": mk_local("2021-01-05 06:10"),
@@ -620,6 +675,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
@@ -629,6 +685,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -638,6 +695,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -666,6 +724,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             {
                 "index": 0,
                 "enabled": True,
+                "suspended": None,
                 "name": "Seq 1",
                 "start": mk_local("2021-01-04 06:05"),
                 "duration": 2160,
@@ -680,6 +739,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
@@ -689,6 +749,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -698,6 +759,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -709,6 +771,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             {
                 "index": 1,
                 "enabled": True,
+                "suspended": None,
                 "name": "Seq 2",
                 "start": mk_local("2021-01-04 06:10"),
                 "duration": 0,
@@ -723,6 +786,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -732,6 +796,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -741,6 +806,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 0,
@@ -767,6 +833,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             {
                 "index": 0,
                 "enabled": True,
+                "suspended": None,
                 "name": "Seq 1",
                 "start": mk_local("2021-01-04 06:05"),
                 "duration": 2160,
@@ -781,6 +848,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 360,
@@ -790,6 +858,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 720,
@@ -799,6 +868,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
                         "duration": 1080,
@@ -810,6 +880,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             {
                 "index": 1,
                 "enabled": False,
+                "suspended": None,
                 "name": "Seq 2",
                 "start": None,
                 "duration": 0,
@@ -824,6 +895,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 0,
                         "enabled": True,
+                        "suspended": None,
                         "status": "blocked",
                         "icon": "mdi:alert-octagon-outline",
                         "duration": 0,
@@ -833,6 +905,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 1,
                         "enabled": True,
+                        "suspended": None,
                         "status": "blocked",
                         "icon": "mdi:alert-octagon-outline",
                         "duration": 0,
@@ -842,6 +915,122 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     {
                         "index": 2,
                         "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "duration": 0,
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                    },
+                ],
+            },
+        ]
+        await exam.finish_test()
+
+        # Sequence 2 suspended
+        await exam.begin_test(4)
+        await exam.call(
+            SERVICE_ENABLE,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 2,
+            },
+        )
+        await exam.call(
+            SERVICE_SUSPEND,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 2,
+                "for": "24:00",
+            },
+        )
+        assert exam.coordinator.controllers[0].sequence_status() == [
+            {
+                "index": 0,
+                "enabled": True,
+                "suspended": None,
+                "name": "Seq 1",
+                "start": mk_local("2021-01-04 06:05"),
+                "duration": 2160,
+                "status": "off",
+                "icon": "mdi:stop-circle-outline",
+                "adjustment": "",
+                "schedule": {
+                    "index": 0,
+                    "name": "Schedule 1",
+                },
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": 360,
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": 720,
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": 1080,
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                    },
+                ],
+            },
+            {
+                "index": 1,
+                "enabled": True,
+                "suspended": mk_utc("2021-01-05 06:00"),
+                "name": "Seq 2",
+                "start": None,
+                "duration": 0,
+                "status": "suspended",
+                "icon": "mdi:timer-outline",
+                "adjustment": "%0.0",
+                "schedule": {
+                    "index": None,
+                    "name": None,
+                },
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "duration": 0,
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "duration": 0,
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
                         "status": "blocked",
                         "icon": "mdi:alert-octagon-outline",
                         "duration": 0,

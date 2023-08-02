@@ -9,6 +9,8 @@ from homeassistant.const import (
     CONF_WEEKDAY,
     CONF_REPEAT,
     CONF_DELAY,
+    CONF_FOR,
+    CONF_UNTIL,
 )
 
 from .const import (
@@ -358,5 +360,19 @@ MANUAL_RUN_SCHEMA = {
     vol.Optional(CONF_ZONES): cv.ensure_list,
     vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
 }
+
+SUSPEND_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            vol.Required(CONF_ENTITY_ID): cv.entity_ids,
+            vol.Exclusive(CONF_FOR, "time_method"): cv.positive_time_period_template,
+            vol.Exclusive(CONF_UNTIL, "time_method"): cv.datetime,
+            vol.Exclusive(CONF_RESET, "time_method"): None,
+            vol.Optional(CONF_ZONES): cv.ensure_list,
+            vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+        }
+    ),
+    cv.has_at_least_one_key(CONF_FOR, CONF_UNTIL, CONF_RESET),
+)
 
 RELOAD_SERVICE_SCHEMA = vol.Schema({})

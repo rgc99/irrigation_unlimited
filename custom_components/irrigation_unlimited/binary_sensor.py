@@ -37,6 +37,7 @@ from .const import (
     ATTR_ADJUSTMENT,
     ATTR_CONFIGURATION,
     ATTR_TIMELINE,
+    ATTR_SUSPENDED,
     BINARY_SENSOR,
     DOMAIN,
     COORDINATOR,
@@ -146,6 +147,7 @@ class IUMasterEntity(IUEntity):
         attr = {}
         attr[ATTR_INDEX] = self._controller.index
         attr[ATTR_ENABLED] = self._controller.enabled
+        attr[ATTR_SUSPENDED] = self._controller.suspended
         attr[ATTR_STATUS] = self._controller.status
         attr[ATTR_ZONE_COUNT] = len(self._controller.zones)
         attr[CONF_ZONES] = ""
@@ -212,6 +214,7 @@ class IUZoneEntity(IUEntity):
         attr[CONF_ZONE_ID] = self._zone.zone_id
         attr[ATTR_INDEX] = self._zone.index
         attr[ATTR_ENABLED] = self._zone.enabled
+        attr[ATTR_SUSPENDED] = self._zone.suspended
         attr[ATTR_STATUS] = self._zone.status
         attr[ATTR_SCHEDULE_COUNT] = len(self._zone.schedules)
         attr[CONF_SCHEDULES] = ""

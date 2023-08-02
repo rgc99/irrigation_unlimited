@@ -14,6 +14,7 @@ ICON = "mdi:zodiac-aquarius"
 ICON_ZONE_ON = "mdi:valve-open"
 ICON_ZONE_OFF = "mdi:valve-closed"
 ICON_DISABLED = "mdi:circle-off-outline"
+ICON_SUSPENDED = "mdi:timer-outline"
 ICON_BLOCKED = "mdi:alert-octagon-outline"
 ICON_CONTROLLER_ON = "mdi:water"
 ICON_CONTROLLER_OFF = "mdi:water-off"
@@ -121,6 +122,7 @@ SERVICE_CANCEL = "cancel"
 SERVICE_TIME_ADJUST = "adjust_time"
 SERVICE_MANUAL_RUN = "manual_run"
 SERVICE_LOAD_SCHEDULE = "load_schedule"
+SERVICE_SUSPEND = "suspend"
 
 # Events
 EVENT_START = "start"
@@ -131,6 +133,7 @@ EVENT_SWITCH_ERROR = "switch_error"
 
 # Status
 STATUS_DISABLED = "disabled"
+STATUS_SUSPENDED = "suspended"
 STATUS_BLOCKED = "blocked"
 STATUS_INITIALISING = "initialising"
 STATUS_PAUSED = "paused"
@@ -184,6 +187,7 @@ ATTR_ZONE_IDS = "zone_ids"
 ATTR_CONTROLLER_COUNT = "controller_count"
 ATTR_NEXT_TICK = "next_tick"
 ATTR_TICK_LOG = "tick_log"
+ATTR_SUSPENDED = "suspended"
 
 # Resources
 RES_MANUAL = "Manual"

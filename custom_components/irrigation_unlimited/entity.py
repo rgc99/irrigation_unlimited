@@ -7,6 +7,7 @@ from homeassistant.util import dt
 
 from homeassistant.const import (
     CONF_STATE,
+    CONF_UNTIL,
     STATE_OK,
     STATE_ON,
 )
@@ -28,6 +29,7 @@ from .const import (
     ATTR_ENABLED,
     ATTR_NEXT_TICK,
     ATTR_TICK_LOG,
+    ATTR_SUSPENDED,
     CONF_CONTROLLER,
     CONF_CONTROLLERS,
     CONF_ENABLED,
@@ -45,6 +47,7 @@ from .const import (
     SERVICE_ENABLE,
     SERVICE_DISABLE,
     SERVICE_TIME_ADJUST,
+    SERVICE_SUSPEND,
     STATUS_INITIALISING,
 )
 
@@ -146,6 +149,28 @@ class IURestore:
                 svd[CONF_ZONES] = [sequence_zone.index + 1]
         self._coordinator.service_call(svc, controller, zone, svd)
 
+    def _restore_suspend(
+        self,
+        data: dict,
+        controller: IUController,
+        zone: IUZone,
+        sequence: IUSequence,
+        sequence_zone: IUSequenceZone,
+    ) -> None:
+        # pylint: disable=too-many-arguments
+        if not ATTR_SUSPENDED in data:
+            return
+        svd = {}
+        if data.get(ATTR_SUSPENDED) is not None:
+            svd[CONF_UNTIL] = dt.parse_datetime(data.get(ATTR_SUSPENDED))
+        else:
+            svd[CONF_RESET] = None
+        if sequence is not None:
+            svd[CONF_SEQUENCE_ID] = sequence.index + 1
+            if sequence_zone is not None:
+                svd[CONF_ZONES] = [sequence_zone.index + 1]
+        self._coordinator.service_call(SERVICE_SUSPEND, controller, zone, svd)
+
     def _restore_adjustment(
         self,
         data: dict,
@@ -171,6 +196,7 @@ class IURestore:
         if (sequence_zone := sequence.get_zone(data.get(CONF_INDEX))) is None:
             return
         self._restore_enabled(data, controller, None, sequence, sequence_zone)
+        self._restore_suspend(data, controller, None, sequence, sequence_zone)
         self._restore_adjustment(data, controller, None, sequence, sequence_zone)
         self._check_is_on(data, controller, None, sequence, sequence_zone)
 
@@ -178,6 +204,7 @@ class IURestore:
         if (sequence := controller.get_sequence(data.get(CONF_INDEX))) is None:
             return
         self._restore_enabled(data, controller, None, sequence, None)
+        self._restore_suspend(data, controller, None, sequence, None)
         self._restore_adjustment(data, controller, None, sequence, None)
         for sz_data in data.get(CONF_SEQUENCE_ZONES, []):
             self._restore_sequence_zone(sz_data, controller, sequence)
@@ -187,6 +214,7 @@ class IURestore:
         if (zone := controller.get_zone(data.get(CONF_INDEX))) is None:
             return
         self._restore_enabled(data, controller, zone, None, None)
+        self._restore_suspend(data, controller, zone, None, None)
         self._restore_adjustment(data, controller, zone, None, None)
         self._check_is_on(data, controller, zone, None, None)
 
@@ -194,6 +222,7 @@ class IURestore:
         if (controller := self._coordinator.get(data.get(CONF_INDEX))) is None:
             return
         self._restore_enabled(data, controller, None, None, None)
+        self._restore_suspend(data, controller, None, None, None)
         for sq_data in data.get(CONF_SEQUENCES, []):
             self._restore_sequence(sq_data, controller)
         for z_data in data.get(CONF_ZONES, []):

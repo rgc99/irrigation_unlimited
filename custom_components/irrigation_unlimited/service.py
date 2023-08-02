@@ -17,6 +17,7 @@ from .schema import (
     MANUAL_RUN_SCHEMA,
     RELOAD_SERVICE_SCHEMA,
     LOAD_SCHEDULE_SCHEMA,
+    SUSPEND_SCHEMA,
 )
 
 from .const import (
@@ -28,6 +29,7 @@ from .const import (
     SERVICE_TIME_ADJUST,
     SERVICE_TOGGLE,
     SERVICE_LOAD_SCHEDULE,
+    SERVICE_SUSPEND,
 )
 
 
@@ -57,6 +59,11 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
     platform.async_register_entity_service(
         SERVICE_MANUAL_RUN, MANUAL_RUN_SCHEMA, async_entity_service_handler
     )
+    platform.async_register_entity_service(
+        SERVICE_SUSPEND, SUSPEND_SCHEMA, async_entity_service_handler
+    )
+
+
 
 
 def register_component_services(
