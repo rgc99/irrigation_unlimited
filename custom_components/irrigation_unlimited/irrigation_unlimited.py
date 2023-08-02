@@ -577,13 +577,9 @@ class IUSchedule(IUBase):
         result[CONF_NAME] = self._name
         result[CONF_ENABLED] = self._enabled
         if self._weekdays is not None:
-            result[CONF_WEEKDAY] = []
-            for item in self._weekdays:
-                result[CONF_WEEKDAY].append(WEEKDAYS[item])
+            result[CONF_WEEKDAY] = [WEEKDAYS[d] for d in self._weekdays]
         if self._months is not None:
-            result[CONF_MONTH] = []
-            for item in self._months:
-                result[CONF_MONTH].append(MONTHS[item - 1])
+            result[CONF_MONTH] = [MONTHS[m - 1] for m in self._months]
         if self._days is not None:
             result[CONF_DAY] = self._days
         return result
@@ -1739,9 +1735,7 @@ class IUZone(IUBase):
         result[ATTR_STATUS] = self.status
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
         result[ATTR_CURRENT_DURATION] = current_duration
-        result[CONF_SCHEDULES] = []
-        for schedule in self._schedules:
-            result[CONF_SCHEDULES].append(schedule.as_dict())
+        result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
         return result
 
     def timeline(self) -> list:
@@ -2440,12 +2434,10 @@ class IUSequence(IUBase):
         result[ATTR_ADJUSTED_DURATION] = total_duration_adjusted
         result[ATTR_CURRENT_DURATION] = self._controller.runs.sequence_duration(self)
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
-        result[CONF_SCHEDULES] = []
-        for schedule in self._schedules:
-            result[CONF_SCHEDULES].append(schedule.as_dict())
-        result[CONF_SEQUENCE_ZONES] = []
-        for sequence_zone in self._zones:
-            result[CONF_SEQUENCE_ZONES].append(sequence_zone.as_dict(duration_factor))
+        result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
+        result[CONF_SEQUENCE_ZONES] = [
+            szn.as_dict(duration_factor) for szn in self._zones
+        ]
         return result
 
 
@@ -3051,12 +3043,8 @@ class IUController(IUBase):
         result[CONF_ENABLED] = self._enabled
         result[CONF_ICON] = self.icon
         result[ATTR_STATUS] = self.status
-        result[CONF_ZONES] = []
-        for zone in self._zones:
-            result[CONF_ZONES].append(zone.as_dict())
-        result[CONF_SEQUENCES] = []
-        for sequence in self._sequences:
-            result[CONF_SEQUENCES].append(sequence.as_dict())
+        result[CONF_ZONES] = [zone.as_dict() for zone in self._zones]
+        result[CONF_SEQUENCES] = [seq.as_dict() for seq in self._sequences]
         return result
 
     def sequence_runs(
@@ -4648,9 +4636,7 @@ class IUCoordinator:
         """Returns the coordinator as a dict"""
         result = OrderedDict()
         result[CONF_VERSION] = "1.0.0"
-        result[CONF_CONTROLLERS] = []
-        for controller in self._controllers:
-            result[CONF_CONTROLLERS].append(controller.as_dict())
+        result[CONF_CONTROLLERS] = [ctr.as_dict() for ctr in self._controllers]
         return result
 
     def muster(self, stime: datetime, force: bool) -> int:
