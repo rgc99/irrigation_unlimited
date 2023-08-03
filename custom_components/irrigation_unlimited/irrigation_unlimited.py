@@ -1003,8 +1003,9 @@ class IURunQueue(list[IURun]):
             modified = True
         return modified
 
-    def clear(self, stime: datetime) -> bool:
-        """Clear out the queue except for manual or running schedules"""
+    def clear(self, stime: datetime, sequence=None) -> bool:
+        """Clear out the queue except for manual or running
+        schedules. Filter by sequence if supplied"""
         modified: bool = False
         if len(self) > 0:
             i = len(self) - 1
@@ -1012,6 +1013,9 @@ class IURunQueue(list[IURun]):
                 item = self[i]
                 if not (
                     item.is_running(stime) or item.is_manual() or item.sequence_running
+                ) and (
+                    sequence is None
+                    or (sequence is not None and item.sequence == sequence)
                 ):
                     self.pop(i)
                     modified = True
@@ -1710,9 +1714,9 @@ class IUZone(IUBase):
         self._schedules.clear()
         self.clear_run_queue()
 
-    def clear_runs(self, stime: datetime) -> None:
+    def clear_sequence_runs(self, stime: datetime, sequence: "IUSequence") -> None:
         """Clear out the run queue except for current or manual runs"""
-        self._run_queue.clear(stime)
+        self._run_queue.clear(stime, sequence)
 
     def clear_run_queue(self) -> None:
         """Clear out the run queue completely"""
@@ -3128,18 +3132,16 @@ class IUController(IUBase):
         # self._zones.clear()
         self._run_queue.clear_all()
 
-    def clear_sequence_runs(
-        self, stime: datetime, zone_ids: "list[str]" = None
-    ) -> None:
-        """Clear out zone run queue from supplied list or the lot if None"""
-        if zone_ids is None:
+    def clear_sequence_runs(self, stime: datetime, sequence: IUSequence = None) -> None:
+        """Clear out zone run queue with matching sequence"""
+        if sequence is None:
             for zone in self._zones:
-                zone.clear_runs(stime)
+                zone.clear_sequence_runs(stime, None)
         else:
-            for zone_id in zone_ids:
+            for zone_id in sequence.zone_ids():
                 zone = self.find_zone_by_zone_id(zone_id)
                 if zone is not None:
-                    zone.clear_runs(stime)
+                    zone.clear_sequence_runs(stime, sequence)
 
     def load(self, config: OrderedDict) -> "IUController":
         """Load config data for the controller"""
@@ -3324,7 +3326,7 @@ class IUController(IUBase):
 
         for sequence in self._sequences:
             if sequence.muster(stime) != 0:
-                self.clear_sequence_runs(stime, sequence.zone_ids())
+                self.clear_sequence_runs(stime, sequence)
 
         # Process sequence schedules
         for sequence in self._sequences:
@@ -3572,7 +3574,7 @@ class IUController(IUBase):
                                     sequence_zone.enabled = new_state
                                     changed = True
                     if changed:
-                        self.clear_sequence_runs(stime, sequence.zone_ids())
+                        self.clear_sequence_runs(stime, sequence)
                         self._run_queue.clear(stime)
                         self.request_update(True)
                         result = True
@@ -3616,7 +3618,7 @@ class IUController(IUBase):
                                     sequence_zone.suspended = suspend_time
                                     changed = True
                     if changed:
-                        self.clear_sequence_runs(stime, sequence.zone_ids())
+                        self.clear_sequence_runs(stime, sequence)
                         self._run_queue.clear(stime)
                         self.request_update(True)
                         result = True
@@ -3654,7 +3656,7 @@ class IUController(IUBase):
                             if self.check_item(sequence_zone.index, zone_list):
                                 changed |= sequence_zone.adjustment.load(data)
                     if changed:
-                        self.clear_sequence_runs(stime, sequence.zone_ids())
+                        self.clear_sequence_runs(stime, sequence)
                         result = True
                 else:
                     self._coordinator.logger.log_invalid_sequence(
@@ -5120,7 +5122,7 @@ class IUCoordinator:
                 for schedule in sequence.schedules:
                     if schedule.schedule_id == data[CONF_SCHEDULE_ID]:
                         schedule.load(data)
-                        controller.clear_sequence_runs(stime, sequence.zone_ids())
+                        controller.clear_sequence_runs(stime, sequence)
                         return
 
     def service_call(
