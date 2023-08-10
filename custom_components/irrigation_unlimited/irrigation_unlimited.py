@@ -3494,13 +3494,14 @@ class IUController(IUBase):
         self._switch.call_switch(state, stime)
         self._coordinator.status_changed(stime, self, None, state)
 
-    def check_item(self, index: int, items: "list[int]") -> bool:
+    def check_item(self, index: int, items: list[int] | None) -> bool:
         """If items is None or contains only a 0 (match all) then
         return True. Otherwise check if index + 1 is in the list"""
         return (
             items is None or (items is not None and items == [0]) or index + 1 in items
         )
 
+    def decode_sequence_id(
     def manual_run_start(self, stime: datetime) -> datetime:
         """Determine the next available start time for a manual run"""
         nst = wash_dt(stime)
