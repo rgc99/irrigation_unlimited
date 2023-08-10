@@ -3216,11 +3216,10 @@ class IUController(IUBase):
         stime = self._coordinator.service_time()
         sequences: dict[IUSequence, IUSequenceRun] = {}
         for run in self.sequence_runs(None):
-            if run.is_expired(stime):
-                continue
-            sample = sequences.get(run.sequence)
-            if sample is None or run.start_time < sample.start_time:
-                sequences[run.sequence] = run
+            if not run.is_expired(stime):
+                sample = sequences.get(run.sequence)
+                if sample is None or run.start_time < sample.start_time:
+                    sequences[run.sequence] = run
         return sequences
 
     def sequence_status(self) -> list[dict]:
