@@ -3561,123 +3561,96 @@ class IUController(IUBase):
 
         result = False
         zone_list: list[int] = data.get(CONF_ZONES)
-        sequence_id = data.get(CONF_SEQUENCE_ID)
-        if sequence_id is None:
+        sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
+        if sequence_list is None:
             new_state = s2b(self.enabled, service)
             if self.enabled != new_state:
                 self.enabled = new_state
                 result = True
         else:
-            sequence_list: list[int] = []
-            if sequence_id == 0:
-                sequence_list.extend(sequence.index for sequence in self._sequences)
-            else:
-                sequence_list.append(sequence_id - 1)
-
+            sequences_changed = False
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
                 changed = False
-                if sequence is not None:
-                    if zone_list is None:
-                        new_state = s2b(sequence.enabled, service)
-                        if sequence.enabled != new_state:
-                            sequence.enabled = new_state
-                            changed = True
-                    else:
-                        for sequence_zone in sequence.zones:
-                            if self.check_item(sequence_zone.index, zone_list):
-                                new_state = s2b(sequence_zone.enabled, service)
-                                if sequence_zone.enabled != new_state:
-                                    sequence_zone.enabled = new_state
-                                    changed = True
-                    if changed:
-                        self.clear_sequence_runs(stime, sequence)
-                        self._run_queue.clear(stime)
-                        self.request_update(True)
-                        result = True
+                if zone_list is None:
+                    new_state = s2b(sequence.enabled, service)
+                    if sequence.enabled != new_state:
+                        sequence.enabled = new_state
+                        changed = True
                 else:
-                    self._coordinator.logger.log_invalid_sequence(
-                        stime, self, sequence_id
-                    )
+                    for sequence_zone in sequence.zones:
+                        if self.check_item(sequence_zone.index, zone_list):
+                            new_state = s2b(sequence_zone.enabled, service)
+                            if sequence_zone.enabled != new_state:
+                                sequence_zone.enabled = new_state
+                                changed = True
+                if changed:
+                    self.clear_sequence_runs(stime, sequence)
+                    sequences_changed = True
+            if sequences_changed:
+                self._run_queue.clear(stime)
+                self.request_update(True)
+                result = True
         return result
 
     def service_suspend(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the suspend service call"""
-        # pylint: disable=too-many-branches
         # pylint: disable=too-many-nested-blocks
-
         result = False
         suspend_time = self.suspend_until_date(data, stime)
-        sequence_id = data.get(CONF_SEQUENCE_ID)
-        if sequence_id is None:
+        sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
+        if sequence_list is None:
             if suspend_time != self._suspend_until:
                 self.suspended = suspend_time
                 result = True
         else:
             zone_list: list[int] = data.get(CONF_ZONES)
-            sequence_list: list[int] = []
-            if sequence_id == 0:
-                sequence_list.extend(seq.index for seq in self._sequences)
-            else:
-                sequence_list.append(sequence_id - 1)
-
+            sequences_changed = False
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
                 changed = False
-                if sequence is not None:
-                    if zone_list is None:
-                        if sequence.suspended != suspend_time:
-                            sequence.suspended = suspend_time
-                            changed = True
-                    else:
-                        for sequence_zone in sequence.zones:
-                            if self.check_item(sequence_zone.index, zone_list):
-                                if sequence_zone.suspended != suspend_time:
-                                    sequence_zone.suspended = suspend_time
-                                    changed = True
-                    if changed:
-                        self.clear_sequence_runs(stime, sequence)
-                        self._run_queue.clear(stime)
-                        self.request_update(True)
-                        result = True
+                if zone_list is None:
+                    if sequence.suspended != suspend_time:
+                        sequence.suspended = suspend_time
+                        changed = True
                 else:
-                    self._coordinator.logger.log_invalid_sequence(
-                        stime, self, sequence_id
-                    )
-
+                    for sequence_zone in sequence.zones:
+                        if self.check_item(sequence_zone.index, zone_list):
+                            if sequence_zone.suspended != suspend_time:
+                                sequence_zone.suspended = suspend_time
+                                changed = True
+                if changed:
+                    self.clear_sequence_runs(stime, sequence)
+                    sequences_changed = True
+            if sequences_changed:
+                self._run_queue.clear(stime)
+                self.request_update(True)
+                result = True
         return result
 
     def service_adjust_time(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the adjust_time service call"""
-        # pylint: disable=too-many-branches, disable=too-many-nested-blocks
+        # pylint: disable=too-many-nested-blocks
         result = False
         zone_list: list[int] = data.get(CONF_ZONES)
-        sequence_id = data.get(CONF_SEQUENCE_ID)
-        if sequence_id is None:
+        sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
+        if sequence_list is None:
             for zone in self._zones:
                 if self.check_item(zone.index, zone_list):
                     result |= zone.service_adjust_time(data, stime)
         else:
-            sequence_list: list[int] = []
-            if sequence_id == 0:
-                sequence_list.extend(sequence.index for sequence in self._sequences)
-            else:
-                sequence_list.append(sequence_id - 1)
-
+            sequences_changed = False
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
                 changed = False
-                if sequence is not None:
-                    if zone_list is None:
-                        changed = sequence.adjustment.load(data)
-                    else:
-                        for sequence_zone in sequence.zones:
-                            if self.check_item(sequence_zone.index, zone_list):
-                                changed |= sequence_zone.adjustment.load(data)
-                    if changed:
-                        self.clear_sequence_runs(stime, sequence)
-                        result = True
+                if zone_list is None:
+                    changed = sequence.adjustment.load(data)
                 else:
-                    self._coordinator.logger.log_invalid_sequence(
-                        stime, self, sequence_id
-                    )
+                    for sequence_zone in sequence.zones:
+                        if self.check_item(sequence_zone.index, zone_list):
+                            changed |= sequence_zone.adjustment.load(data)
+                if changed:
+                    self.clear_sequence_runs(stime, sequence)
+                    sequences_changed = True
+            if sequences_changed:
+                result = True
         return result
 
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
