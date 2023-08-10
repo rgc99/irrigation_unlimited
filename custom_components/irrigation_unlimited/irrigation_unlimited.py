@@ -3502,6 +3502,22 @@ class IUController(IUBase):
         )
 
     def decode_sequence_id(
+        self, stime: datetime, sequence_id: int | None
+    ) -> list[int] | None:
+        """Convert supplied 1's based id into a list of sequence
+        indexes and validate"""
+        if sequence_id is None:
+            return None
+        sequence_list: list[int] = []
+        if sequence_id == 0:
+            sequence_list.extend(sequence.index for sequence in self._sequences)
+        else:
+            if self.get_sequence(sequence_id - 1) is not None:
+                sequence_list.append(sequence_id - 1)
+            else:
+                self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
+        return sequence_list
+
     def manual_run_start(self, stime: datetime) -> datetime:
         """Determine the next available start time for a manual run"""
         nst = wash_dt(stime)
