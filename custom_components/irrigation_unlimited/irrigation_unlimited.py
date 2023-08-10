@@ -3650,6 +3650,8 @@ class IUController(IUBase):
                     self.clear_sequence_runs(stime, sequence)
                     sequences_changed = True
             if sequences_changed:
+                self._run_queue.clear(stime)
+                self.request_update(True)
                 result = True
         return result
 
