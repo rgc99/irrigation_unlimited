@@ -12,9 +12,8 @@ IUExam.quiet_mode()
 
 
 async def test_next_adjustment(hass: ha.HomeAssistant, skip_history):
-    """Test issue 132"""
-
-    async with IUExam(hass, "./workshop/issue_132/configuration.yaml") as exam:
+    """Test next_adjustment attribute"""
+    async with IUExam(hass, "test_next_adjustment.yaml") as exam:
         await exam.begin_test(1)
 
         # Mimic restore
