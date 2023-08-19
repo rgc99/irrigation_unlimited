@@ -5173,6 +5173,7 @@ class IUCoordinator:
             return
 
         if changed:
+            self._last_tick = stime
             self._logger.log_service_call(service, stime, controller, zone, data1)
             async_call_later(self._hass, 0, self._async_replay_last_timer)
         else:
