@@ -47,12 +47,13 @@
   - [6.8. Tips](#68-tips)
 - [7. Services](#7-services)
   - [7.1. Services `enable`, `disable` and `toggle`](#71-services-enable-disable-and-toggle)
-  - [7.2. Service `cancel`](#72-service-cancel)
-  - [7.3. Service `manual_run`](#73-service-manual_run)
-  - [7.4. Service `adjust_time`](#74-service-adjust_time)
-  - [7.5. Service `load_schedule`](#75-service-load_schedule)
-  - [7.6. Service `reload`](#76-service-reload)
-  - [7.7. Service call access roadmap](#77-service-call-access-roadmap)
+  - [7.2. Service `suspend`](#72-service-suspend)
+  - [7.3. Service `cancel`](#73-service-cancel)
+  - [7.4. Service `manual_run`](#74-service-manual_run)
+  - [7.5. Service `adjust_time`](#75-service-adjust_time)
+  - [7.6. Service `load_schedule`](#76-service-load_schedule)
+  - [7.7. Service `reload`](#77-service-reload)
+  - [7.8. Service call access roadmap](#78-service-call-access-roadmap)
 - [8. Frontend](#8-frontend)
   - [8.1. Generic Cards](#81-generic-cards)
   - [8.2. Timeline](#82-timeline)
@@ -661,6 +662,7 @@ The binary sensor associated with each controller and zone provide several servi
 - `enable`
 - `disable`
 - `toggle`
+- `suspend`
 - `cancel`
 - `manual_run`
 - `adjust_time`
@@ -678,7 +680,24 @@ Enables/disables/toggles the controller, zone, sequence or sequence zone respect
 | `sequence_id` | [number](#145-sequence) | no | Sequence to enable/disable/toggle. |
 | `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
 
-### 7.2. Service `cancel`
+### 7.2. Service `suspend`
+
+NOTE: Available from release 2023.9.0.
+
+Suspend operation of a controller, zone, sequence or sequence zone for a period of time. This is like a temporary `disable` that will automatically reset.
+
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
+| `sequence_id` | [number](#145-sequence) | no | Sequence to enable/disable/toggle. |
+| `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
+| `for` | [duration](#142-duration-time-period) | see below* | Suspend for a period of time. Supports [templating](#144-templating). |
+| `until` | string | see below* | Suspend until a point in time. Format is `%Y-%m-%d %H:%M:%S` for example `2023-08-01 07:30:00`. |
+| `reset` | none | see below* | Reset or cancel the current suspension. |
+
+\* Must have one and only one of `for`, `until` or `reset`.
+
+### 7.3. Service `cancel`
 
 Cancels the current running schedule.
 
@@ -686,7 +705,7 @@ Cancels the current running schedule.
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to cancel. |
 
-### 7.3. Service `manual_run`
+### 7.4. Service `manual_run`
 
 Turn on the controller or zone for a period of time. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence. Zone times are calculated and rounded to the nearest time boundary. This means the total run time may vary from the specified time.
 
@@ -696,7 +715,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | `time` | [duration](#142-duration-time-period) | no | Total time to run. Supports [templating](#144-templating). If not provided or is "0:00:00" then adjusted defaults will be applied |
 | `sequence_id` | [number](#145-sequence) | no | Sequence to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. |
 
-### 7.4. Service `adjust_time`
+### 7.5. Service `adjust_time`
 
 Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
@@ -719,7 +738,7 @@ Tip: Use forecast and observation data collected by weather integrations in auto
 
 \* Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`.
 
-### 7.5. Service `load_schedule`
+### 7.6. Service `load_schedule`
 
 Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched.
 
@@ -735,18 +754,18 @@ Reload a schedule. This will allow an edit to an existing schedule. All fields a
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | | Enable/disable the schedule |
 
-### 7.6. Service `reload`
+### 7.7. Service `reload`
 
 Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading. Note: since version 2021.10.0 all settings can be changed including new controllers and zones.
 
-### 7.7. Service call access roadmap
+### 7.8. Service call access roadmap
 
 A reminder that sequences directly descend from a controller. Therefore service calls that manipulate a sequence should address the parent controller. An entity_id of a zone when trying to adjust a sequence will most likely not have the desired effect.
 
 The combination of three key parameters `entity_id`, `sequence_id` and `zones` will target the various sections of the configuration.
 
 - `entity_id:` This will be either the controller or zone entity.
-- `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on.
+- `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on. As a shortcut, `sequence_id` will alter _all_ sequences.
 - `zones:` This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zone references in the sequence. May also take a list `zones: [1,3,5]`
 
 The following is a valid irrigation unlimited configuration. It shows how various points can be changed using the service calls above. Example numbers have the nomenclature C.Z.S.R = Controller.Zone.Sequence.zoneReference. If Z is zero then the `entity_id` must be the controller/master i.e. binary_sensor.irrigation_unlimited_cN_m. If Z is not zero then then entity_id is the zone i.e. binary_sensor.irrigation_unlimited_cN_zN.
@@ -1506,7 +1525,7 @@ Templating is an advanced Home Assistant scripting technique. In many cases such
 
 ### 14.5 Sequence
 
-Sequence to adjust, a number (1, 2..N). This is the position number of the sequence under the controller. Within a controller, sequences are numbered by their position starting at 1. `sequence_id: 1` is the first, 2 is the second and so on. Only relevant when entity_id is a controller/master. An error message will be generated if a `sequence_id` is specified and `entity_id` is not a controller/master.
+Sequence to adjust, a number (1, 2..N). This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on. As a shortcut, `sequence_id: 0` will alter _all_ sequences. Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. An error message will be generated if a `sequence_id` is specified and `entity_id` is not a controller/master.
 
 ### 14.6 Zones
 
