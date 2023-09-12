@@ -250,7 +250,7 @@ adjust_time:
         duration:
 
     decrease:
-      name: Descrease
+      name: Decrease
       description: Decrease the run time.
       example: "00:02"
       required: false
@@ -278,6 +278,7 @@ manual_run:
   description: Turn on immediately for a set period.
   fields:
     entity_id:
+      name: Entity Id
       description: Name of the Irrigation Unlimited entity.
       example: "binary_sensor.irrigation_unlimited_c1_z1"
       required: true
