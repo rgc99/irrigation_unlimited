@@ -396,6 +396,20 @@ load_schedule:
       required: false
       selector:
         object:
+    from:
+      name: From
+      description: Start date in year
+      example: 15 apr
+      required: false
+      selector:
+        text:
+    until:
+      name: Until
+      description: End date in year
+      example: 15 sep
+      required: false
+      selector:
+        text:
     enabled:
       name: Enabled
       description: Enable/disable this schedule

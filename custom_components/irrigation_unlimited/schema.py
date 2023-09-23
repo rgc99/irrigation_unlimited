@@ -1,4 +1,5 @@
 """This module holds the vaious schemas"""
+from datetime import datetime, date
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.const import (
@@ -79,6 +80,7 @@ from .const import (
     CONF_SEQUENCE_ID,
     CONF_STATES,
     CONF_SCHEDULE_ID,
+    CONF_FROM,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -88,6 +90,13 @@ def _list_is_not_empty(value):
     if value is None or len(value) < 1:
         raise vol.Invalid("Must have at least one entry")
     return value
+
+
+def _parse_dd_mmm(value: str) -> date | None:
+    """Convert a date string in dd mmm format to a date object."""
+    if isinstance(value, date):
+        return value
+    return datetime.strptime(value, "%d %b").date()
 
 
 SHOW_SCHEMA = vol.Schema(
@@ -137,6 +146,8 @@ SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
+        vol.Optional(CONF_FROM): _parse_dd_mmm,
+        vol.Optional(CONF_UNTIL): _parse_dd_mmm,
         vol.Optional(CONF_ENABLED): cv.boolean,
     }
 )
@@ -151,6 +162,8 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
+        vol.Optional(CONF_FROM): _parse_dd_mmm,
+        vol.Optional(CONF_UNTIL): _parse_dd_mmm,
         vol.Optional(CONF_ENABLED): cv.boolean,
     }
 )
@@ -165,6 +178,8 @@ LOAD_SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
+        vol.Optional(CONF_FROM): _parse_dd_mmm,
+        vol.Optional(CONF_UNTIL): _parse_dd_mmm,
         vol.Optional(CONF_ENABLED): cv.boolean,
     }
 )

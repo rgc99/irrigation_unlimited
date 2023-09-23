@@ -1,7 +1,7 @@
 """Irrigation Unlimited Coordinator and sub classes"""
 # pylint: disable=too-many-lines
 import weakref
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone, date
 from collections import deque
 from types import MappingProxyType
 from typing import OrderedDict, NamedTuple, Callable, Awaitable
@@ -191,6 +191,7 @@ from .const import (
     CONF_STATE_ON,
     CONF_STATE_OFF,
     CONF_SCHEDULE_ID,
+    CONF_FROM,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -513,11 +514,13 @@ class IUSchedule(IUBase):
         self._schedule_id: str = None
         self._time = None
         self._duration: timedelta = None
-        self._name: str = f"Schedule {schedule_index + 1}"
+        self._name: str = None
         self._weekdays: list[int] = None
         self._months: list[int] = None
         self._days = None
         self._anchor: str = None
+        self._from: date = None
+        self._until: date = None
         self._enabled = True
         # Private variables
 
@@ -546,8 +549,20 @@ class IUSchedule(IUBase):
         """Return enabled status"""
         return self._enabled
 
-    def load(self, config: OrderedDict) -> "IUSchedule":
+    def load(self, config: OrderedDict, update: bool = False) -> "IUSchedule":
         """Load schedule data from config"""
+        if not update:
+            self._schedule_id = None
+            self._time = None
+            self._duration = None
+            self._name = f"Schedule {self.index + 1}"
+            self._weekdays = None
+            self._months = None
+            self._days = None
+            self._anchor = None
+            self._from = None
+            self._until = None
+
         self._schedule_id = config.get(CONF_SCHEDULE_ID, self.schedule_id)
         self._time = config.get(CONF_TIME, self._time)
         self._anchor = config.get(CONF_ANCHOR, self._anchor)
@@ -559,17 +574,15 @@ class IUSchedule(IUBase):
             self._weekdays = []
             for i in config[CONF_WEEKDAY]:
                 self._weekdays.append(WEEKDAYS.index(i))
-        else:
-            self._weekdays = None
 
         if CONF_MONTH in config:
             self._months = []
             for i in config[CONF_MONTH]:
                 self._months.append(MONTHS.index(i) + 1)
-        else:
-            self._months = None
 
-        self._days = config.get(CONF_DAY, None)
+        self._days = config.get(CONF_DAY, self._days)
+        self._from = config.get(CONF_FROM, self._from)
+        self._until = config.get(CONF_UNTIL, self._until)
 
         return self
 
@@ -648,6 +661,22 @@ class IUSchedule(IUBase):
                         continue
                 elif next_run.day not in self._days:
                     continue
+
+            # From filter
+            if self._from is not None and next_run < datetime.combine(
+                self._from.replace(year=next_run.year),
+                datetime.min.time(),
+                next_run.tzinfo,
+            ):
+                continue
+
+            # Until filter
+            if self._until is not None and next_run > datetime.combine(
+                self._until.replace(year=next_run.year),
+                datetime.max.time(),
+                next_run.tzinfo,
+            ):
+                continue
 
             # Adjust time component
             if isinstance(self._time, time):
@@ -5106,13 +5135,13 @@ class IUCoordinator:
             for zone in controller.zones:
                 for schedule in zone.schedules:
                     if schedule.schedule_id == data[CONF_SCHEDULE_ID]:
-                        schedule.load(data)
+                        schedule.load(data, True)
                         zone.runs.clear(stime)
                         return
             for sequence in controller.sequences:
                 for schedule in sequence.schedules:
                     if schedule.schedule_id == data[CONF_SCHEDULE_ID]:
-                        schedule.load(data)
+                        schedule.load(data, True)
                         controller.clear_sequence_runs(stime, sequence)
                         return
 
