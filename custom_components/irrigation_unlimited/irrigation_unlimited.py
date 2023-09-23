@@ -243,13 +243,13 @@ def wash_td(delta: timedelta, granularity: int = None) -> timedelta:
     return None
 
 
-def wash_dt(date: datetime, granularity: int = None) -> datetime:
+def wash_dt(value: datetime, granularity: int = None) -> datetime:
     """Truncate the supplied datetime to internal boundaries"""
-    if date is not None:
+    if value is not None:
         if granularity is None:
             granularity = SYSTEM_GRANULARITY
-        rounded_seconds = int(date.second / granularity) * granularity
-        return date.replace(second=rounded_seconds, microsecond=0)
+        rounded_seconds = int(value.second / granularity) * granularity
+        return value.replace(second=rounded_seconds, microsecond=0)
     return None
 
 
