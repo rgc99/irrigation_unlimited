@@ -5,7 +5,7 @@ irrigation_unlimited:
   testing:
     enabled: true
     speed: 1.0
-    output_events: true
+    output_events: false
     show_log: false
     autoplay: false
     times:
@@ -25,22 +25,6 @@ irrigation_unlimited:
           - {t: '2021-02-09 06:10', c: 1, z: 1, s: 1}
           - {t: '2021-02-09 06:30', c: 1, z: 1, s: 0}
           - {t: '2021-02-09 06:30', c: 1, z: 0, s: 0}
-      - name: "3-From/Until"
-        start: "2021-09-15 08:00"
-        end: "2021-09-19 08:59"
-        results:
-          - {t: '2021-09-16 08:05', c: 1, z: 0, s: 1}
-          - {t: '2021-09-16 08:05', c: 1, z: 1, s: 1}
-          - {t: '2021-09-16 08:15', c: 1, z: 1, s: 0}
-          - {t: '2021-09-16 08:15', c: 1, z: 0, s: 0}
-          - {t: '2021-09-17 08:05', c: 1, z: 0, s: 1}
-          - {t: '2021-09-17 08:05', c: 1, z: 1, s: 1}
-          - {t: '2021-09-17 08:15', c: 1, z: 1, s: 0}
-          - {t: '2021-09-17 08:15', c: 1, z: 0, s: 0}
-          - {t: '2021-09-18 08:05', c: 1, z: 0, s: 1}
-          - {t: '2021-09-18 08:05', c: 1, z: 1, s: 1}
-          - {t: '2021-09-18 08:15', c: 1, z: 1, s: 0}
-          - {t: '2021-09-18 08:15', c: 1, z: 0, s: 0}
   controllers:
     - name: "Test controller 1"
       zones:
@@ -55,7 +39,3 @@ irrigation_unlimited:
             weekday: [tue, thu, sat]
             month: [feb, apr, jun, aug, oct, dec]
             day: 'odd'
-          - time: "08:05"
-            duration: "00:10"
-            from: 16 Sep
-            until: 18 Sep

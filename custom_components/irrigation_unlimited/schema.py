@@ -146,9 +146,9 @@ SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
-        vol.Optional(CONF_FROM): _parse_dd_mmm,
-        vol.Optional(CONF_UNTIL): _parse_dd_mmm,
         vol.Optional(CONF_ENABLED): cv.boolean,
+        vol.Inclusive(CONF_FROM, "span"): _parse_dd_mmm,
+        vol.Inclusive(CONF_UNTIL, "span"): _parse_dd_mmm,
     }
 )
 
@@ -162,9 +162,9 @@ SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
-        vol.Optional(CONF_FROM): _parse_dd_mmm,
-        vol.Optional(CONF_UNTIL): _parse_dd_mmm,
         vol.Optional(CONF_ENABLED): cv.boolean,
+        vol.Inclusive(CONF_FROM, "span"): _parse_dd_mmm,
+        vol.Inclusive(CONF_UNTIL, "span"): _parse_dd_mmm,
     }
 )
 
@@ -178,9 +178,9 @@ LOAD_SCHEDULE_SCHEMA = vol.Schema(
         vol.Optional(CONF_WEEKDAY): cv.weekdays,
         vol.Optional(CONF_MONTH): month_event,
         vol.Optional(CONF_DAY): day_event,
-        vol.Optional(CONF_FROM): _parse_dd_mmm,
-        vol.Optional(CONF_UNTIL): _parse_dd_mmm,
         vol.Optional(CONF_ENABLED): cv.boolean,
+        vol.Inclusive(CONF_FROM, "span"): _parse_dd_mmm,
+        vol.Inclusive(CONF_UNTIL, "span"): _parse_dd_mmm,
     }
 )
 

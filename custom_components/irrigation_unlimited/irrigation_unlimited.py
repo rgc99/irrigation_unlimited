@@ -662,21 +662,26 @@ class IUSchedule(IUBase):
                 elif next_run.day not in self._days:
                     continue
 
-            # From filter
-            if self._from is not None and next_run < datetime.combine(
-                self._from.replace(year=next_run.year),
-                datetime.min.time(),
-                next_run.tzinfo,
-            ):
-                continue
+            # From/Until filter
+            if self._from is not None and self._until is not None:
+                dts = datetime.combine(
+                    self._from.replace(year=next_run.year),
+                    datetime.min.time(),
+                    next_run.tzinfo,
+                )
+                dte = datetime.combine(
+                    self._until.replace(year=next_run.year),
+                    datetime.max.time(),
+                    next_run.tzinfo,
+                )
+                if dte < dts:
+                    if next_run >= dts:
+                        dte = dte.replace(year=dte.year + 1)
+                    else:
+                        dts = dts.replace(year=dts.year - 1)
 
-            # Until filter
-            if self._until is not None and next_run > datetime.combine(
-                self._until.replace(year=next_run.year),
-                datetime.max.time(),
-                next_run.tzinfo,
-            ):
-                continue
+                if not dts <= next_run <= dte:
+                    continue
 
             # Adjust time component
             if isinstance(self._time, time):
