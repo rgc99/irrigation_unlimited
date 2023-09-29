@@ -5,7 +5,7 @@ irrigation_unlimited:
   testing:
     enabled: true
     speed: 1.0
-    output_events: true
+    output_events: false
     show_log: false
     autoplay: false
     times:
@@ -25,7 +25,7 @@ irrigation_unlimited:
           - {t: '2021-09-18 06:05', c: 1, z: 1, s: 1}
           - {t: '2021-09-18 06:15', c: 1, z: 1, s: 0}
           - {t: '2021-09-18 06:15', c: 1, z: 0, s: 0}
-      - name: "1-From > Until"
+      - name: "2-From > Until"
         start: "2021-12-28 07:00"
         end: "2022-01-04 08:00"
         results:
