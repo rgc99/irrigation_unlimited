@@ -257,4 +257,5 @@ class IUZoneEntity(IUEntity):
             attr[ATTR_CONFIGURATION] = self._zone.configuration
         if self._zone.show_timeline:
             attr[ATTR_TIMELINE] = self._zone.timeline()
+        attr["volume"] = self._zone.volume.total
         return attr

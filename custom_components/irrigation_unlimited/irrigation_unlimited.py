@@ -23,6 +23,7 @@ from homeassistant.helpers.template import Template
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_call_later,
+    async_track_state_change_event,
 )
 from homeassistant.helpers import sun
 from homeassistant.util import dt
@@ -192,6 +193,8 @@ from .const import (
     CONF_STATE_OFF,
     CONF_SCHEDULE_ID,
     CONF_FROM,
+    CONF_VOLUME,
+    CONF_PRECISION,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -1473,6 +1476,92 @@ class IUSwitch:
                 self._check_back_time = stime + self._check_back_delay
 
 
+class IUVolume:
+    """Irrigation Unlimited Volume class"""
+
+    def __init__(self, hass: HomeAssistant, coordinator: "IUCoordinator") -> None:
+        # Passed parameters
+        self._hass = hass
+        self._coordinator = coordinator
+        # Config parameters
+        self._sensor_id: str = None
+        self._rounding = 3
+        # Private variables
+        self._callback_remove: CALLBACK_TYPE = None
+        self._start: float = None
+        self._total: float = None
+
+    @property
+    def total(self) -> str | None:
+        """Return the total value"""
+        if self._total is not None:
+            return format(self._total, f".{self._rounding}f")
+        return None
+
+    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
+        """Load volume data from the configuration"""
+
+        def load_params(config: OrderedDict) -> None:
+            if config is None:
+                return
+            self._sensor_id = config.get(CONF_ENTITY_ID, self._sensor_id)
+            self._rounding = config.get(CONF_PRECISION, self._rounding)
+
+        if all_zones is not None:
+            load_params(all_zones.get(CONF_VOLUME))
+        load_params(config.get(CONF_VOLUME))
+
+    def start_record(self, stime: datetime) -> None:
+        """Start recording volume information"""
+        if self._sensor_id is None:
+            return
+
+        def sensor_state_change(event: HAEvent):
+            # pylint: disable=unused-argument
+            sensor = self._hass.states.get(self._sensor_id)
+            if sensor is not None:
+                try:
+                    value = float(sensor.state)
+                except ValueError:
+                    return
+                self._total = value - self._start
+
+        self._start = self._total = None
+        sensor = self._hass.states.get(self._sensor_id)
+        if sensor is not None:
+            try:
+                self._start = float(sensor.state)
+            except ValueError:
+                self._coordinator.logger.log_invalid_meter_value(stime, sensor.state)
+            else:
+                self._callback_remove = async_track_state_change_event(
+                    self._hass, self._sensor_id, sensor_state_change
+                )
+        else:
+            self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
+
+    def end_record(self, stime: datetime) -> None:
+        """Finish recording volume information"""
+        if self._callback_remove is not None:
+            self._callback_remove()
+            self._callback_remove = None
+        if self._start is not None:
+            sensor = self._hass.states.get(self._sensor_id)
+            if sensor is not None:
+                try:
+                    value = float(sensor.state)
+                except ValueError:
+                    self._coordinator.logger.log_invalid_meter_value(
+                        stime, sensor.state
+                    )
+                    self._total = None
+                else:
+                    self._total = value - self._start
+            else:
+                self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
+                self._total = None
+
+
 class IUZone(IUBase):
     """Irrigation Unlimited Zone class"""
 
@@ -1512,6 +1601,7 @@ class IUZone(IUBase):
         self._suspend_until: datetime = None
         self._dirty: bool = True
         self._switch = IUSwitch(hass, coordinator, controller, self)
+        self._volume = IUVolume(hass, coordinator)
 
     @property
     def unique_id(self) -> str:
@@ -1544,6 +1634,11 @@ class IUZone(IUBase):
     def adjustment(self) -> IUAdjustment:
         """Return the adjustment for this zone"""
         return self._adjustment
+
+    @property
+    def volume(self) -> IUVolume:
+        """Return the volume for this zone"""
+        return self._volume
 
     @property
     def zone_id(self) -> str:
@@ -1784,6 +1879,7 @@ class IUZone(IUBase):
             for sidx, schedule_config in enumerate(config[CONF_SCHEDULES]):
                 self.find_add(sidx).load(schedule_config)
         self._switch.load(config, all_zones)
+        self._volume.load(config, all_zones)
         self._dirty = True
         return self
 
@@ -3431,6 +3527,7 @@ class IUController(IUBase):
         for zone in (self._zones[i] for i in zones_changed):
             if not zone.is_on:
                 zone.call_switch(zone.is_on, stime)
+                zone.volume.end_record(stime)
 
         # Check if master has changed and update
         if state_changed:
@@ -3442,6 +3539,7 @@ class IUController(IUBase):
         for zone in (self._zones[i] for i in zones_changed):
             if zone.is_on:
                 zone.call_switch(zone.is_on, stime)
+                zone.volume.start_record(stime)
 
         return state_changed
 
@@ -4513,6 +4611,16 @@ class IULogger:
             f"expression: {expression}, "
             f"error: {msg}",
         )
+
+    def log_invalid_meter_id(
+        self, stime: datetime, entity_id: str, level=ERROR
+    ) -> None:
+        """Warn the volume meter is invalid"""
+        self._format(level, "VOLUME_SENSOR", stime, f"entity_id: {entity_id}")
+
+    def log_invalid_meter_value(self, stime: datetime, value: str, level=ERROR) -> None:
+        """Warn the volume meter value is invalid"""
+        self._format(level, "VOLUME_VALUE", stime, f"value: {value}")
 
 
 class IUClock:

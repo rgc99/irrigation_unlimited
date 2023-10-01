@@ -81,6 +81,8 @@ from .const import (
     CONF_STATES,
     CONF_SCHEDULE_ID,
     CONF_FROM,
+    CONF_VOLUME,
+    CONF_PRECISION,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -195,6 +197,13 @@ CHECK_BACK_SCHEMA = vol.Schema(
     }
 )
 
+VOLUME_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_ENTITY_ID): cv.entity_id,
+        vol.Optional(CONF_PRECISION): cv.positive_int,
+    }
+)
+
 ZONE_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_SCHEDULES): vol.All(cv.ensure_list, [SCHEDULE_SCHEMA]),
@@ -208,6 +217,7 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
         vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
         vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
+        vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_DURATION): cv.positive_time_period_template,
     }
 )
@@ -220,6 +230,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
         vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
         vol.Optional(CONF_ALLOW_MANUAL): cv.boolean,
         vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
+        vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_DURATION): cv.positive_time_period_template,
     }
 )

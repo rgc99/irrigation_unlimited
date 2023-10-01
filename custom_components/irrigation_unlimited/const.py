@@ -108,6 +108,8 @@ CONF_STATE_ON = "state_on"
 CONF_STATE_OFF = "state_off"
 CONF_SCHEDULE_ID = "schedule_id"
 CONF_FROM = "from"
+CONF_VOLUME = "volume"
+CONF_PRECISION = "precision"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
