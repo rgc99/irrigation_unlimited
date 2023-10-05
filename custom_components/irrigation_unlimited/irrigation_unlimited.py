@@ -195,6 +195,8 @@ from .const import (
     CONF_FROM,
     CONF_VOLUME,
     CONF_PRECISION,
+    CONF_QUEUE,
+    CONF_QUEUE_MANUAL,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -1081,13 +1083,6 @@ class IURunQueue(list[IURun]):
             return self[i]
         return None
 
-    def find_manual(self) -> IURun:
-        """Find any manual run"""
-        for run in self:
-            if run.is_manual():
-                return run
-        return None
-
     def last_time(self, stime: datetime) -> datetime:
         """Return the further most look ahead date"""
         return stime + self._future_span
@@ -1254,7 +1249,7 @@ class IUScheduleQueue(IURunQueue):
         )
 
     def add_manual(
-        self, start_time: datetime, duration: timedelta, zone: "IUZone"
+        self, start_time: datetime, duration: timedelta, zone: "IUZone", queue: bool
     ) -> IURun:
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
@@ -1263,11 +1258,9 @@ class IUScheduleQueue(IURunQueue):
             self.pop(0)
 
         # Remove any existing manual schedules
-        while True:
-            run = self.find_manual()
-            if run is None:
-                break
-            self.remove(run)
+        if not queue:
+            for manual in (run for run in self if run.is_manual()):
+                self.remove(manual)
 
         self._current_run = None
         self._next_run = None
@@ -1811,15 +1804,18 @@ class IUZone(IUBase):
         """Add a manual run."""
         if self._allow_manual or (self.is_enabled and self._controller.is_enabled):
             duration = wash_td(data.get(CONF_TIME))
+            delay = wash_td(data.get(CONF_DELAY, timedelta(0)))
+            queue = data.get(CONF_QUEUE, self._controller.queue_manual)
             if duration is None or duration == timedelta(0):
                 duration = self._duration
                 if duration is None:
                     return
                 duration = self._adjustment.adjust(duration)
             self._run_queue.add_manual(
-                self._controller.manual_run_start(stime),
+                self._controller.manual_run_start(stime, delay, queue),
                 duration,
                 self,
+                queue,
             )
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> None:
@@ -3054,6 +3050,7 @@ class IUController(IUBase):
         self._controller_id: str = None
         self._preamble: timedelta = None
         self._postamble: timedelta = None
+        self._queue_manual: bool = False
         # Private variables
         self._initialised: bool = False
         self._finalised: bool = False
@@ -3164,6 +3161,11 @@ class IUController(IUBase):
     def preamble(self) -> timedelta:
         """Return the preamble time for the controller"""
         return self._preamble
+
+    @property
+    def queue_manual(self) -> bool:
+        """Return if manual runs should be queue"""
+        return self._queue_manual
 
     @property
     def status(self) -> str:
@@ -3281,6 +3283,7 @@ class IUController(IUBase):
         self._controller_id = config.get(CONF_CONTROLLER_ID, str(self.index + 1))
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
+        self._queue_manual = config.get(CONF_QUEUE_MANUAL, self._queue_manual)
         all_zones = config.get(CONF_ALL_ZONES_CONFIG)
         zidx: int = 0
         for zidx, zone_config in enumerate(config[CONF_ZONES]):
@@ -3650,7 +3653,9 @@ class IUController(IUBase):
                 self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
         return sequence_list
 
-    def manual_run_start(self, stime: datetime) -> datetime:
+    def manual_run_start(
+        self, stime: datetime, delay: timedelta, queue: bool
+    ) -> datetime:
         """Determine the next available start time for a manual run"""
         nst = wash_dt(stime)
         if not self._is_on:
@@ -3661,6 +3666,10 @@ class IUController(IUBase):
             and not self.is_on
         ):
             nst += self.preamble
+        if queue:
+            end_times = [run.end_time for run in self._run_queue if run.is_manual()]
+            if len(end_times) > 0:
+                nst = max(end_times) + delay
         return nst
 
     def suspend_until_date(
@@ -3799,10 +3808,12 @@ class IUController(IUBase):
             sequence = self.get_sequence(sequence_id - 1)
             if sequence is not None:
                 duration = wash_td(data.get(CONF_TIME))
+                delay = wash_td(data.get(CONF_DELAY, timedelta(0)))
+                queue = data.get(CONF_QUEUE, self._queue_manual)
                 if duration is not None and duration == timedelta(0):
                     duration = None
                 self.muster_sequence(
-                    self.manual_run_start(stime), sequence, None, duration
+                    self.manual_run_start(stime, delay, queue), sequence, None, duration
                 )
             else:
                 self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)

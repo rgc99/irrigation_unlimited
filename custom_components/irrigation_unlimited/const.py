@@ -110,6 +110,8 @@ CONF_SCHEDULE_ID = "schedule_id"
 CONF_FROM = "from"
 CONF_VOLUME = "volume"
 CONF_PRECISION = "precision"
+CONF_QUEUE = "queue"
+CONF_QUEUE_MANUAL = "queue_manual"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

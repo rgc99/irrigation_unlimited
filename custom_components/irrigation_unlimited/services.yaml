@@ -295,6 +295,21 @@ manual_run:
       selector:
         duration:
 
+    delay:
+      name: Delay
+      description: Delay between queued runs.
+      example: "00:00:30"
+      required: false
+      selector:
+        duration:
+
+    queue:
+      name: Queue
+      description: Start immediately or queue run.
+      example: false
+      selector:
+        boolean:
+
     sequence_id:
       name: Sequence Id
       description: Id of the sequence to run.

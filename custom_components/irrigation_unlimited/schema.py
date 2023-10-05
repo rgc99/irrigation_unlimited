@@ -83,6 +83,8 @@ from .const import (
     CONF_FROM,
     CONF_VOLUME,
     CONF_PRECISION,
+    CONF_QUEUE,
+    CONF_QUEUE_MANUAL,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -276,6 +278,7 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Optional(CONF_POSTAMBLE): cv.time_period,
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_ALL_ZONES_CONFIG): vol.All(ALL_ZONES_SCHEMA),
+        vol.Optional(CONF_QUEUE_MANUAL): cv.boolean,
     }
 )
 
@@ -383,6 +386,8 @@ TIME_ADJUST_SCHEMA = vol.All(
 MANUAL_RUN_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,
     vol.Optional(CONF_TIME): cv.positive_time_period_template,
+    vol.Optional(CONF_DELAY): cv.time_period,
+    vol.Optional(CONF_QUEUE): cv.boolean,
     vol.Optional(CONF_ZONES): cv.ensure_list,
     vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
 }
