@@ -3482,7 +3482,10 @@ class IUController(IUBase):
 
         # Post processing
         for zone in self._zones:
-            zone_status |= zone.runs.update_queue(stime)
+            zts = zone.runs.update_queue(stime)
+            if zts & IURunQueue.RQ_STATUS_CANCELED:
+                zone.request_update()
+            zone_status |= zts
 
         if (
             zone_status
