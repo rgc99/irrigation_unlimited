@@ -406,4 +406,14 @@ async def test_service_manual_run_queue(
         )
         await exam.finish_test()
 
+        await exam.begin_test(4)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "time": "00:10",
+            },
+        )
+        await exam.finish_test()
+
         exam.check_summary()
