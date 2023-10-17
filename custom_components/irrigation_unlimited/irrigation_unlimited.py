@@ -3670,7 +3670,9 @@ class IUController(IUBase):
         ):
             nst += self.preamble
         if queue:
-            end_times = [run.end_time for run in self._run_queue if run.is_manual()]
+            end_times: list[datetime] = []
+            for zone in self._zones:
+                end_times.extend(run.end_time for run in zone.runs if run.is_manual())
             if len(end_times) > 0:
                 nst = max(end_times) + delay
         return nst
