@@ -1400,25 +1400,25 @@ class IUSwitch:
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
         """Load switch data from the configuration"""
-        self.clear()
-        delay = self._check_back_delay.total_seconds()
-        if all_zones is not None and CONF_CHECK_BACK in all_zones:
-            cfg: dict = all_zones[CONF_CHECK_BACK]
-            self._check_back_states = cfg.get(CONF_STATES, self._check_back_states)
-            self._check_back_retries = cfg.get(CONF_RETRIES, self._check_back_retries)
-            self._check_back_resync = cfg.get(CONF_RESYNC, self._check_back_resync)
-            self._state_on = cfg.get(CONF_STATE_ON, self._state_on)
-            self._state_off = cfg.get(CONF_STATE_OFF, self._state_off)
-            delay = cfg.get(CONF_DELAY, delay)
-        self._switch_entity_id = config.get(CONF_ENTITY_ID)
-        self._check_back_states = config.get(CONF_STATES, self._check_back_states)
-        self._check_back_retries = config.get(CONF_RETRIES, self._check_back_retries)
-        self._check_back_resync = config.get(CONF_RESYNC, self._check_back_resync)
-        self._state_on = config.get(CONF_STATE_ON, self._state_on)
-        self._state_off = config.get(CONF_STATE_OFF, self._state_off)
 
-        delay = config.get(CONF_DELAY, delay)
-        self._check_back_delay = wash_td(timedelta(seconds=delay))
+        def load_params(config: OrderedDict) -> None:
+            if config is None:
+                return
+            self._check_back_states = config.get(CONF_STATES, self._check_back_states)
+            self._check_back_retries = config.get(
+                CONF_RETRIES, self._check_back_retries
+            )
+            self._check_back_resync = config.get(CONF_RESYNC, self._check_back_resync)
+            self._state_on = config.get(CONF_STATE_ON, self._state_on)
+            self._state_off = config.get(CONF_STATE_OFF, self._state_off)
+            delay = config.get(CONF_DELAY, self._check_back_delay.total_seconds())
+            self._check_back_delay = wash_td(timedelta(seconds=delay))
+
+        self.clear()
+        self._switch_entity_id = config.get(CONF_ENTITY_ID)
+        if all_zones is not None:
+            load_params(all_zones.get(CONF_CHECK_BACK))
+        load_params(config.get(CONF_CHECK_BACK))
         return self
 
     def muster(self, stime: datetime) -> int:
