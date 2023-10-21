@@ -4057,6 +4057,12 @@ class IUTester:
     def __init__(self, coordinator: "IUCoordinator") -> None:
         # Passed parameters
         self._coordinator = coordinator
+        # Config parameters
+        self._enabled: bool = False
+        self._speed: float = None
+        self._output_events: bool = None
+        self._show_log: bool = None
+        self._autoplay: bool = None
         # Private variables
         self._tests: list[IUTest] = []
         self._test_initialised = False
