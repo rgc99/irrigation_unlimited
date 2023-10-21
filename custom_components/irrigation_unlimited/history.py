@@ -258,7 +258,7 @@ class IUHistory:
         self._initialised = False
         return self
 
-    def muster(self, stime: datetime, force: bool) -> int:
+    def muster(self, stime: datetime, force: bool) -> None:
         """Check and update history if required"""
 
         if force:
@@ -276,7 +276,6 @@ class IUHistory:
             self._schedule_refresh(True)
 
         self._stime = stime
-        return 0
 
     def today_total(self, entity_id: str) -> timedelta:
         """Return the total on time for today"""

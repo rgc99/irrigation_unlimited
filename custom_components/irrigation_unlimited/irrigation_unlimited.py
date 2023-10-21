@@ -5018,7 +5018,7 @@ class IUCoordinator:
         """Calculate run times for system"""
         status: int = 0
 
-        status |= self._history.muster(stime, force)
+        self._history.muster(stime, force)
 
         for controller in self._controllers:
             status |= controller.muster(stime, force)
