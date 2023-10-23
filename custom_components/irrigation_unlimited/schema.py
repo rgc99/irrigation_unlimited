@@ -279,6 +279,7 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_ALL_ZONES_CONFIG): vol.All(ALL_ZONES_SCHEMA),
         vol.Optional(CONF_QUEUE_MANUAL): cv.boolean,
+        vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
     }
 )
 
