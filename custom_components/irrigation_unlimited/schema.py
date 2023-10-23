@@ -196,6 +196,7 @@ CHECK_BACK_SCHEMA = vol.Schema(
         vol.Optional(CONF_RESYNC): cv.boolean,
         vol.Optional(CONF_STATE_ON): cv.string,
         vol.Optional(CONF_STATE_OFF): cv.string,
+        vol.Optional(CONF_ENTITY_ID): cv.entity_id,
     }
 )
 

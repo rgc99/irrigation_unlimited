@@ -1352,6 +1352,7 @@ class IUSwitch:
         self._check_back_resync: bool = True
         self._state_on = STATE_ON
         self._state_off = STATE_OFF
+        self._check_back_entity_id: str = None
         # private variables
         self._state: bool = None  # This parameter should mirror IUZone._is_on
         self._check_back_time: timedelta = None
@@ -1413,6 +1414,9 @@ class IUSwitch:
             self._state_off = config.get(CONF_STATE_OFF, self._state_off)
             delay = config.get(CONF_DELAY, self._check_back_delay.total_seconds())
             self._check_back_delay = wash_td(timedelta(seconds=delay))
+            self._check_back_entity_id = config.get(
+                CONF_ENTITY_ID, self._check_back_entity_id
+            )
 
         self.clear()
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
@@ -1429,26 +1433,36 @@ class IUSwitch:
     def check_switch(self, stime: datetime, resync: bool, log: bool) -> list[str]:
         """Check the linked entity is in sync. Returns a list of entities
         that are not in sync"""
+
         result: list[str] = []
+
+        def _check_entity(entity_id: str, expected: str) -> bool:
+            is_valid = self._hass.states.is_state(entity_id, expected)
+            if not is_valid:
+                result.append(entity_id)
+                if log:
+                    self._coordinator.logger.log_sync_error(stime, expected, entity_id)
+                    self._coordinator.notify_switch(
+                        EVENT_SYNC_ERROR,
+                        expected,
+                        [entity_id],
+                        self._controller,
+                        self._zone,
+                    )
+
+            return is_valid
+
         if self._switch_entity_id is not None:
-            for entity_id in self._switch_entity_id:
-                expected = self._state_on if self._state else self._state_off
-                is_valid = self._hass.states.is_state(entity_id, expected)
-                if not is_valid:
-                    result.append(entity_id)
-                    if log:
-                        self._coordinator.logger.log_sync_error(
-                            stime, expected, entity_id
-                        )
-                        self._coordinator.notify_switch(
-                            EVENT_SYNC_ERROR,
-                            expected,
-                            [entity_id],
-                            self._controller,
-                            self._zone,
-                        )
-                    if resync:
-                        self._set_switch(entity_id, self._state)
+            expected = self._state_on if self._state else self._state_off
+            if self._check_back_entity_id is None:
+                for entity_id in self._switch_entity_id:
+                    if not _check_entity(entity_id, expected):
+                        if resync:
+                            self._set_switch(entity_id, self._state)
+            else:
+                if not _check_entity(self._check_back_entity_id, expected):
+                    if resync and len(self._switch_entity_id) == 1:
+                        self._set_switch(self._switch_entity_id, self._state)
         return result
 
     def call_switch(self, state: bool, stime: datetime = None) -> None:
