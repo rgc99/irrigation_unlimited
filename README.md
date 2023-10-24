@@ -380,7 +380,7 @@ This object controls the internal clock mode.
 | ---- | ---- | ------- | ----------- |
 | `mode` | string | seer | `fixed` or `seer`. Set the clock to fixed (game loop) or seer (event loop) |
 | `show_log` | bool | false | Expose the clock ticks via `next_tick` and `tick_log` attributes in the coordinator entity |
-| `max_log_entiries` | number | 50 | Set the number of entires in the tick log history |
+| `max_log_entries` | number | 50 | Set the number of entries in the tick log history |
 
 ### 5.10. Check Back Object
 
