@@ -175,6 +175,7 @@ class IUMasterEntity(IUEntity):
         else:
             attr[ATTR_NEXT_SCHEDULE] = "deprecated (use next_zone)"
             attr[ATTR_NEXT_ZONE] = RES_NONE
+        attr |= self._controller.user
         return attr
 
 
@@ -259,4 +260,5 @@ class IUZoneEntity(IUEntity):
         if self._zone.show_timeline:
             attr[ATTR_TIMELINE] = self._zone.timeline()
         attr[ATTR_VOLUME] = self._zone.volume.total
+        attr |= self._zone.user
         return attr
