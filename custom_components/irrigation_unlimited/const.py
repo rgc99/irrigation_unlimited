@@ -193,6 +193,7 @@ ATTR_CONTROLLER_COUNT = "controller_count"
 ATTR_NEXT_TICK = "next_tick"
 ATTR_TICK_LOG = "tick_log"
 ATTR_SUSPENDED = "suspended"
+ATTR_VOLUME = "volume"
 
 # Resources
 RES_MANUAL = "Manual"

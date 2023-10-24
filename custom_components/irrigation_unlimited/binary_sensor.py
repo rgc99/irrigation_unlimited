@@ -47,6 +47,7 @@ from .const import (
     RES_MANUAL,
     RES_NOT_RUNNING,
     RES_NONE,
+    ATTR_VOLUME,
 )
 
 
@@ -257,5 +258,5 @@ class IUZoneEntity(IUEntity):
             attr[ATTR_CONFIGURATION] = self._zone.configuration
         if self._zone.show_timeline:
             attr[ATTR_TIMELINE] = self._zone.timeline()
-        attr["volume"] = self._zone.volume.total
+        attr[ATTR_VOLUME] = self._zone.volume.total
         return attr
