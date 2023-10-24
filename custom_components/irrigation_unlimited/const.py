@@ -112,6 +112,7 @@ CONF_VOLUME = "volume"
 CONF_PRECISION = "precision"
 CONF_QUEUE = "queue"
 CONF_QUEUE_MANUAL = "queue_manual"
+CONF_USER = "user"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

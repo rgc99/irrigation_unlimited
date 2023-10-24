@@ -85,6 +85,7 @@ from .const import (
     CONF_PRECISION,
     CONF_QUEUE,
     CONF_QUEUE_MANUAL,
+    CONF_USER,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -102,6 +103,11 @@ def _parse_dd_mmm(value: str) -> date | None:
         return value
     return datetime.strptime(value, "%d %b").date()
 
+
+USER_SCHEMA = vol.Schema(
+    {},
+    extra=vol.ALLOW_EXTRA,
+)
 
 SHOW_SCHEMA = vol.Schema(
     {
@@ -222,6 +228,7 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
         vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_DURATION): cv.positive_time_period_template,
+        vol.Optional(CONF_USER): vol.All(USER_SCHEMA),
     }
 )
 
@@ -235,6 +242,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
         vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
         vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_DURATION): cv.positive_time_period_template,
+        vol.Optional(CONF_USER): vol.All(USER_SCHEMA),
     }
 )
 
@@ -281,6 +289,7 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Optional(CONF_ALL_ZONES_CONFIG): vol.All(ALL_ZONES_SCHEMA),
         vol.Optional(CONF_QUEUE_MANUAL): cv.boolean,
         vol.Optional(CONF_CHECK_BACK): vol.All(CHECK_BACK_SCHEMA),
+        vol.Optional(CONF_USER): vol.All(USER_SCHEMA),
     }
 )
 

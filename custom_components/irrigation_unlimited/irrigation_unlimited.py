@@ -197,6 +197,7 @@ from .const import (
     CONF_PRECISION,
     CONF_QUEUE,
     CONF_QUEUE_MANUAL,
+    CONF_USER,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -497,6 +498,24 @@ class IUAdjustment:
         if self._maximum is not None:
             result[CONF_MAXIMUM] = self._maximum
         return result
+
+
+class IUUser(dict):
+    """Class to hold arbitrary static user information"""
+
+    def load(self, config: OrderedDict, all_zones: OrderedDict):
+        """Load info data from the configuration"""
+
+        def load_params(config: OrderedDict) -> None:
+            if config is None:
+                return
+            for key, data in config.items():
+                self[f"{CONF_USER}_{key}"] = data
+
+        self.clear()
+        if all_zones is not None:
+            load_params(all_zones.get(CONF_USER))
+        load_params(config.get(CONF_USER))
 
 
 class IUSchedule(IUBase):
@@ -1609,6 +1628,7 @@ class IUZone(IUBase):
         self._dirty: bool = True
         self._switch = IUSwitch(hass, coordinator, controller, self)
         self._volume = IUVolume(hass, coordinator)
+        self._user = IUUser()
 
     @property
     def unique_id(self) -> str:
@@ -1752,6 +1772,11 @@ class IUZone(IUBase):
         """Return this zone as JSON"""
         return json.dumps(self.as_dict(), cls=IUJSONEncoder)
 
+    @property
+    def user(self) -> dict:
+        """Return the arbitrary user information"""
+        return self._user
+
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
         self._initialised = self._zone_sensor is not None
@@ -1890,6 +1915,7 @@ class IUZone(IUBase):
                 self.find_add(sidx).load(schedule_config)
         self._switch.load(config, all_zones)
         self._volume.load(config, all_zones)
+        self._user.load(config, all_zones)
         self._dirty = True
         return self
 
@@ -3077,6 +3103,7 @@ class IUController(IUBase):
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
         self._suspend_until: datetime = None
+        self._user = IUUser()
         self._dirty: bool = True
 
     @property
@@ -3205,6 +3232,11 @@ class IUController(IUBase):
             return ICON_SUSPENDED
         return ICON_DISABLED
 
+    @property
+    def user(self) -> dict:
+        """Return the arbitrary user information"""
+        return self._user
+
     def _status(self) -> str:
         """Return status of the controller"""
         if self._initialised:
@@ -3317,6 +3349,7 @@ class IUController(IUBase):
             self._sequences.clear()
 
         self._switch.load(config, None)
+        self._user.load(config, None)
         self._dirty = True
         return self
 
