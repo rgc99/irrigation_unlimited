@@ -26,6 +26,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
 
         sync_event_errors: list[ha.Event] = []
         switch_event_errors: list[ha.Event] = []
+        hass_events: list[ha.Event] = []
 
         def handle_sync_events(event: ha.Event) -> None:
             nonlocal sync_event_errors
@@ -39,14 +40,26 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
             data["vtime"] = exam.virtual_time
             switch_event_errors.append(data)
 
-        hass.bus.async_listen(f"{DOMAIN}_{EVENT_SYNC_ERROR}", handle_sync_events)
-        hass.bus.async_listen(f"{DOMAIN}_{EVENT_SWITCH_ERROR}", handle_switch_events)
+        def handle_hass_events(event: ha.Event) -> None:
+            nonlocal hass_events
+            if event.data.get(ha.ATTR_DOMAIN) == ha.DOMAIN:
+                hass_events.append(event.data)
+
+        remove_sync_events = hass.bus.async_listen(
+            f"{DOMAIN}_{EVENT_SYNC_ERROR}", handle_sync_events
+        )
+        remove_switch_events = hass.bus.async_listen(
+            f"{DOMAIN}_{EVENT_SWITCH_ERROR}", handle_switch_events
+        )
+        remove_hass_envents = hass.bus.async_listen(
+            ha.EVENT_CALL_SERVICE, handle_hass_events
+        )
 
         async def kill_m(atime: datetime) -> None:
             """Turn off dummy_switch_m at the specified time"""
             await exam.run_until(atime)
             await hass.services.async_call(
-                "homeassistant",
+                "input_boolean",
                 "turn_off",
                 {"entity_id": "input_boolean.dummy_switch_m"},
                 True,
@@ -56,7 +69,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
             """Turn off dummy_switch_z1 at the specified time"""
             await exam.run_until(atime)
             await hass.services.async_call(
-                "homeassistant",
+                "input_boolean",
                 "turn_off",
                 {"entity_id": "input_boolean.dummy_switch_z1"},
                 True,
@@ -66,7 +79,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
             """Turn off dummy_switch_z3 at the specified time"""
             await exam.run_until(atime)
             await hass.services.async_call(
-                "homeassistant",
+                "input_boolean",
                 "turn_off",
                 {"entity_id": "input_boolean.dummy_switch_z3"},
                 True,
@@ -75,7 +88,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
         async def change_check_back_switch(state: bool) -> None:
             """Turn on/off dummy_switch_call_back_switch"""
             await hass.services.async_call(
-                "homeassistant",
+                "input_boolean",
                 "turn_on" if state else "turn_off",
                 {"entity_id": "input_boolean.dummy_check_back_switch"},
                 True,
@@ -107,11 +120,27 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 await exam.begin_test(2)
                 await kill_m("2021-01-04 07:05:15")
                 assert hass.states.get("input_boolean.dummy_switch_m").state == "off"
+                hass_events.clear()
                 await exam.run_until("2021-01-04 07:05:45")
+                assert hass_events == [
+                    {
+                        "domain": "homeassistant",
+                        "service": "turn_on",
+                        "service_data": {"entity_id": "input_boolean.dummy_switch_m"},
+                    }
+                ]
                 assert hass.states.get("input_boolean.dummy_switch_m").state == "on"
                 await kill_z3("2021-01-04 07:12:15")
                 assert hass.states.get("input_boolean.dummy_switch_z3").state == "off"
+                hass_events.clear()
                 await exam.run_until("2021-01-04 07:12:45")
+                assert hass_events == [
+                    {
+                        "domain": "homeassistant",
+                        "service": "turn_on",
+                        "service_data": {"entity_id": "input_boolean.dummy_switch_z3"},
+                    }
+                ]
                 assert hass.states.get("input_boolean.dummy_switch_z3").state == "on"
                 await exam.finish_test()
                 assert mock_sync_logger.call_count == 2
@@ -253,7 +282,24 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     hass.states.get("input_boolean.dummy_check_back_switch").state
                     == "off"
                 )
+                hass_events.clear()
                 await exam.run_until("2021-01-04 20:05:20")
+                assert hass_events == [
+                    {
+                        "domain": "homeassistant",
+                        "service": "turn_off",
+                        "service_data": {
+                            "entity_id": ["input_boolean.dummy_switch_z1"]
+                        },
+                    },
+                    {
+                        "domain": "homeassistant",
+                        "service": "turn_on",
+                        "service_data": {
+                            "entity_id": ["input_boolean.dummy_switch_z1"]
+                        },
+                    },
+                ]
                 assert hass.states.get("input_boolean.dummy_switch_z1").state == "on"
                 assert (
                     hass.states.get("input_boolean.dummy_check_back_switch").state
@@ -273,10 +319,14 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     == "off"
                 )
                 await exam.finish_test()
+
                 assert mock_sync_logger.call_count == 10
                 assert mock_switch_logger.call_count == 2
                 assert len(sync_event_errors) == 10
                 assert len(switch_event_errors) == 2
-
         # Check the exam results
         exam.check_summary()
+
+        remove_switch_events()
+        remove_sync_events()
+        remove_hass_envents()

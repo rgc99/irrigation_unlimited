@@ -94,6 +94,8 @@ irrigation_unlimited:
       zones:
         - name: "Zone 1"
           entity_id: input_boolean.dummy_switch_z1
+          check_back:
+            toggle: true
         - name: "Zone 2"
           entity_id: input_boolean.dummy_switch_z2,input_boolean.dummy_switch_z3,input_boolean.dummy_switch_z4
       sequences:

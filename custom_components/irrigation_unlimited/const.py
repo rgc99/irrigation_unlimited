@@ -113,6 +113,7 @@ CONF_PRECISION = "precision"
 CONF_QUEUE = "queue"
 CONF_QUEUE_MANUAL = "queue_manual"
 CONF_USER = "user"
+CONF_TOGGLE = "toggle"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

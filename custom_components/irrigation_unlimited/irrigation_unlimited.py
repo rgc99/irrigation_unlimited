@@ -198,6 +198,7 @@ from .const import (
     CONF_QUEUE,
     CONF_QUEUE_MANUAL,
     CONF_USER,
+    CONF_TOGGLE,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -1372,6 +1373,7 @@ class IUSwitch:
         self._state_on = STATE_ON
         self._state_off = STATE_OFF
         self._check_back_entity_id: str = None
+        self._check_back_toggle: bool = False
         # private variables
         self._state: bool = None  # This parameter should mirror IUZone._is_on
         self._check_back_time: timedelta = None
@@ -1379,7 +1381,6 @@ class IUSwitch:
 
     def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
         """Make the HA call to physically turn the switch on/off"""
-        self._state = state
         self._hass.async_create_task(
             self._hass.services.async_call(
                 HADOMAIN,
@@ -1436,6 +1437,7 @@ class IUSwitch:
             self._check_back_entity_id = config.get(
                 CONF_ENTITY_ID, self._check_back_entity_id
             )
+            self._check_back_toggle = config.get(CONF_TOGGLE, self._check_back_toggle)
 
         self.clear()
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
@@ -1471,17 +1473,22 @@ class IUSwitch:
 
             return is_valid
 
+        def do_resync(entity_id: str) -> None:
+            if self._check_back_toggle:
+                self._set_switch(entity_id, not self._state)
+            self._set_switch(entity_id, self._state)
+
         if self._switch_entity_id is not None:
             expected = self._state_on if self._state else self._state_off
             if self._check_back_entity_id is None:
                 for entity_id in self._switch_entity_id:
                     if not _check_entity(entity_id, expected):
                         if resync:
-                            self._set_switch(entity_id, self._state)
+                            do_resync(entity_id)
             else:
                 if not _check_entity(self._check_back_entity_id, expected):
                     if resync and len(self._switch_entity_id) == 1:
-                        self._set_switch(self._switch_entity_id, self._state)
+                        do_resync(self._switch_entity_id)
         return result
 
     def call_switch(self, state: bool, stime: datetime = None) -> None:
@@ -1492,6 +1499,7 @@ class IUSwitch:
                 # Switch state was changed before the recheck. Check now.
                 self.check_switch(stime, False, True)
                 self._check_back_time = None
+            self._state = state
             self._set_switch(self._switch_entity_id, state)
             if stime is not None and (
                 self._check_back_states == "all"

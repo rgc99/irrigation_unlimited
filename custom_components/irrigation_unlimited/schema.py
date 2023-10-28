@@ -86,6 +86,7 @@ from .const import (
     CONF_QUEUE,
     CONF_QUEUE_MANUAL,
     CONF_USER,
+    CONF_TOGGLE,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -203,6 +204,7 @@ CHECK_BACK_SCHEMA = vol.Schema(
         vol.Optional(CONF_STATE_ON): cv.string,
         vol.Optional(CONF_STATE_OFF): cv.string,
         vol.Optional(CONF_ENTITY_ID): cv.entity_id,
+        vol.Optional(CONF_TOGGLE): cv.boolean,
     }
 )
 
