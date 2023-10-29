@@ -36,6 +36,7 @@
     - [5.8.1. Long term statistics (LTS)](#581-long-term-statistics-lts)
   - [5.9. Clock Object](#59-clock-object)
   - [5.10. Check Back Object](#510-check-back-object)
+  - [5.11. More Object](#511-more-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
   - [6.2. Sun event example](#62-sun-event-example)
@@ -223,6 +224,7 @@ This is the controller or master object and manages a collection of zones. There
 | `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_master_valve_1` |
 | `all_zones_config` | object | _[All Zones Object](#52-all-zone-objects)_ | Shorthand default for all zones |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
+| `more` | object | | See _[More Object](#511-more-object)_ |
 
 ### 5.2. All Zone Objects
 
@@ -237,6 +239,7 @@ This object is useful when the same settings are required for each zone. It is s
 | `allow_manual` | bool | false | Allow manual run even when disabled |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
+| `more` | object | | See _[More Object](#511-more-object)_ |
 
 ### 5.3. Zone Objects
 
@@ -256,6 +259,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_zone_valve_1` |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
+| `more` | object | | See _[More Object](#511-more-object)_ |
 
 ### 5.4. Zone Show Object
 
@@ -394,6 +398,50 @@ This is used to check the state of the physical switch concurs with the state of
 | `resync` | bool | true | Attempt to resync the switch |
 | `state_on` | string | `on` | The value that represents the `on` state of the switch |
 | `state_off` | string | `off` | The value that repesents the `off` state of the switch |
+
+### 5.11. More Object
+
+The more object is available on the ```controller:```, ```all_zone:``` and the ```zone:``` object. It is basically a pass through of arbitrary static user defined data. Elements are prefixed and presented as attributes in the entities. Here is an example:
+
+```yaml
+ controllers:
+    - name: "Test controller 1"
+      user:
+        area: My Farm
+        picture: /my_pic.jpg
+      all_zones_config:
+        user:
+          actuator: KNX 6.1
+      zones:
+        - name: "Zone 1"
+          user:
+            area: Eastern Pastures
+            flow_rate_gallon_per_minute: 25
+            picture: /my_pic.jpg
+            gps: 42.746635,-75.770045
+        - name: "Zone 2"
+```
+
+Thus, the controller and zone present the following attributes:
+
+```yaml
+#Controller 'Test controller 1': 
+binary_sensor.irrigation_unlimited_c1_m.user_area = 'My Farm'
+binary_sensor.irrigation_unlimited_c1_m.user_picture = '/my_pic.jpg'
+
+#Zone 1:
+binary_sensor.irrigation_unlimited_c1_z1.user_actuator = 'KNX 6.1' #this is inherited from all_zones_config
+binary_sensor.irrigation_unlimited_c1_z1.user_area = 'Eastern Pastures'
+binary_sensor.irrigation_unlimited_c1_z1.user_flow_rate_gallon_per_minute = '25'
+binary_sensor.irrigation_unlimited_c1_z1.user_picture = '/my_pic.jpg'
+binary_sensor.irrigation_unlimited_c1_z1.user_gps = '42.746635,-75.770045'
+
+#Zone 2:
+binary_sensor.irrigation_unlimited_c1_z2.user_actuator = 'KNX 6.1' #this is inherited from all_zones_config
+
+```
+
+The user defined static data available as attribute may help to customize cards or to present additional data on cards, in particular via the functionality within [entity-multiple-row](type: custom:multiple-entity-row). This [feature](https://github.com/rgc99/irrigation_unlimited/issues/143) maybe further developed and extended to the ```sequence: object``` over time.
 
 ## 6. Configuration examples
 
