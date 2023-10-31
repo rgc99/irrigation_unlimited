@@ -196,6 +196,7 @@ ATTR_NEXT_TICK = "next_tick"
 ATTR_TICK_LOG = "tick_log"
 ATTR_SUSPENDED = "suspended"
 ATTR_VOLUME = "volume"
+ATTR_FLOW_RATE = "flow_rate"
 ATTR_SWITCH_ENTITIES = "switch_entity_id"
 
 # Resources

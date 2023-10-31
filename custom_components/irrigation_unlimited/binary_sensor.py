@@ -48,6 +48,7 @@ from .const import (
     RES_NOT_RUNNING,
     RES_NONE,
     ATTR_VOLUME,
+    ATTR_FLOW_RATE,
 )
 
 
@@ -134,7 +135,7 @@ class IUMasterEntity(IUEntity):
 
     @property
     def should_poll(self):
-        """Indicate that we nee to poll data"""
+        """Indicate that we need to poll data"""
         return False
 
     @property
@@ -175,6 +176,8 @@ class IUMasterEntity(IUEntity):
         else:
             attr[ATTR_NEXT_SCHEDULE] = "deprecated (use next_zone)"
             attr[ATTR_NEXT_ZONE] = RES_NONE
+        attr[ATTR_VOLUME] = self._controller.volume.total
+        attr[ATTR_FLOW_RATE] = self._controller.volume.flow_rate
         attr |= self._controller.user
         return attr
 
@@ -260,5 +263,6 @@ class IUZoneEntity(IUEntity):
         if self._zone.show_timeline:
             attr[ATTR_TIMELINE] = self._zone.timeline()
         attr[ATTR_VOLUME] = self._zone.volume.total
+        attr[ATTR_FLOW_RATE] = self._zone.volume.flow_rate
         attr |= self._zone.user
         return attr

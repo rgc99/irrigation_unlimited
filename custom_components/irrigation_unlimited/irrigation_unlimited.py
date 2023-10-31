@@ -1519,23 +1519,40 @@ class IUSwitch:
 class IUVolume:
     """Irrigation Unlimited Volume class"""
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, hass: HomeAssistant, coordinator: "IUCoordinator") -> None:
         # Passed parameters
         self._hass = hass
         self._coordinator = coordinator
         # Config parameters
         self._sensor_id: str = None
-        self._rounding = 3
+        self._volume_rounding = 3
+        self._volume_scale = 1
+        self._flow_rounding = 3
+        self._flow_scale = 3600
         # Private variables
         self._callback_remove: CALLBACK_TYPE = None
-        self._start: float = None
-        self._total: float = None
+        self._start_volume: float = None
+        self._total_volume: float = None
+        self._start_time: datetime = None
+        self._duration: timedelta = None
 
     @property
-    def total(self) -> str | None:
+    def total(self) -> float | None:
         """Return the total value"""
-        if self._total is not None:
-            return format(self._total, f".{self._rounding}f")
+        if self._total_volume is not None:
+            return round(self._total_volume * self._volume_scale, self._volume_rounding)
+        return None
+
+    @property
+    def flow_rate(self) -> str | None:
+        """Return the flow rate"""
+        if self._total_volume is not None and self._duration is not None:
+            rate = (
+                self._total_volume * self._flow_scale / self._duration.total_seconds()
+            )
+            return round(rate, self._flow_rounding)
         return None
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
@@ -1545,7 +1562,7 @@ class IUVolume:
             if config is None:
                 return
             self._sensor_id = config.get(CONF_ENTITY_ID, self._sensor_id)
-            self._rounding = config.get(CONF_PRECISION, self._rounding)
+            self._volume_rounding = config.get(CONF_PRECISION, self._volume_rounding)
 
         if all_zones is not None:
             load_params(all_zones.get(CONF_VOLUME))
@@ -1564,19 +1581,21 @@ class IUVolume:
                     value = float(sensor.state)
                 except ValueError:
                     return
-                self._total = value - self._start
+                self._total_volume = value - self._start_volume
 
-        self._start = self._total = None
+        self._start_volume = self._total_volume = None
+        self._start_time = self._duration = None
         sensor = self._hass.states.get(self._sensor_id)
         if sensor is not None:
             try:
-                self._start = float(sensor.state)
+                self._start_volume = float(sensor.state)
             except ValueError:
                 self._coordinator.logger.log_invalid_meter_value(stime, sensor.state)
             else:
                 self._callback_remove = async_track_state_change_event(
                     self._hass, self._sensor_id, sensor_state_change
                 )
+                self._start_time = stime
         else:
             self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
 
@@ -1585,7 +1604,7 @@ class IUVolume:
         if self._callback_remove is not None:
             self._callback_remove()
             self._callback_remove = None
-        if self._start is not None:
+        if self._start_volume is not None:
             sensor = self._hass.states.get(self._sensor_id)
             if sensor is not None:
                 try:
@@ -1594,12 +1613,14 @@ class IUVolume:
                     self._coordinator.logger.log_invalid_meter_value(
                         stime, sensor.state
                     )
-                    self._total = None
+                    self._total_volume = None
                 else:
-                    self._total = value - self._start
+                    self._total_volume = value - self._start_volume
+                    self._duration = stime - self._start_time
             else:
                 self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
-                self._total = None
+                self._total_volume = None
+                self._duration = None
 
 
 class IUZone(IUBase):
@@ -3118,6 +3139,7 @@ class IUController(IUBase):
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
         self._suspend_until: datetime = None
+        self._volume = IUVolume(hass, coordinator)
         self._user = IUUser()
         self._dirty: bool = True
 
@@ -3252,6 +3274,11 @@ class IUController(IUBase):
         """Return the arbitrary user information"""
         return self._user
 
+    @property
+    def volume(self) -> IUVolume:
+        """Return the volume for this zone"""
+        return self._volume
+
     def _status(self) -> str:
         """Return status of the controller"""
         if self._initialised:
@@ -3364,6 +3391,7 @@ class IUController(IUBase):
             self._sequences.clear()
 
         self._switch.load(config, None)
+        self._volume.load(config, None)
         self._user.load(config, None)
         self._dirty = True
         return self
@@ -3602,6 +3630,10 @@ class IUController(IUBase):
             self._is_on = not self._is_on
             self.request_update(False)
             self.call_switch(self._is_on, stime)
+            if self._is_on:
+                self._volume.start_record(stime)
+            else:
+                self._volume.end_record(stime)
 
         # Handle on zones after master
         for zone in (self._zones[i] for i in zones_changed):
