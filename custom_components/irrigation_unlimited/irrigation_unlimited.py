@@ -69,6 +69,7 @@ from .const import (
     ATTR_SCHEDULE,
     ATTR_START,
     ATTR_STATUS,
+    ATTR_SWITCH_ENTITIES,
     ATTR_TOTAL_DELAY,
     ATTR_TOTAL_DURATION,
     ATTR_ZONE_IDS,
@@ -1379,6 +1380,11 @@ class IUSwitch:
         self._check_back_time: timedelta = None
         self._check_back_resync_count: int = 0
 
+    @property
+    def switch_entity_id(self) -> list[str] | None:
+        """Return the switch entity"""
+        return self._switch_entity_id
+
     def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
         """Make the HA call to physically turn the switch on/off"""
         self._hass.async_create_task(
@@ -1954,6 +1960,7 @@ class IUZone(IUBase):
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
         result[ATTR_CURRENT_DURATION] = current_duration
         result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
+        result[ATTR_SWITCH_ENTITIES] = self._switch.switch_entity_id
         return result
 
     def timeline(self) -> list:
