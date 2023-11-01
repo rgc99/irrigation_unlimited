@@ -36,7 +36,7 @@
     - [5.8.1. Long term statistics (LTS)](#581-long-term-statistics-lts)
   - [5.9. Clock Object](#59-clock-object)
   - [5.10. Check Back Object](#510-check-back-object)
-  - [5.11. More Object](#511-more-object)
+  - [5.11. User Object](#511-user-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
   - [6.2. Sun event example](#62-sun-event-example)
@@ -224,6 +224,7 @@ This is the controller or master object and manages a collection of zones. There
 | `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_master_valve_1` |
 | `all_zones_config` | object | _[All Zones Object](#52-all-zone-objects)_ | Shorthand default for all zones |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
+| `queue_manual` | bool | false | Manual runs should be queued or run immediately |
 | `more` | object | | See _[More Object](#511-more-object)_ |
 
 ### 5.2. All Zone Objects
@@ -268,6 +269,7 @@ These are various options to reveal attributes on the zone entity (only one for 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `timeline` | bool | false | Show the zone timeline. This will expose an attribute called `timeline` on the zone entity |
+| `config` | bool | false | Show the zone configuration. This will expose an attribute called `configuration` on the zone entity with JSON encoded configuration objects |
 
 ### 5.5. Schedule Objects
 
@@ -275,7 +277,7 @@ Schedules are future events, _not_ dates for example Mondays at sunrise.
 
 The schedule can have the commencement or completion fixed to a time or event with the `anchor` parameter. Any adjustments to the duration will alter the start time if `finish` is specified or the completion time if `start` is specified. Note: If anchoring to `finish` and the schedule can not complete before the specified time then the run will defer to the following day. This is an important consideration if adjusting run times dynamically as it may lead to a 'skipping' situation. Ensure there is sufficient time to complete the run when making adjustments. See _[here](#74-service-adjust_time)_ for more information on adjusting runs times.
 
-The parameters `weekday`, `day` and `month` are date filters. If not specified then all dates qualify.
+The parameters `weekday`, `day`, `month` and `from/until` are date filters. If not specified then all dates qualify.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -287,7 +289,11 @@ The parameters `weekday`, `day` and `month` are date filters. If not specified t
 | `day` | list/string/_[Every `n` days](#553-every-n-days)_ | | Days of month to run [1, 2...31]/odd/even/_[Every `n` days](#553-every-n-days)_ |
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | true | Enable/disable the schedule |
-| `schedule_id` | string | | A unique identifier across all schedules. This must be in [snake_case](#13-snake-case) style. |
+| `schedule_id` | string | | A unique identifier across all schedules. This must be in [snake_case](#13-snake-case) style |
+| `from` | string | see below* | Start date in the year. Format is `mmm dd` for example `Mar 15` |
+| `until` | string | see below*| Last date in the year. Format is `mmm dd` for example `Sep 15` |
+
+\* `from` and `until` are mutually inclusive.
 
 #### 5.5.1 Sun Event
 
@@ -396,14 +402,25 @@ This is used to check the state of the physical switch concurs with the state of
 | `delay` | number | 30 | Seconds to wait after switch is turned on or off |
 | `retries` | number | 3 | Number of times to recheck the switch |
 | `resync` | bool | true | Attempt to resync the switch |
+| `toggle` | bool | false | Toggle the switch on/off or off/on instead of attempting to just set the state |
 | `state_on` | string | `on` | The value that represents the `on` state of the switch |
 | `state_off` | string | `off` | The value that repesents the `off` state of the switch |
+| `entity_id` | string | | Optional, use this when switch entity is write only and state is read from another entity. If switch entity is R/W then ignore this parameter |
 
-### 5.11. More Object
+### 5.11. User Object
 
-The more object is available on the ```controller:```, ```all_zone:``` and the ```zone:``` object. It is basically a pass through of arbitrary static user defined data. Elements are prefixed and presented as attributes in the entities. Here is an example:
+The user object is available on the `controller`, `all_zone` and `zone` objects. It is basically a pass through of arbitrary static user defined data. Elements are prefixed and presented as attributes in the entities.
 
-```yaml
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `name` | string/number/bool | | |
+| `name_2` | string/number/bool | | |
+
+\* `name` should be in [snake_case](#13-snake-case) style.
+
+ Here is an example:
+
+ ```yaml
  controllers:
     - name: "Test controller 1"
       user:
@@ -425,7 +442,7 @@ The more object is available on the ```controller:```, ```all_zone:``` and the `
 Thus, the controller and zone present the following attributes:
 
 ```yaml
-#Controller 'Test controller 1': 
+#Controller 'Test controller 1':
 binary_sensor.irrigation_unlimited_c1_m.user_area = 'My Farm'
 binary_sensor.irrigation_unlimited_c1_m.user_picture = '/my_pic.jpg'
 
@@ -761,6 +778,8 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
 | `time` | [duration](#142-duration-time-period) | no | Total time to run. Supports [templating](#144-templating). If not provided or is "0:00:00" then adjusted defaults will be applied |
+| `delay` | [duration](#142-duration-time-period) | no | Delay between runs when queued |
+| `queue` | boolean | no | Queue or run immediately. |
 | `sequence_id` | [number](#145-sequence) | no | Sequence to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. |
 
 ### 7.5. Service `adjust_time`
