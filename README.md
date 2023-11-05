@@ -225,7 +225,7 @@ This is the controller or master object and manages a collection of zones. There
 | `all_zones_config` | object | _[All Zones Object](#52-all-zone-objects)_ | Shorthand default for all zones |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 | `queue_manual` | bool | false | Manual runs should be queued or run immediately |
-| `more` | object | | See _[More Object](#511-more-object)_ |
+| `more` | object | | See _[User Object](#511-user-object)_ |
 
 ### 5.2. All Zone Objects
 
@@ -240,7 +240,7 @@ This object is useful when the same settings are required for each zone. It is s
 | `allow_manual` | bool | false | Allow manual run even when disabled |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
-| `more` | object | | See _[More Object](#511-more-object)_ |
+| `more` | object | | See _[User Object](#511-user-object)_ |
 
 ### 5.3. Zone Objects
 
@@ -260,7 +260,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_zone_valve_1` |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
-| `more` | object | | See _[More Object](#511-more-object)_ |
+| `more` | object | | See _[User Object](#511-user-object)_ |
 
 ### 5.4. Zone Show Object
 
