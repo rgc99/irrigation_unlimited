@@ -290,8 +290,8 @@ The parameters `weekday`, `day`, `month` and `from/until` are date filters. If n
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | true | Enable/disable the schedule |
 | `schedule_id` | string | | A unique identifier across all schedules. This must be in [snake_case](#13-snake-case) style |
-| `from` | string | see below* | Start date in the year. Format is `mmm dd` for example `Mar 15` |
-| `until` | string | see below*| Last date in the year. Format is `mmm dd` for example `Sep 15` |
+| `from` | string | see below* | Start date in the year. Format is `dd mmm` for example `15 Mar` |
+| `until` | string | see below*| Last date in the year. Format is `dd mmm` for example `15 Sep` |
 
 \* `from` and `until` are mutually inclusive.
 
