@@ -9,6 +9,7 @@ from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
 import json
+from enum import Flag, auto
 import voluptuous as vol
 from crontab import CronTab
 from homeassistant.core import (
@@ -947,20 +948,33 @@ class IURun(IUBase):
         return result
 
 
+class IURQStatus(Flag):
+    """Define the return status of the run queues"""
+
+    NONE = 0
+    CLEARED = auto()
+    EXTENDED = auto()
+    REDUCED = auto()
+    SORTED = auto()
+    UPDATED = auto()
+    CANCELED = auto()
+    CHANGED = auto()
+
+    def is_empty(self) -> bool:
+        """Return True if there are no flags set"""
+        return self.value == 0
+
+    def has_any(self, other: "IURQStatus") -> bool:
+        """Return True if the intersect is not empty"""
+        return other.value & self.value != 0
+
+
 class IURunQueue(list[IURun]):
     """Irrigation Unlimited class to hold the upcoming runs"""
 
     # pylint: disable=too-many-public-methods
 
     DAYS_SPAN: int = 3
-
-    RQ_STATUS_CLEARED: int = 0x01
-    RQ_STATUS_EXTENDED: int = 0x02
-    RQ_STATUS_REDUCED: int = 0x04
-    RQ_STATUS_SORTED: int = 0x08
-    RQ_STATUS_UPDATED: int = 0x10
-    RQ_STATUS_CANCELED: int = 0x20
-    RQ_STATUS_CHANGED: int = 0x40
 
     def __init__(self) -> None:
         super().__init__()
@@ -1165,7 +1179,7 @@ class IURunQueue(list[IURun]):
             modified = True
         return modified
 
-    def update_queue(self, stime: datetime) -> int:
+    def update_queue(self, stime: datetime) -> IURQStatus:
         """Update the run queue. Sort the queue, remove expired runs
         and set current and next runs. This is the final operation after
         all additions and deletions.
@@ -1173,22 +1187,22 @@ class IURunQueue(list[IURun]):
         Returns a bit field of changes to queue.
         """
         # pylint: disable=too-many-branches
-        status: int = 0
+        status = IURQStatus(0)
 
         if self.sort():
-            status |= self.RQ_STATUS_SORTED
+            status |= IURQStatus.SORTED
 
         for run in self:
             if run.sequence_update(stime):
-                status |= self.RQ_STATUS_CHANGED
+                status |= IURQStatus.CHANGED
 
         if self._cancel_request is not None:
             if self.remove_current():
-                status |= self.RQ_STATUS_CANCELED
+                status |= IURQStatus.CANCELED
             self._cancel_request = None
 
         if self.remove_expired(stime):
-            status |= self.RQ_STATUS_REDUCED
+            status |= IURQStatus.REDUCED
 
         # Try to find a running schedule
         if self._current_run is None:
@@ -1196,7 +1210,7 @@ class IURunQueue(list[IURun]):
                 if run.is_running(stime) and run.duration != timedelta(0):
                     self._current_run = run
                     self._next_run = None
-                    status |= self.RQ_STATUS_UPDATED
+                    status |= IURQStatus.UPDATED
                     break
 
         # Try to find the next schedule
@@ -1204,7 +1218,7 @@ class IURunQueue(list[IURun]):
             for run in self:
                 if not run.is_running(stime) and run.duration != timedelta(0):
                     self._next_run = run
-                    status |= self.RQ_STATUS_UPDATED
+                    status |= IURQStatus.UPDATED
                     break
 
         # Figure out the next state change
@@ -2004,33 +2018,33 @@ class IUZone(IUBase):
         run_list.reverse()
         return run_list
 
-    def muster(self, stime: datetime) -> int:
+    def muster(self, stime: datetime) -> IURQStatus:
         """Muster this zone"""
         # pylint: disable=unused-argument
-        status: int = 0
+        status = IURQStatus(0)
 
         if self._dirty:
             self._run_queue.clear_all()
-            status |= IURunQueue.RQ_STATUS_CLEARED
+            status |= IURQStatus.CLEARED
 
         if self._suspend_until is not None and stime >= self._suspend_until:
             self._suspend_until = None
-            status |= IURunQueue.RQ_STATUS_CHANGED
+            status |= IURQStatus.CHANGED
 
         self._switch.muster(stime)
 
         self._dirty = False
         return status
 
-    def muster_schedules(self, stime: datetime) -> int:
+    def muster_schedules(self, stime: datetime) -> IURQStatus:
         """Calculate run times for this zone"""
-        status: int = 0
+        status = IURQStatus(0)
 
         for schedule in self._schedules:
             if not schedule.enabled:
                 continue
             if self._run_queue.merge_fill(stime, self, schedule, self._adjustment):
-                status |= IURunQueue.RQ_STATUS_EXTENDED
+                status |= IURQStatus.EXTENDED
 
         if status != 0:
             self.request_update()
@@ -2178,10 +2192,10 @@ class IUZoneQueue(IURunQueue):
         preamble: timedelta,
         postamble: timedelta,
         clear_all: bool,
-    ) -> int:
+    ) -> IURQStatus:
         """Create a superset of all the zones."""
         # pylint: disable=too-many-arguments
-        status: int = 0
+        status = IURQStatus(0)
         if clear_all:
             self.clear_all()
         else:
@@ -2189,7 +2203,7 @@ class IUZoneQueue(IURunQueue):
         for zone in zones:
             for run in zone.runs:
                 self.add_zone(run, preamble, postamble)
-        status |= IURunQueue.RQ_STATUS_EXTENDED | IURunQueue.RQ_STATUS_REDUCED
+        status |= IURQStatus.EXTENDED | IURQStatus.REDUCED
         status |= self.update_queue(stime)
         return status
 
@@ -2349,12 +2363,12 @@ class IUSequenceZone(IUBase):
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
         return result
 
-    def muster(self, stime: datetime) -> int:
+    def muster(self, stime: datetime) -> IURQStatus:
         """Muster this sequence zone"""
-        status: int = 0
+        status = IURQStatus(0)
         if self._suspend_until is not None and stime >= self._suspend_until:
             self._suspend_until = None
-            status |= IURunQueue.RQ_STATUS_CHANGED
+            status |= IURQStatus.CHANGED
         return status
 
     def next_awakening(self) -> datetime:
@@ -2749,12 +2763,12 @@ class IUSequence(IUBase):
         ]
         return result
 
-    def muster(self, stime: datetime) -> int:
+    def muster(self, stime: datetime) -> IURQStatus:
         """Muster this sequence"""
-        status: int = 0
+        status = IURQStatus(0)
         if self._suspend_until is not None and stime >= self._suspend_until:
             self._suspend_until = None
-            status |= IURunQueue.RQ_STATUS_CHANGED
+            status |= IURQStatus.CHANGED
 
         for sequence_zone in self._zones:
             status |= sequence_zone.muster(stime)
@@ -3522,32 +3536,32 @@ class IUController(IUBase):
                 return sequence_run
         return None
 
-    def muster(self, stime: datetime, force: bool) -> int:
+    def muster(self, stime: datetime, force: bool) -> IURQStatus:
         """Calculate run times for this controller. This is where most of the hard yakka
         is done."""
         # pylint: disable=too-many-branches
-        status: int = 0
+        status = IURQStatus(0)
 
         if self._dirty or force:
             self._run_queue.clear_all()
             for zone in self._zones:
                 zone.clear_run_queue()
-            status |= IURunQueue.RQ_STATUS_CLEARED
+            status |= IURQStatus.CLEARED
 
         if self._suspend_until is not None and stime >= self._suspend_until:
             self._suspend_until = None
-            status |= IURunQueue.RQ_STATUS_CHANGED
+            status |= IURQStatus.CHANGED
 
         self._switch.muster(stime)
 
-        zone_status: int = 0
+        zone_status = IURQStatus(0)
 
         # Handle initialisation
         for zone in self._zones:
             zone_status |= zone.muster(stime)
 
         for sequence in self._sequences:
-            if sequence.muster(stime) != 0:
+            if not sequence.muster(stime).is_empty():
                 self.clear_sequence_runs(stime, sequence)
 
         # Process sequence schedules
@@ -3563,7 +3577,7 @@ class IUController(IUBase):
                         )
                         if sequence_run is None:
                             break
-                        zone_status |= IURunQueue.RQ_STATUS_EXTENDED
+                        zone_status |= IURQStatus.EXTENDED
 
         # Process zone schedules
         for zone in self._zones:
@@ -3573,32 +3587,25 @@ class IUController(IUBase):
         # Post processing
         for zone in self._zones:
             zts = zone.runs.update_queue(stime)
-            if zts & IURunQueue.RQ_STATUS_CANCELED:
+            if IURQStatus.CANCELED in zts:
                 zone.request_update()
             zone_status |= zts
 
-        if (
-            zone_status
-            & (
-                IURunQueue.RQ_STATUS_CLEARED
-                | IURunQueue.RQ_STATUS_EXTENDED
-                | IURunQueue.RQ_STATUS_SORTED
-                | IURunQueue.RQ_STATUS_CANCELED
-                | IURunQueue.RQ_STATUS_CHANGED
-            )
-            != 0
+        if zone_status.has_any(
+            IURQStatus.CLEARED
+            | IURQStatus.EXTENDED
+            | IURQStatus.SORTED
+            | IURQStatus.CANCELED
+            | IURQStatus.CHANGED
         ):
-            clear_all = bool(
-                zone_status
-                & (IURunQueue.RQ_STATUS_CLEARED | IURunQueue.RQ_STATUS_CANCELED)
-            )
+            clear_all = zone_status.has_any(IURQStatus.CLEARED | IURQStatus.CANCELED)
             status |= self._run_queue.rebuild_schedule(
                 stime, self._zones, self._preamble, self._postamble, clear_all
             )
         else:
             status |= self._run_queue.update_queue(stime)
 
-        if status != 0:
+        if not status.is_empty():
             self.request_update(False)
 
         self._dirty = False
@@ -5108,9 +5115,9 @@ class IUCoordinator:
         result[CONF_CONTROLLERS] = [ctr.as_dict() for ctr in self._controllers]
         return result
 
-    def muster(self, stime: datetime, force: bool) -> int:
+    def muster(self, stime: datetime, force: bool) -> IURQStatus:
         """Calculate run times for system"""
-        status: int = 0
+        status = IURQStatus(0)
 
         self._history.muster(stime, force)
 
@@ -5192,7 +5199,7 @@ class IUCoordinator:
         it is the actual time"""
         wtime: datetime = wash_dt(vtime)
         if (wtime != self._last_muster) or self._muster_required:
-            if self.muster(wtime, force) != 0:
+            if not self.muster(wtime, force).is_empty():
                 self.check_run(wtime)
             self._muster_required = False
             self._last_muster = wtime
