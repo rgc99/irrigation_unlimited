@@ -2379,6 +2379,345 @@ class IUSequenceZone(IUBase):
         return result
 
 
+class IUSequenceZoneRun(NamedTuple):
+    """Irrigation Unlimited sequence zone run class"""
+
+    sequence_zone: IUSequenceZone
+    sequence_repeat: int
+    zone_repeat: int
+
+
+class IUSequenceRunAllocation(NamedTuple):
+    """Irrigation Unlimited sequence zone allocation class"""
+
+    start: datetime
+    duration: timedelta
+    zone: IUZone
+    sequence_zone_run: IUSequenceZoneRun
+
+
+class IUSequenceRun(IUBase):
+    """Irrigation Unlimited sequence run manager class. Ties together the
+    individual sequence zones"""
+
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-public-methods
+    def __init__(
+        self,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        sequence: "IUSequence",
+        schedule: IUSchedule,
+    ) -> None:
+        # pylint: disable=too-many-arguments
+        super().__init__(None)
+        # Passed parameters
+        self._coordinator = coordinator
+        self._controller = controller
+        self._sequence = sequence
+        self._schedule = schedule
+        # Private variables
+        self._runs_pre_allocate: list[IUSequenceRunAllocation] = []
+        self._runs: dict[IURun, IUSequenceZoneRun] = weakref.WeakKeyDictionary()
+        self._active_zone: IUSequenceZoneRun = None
+        self._running = False
+        self._start_time: datetime = None
+        self._end_time: datetime = None
+        self._accumulated_duration = timedelta(0)
+        self._first_zone: IUZone = None
+
+    @property
+    def sequence(self) -> "IUSequence":
+        """Return the sequence associated with this run"""
+        return self._sequence
+
+    @property
+    def schedule(self) -> IUSchedule:
+        """Return the schedule associated with this run"""
+        return self._schedule
+
+    @property
+    def start_time(self) -> datetime:
+        """Return the start time for this sequence"""
+        return self._start_time
+
+    @property
+    def end_time(self) -> datetime:
+        """Return the end time for this sequence"""
+        return self._end_time
+
+    @property
+    def total_time(self) -> timedelta:
+        """Return the total run time for this sequence"""
+        return self._end_time - self._start_time
+
+    @property
+    def running(self) -> bool:
+        """Indicate if this sequence is running"""
+        return self._running
+
+    @property
+    def active_zone(self) -> IUSequenceZoneRun:
+        """Return the active zone in the sequence"""
+        return self._active_zone
+
+    def is_manual(self) -> bool:
+        """Check if this is a manual run"""
+        return self._schedule is None
+
+    def is_expired(self, stime: datetime) -> bool:
+        """Check if this sequence run is expired"""
+        return stime >= self._end_time
+
+    def zone_enabled(self, zone: IUZone) -> bool:
+        """Return true if the zone is enabled"""
+        return zone is not None and (
+            zone.is_enabled or (self.is_manual() and zone.allow_manual)
+        )
+
+    def calc_total_time(self, total_time: timedelta) -> timedelta:
+        """Calculate the total duration of the sequence"""
+        if total_time is None:
+            if self._schedule is not None and self._schedule.duration is not None:
+                return self._sequence.total_time_final(self._schedule.duration, self)
+            return self.sequence.total_time_final(None, self)
+
+        if self._schedule is not None:
+            return self._sequence.total_time_final(total_time, self)
+        return total_time
+
+    def build(self, duration_factor: float) -> timedelta:
+        """Build out the sequence. Pre allocate runs and determine
+        the duration"""
+        # pylint: disable=too-many-nested-blocks
+        next_run = self._start_time = self._end_time = wash_dt(dt.utcnow())
+        for sequence_repeat in range(self._sequence.repeat):
+            for sequence_zone in self._sequence.zones:
+                if not self._sequence.zone_enabled(sequence_zone, self):
+                    continue
+                duration = self._sequence.zone_duration_final(
+                    sequence_zone, duration_factor, self
+                )
+                duration_max = timedelta(0)
+                delay = self._sequence.zone_delay(sequence_zone, self)
+                for zone in (
+                    self._controller.find_zone_by_zone_id(zone_id)
+                    for zone_id in sequence_zone.zone_ids
+                ):
+                    if self.zone_enabled(zone):
+                        # Don't adjust manual run and no adjustment on adjustment
+                        # This code should not really be here. It would be a breaking
+                        # change if removed.
+                        if not self.is_manual() and not self._sequence.has_adjustment(
+                            True
+                        ):
+                            duration_adjusted = zone.adjustment.adjust(duration)
+                            duration_adjusted = zone.runs.constrain(duration_adjusted)
+                        else:
+                            duration_adjusted = duration
+
+                        zone_run_time = next_run
+                        for zone_repeat in range(  # pylint: disable=unused-variable
+                            sequence_zone.repeat
+                        ):
+                            self._runs_pre_allocate.append(
+                                IUSequenceRunAllocation(
+                                    zone_run_time,
+                                    duration_adjusted,
+                                    zone,
+                                    IUSequenceZoneRun(
+                                        sequence_zone, sequence_repeat, zone_repeat
+                                    ),
+                                )
+                            )
+                            if self._first_zone is None:
+                                self._first_zone = zone
+                            if zone_run_time + duration_adjusted > self._end_time:
+                                self._end_time = zone_run_time + duration_adjusted
+                            zone_run_time += duration_adjusted + delay
+                        duration_max = max(duration_max, zone_run_time - next_run)
+                next_run += duration_max
+
+        return self._end_time - self._start_time
+
+    def allocate_runs(self, start_time: datetime) -> None:
+        """Allocate runs"""
+        delta = start_time - self._start_time
+        self._start_time += delta
+        self._end_time += delta
+        for item in self._runs_pre_allocate:
+            zone = item.zone
+            run = zone.runs.add(
+                item.start + delta, item.duration, zone, self._schedule, self
+            )
+            self._runs[run] = item.sequence_zone_run
+            self._accumulated_duration += run.duration
+            zone.request_update()
+        self._runs_pre_allocate.clear()
+
+    def first_zone(self) -> IUZone:
+        """Return the first zone"""
+        return self._first_zone
+
+    @staticmethod
+    def _calc_on_time(runs: list[IURun]) -> timedelta:
+        """Return the total time this list of runs is on. Accounts for
+        overlapping time periods"""
+        result = timedelta(0)
+        period_start: datetime = None
+        period_end: datetime = None
+
+        for run in runs:
+            if period_end is None or run.start_time > period_end:
+                if period_end is not None:
+                    result += period_end - period_start
+                period_start = run.start_time
+                period_end = run.end_time
+            else:
+                period_end = max(period_end, run.end_time)
+        if period_end is not None:
+            result += period_end - period_start
+        return result
+
+    def on_time(self) -> timedelta:
+        """Return the total time this run is on"""
+        return self._calc_on_time(self._runs.keys())
+
+    def zone_runs(self, sequence_zone: IUSequenceZone) -> list[IURun]:
+        """Get the list of runs associated with the sequence zone"""
+        return [
+            run for run, sqz in self._runs.items() if sqz.sequence_zone == sequence_zone
+        ]
+
+    def run_index(self, run: IURun) -> int:
+        """Extract the index from the supplied run"""
+        return list(self._runs.keys()).index(run)
+
+    def sequence_zone(self, run: IURun) -> IUSequenceZone:
+        """Extract the sequence zone from the run"""
+        sequence_zone_run = self._runs.get(run, None)
+        if sequence_zone_run is not None:
+            return sequence_zone_run.sequence_zone
+        return None
+
+    def update(self, stime: datetime, run: IURun) -> bool:
+        """Update the status of the sequence"""
+        is_running = run.is_running(stime)
+        sequence_zone_run = self._runs.get(run)
+
+        if is_running and not self._running:
+            # Sequence/sequence zone is starting
+            self._running = True
+            self._active_zone = sequence_zone_run
+            self._coordinator.notify_sequence(
+                EVENT_START,
+                self._controller,
+                self._sequence,
+                self._schedule,
+                self,
+            )
+            return True
+
+        if is_running and sequence_zone_run != self._active_zone:
+            # Sequence zone is changing
+            self._active_zone = sequence_zone_run
+            return True
+
+        if not is_running and sequence_zone_run == self._active_zone:
+            # Sequence zone is finishing
+            self._active_zone = None
+            if self.run_index(run) == len(self._runs) - 1:
+                # Sequence is finishing
+                self._coordinator.notify_sequence(
+                    EVENT_FINISH,
+                    self._controller,
+                    self._sequence,
+                    self._schedule,
+                    self,
+                )
+            return True
+
+        return False
+
+    def as_dict(self) -> dict:
+        """Return this sequence run as a dict"""
+        result = {}
+        result[ATTR_INDEX] = self._sequence.index
+        result[ATTR_NAME] = self._sequence.name
+        result[ATTR_ENABLED] = self._sequence.enabled
+        result[ATTR_SUSPENDED] = self._sequence.suspended
+        result[ATTR_STATUS] = self._sequence.status(
+            self._running, self._active_zone is None
+        )
+        result[ATTR_ICON] = self._sequence.icon(
+            self._running, self._active_zone is None
+        )
+        result[ATTR_START] = dt.as_local(self._start_time)
+        result[ATTR_DURATION] = to_secs(self.on_time())
+        result[ATTR_ADJUSTMENT] = str(self._sequence.adjustment)
+        if not self.is_manual():
+            result[ATTR_SCHEDULE] = {
+                ATTR_INDEX: self._schedule.index,
+                ATTR_NAME: self._schedule.name,
+            }
+        else:
+            result[ATTR_SCHEDULE] = {
+                ATTR_INDEX: None,
+                ATTR_NAME: RES_MANUAL,
+            }
+        result[ATTR_ZONES] = []
+        for zone in self._sequence.zones:
+            runs = self.zone_runs(zone)
+            if self._active_zone is not None:
+                is_on = zone == self._active_zone.sequence_zone
+            else:
+                is_on = False
+            sqr = {}
+            sqr[ATTR_INDEX] = zone.index
+            sqr[ATTR_ENABLED] = zone.enabled
+            sqr[ATTR_SUSPENDED] = zone.suspended
+            sqr[ATTR_STATUS] = zone.status(is_on)
+            sqr[ATTR_ICON] = zone.icon(is_on)
+            sqr[ATTR_DURATION] = to_secs(self._calc_on_time(runs))
+            sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
+            sqr[ATTR_ZONE_IDS] = zone.zone_ids
+            result[ATTR_ZONES].append(sqr)
+        return result
+
+    @staticmethod
+    def skeleton(sequence: "IUSequence") -> dict:
+        """Return a skeleton dict for when no sequence run is
+        active. Must match the as_dict method"""
+
+        result = {}
+        result[ATTR_INDEX] = sequence.index
+        result[ATTR_NAME] = sequence.name
+        result[ATTR_ENABLED] = sequence.enabled
+        result[ATTR_SUSPENDED] = sequence.suspended
+        result[ATTR_STATUS] = sequence.status(False, False)
+        result[ATTR_ICON] = sequence.icon(False, False)
+        result[ATTR_START] = None
+        result[ATTR_DURATION] = 0
+        result[ATTR_ADJUSTMENT] = str(sequence.adjustment)
+        result[ATTR_SCHEDULE] = {
+            ATTR_INDEX: None,
+            ATTR_NAME: None,
+        }
+        result[ATTR_ZONES] = []
+        for zone in sequence.zones:
+            sqr = {}
+            sqr[ATTR_INDEX] = zone.index
+            sqr[ATTR_ENABLED] = zone.enabled
+            sqr[ATTR_SUSPENDED] = zone.suspended
+            sqr[ATTR_STATUS] = zone.status(False)
+            sqr[ATTR_ICON] = zone.icon(False)
+            sqr[ATTR_DURATION] = 0
+            sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
+            sqr[ATTR_ZONE_IDS] = zone.zone_ids
+            result[ATTR_ZONES].append(sqr)
+        return result
+
+
 class IUSequence(IUBase):
     """Irrigation Unlimited Sequence class"""
 
@@ -2781,345 +3120,6 @@ class IUSequence(IUBase):
         dates.append(self._suspend_until)
         dates.extend(sqz.next_awakening() for sqz in self._zones)
         return min(d for d in dates if d is not None)
-
-
-class IUSequenceZoneRun(NamedTuple):
-    """Irrigation Unlimited sequence zone run class"""
-
-    sequence_zone: IUSequenceZone
-    sequence_repeat: int
-    zone_repeat: int
-
-
-class IUSequenceRunAllocation(NamedTuple):
-    """Irrigation Unlimited sequence zone allocation class"""
-
-    start: datetime
-    duration: timedelta
-    zone: IUZone
-    sequence_zone_run: IUSequenceZoneRun
-
-
-class IUSequenceRun(IUBase):
-    """Irrigation Unlimited sequence run manager class. Ties together the
-    individual sequence zones"""
-
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-public-methods
-    def __init__(
-        self,
-        coordinator: "IUCoordinator",
-        controller: "IUController",
-        sequence: IUSequence,
-        schedule: IUSchedule,
-    ) -> None:
-        # pylint: disable=too-many-arguments
-        super().__init__(None)
-        # Passed parameters
-        self._coordinator = coordinator
-        self._controller = controller
-        self._sequence = sequence
-        self._schedule = schedule
-        # Private variables
-        self._runs_pre_allocate: list[IUSequenceRunAllocation] = []
-        self._runs: dict[IURun, IUSequenceZoneRun] = weakref.WeakKeyDictionary()
-        self._active_zone: IUSequenceZoneRun = None
-        self._running = False
-        self._start_time: datetime = None
-        self._end_time: datetime = None
-        self._accumulated_duration = timedelta(0)
-        self._first_zone: IUZone = None
-
-    @property
-    def sequence(self) -> IUSequence:
-        """Return the sequence associated with this run"""
-        return self._sequence
-
-    @property
-    def schedule(self) -> IUSchedule:
-        """Return the schedule associated with this run"""
-        return self._schedule
-
-    @property
-    def start_time(self) -> datetime:
-        """Return the start time for this sequence"""
-        return self._start_time
-
-    @property
-    def end_time(self) -> datetime:
-        """Return the end time for this sequence"""
-        return self._end_time
-
-    @property
-    def total_time(self) -> timedelta:
-        """Return the total run time for this sequence"""
-        return self._end_time - self._start_time
-
-    @property
-    def running(self) -> bool:
-        """Indicate if this sequence is running"""
-        return self._running
-
-    @property
-    def active_zone(self) -> IUSequenceZoneRun:
-        """Return the active zone in the sequence"""
-        return self._active_zone
-
-    def is_manual(self) -> bool:
-        """Check if this is a manual run"""
-        return self._schedule is None
-
-    def is_expired(self, stime: datetime) -> bool:
-        """Check if this sequence run is expired"""
-        return stime >= self._end_time
-
-    def zone_enabled(self, zone: IUZone) -> bool:
-        """Return true if the zone is enabled"""
-        return zone is not None and (
-            zone.is_enabled or (self.is_manual() and zone.allow_manual)
-        )
-
-    def calc_total_time(self, total_time: timedelta) -> timedelta:
-        """Calculate the total duration of the sequence"""
-        if total_time is None:
-            if self._schedule is not None and self._schedule.duration is not None:
-                return self._sequence.total_time_final(self._schedule.duration, self)
-            return self.sequence.total_time_final(None, self)
-
-        if self._schedule is not None:
-            return self._sequence.total_time_final(total_time, self)
-        return total_time
-
-    def build(self, duration_factor: float) -> timedelta:
-        """Build out the sequence. Pre allocate runs and determine
-        the duration"""
-        # pylint: disable=too-many-nested-blocks
-        next_run = self._start_time = self._end_time = wash_dt(dt.utcnow())
-        for sequence_repeat in range(self._sequence.repeat):
-            for sequence_zone in self._sequence.zones:
-                if not self._sequence.zone_enabled(sequence_zone, self):
-                    continue
-                duration = self._sequence.zone_duration_final(
-                    sequence_zone, duration_factor, self
-                )
-                duration_max = timedelta(0)
-                delay = self._sequence.zone_delay(sequence_zone, self)
-                for zone in (
-                    self._controller.find_zone_by_zone_id(zone_id)
-                    for zone_id in sequence_zone.zone_ids
-                ):
-                    if self.zone_enabled(zone):
-                        # Don't adjust manual run and no adjustment on adjustment
-                        # This code should not really be here. It would be a breaking
-                        # change if removed.
-                        if not self.is_manual() and not self._sequence.has_adjustment(
-                            True
-                        ):
-                            duration_adjusted = zone.adjustment.adjust(duration)
-                            duration_adjusted = zone.runs.constrain(duration_adjusted)
-                        else:
-                            duration_adjusted = duration
-
-                        zone_run_time = next_run
-                        for zone_repeat in range(  # pylint: disable=unused-variable
-                            sequence_zone.repeat
-                        ):
-                            self._runs_pre_allocate.append(
-                                IUSequenceRunAllocation(
-                                    zone_run_time,
-                                    duration_adjusted,
-                                    zone,
-                                    IUSequenceZoneRun(
-                                        sequence_zone, sequence_repeat, zone_repeat
-                                    ),
-                                )
-                            )
-                            if self._first_zone is None:
-                                self._first_zone = zone
-                            if zone_run_time + duration_adjusted > self._end_time:
-                                self._end_time = zone_run_time + duration_adjusted
-                            zone_run_time += duration_adjusted + delay
-                        duration_max = max(duration_max, zone_run_time - next_run)
-                next_run += duration_max
-
-        return self._end_time - self._start_time
-
-    def allocate_runs(self, start_time: datetime) -> None:
-        """Allocate runs"""
-        delta = start_time - self._start_time
-        self._start_time += delta
-        self._end_time += delta
-        for item in self._runs_pre_allocate:
-            zone = item.zone
-            run = zone.runs.add(
-                item.start + delta, item.duration, zone, self._schedule, self
-            )
-            self._runs[run] = item.sequence_zone_run
-            self._accumulated_duration += run.duration
-            zone.request_update()
-        self._runs_pre_allocate.clear()
-
-    def first_zone(self) -> IUZone:
-        """Return the first zone"""
-        return self._first_zone
-
-    @staticmethod
-    def _calc_on_time(runs: list[IURun]) -> timedelta:
-        """Return the total time this list of runs is on. Accounts for
-        overlapping time periods"""
-        result = timedelta(0)
-        period_start: datetime = None
-        period_end: datetime = None
-
-        for run in runs:
-            if period_end is None or run.start_time > period_end:
-                if period_end is not None:
-                    result += period_end - period_start
-                period_start = run.start_time
-                period_end = run.end_time
-            else:
-                period_end = max(period_end, run.end_time)
-        if period_end is not None:
-            result += period_end - period_start
-        return result
-
-    def on_time(self) -> timedelta:
-        """Return the total time this run is on"""
-        return self._calc_on_time(self._runs.keys())
-
-    def zone_runs(self, sequence_zone: IUSequenceZone) -> list[IURun]:
-        """Get the list of runs associated with the sequence zone"""
-        return [
-            run for run, sqz in self._runs.items() if sqz.sequence_zone == sequence_zone
-        ]
-
-    def run_index(self, run: IURun) -> int:
-        """Extract the index from the supplied run"""
-        return list(self._runs.keys()).index(run)
-
-    def sequence_zone(self, run: IURun) -> IUSequenceZone:
-        """Extract the sequence zone from the run"""
-        sequence_zone_run = self._runs.get(run, None)
-        if sequence_zone_run is not None:
-            return sequence_zone_run.sequence_zone
-        return None
-
-    def update(self, stime: datetime, run: IURun) -> bool:
-        """Update the status of the sequence"""
-        is_running = run.is_running(stime)
-        sequence_zone_run = self._runs.get(run)
-
-        if is_running and not self._running:
-            # Sequence/sequence zone is starting
-            self._running = True
-            self._active_zone = sequence_zone_run
-            self._coordinator.notify_sequence(
-                EVENT_START,
-                self._controller,
-                self._sequence,
-                self._schedule,
-                self,
-            )
-            return True
-
-        if is_running and sequence_zone_run != self._active_zone:
-            # Sequence zone is changing
-            self._active_zone = sequence_zone_run
-            return True
-
-        if not is_running and sequence_zone_run == self._active_zone:
-            # Sequence zone is finishing
-            self._active_zone = None
-            if self.run_index(run) == len(self._runs) - 1:
-                # Sequence is finishing
-                self._coordinator.notify_sequence(
-                    EVENT_FINISH,
-                    self._controller,
-                    self._sequence,
-                    self._schedule,
-                    self,
-                )
-            return True
-
-        return False
-
-    def as_dict(self) -> dict:
-        """Return this sequence run as a dict"""
-        result = {}
-        result[ATTR_INDEX] = self._sequence.index
-        result[ATTR_NAME] = self._sequence.name
-        result[ATTR_ENABLED] = self._sequence.enabled
-        result[ATTR_SUSPENDED] = self._sequence.suspended
-        result[ATTR_STATUS] = self._sequence.status(
-            self._running, self._active_zone is None
-        )
-        result[ATTR_ICON] = self._sequence.icon(
-            self._running, self._active_zone is None
-        )
-        result[ATTR_START] = dt.as_local(self._start_time)
-        result[ATTR_DURATION] = to_secs(self.on_time())
-        result[ATTR_ADJUSTMENT] = str(self._sequence.adjustment)
-        if not self.is_manual():
-            result[ATTR_SCHEDULE] = {
-                ATTR_INDEX: self._schedule.index,
-                ATTR_NAME: self._schedule.name,
-            }
-        else:
-            result[ATTR_SCHEDULE] = {
-                ATTR_INDEX: None,
-                ATTR_NAME: RES_MANUAL,
-            }
-        result[ATTR_ZONES] = []
-        for zone in self._sequence.zones:
-            runs = self.zone_runs(zone)
-            if self._active_zone is not None:
-                is_on = zone == self._active_zone.sequence_zone
-            else:
-                is_on = False
-            sqr = {}
-            sqr[ATTR_INDEX] = zone.index
-            sqr[ATTR_ENABLED] = zone.enabled
-            sqr[ATTR_SUSPENDED] = zone.suspended
-            sqr[ATTR_STATUS] = zone.status(is_on)
-            sqr[ATTR_ICON] = zone.icon(is_on)
-            sqr[ATTR_DURATION] = to_secs(self._calc_on_time(runs))
-            sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
-            sqr[ATTR_ZONE_IDS] = zone.zone_ids
-            result[ATTR_ZONES].append(sqr)
-        return result
-
-    @staticmethod
-    def skeleton(sequence: IUSequence) -> dict:
-        """Return a skeleton dict for when no sequence run is
-        active. Must match the as_dict method"""
-
-        result = {}
-        result[ATTR_INDEX] = sequence.index
-        result[ATTR_NAME] = sequence.name
-        result[ATTR_ENABLED] = sequence.enabled
-        result[ATTR_SUSPENDED] = sequence.suspended
-        result[ATTR_STATUS] = sequence.status(False, False)
-        result[ATTR_ICON] = sequence.icon(False, False)
-        result[ATTR_START] = None
-        result[ATTR_DURATION] = 0
-        result[ATTR_ADJUSTMENT] = str(sequence.adjustment)
-        result[ATTR_SCHEDULE] = {
-            ATTR_INDEX: None,
-            ATTR_NAME: None,
-        }
-        result[ATTR_ZONES] = []
-        for zone in sequence.zones:
-            sqr = {}
-            sqr[ATTR_INDEX] = zone.index
-            sqr[ATTR_ENABLED] = zone.enabled
-            sqr[ATTR_SUSPENDED] = zone.suspended
-            sqr[ATTR_STATUS] = zone.status(False)
-            sqr[ATTR_ICON] = zone.icon(False)
-            sqr[ATTR_DURATION] = 0
-            sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
-            sqr[ATTR_ZONE_IDS] = zone.zone_ids
-            result[ATTR_ZONES].append(sqr)
-        return result
 
 
 class IUController(IUBase):
