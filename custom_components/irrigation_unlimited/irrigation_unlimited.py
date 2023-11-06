@@ -2046,7 +2046,7 @@ class IUZone(IUBase):
             if self._run_queue.merge_fill(stime, self, schedule, self._adjustment):
                 status |= IURQStatus.EXTENDED
 
-        if status != 0:
+        if not status.is_empty():
             self.request_update()
 
         return status
