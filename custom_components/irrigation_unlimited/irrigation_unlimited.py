@@ -2726,8 +2726,8 @@ class IUSequenceQueue(list[IUSequenceRun]):
         # Config parameters
         self._future_span = timedelta(days=3)
         # Private variables
-        self._current_run: IUSequenceRun
-        self._next_run: IUSequenceRun
+        self._current_run: IUSequenceRun = None
+        self._next_run: IUSequenceRun = None
         self._sorted: bool = False
         self._next_event: datetime = None
 
