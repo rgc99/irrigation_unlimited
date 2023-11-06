@@ -2791,6 +2791,10 @@ class IUSequenceQueue(list[IUSequenceRun]):
 
         return status
 
+    def as_list(self) -> list:
+        """Return a list of runs"""
+        return [run.as_dict() for run in self]
+
 
 class IUSequence(IUBase):
     """Irrigation Unlimited Sequence class"""
@@ -2822,6 +2826,11 @@ class IUSequence(IUBase):
         self._zones: list[IUSequenceZone] = []
         self._adjustment = IUAdjustment()
         self._suspend_until: datetime = None
+
+    @property
+    def runs(self) -> IUSequenceQueue:
+        """Return the run queue for this sequence"""
+        return self._run_queue
 
     @property
     def schedules(self) -> "list[IUSchedule]":
@@ -3552,7 +3561,7 @@ class IUController(IUBase):
         sequence: IUSequence,
         schedule: IUSchedule,
         total_time: timedelta = None,
-    ) -> IUSequenceRun:
+    ) -> IURQStatus:
         # pylint: disable=too-many-locals
         # pylint: disable=too-many-statements
         """Muster the sequences for the controller"""
@@ -3597,6 +3606,7 @@ class IUController(IUBase):
                 next_run = stime
             return next_run
 
+        status = IURQStatus(0)
         sequence_run = IUSequenceRun(self._coordinator, self, sequence, schedule)
         total_time = sequence_run.calc_total_time(total_time)
         duration_factor = sequence.duration_factor(total_time, sequence_run)
@@ -3608,8 +3618,9 @@ class IUController(IUBase):
             )
             if start_time is not None:
                 sequence_run.allocate_runs(start_time)
-                return sequence_run
-        return None
+                sequence.runs.add(sequence_run)
+                status |= IURQStatus.EXTENDED
+        return status
 
     def muster(self, stime: datetime, force: bool) -> IURQStatus:
         """Calculate run times for this controller. This is where most of the hard yakka
@@ -3647,10 +3658,9 @@ class IUController(IUBase):
                         continue
                     next_time = stime
                     while True:
-                        sequence_run = self.muster_sequence(
+                        if self.muster_sequence(
                             next_time, sequence, schedule, None
-                        )
-                        if sequence_run is None:
+                        ).is_empty():
                             break
                         zone_status |= IURQStatus.EXTENDED
 
@@ -3660,6 +3670,9 @@ class IUController(IUBase):
                 zone_status |= zone.muster_schedules(stime)
 
         # Post processing
+        for sequence in self._sequences:
+            sequence.runs.update_queue(stime)
+
         for zone in self._zones:
             zts = zone.runs.update_queue(stime)
             if IURQStatus.CANCELED in zts:
