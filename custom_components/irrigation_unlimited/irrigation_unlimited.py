@@ -503,6 +503,27 @@ class IUAdjustment:
         return result
 
 
+class IURQStatus(Flag):
+    """Define the return status of the run queues"""
+
+    NONE = 0
+    CLEARED = auto()
+    EXTENDED = auto()
+    REDUCED = auto()
+    SORTED = auto()
+    UPDATED = auto()
+    CANCELED = auto()
+    CHANGED = auto()
+
+    def is_empty(self) -> bool:
+        """Return True if there are no flags set"""
+        return self.value == 0
+
+    def has_any(self, other: "IURQStatus") -> bool:
+        """Return True if the intersect is not empty"""
+        return other.value & self.value != 0
+
+
 class IUUser(dict):
     """Class to hold arbitrary static user information"""
 
@@ -757,6 +778,280 @@ class IUSchedule(IUBase):
         return dt.as_utc(next_run)
 
 
+class IUSwitch:
+    """Manager for the phsical switch entity"""
+
+    # pylint: disable=too-many-instance-attributes
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        zone: "IUZone",
+    ) -> None:
+        # Passed paramaters
+        self._hass = hass
+        self._coordinator = coordinator
+        self._controller = controller
+        self._zone = zone
+        # Config parameters
+        self._switch_entity_id: list[str]
+        self._check_back_states = "all"
+        self._check_back_delay = timedelta(seconds=30)
+        self._check_back_retries: int = 3
+        self._check_back_resync: bool = True
+        self._state_on = STATE_ON
+        self._state_off = STATE_OFF
+        self._check_back_entity_id: str = None
+        self._check_back_toggle: bool = False
+        # private variables
+        self._state: bool = None  # This parameter should mirror IUZone._is_on
+        self._check_back_time: timedelta = None
+        self._check_back_resync_count: int = 0
+
+    @property
+    def switch_entity_id(self) -> list[str] | None:
+        """Return the switch entity"""
+        return self._switch_entity_id
+
+    def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
+        """Make the HA call to physically turn the switch on/off"""
+        self._hass.async_create_task(
+            self._hass.services.async_call(
+                HADOMAIN,
+                SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
+                {ATTR_ENTITY_ID: entity_id},
+            )
+        )
+
+    def _check_back(self, atime: datetime) -> None:
+        """Recheck the switch in HA to see if state concurs"""
+        if (
+            self._check_back_resync_count >= self._check_back_retries
+            or not self._check_back_resync
+        ):
+            if entities := self.check_switch(atime, False, False):
+                expected = self._state_on if self._state else self._state_off
+                self._coordinator.logger.log_switch_error(atime, expected, entities)
+                self._coordinator.notify_switch(
+                    EVENT_SWITCH_ERROR, expected, entities, self._controller, self._zone
+                )
+            self._check_back_time = None
+        else:
+            if entities := self.check_switch(atime, self._check_back_resync, True):
+                self._check_back_resync_count += 1
+                self._check_back_time = atime + self._check_back_delay
+            else:
+                self._check_back_time = None
+
+    def next_event(self) -> datetime:
+        """Return the next time of interest"""
+        if self._check_back_time is not None:
+            return self._check_back_time
+        return utc_eot()
+
+    def clear(self) -> None:
+        """Reset this object"""
+        self._state = False
+
+    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
+        """Load switch data from the configuration"""
+
+        def load_params(config: OrderedDict) -> None:
+            if config is None:
+                return
+            self._check_back_states = config.get(CONF_STATES, self._check_back_states)
+            self._check_back_retries = config.get(
+                CONF_RETRIES, self._check_back_retries
+            )
+            self._check_back_resync = config.get(CONF_RESYNC, self._check_back_resync)
+            self._state_on = config.get(CONF_STATE_ON, self._state_on)
+            self._state_off = config.get(CONF_STATE_OFF, self._state_off)
+            delay = config.get(CONF_DELAY, self._check_back_delay.total_seconds())
+            self._check_back_delay = wash_td(timedelta(seconds=delay))
+            self._check_back_entity_id = config.get(
+                CONF_ENTITY_ID, self._check_back_entity_id
+            )
+            self._check_back_toggle = config.get(CONF_TOGGLE, self._check_back_toggle)
+
+        self.clear()
+        self._switch_entity_id = config.get(CONF_ENTITY_ID)
+        if all_zones is not None:
+            load_params(all_zones.get(CONF_CHECK_BACK))
+        load_params(config.get(CONF_CHECK_BACK))
+        return self
+
+    def muster(self, stime: datetime) -> int:
+        """Muster this switch"""
+        if self._check_back_time is not None and stime >= self._check_back_time:
+            self._check_back(stime)
+
+    def check_switch(self, stime: datetime, resync: bool, log: bool) -> list[str]:
+        """Check the linked entity is in sync. Returns a list of entities
+        that are not in sync"""
+
+        result: list[str] = []
+
+        def _check_entity(entity_id: str, expected: str) -> bool:
+            is_valid = self._hass.states.is_state(entity_id, expected)
+            if not is_valid:
+                result.append(entity_id)
+                if log:
+                    self._coordinator.logger.log_sync_error(stime, expected, entity_id)
+                    self._coordinator.notify_switch(
+                        EVENT_SYNC_ERROR,
+                        expected,
+                        [entity_id],
+                        self._controller,
+                        self._zone,
+                    )
+
+            return is_valid
+
+        def do_resync(entity_id: str) -> None:
+            if self._check_back_toggle:
+                self._set_switch(entity_id, not self._state)
+            self._set_switch(entity_id, self._state)
+
+        if self._switch_entity_id is not None:
+            expected = self._state_on if self._state else self._state_off
+            if self._check_back_entity_id is None:
+                for entity_id in self._switch_entity_id:
+                    if not _check_entity(entity_id, expected):
+                        if resync:
+                            do_resync(entity_id)
+            else:
+                if not _check_entity(self._check_back_entity_id, expected):
+                    if resync and len(self._switch_entity_id) == 1:
+                        do_resync(self._switch_entity_id)
+        return result
+
+    def call_switch(self, state: bool, stime: datetime = None) -> None:
+        """Turn the HA entity on or off"""
+        # pylint: disable=too-many-boolean-expressions
+        if self._switch_entity_id is not None:
+            if self._check_back_time is not None:
+                # Switch state was changed before the recheck. Check now.
+                self.check_switch(stime, False, True)
+                self._check_back_time = None
+            self._state = state
+            self._set_switch(self._switch_entity_id, state)
+            if stime is not None and (
+                self._check_back_states == "all"
+                or (self._check_back_states == "on" and state)
+                or (self._check_back_states == "off" and not state)
+            ):
+                self._check_back_resync_count = 0
+                self._check_back_time = stime + self._check_back_delay
+
+
+class IUVolume:
+    """Irrigation Unlimited Volume class"""
+
+    # pylint: disable=too-many-instance-attributes
+
+    def __init__(self, hass: HomeAssistant, coordinator: "IUCoordinator") -> None:
+        # Passed parameters
+        self._hass = hass
+        self._coordinator = coordinator
+        # Config parameters
+        self._sensor_id: str = None
+        self._volume_rounding = 3
+        self._volume_scale = 1
+        self._flow_rounding = 3
+        self._flow_scale = 3600
+        # Private variables
+        self._callback_remove: CALLBACK_TYPE = None
+        self._start_volume: float = None
+        self._total_volume: float = None
+        self._start_time: datetime = None
+        self._duration: timedelta = None
+
+    @property
+    def total(self) -> float | None:
+        """Return the total value"""
+        if self._total_volume is not None:
+            return round(self._total_volume * self._volume_scale, self._volume_rounding)
+        return None
+
+    @property
+    def flow_rate(self) -> str | None:
+        """Return the flow rate"""
+        if self._total_volume is not None and self._duration is not None:
+            rate = (
+                self._total_volume * self._flow_scale / self._duration.total_seconds()
+            )
+            return round(rate, self._flow_rounding)
+        return None
+
+    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
+        """Load volume data from the configuration"""
+
+        def load_params(config: OrderedDict) -> None:
+            if config is None:
+                return
+            self._sensor_id = config.get(CONF_ENTITY_ID, self._sensor_id)
+            self._volume_rounding = config.get(CONF_PRECISION, self._volume_rounding)
+
+        if all_zones is not None:
+            load_params(all_zones.get(CONF_VOLUME))
+        load_params(config.get(CONF_VOLUME))
+
+    def start_record(self, stime: datetime) -> None:
+        """Start recording volume information"""
+        if self._sensor_id is None:
+            return
+
+        def sensor_state_change(event: HAEvent):
+            # pylint: disable=unused-argument
+            sensor = self._hass.states.get(self._sensor_id)
+            if sensor is not None:
+                try:
+                    value = float(sensor.state)
+                except ValueError:
+                    return
+                self._total_volume = value - self._start_volume
+
+        self._start_volume = self._total_volume = None
+        self._start_time = self._duration = None
+        sensor = self._hass.states.get(self._sensor_id)
+        if sensor is not None:
+            try:
+                self._start_volume = float(sensor.state)
+            except ValueError:
+                self._coordinator.logger.log_invalid_meter_value(stime, sensor.state)
+            else:
+                self._callback_remove = async_track_state_change_event(
+                    self._hass, self._sensor_id, sensor_state_change
+                )
+                self._start_time = stime
+        else:
+            self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
+
+    def end_record(self, stime: datetime) -> None:
+        """Finish recording volume information"""
+        if self._callback_remove is not None:
+            self._callback_remove()
+            self._callback_remove = None
+        if self._start_volume is not None:
+            sensor = self._hass.states.get(self._sensor_id)
+            if sensor is not None:
+                try:
+                    value = float(sensor.state)
+                except ValueError:
+                    self._coordinator.logger.log_invalid_meter_value(
+                        stime, sensor.state
+                    )
+                    self._total_volume = None
+                else:
+                    self._total_volume = value - self._start_volume
+                    self._duration = stime - self._start_time
+            else:
+                self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
+                self._total_volume = None
+                self._duration = None
+
+
 class IURun(IUBase):
     """Irrigation Unlimited Run class. A run is an actual point
     in time. If schedule is None then it is a manual run.
@@ -946,27 +1241,6 @@ class IURun(IUBase):
         result[TIMELINE_SCHEDULE_NAME] = self.schedule_name
         result[TIMELINE_ADJUSTMENT] = self.adjustment
         return result
-
-
-class IURQStatus(Flag):
-    """Define the return status of the run queues"""
-
-    NONE = 0
-    CLEARED = auto()
-    EXTENDED = auto()
-    REDUCED = auto()
-    SORTED = auto()
-    UPDATED = auto()
-    CANCELED = auto()
-    CHANGED = auto()
-
-    def is_empty(self) -> bool:
-        """Return True if there are no flags set"""
-        return self.value == 0
-
-    def has_any(self, other: "IURQStatus") -> bool:
-        """Return True if the intersect is not empty"""
-        return other.value & self.value != 0
 
 
 class IURunQueue(list[IURun]):
@@ -1361,280 +1635,6 @@ class IUScheduleQueue(IURunQueue):
         self._minimum = wash_td(config.get(CONF_MINIMUM, self._minimum))
         self._maximum = wash_td(config.get(CONF_MAXIMUM, self._maximum))
         return self
-
-
-class IUSwitch:
-    """Manager for the phsical switch entity"""
-
-    # pylint: disable=too-many-instance-attributes
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        coordinator: "IUCoordinator",
-        controller: "IUController",
-        zone: "IUZone",
-    ) -> None:
-        # Passed paramaters
-        self._hass = hass
-        self._coordinator = coordinator
-        self._controller = controller
-        self._zone = zone
-        # Config parameters
-        self._switch_entity_id: list[str]
-        self._check_back_states = "all"
-        self._check_back_delay = timedelta(seconds=30)
-        self._check_back_retries: int = 3
-        self._check_back_resync: bool = True
-        self._state_on = STATE_ON
-        self._state_off = STATE_OFF
-        self._check_back_entity_id: str = None
-        self._check_back_toggle: bool = False
-        # private variables
-        self._state: bool = None  # This parameter should mirror IUZone._is_on
-        self._check_back_time: timedelta = None
-        self._check_back_resync_count: int = 0
-
-    @property
-    def switch_entity_id(self) -> list[str] | None:
-        """Return the switch entity"""
-        return self._switch_entity_id
-
-    def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
-        """Make the HA call to physically turn the switch on/off"""
-        self._hass.async_create_task(
-            self._hass.services.async_call(
-                HADOMAIN,
-                SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
-                {ATTR_ENTITY_ID: entity_id},
-            )
-        )
-
-    def _check_back(self, atime: datetime) -> None:
-        """Recheck the switch in HA to see if state concurs"""
-        if (
-            self._check_back_resync_count >= self._check_back_retries
-            or not self._check_back_resync
-        ):
-            if entities := self.check_switch(atime, False, False):
-                expected = self._state_on if self._state else self._state_off
-                self._coordinator.logger.log_switch_error(atime, expected, entities)
-                self._coordinator.notify_switch(
-                    EVENT_SWITCH_ERROR, expected, entities, self._controller, self._zone
-                )
-            self._check_back_time = None
-        else:
-            if entities := self.check_switch(atime, self._check_back_resync, True):
-                self._check_back_resync_count += 1
-                self._check_back_time = atime + self._check_back_delay
-            else:
-                self._check_back_time = None
-
-    def next_event(self) -> datetime:
-        """Return the next time of interest"""
-        if self._check_back_time is not None:
-            return self._check_back_time
-        return utc_eot()
-
-    def clear(self) -> None:
-        """Reset this object"""
-        self._state = False
-
-    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
-        """Load switch data from the configuration"""
-
-        def load_params(config: OrderedDict) -> None:
-            if config is None:
-                return
-            self._check_back_states = config.get(CONF_STATES, self._check_back_states)
-            self._check_back_retries = config.get(
-                CONF_RETRIES, self._check_back_retries
-            )
-            self._check_back_resync = config.get(CONF_RESYNC, self._check_back_resync)
-            self._state_on = config.get(CONF_STATE_ON, self._state_on)
-            self._state_off = config.get(CONF_STATE_OFF, self._state_off)
-            delay = config.get(CONF_DELAY, self._check_back_delay.total_seconds())
-            self._check_back_delay = wash_td(timedelta(seconds=delay))
-            self._check_back_entity_id = config.get(
-                CONF_ENTITY_ID, self._check_back_entity_id
-            )
-            self._check_back_toggle = config.get(CONF_TOGGLE, self._check_back_toggle)
-
-        self.clear()
-        self._switch_entity_id = config.get(CONF_ENTITY_ID)
-        if all_zones is not None:
-            load_params(all_zones.get(CONF_CHECK_BACK))
-        load_params(config.get(CONF_CHECK_BACK))
-        return self
-
-    def muster(self, stime: datetime) -> int:
-        """Muster this switch"""
-        if self._check_back_time is not None and stime >= self._check_back_time:
-            self._check_back(stime)
-
-    def check_switch(self, stime: datetime, resync: bool, log: bool) -> list[str]:
-        """Check the linked entity is in sync. Returns a list of entities
-        that are not in sync"""
-
-        result: list[str] = []
-
-        def _check_entity(entity_id: str, expected: str) -> bool:
-            is_valid = self._hass.states.is_state(entity_id, expected)
-            if not is_valid:
-                result.append(entity_id)
-                if log:
-                    self._coordinator.logger.log_sync_error(stime, expected, entity_id)
-                    self._coordinator.notify_switch(
-                        EVENT_SYNC_ERROR,
-                        expected,
-                        [entity_id],
-                        self._controller,
-                        self._zone,
-                    )
-
-            return is_valid
-
-        def do_resync(entity_id: str) -> None:
-            if self._check_back_toggle:
-                self._set_switch(entity_id, not self._state)
-            self._set_switch(entity_id, self._state)
-
-        if self._switch_entity_id is not None:
-            expected = self._state_on if self._state else self._state_off
-            if self._check_back_entity_id is None:
-                for entity_id in self._switch_entity_id:
-                    if not _check_entity(entity_id, expected):
-                        if resync:
-                            do_resync(entity_id)
-            else:
-                if not _check_entity(self._check_back_entity_id, expected):
-                    if resync and len(self._switch_entity_id) == 1:
-                        do_resync(self._switch_entity_id)
-        return result
-
-    def call_switch(self, state: bool, stime: datetime = None) -> None:
-        """Turn the HA entity on or off"""
-        # pylint: disable=too-many-boolean-expressions
-        if self._switch_entity_id is not None:
-            if self._check_back_time is not None:
-                # Switch state was changed before the recheck. Check now.
-                self.check_switch(stime, False, True)
-                self._check_back_time = None
-            self._state = state
-            self._set_switch(self._switch_entity_id, state)
-            if stime is not None and (
-                self._check_back_states == "all"
-                or (self._check_back_states == "on" and state)
-                or (self._check_back_states == "off" and not state)
-            ):
-                self._check_back_resync_count = 0
-                self._check_back_time = stime + self._check_back_delay
-
-
-class IUVolume:
-    """Irrigation Unlimited Volume class"""
-
-    # pylint: disable=too-many-instance-attributes
-
-    def __init__(self, hass: HomeAssistant, coordinator: "IUCoordinator") -> None:
-        # Passed parameters
-        self._hass = hass
-        self._coordinator = coordinator
-        # Config parameters
-        self._sensor_id: str = None
-        self._volume_rounding = 3
-        self._volume_scale = 1
-        self._flow_rounding = 3
-        self._flow_scale = 3600
-        # Private variables
-        self._callback_remove: CALLBACK_TYPE = None
-        self._start_volume: float = None
-        self._total_volume: float = None
-        self._start_time: datetime = None
-        self._duration: timedelta = None
-
-    @property
-    def total(self) -> float | None:
-        """Return the total value"""
-        if self._total_volume is not None:
-            return round(self._total_volume * self._volume_scale, self._volume_rounding)
-        return None
-
-    @property
-    def flow_rate(self) -> str | None:
-        """Return the flow rate"""
-        if self._total_volume is not None and self._duration is not None:
-            rate = (
-                self._total_volume * self._flow_scale / self._duration.total_seconds()
-            )
-            return round(rate, self._flow_rounding)
-        return None
-
-    def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
-        """Load volume data from the configuration"""
-
-        def load_params(config: OrderedDict) -> None:
-            if config is None:
-                return
-            self._sensor_id = config.get(CONF_ENTITY_ID, self._sensor_id)
-            self._volume_rounding = config.get(CONF_PRECISION, self._volume_rounding)
-
-        if all_zones is not None:
-            load_params(all_zones.get(CONF_VOLUME))
-        load_params(config.get(CONF_VOLUME))
-
-    def start_record(self, stime: datetime) -> None:
-        """Start recording volume information"""
-        if self._sensor_id is None:
-            return
-
-        def sensor_state_change(event: HAEvent):
-            # pylint: disable=unused-argument
-            sensor = self._hass.states.get(self._sensor_id)
-            if sensor is not None:
-                try:
-                    value = float(sensor.state)
-                except ValueError:
-                    return
-                self._total_volume = value - self._start_volume
-
-        self._start_volume = self._total_volume = None
-        self._start_time = self._duration = None
-        sensor = self._hass.states.get(self._sensor_id)
-        if sensor is not None:
-            try:
-                self._start_volume = float(sensor.state)
-            except ValueError:
-                self._coordinator.logger.log_invalid_meter_value(stime, sensor.state)
-            else:
-                self._callback_remove = async_track_state_change_event(
-                    self._hass, self._sensor_id, sensor_state_change
-                )
-                self._start_time = stime
-        else:
-            self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
-
-    def end_record(self, stime: datetime) -> None:
-        """Finish recording volume information"""
-        if self._callback_remove is not None:
-            self._callback_remove()
-            self._callback_remove = None
-        if self._start_volume is not None:
-            sensor = self._hass.states.get(self._sensor_id)
-            if sensor is not None:
-                try:
-                    value = float(sensor.state)
-                except ValueError:
-                    self._coordinator.logger.log_invalid_meter_value(
-                        stime, sensor.state
-                    )
-                    self._total_volume = None
-                else:
-                    self._total_volume = value - self._start_volume
-                    self._duration = stime - self._start_time
-            else:
-                self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
-                self._total_volume = None
-                self._duration = None
 
 
 class IUZone(IUBase):
