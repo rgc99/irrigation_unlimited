@@ -2787,7 +2787,28 @@ class IUSequenceQueue(list[IUSequenceRun]):
         if self.remove_expired(stime):
             status |= IURQStatus.REDUCED
 
-        self._next_event = utc_eot()
+        if self._current_run is None:
+            for run in self:
+                if run.running and run.total_time != timedelta(0):
+                    self._current_run = run
+                    self._next_run = None
+                    status |= IURQStatus.UPDATED
+                    break
+
+        if self._next_run is None:
+            for run in self:
+                if not run.running and run.total_time != timedelta(0):
+                    self._next_run = run
+                    status |= IURQStatus.UPDATED
+                    break
+
+        dates: list[datetime] = [utc_eot()]
+        for run in self:
+            if run.running:
+                dates.append(run.end_time)
+            else:
+                dates.append(run.start_time)
+        self._next_event = min(dates)
 
         return status
 
