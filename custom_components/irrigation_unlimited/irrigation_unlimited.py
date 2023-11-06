@@ -2718,6 +2718,80 @@ class IUSequenceRun(IUBase):
         return result
 
 
+class IUSequenceQueue(list[IUSequenceRun]):
+    """Irrigation Unlimited class to hold the upcoming sequences"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        # Config parameters
+        self._future_span = timedelta(days=3)
+        # Private variables
+        self._current_run: IUSequenceRun
+        self._next_run: IUSequenceRun
+        self._sorted: bool = False
+        self._next_event: datetime = None
+
+    @property
+    def current_run(self) -> IUSequenceRun:
+        """Return the current sequence run"""
+        return self._current_run
+
+    @property
+    def next_run(self) -> IUSequenceRun:
+        """Return the next sequence run"""
+        return self._next_run
+
+    def add(self, run: IUSequenceRun) -> None:
+        """Add a sequence run to the queue"""
+        self.append(run)
+        self._sorted = False
+
+    def sort(self) -> bool:
+        """Sort the run queue"""
+
+        def sorter(run: IUSequenceRun) -> datetime:
+            """Sort call back routine. Items are sorted by start_time"""
+            if run.is_manual():
+                return datetime.min.replace(tzinfo=dt.UTC)
+            return run.start_time
+
+        if self._sorted:
+            return False
+        super().sort(key=sorter)
+        self._current_run = None
+        self._next_run = None
+        self._sorted = True
+        return True
+
+    def remove_expired(self, stime: datetime) -> bool:
+        """Remove any expired sequence runs from the queue"""
+        modified: bool = False
+        i = len(self) - 1
+        while i >= 0:
+            run = self[i]
+            if run.is_expired(stime):
+                self._current_run = None
+                self._next_run = None
+                self.pop(i)
+                modified = True
+            i -= 1
+        return modified
+
+    def update_queue(self, stime: datetime) -> IURQStatus:
+        """Update the run queue"""
+        status = IURQStatus(0)
+
+        if self.sort():
+            status |= IURQStatus.SORTED
+
+        if self.remove_expired(stime):
+            status |= IURQStatus.REDUCED
+
+        self._next_event = utc_eot()
+
+        return status
+
+
 class IUSequence(IUBase):
     """Irrigation Unlimited Sequence class"""
 
@@ -2743,6 +2817,7 @@ class IUSequence(IUBase):
         self._repeat: int = None
         self._enabled: bool = True
         # Private variables
+        self._run_queue = IUSequenceQueue()
         self._schedules: list[IUSchedule] = []
         self._zones: list[IUSequenceZone] = []
         self._adjustment = IUAdjustment()
