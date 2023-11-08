@@ -1094,7 +1094,7 @@ class IURun(IUBase):
         return self._duration
 
     @property
-    def zone(self) -> "IUSchedule":
+    def zone(self) -> "IUZone":
         """Return the zone for this run"""
         return self._zone
 
