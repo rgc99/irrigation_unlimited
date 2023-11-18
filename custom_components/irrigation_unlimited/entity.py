@@ -253,18 +253,24 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         coordinator: IUCoordinator,
         controller: IUController,
         zone: IUZone,
+        sequence: IUSequence,
     ):
         """Base entity class"""
         self._coordinator = coordinator
         self._controller = controller
         self._zone = zone  # This will be None if it belongs to a Master/Controller
-        if self._zone is None:
-            self.entity_id = self._controller.entity_id
-        else:
+        self._sequence = sequence
+        if self._sequence is not None:
+            self.entity_id = self._sequence.entity_id
+        elif self._zone is not None:
             self.entity_id = self._zone.entity_id
+        else:
+            self.entity_id = self._controller.entity_id
 
     async def async_added_to_hass(self):
-        self._coordinator.register_entity(self._controller, self._zone, self)
+        self._coordinator.register_entity(
+            self._controller, self._zone, self._sequence, self
+        )
 
         # This code should be removed in future update. Moved to coordinator JSON configuration.
         if not self._coordinator.restored_from_configuration:
@@ -280,7 +286,9 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         return
 
     async def async_will_remove_from_hass(self):
-        self._coordinator.deregister_entity(self._controller, self._zone, self)
+        self._coordinator.deregister_entity(
+            self._controller, self._zone, self._sequence, self
+        )
         return
 
     def dispatch(self, service: str, call: ServiceCall) -> None:
@@ -296,7 +304,7 @@ class IUComponent(RestoreEntity):
         self.entity_id = self._coordinator.entity_id
 
     async def async_added_to_hass(self):
-        self._coordinator.register_entity(None, None, self)
+        self._coordinator.register_entity(None, None, None, self)
         state = await self.async_get_last_state()
         if state is None or ATTR_CONFIGURATION not in state.attributes:
             return
@@ -321,7 +329,7 @@ class IUComponent(RestoreEntity):
         return
 
     async def async_will_remove_from_hass(self):
-        self._coordinator.deregister_entity(None, None, self)
+        self._coordinator.deregister_entity(None, None, None, self)
         return
 
     def dispatch(self, service: str, call: ServiceCall) -> None:

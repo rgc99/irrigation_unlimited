@@ -255,6 +255,7 @@ class IUExam:
             if next_awakening <= astop_at:
                 self._coordinator.timer(next_awakening)
                 self._coordinator.clock.test_ticker_fired(next_awakening)
+                # self.check_labyrinth()
                 await self._hass.async_block_till_done()
                 self._current_time = next_awakening
             else:
@@ -286,6 +287,7 @@ class IUExam:
     async def call(self, service: str, data: dict[str, Any] = None) -> None:
         """Call IU service"""
         await self._hass.services.async_call(DOMAIN, service, data, True)
+        self.check_labyrinth()
         await self._hass.async_block_till_done()
 
     async def reload(self, config: str) -> None:

@@ -187,9 +187,8 @@ async def test_nc_classes():
     assert str(adj) == ""
     assert not adj.to_dict()
 
-    random_date = datetime.datetime(
-        2021, 1, 4, 12, 10, 0, 0, dt.UTC
-    )  # pylint: disable=protected-access
+    random_date = datetime.datetime(2021, 1, 4, 12, 10, 0, 0, dt.UTC)
+    # pylint: disable=protected-access
     adj._method = "invalid"
     assert adj.adjust(random_date) == random_date
 
@@ -221,7 +220,6 @@ async def test_iu_classes(hass: ha.HomeAssistant, skip_dependencies, skip_histor
     # pylint: disable=unused-argument
 
     async with IUExam(hass, "test_skeleton.yaml") as exam:
-
         # Check entities registered
         assert (
             exam.coordinator.component.entity_id == "irrigation_unlimited.coordinator"
@@ -255,8 +253,8 @@ async def test_iu_classes(hass: ha.HomeAssistant, skip_dependencies, skip_histor
 
         seq.add_schedule(sch)
         assert sch == seq.find_add_schedule(0)
-        assert seq.status() == "off"
-        assert seq.icon() == "mdi:stop-circle-outline"
+        assert seq.status == "off"
+        assert seq.icon == "mdi:stop-circle-outline"
         assert seq.duration is None
         assert seq.delay is None
 
@@ -270,7 +268,6 @@ async def test_iu_minimal(hass: ha.HomeAssistant, skip_dependencies, skip_histor
     # pylint: disable=unused-argument
 
     async with IUExam(hass, "test_minimal.yaml") as exam:
-
         assert exam.coordinator.get(1) is None
         assert exam.coordinator.controllers[0].get_zone(1) is None
         assert exam.coordinator.controllers[0].get_sequence(1) is None
@@ -286,8 +283,8 @@ async def test_iu_minimal(hass: ha.HomeAssistant, skip_dependencies, skip_histor
         assert len(exam.coordinator.controllers[0].zones[0].runs.as_list()) == 6
         await exam.run_until("2021-01-04 07:15:00")
         sqz = exam.coordinator.controllers[0].zones[0].runs.current_run.sequence_zone
-        assert sqz.icon(None) == "mdi:play-circle-outline"
-        assert sqz.status(None) == "on"
+        assert sqz.icon() == "mdi:play-circle-outline"
+        assert sqz.status() == "on"
         await exam.finish_test()
 
 
@@ -297,7 +294,6 @@ async def test_service_time(hass: ha.HomeAssistant, skip_dependencies, skip_hist
     # pylint: disable=protected-access
 
     async with IUExam(hass, "test_skeleton.yaml") as exam:
-
         dte = datetime.datetime.fromisoformat("2022-12-22T10:00:00+00:00")
         exam.coordinator.clock.load(
             {
