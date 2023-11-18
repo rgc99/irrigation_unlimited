@@ -20,6 +20,8 @@ from homeassistant.util.dt import parse_datetime, as_utc, as_local
 
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
+    IUController,
+    IURun,
 )
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
@@ -320,6 +322,108 @@ class IUExam:
                 f"time: {tester.total_time:.2f}s"
             )
 
+    def check_labyrinth(self) -> None:
+        """Check the run integrity between controller, zone and sequence runs"""
+
+        def check_controller(controller: IUController) -> None:
+            lst = list(controller.runs)
+            controller_runs: set[IURun] = set(lst)
+            assert len(lst) == len(controller_runs), "Controller runs not unique"
+
+            lst = []
+            for zone in controller.zones:
+                lst.extend(zone.runs)
+            zone_runs: set[IURun] = set(lst)
+            assert len(lst) == len(zone_runs), "Zone runs not unique"
+
+            lst = []
+            for sequence in controller.sequences:
+                for sqr in sequence.runs:
+                    lst.extend(sqr.runs)
+            sequence_runs: set[IURun] = set(lst)
+            assert len(lst) == len(sequence_runs), "Sequence runs not unique"
+
+            sqr = set(run for run in zone_runs if run.sequence is not None)
+            if sequence_runs != sqr:
+                if len(sequence_runs) > len(sqr):
+                    print("Sequence contains more items than zone")
+                else:
+                    print("Zone contains more items than sequence")
+                for run in sorted(
+                    sqr.symmetric_difference(sequence_runs),
+                    key=lambda run: run.start_time,
+                ):
+                    schedule = run.schedule.name if run.schedule else "manual"
+                    print(
+                        f"zone: {run.zone.id1}, "
+                        f"start: {fmt_local(run.start_time)}, "
+                        f"schedule: {schedule}"
+                    )
+                assert False, "Zone and sequence runs not identical"
+
+        for controller in self._coordinator.controllers:
+            check_controller(controller)
+
+    def check_attr(self, attr: dict, fields: dict) -> None:
+        """Check the specified fields in the attributes"""
+        bad = {}
+        for field in fields:
+            if field in attr:
+                if fields[field] != attr[field]:
+                    bad[field] = {}
+                    bad[field]["found"] = fields[field]
+                    bad[field]["expected"] = attr[field]
+            else:
+                bad[field] = "NOT FOUND"
+        assert not bad, f"Attributes do not match {bad}"
+
+    def check_iu_entity(self, iu_id: str, state: str, attributes: dict) -> None:
+        """Check the irrigation unlimited entity"""
+        entity_id = "binary_sensor.irrigation_unlimited_" + iu_id
+        entity = self._hass.states.get(entity_id)
+        assert entity is not None, f"IU entity {entity_id} not found"
+        assert (
+            entity.state == state
+        ), f"State does not match: expected: {entity.state} found: {state}"
+        self.check_attr(entity.attributes, attributes)
+
+    def print_iu_entity(self, iu_id: str) -> None:
+        """Print out the irrigation unlimited entity in a format compatible
+        with check_iu_entity"""
+        indent = "        "
+
+        def output(level: int, data: str) -> None:
+            print(f"{indent}{' ' * (level - 1) * 4}{data}")
+
+        def print_entity(iu_id: str) -> None:
+            entity_id = "binary_sensor.irrigation_unlimited_" + iu_id
+            entity = self._hass.states.get(entity_id)
+            assert entity is not None, f"IU entity {entity_id} not found"
+            output(1, "exam.check_iu_entity(")
+            output(2, f'"{iu_id}",')
+            if entity.state == "on":
+                output(2, "STATE_ON,")
+            else:
+                output(2, "STATE_OFF,")
+            output(2, "{")
+            for key, value in entity.attributes.items():
+                if isinstance(value, datetime):
+                    output(
+                        3,
+                        f'"{key}": mk_local("{value.strftime("%Y-%m-%d %H:%M:%S")}"),',
+                    )
+                elif isinstance(value, str):
+                    output(3, f'"{key}": "{value}",')
+                else:
+                    output(3, f'"{key}": {value},')
+            output(2, "},")
+            output(1, ")")
+
+        if isinstance(iu_id, str):
+            iu_id = [iu_id]
+        for ent in iu_id:
+            print_entity(ent)
+
 
 def mk_utc(adate: str) -> datetime:
     """Parse a datetime string assumed to be in local format
@@ -344,3 +448,8 @@ def parse_utc(adate: str) -> datetime:
     if dte.tzinfo is None:
         dte = dte.replace(tzinfo=timezone.utc)
     return dte
+
+
+def fmt_local(adate: datetime) -> str:
+    """Format the datetime into local format"""
+    return as_local(adate).strftime("%Y-%m-%d %H:%M:%S")
