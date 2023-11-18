@@ -4562,13 +4562,13 @@ class IULogger:
             msg += " " + data
         self._output(level, msg)
 
-    def log_start(self) -> None:
+    def log_start(self, stime: datetime) -> None:
         """Message for system clock starting"""
-        self._format(DEBUG, "START")
+        self._format(DEBUG, "START", stime)
 
-    def log_stop(self) -> None:
+    def log_stop(self, stime: datetime) -> None:
         """Message for system clock stopping"""
-        self._format(DEBUG, "STOP")
+        self._format(DEBUG, "STOP", stime)
 
     def log_load(self, data: OrderedDict) -> None:
         """Message that the config is loaded"""
@@ -4909,13 +4909,14 @@ class IUClock:
     def start(self) -> None:
         """Start the system clock"""
         self.stop()
-        self._schedule_next_poll(dt.utcnow())
-        self._coordinator.logger.log_start()
+        now = dt.utcnow()
+        self._schedule_next_poll(now)
+        self._coordinator.logger.log_start(now)
 
     def stop(self) -> None:
         """Stop the system clock"""
         if self._remove_timer():
-            self._coordinator.logger.log_stop()
+            self._coordinator.logger.log_stop(dt.utcnow())
 
     def next_awakening(self, atime: datetime) -> datetime:
         """Return the time for the next event"""
