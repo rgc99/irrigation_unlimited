@@ -81,6 +81,7 @@ class IUExam:
             self._config_directory = type(self).default_config_dir
         self._coordinator: IUCoordinator = None
         self._current_time: datetime = None
+        self._last_stop: datetime = None
         self._core_config_changed = False
         self._no_check = False
         self._config: ConfigType = None
@@ -114,6 +115,11 @@ class IUExam:
     def virtual_time(self) -> datetime:
         """Return the current virtual time"""
         return self._coordinator.tester.current_test.virtual_time(self._current_time)
+
+    @property
+    def last_stop(self) -> datetime:
+        """Return the last run_until time"""
+        return as_local(self._last_stop)
 
     @property
     def config(self) -> ConfigType:
@@ -196,6 +202,7 @@ class IUExam:
         self._coordinator.clock.stop()
         self._current_time = self._coordinator.start_test(test_no)
         assert self._current_time is not None, f"Invalid test {test_no}"
+        self._last_stop = self._coordinator.tester.virtual_time(self._current_time)
         self._coordinator.clock.test_ticker_update(self._current_time)
         await self._hass.async_block_till_done()
         _LOGGER.debug("Starting test: %s", self._coordinator.tester.current_test.name)
@@ -232,6 +239,7 @@ class IUExam:
         """Run until a point in time"""
         if isinstance(stop_at, str):
             stop_at = mk_utc(stop_at)
+        self._last_stop = stop_at
         if stop_at is not None:
             astop_at = self._coordinator.tester.actual_time(stop_at)
         else:
