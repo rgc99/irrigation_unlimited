@@ -265,7 +265,7 @@ async def test_service_adjust_time_basic(
         exam.check_summary()
 
 
-async def test_service_enable_disable(
+async def test_service_enable_disable_zone(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
 ):
     """Test enable/disable service call."""

@@ -9,7 +9,7 @@ from tests.iu_test_support import IUExam
 IUExam.quiet_mode()
 
 
-async def test_model(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+async def test_allow_manual(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Model IUExam class."""
     # pylint: disable=unused-argument
 
