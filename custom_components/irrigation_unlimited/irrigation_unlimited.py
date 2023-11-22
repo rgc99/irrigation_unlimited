@@ -5466,7 +5466,7 @@ class IUCoordinator:
         vtime is the virtual time if in testing mode, if not then
         it is the actual time"""
         wtime: datetime = wash_dt(vtime)
-        if (wtime != self._last_muster) or self._muster_required:
+        if (wtime != self._last_muster) or self._muster_required or force:
             if not self.muster(wtime, force).is_empty():
                 self.check_run(wtime)
             self._muster_required = False
