@@ -10,6 +10,7 @@ from custom_components.irrigation_unlimited.const import (
 
 IUExam.quiet_mode()
 
+
 # pylint: disable=unused-argument
 # pylint: disable=too-many-statements
 async def test_template_manual_run(
@@ -90,6 +91,8 @@ async def test_template_manual_run(
         )
         await exam.finish_test()
 
+        await set_dummy_value("00:10")
+        await exam.begin_test(6)
         await exam.call(
             SERVICE_TIME_ADJUST,
             {
@@ -106,5 +109,6 @@ async def test_template_manual_run(
                 "reset": None,
             },
         )
+        await exam.finish_test()
 
         exam.check_summary()
