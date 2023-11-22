@@ -263,11 +263,12 @@ class IUExam:
             if next_awakening <= astop_at:
                 self._coordinator.timer(next_awakening)
                 self._coordinator.clock.test_ticker_fired(next_awakening)
-                # self.check_labyrinth()
                 await self._hass.async_block_till_done()
                 self._current_time = next_awakening
             else:
                 break
+        if stop_at is None:
+            self.check_labyrinth()
 
     async def run_for(self, duration: timedelta | str) -> None:
         """Run for a period of time"""
