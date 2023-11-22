@@ -9,7 +9,7 @@ from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
 import json
-from enum import Flag, auto
+from enum import Enum, Flag, auto
 import voluptuous as vol
 from crontab import CronTab
 from homeassistant.core import (
@@ -1052,6 +1052,28 @@ class IUVolume:
                 self._duration = None
 
 
+class IURunStatus(Enum):
+    """Flags for the status of IURun object"""
+
+    UNKNOWN = 0
+    FUTURE = auto()
+    RUNNING = auto()
+    EXPIRED = auto()
+
+    @staticmethod
+    def status(
+        stime: datetime, start_time: datetime, end_time: datetime
+    ) -> "IURunStatus":
+        """Determine the state of this object"""
+        if start_time > stime:
+            return IURunStatus.FUTURE
+        if start_time <= stime < end_time:
+            return IURunStatus.RUNNING
+        if stime >= end_time:
+            return IURunStatus.EXPIRED
+        return IURunStatus.UNKNOWN
+
+
 class IURun(IUBase):
     """Irrigation Unlimited Run class. A run is an actual point
     in time. If schedule is None then it is a manual run.
@@ -1062,6 +1084,7 @@ class IURun(IUBase):
 
     def __init__(
         self,
+        stime: datetime,
         start_time: datetime,
         duration: timedelta,
         zone: "IUZone",
@@ -1082,6 +1105,22 @@ class IURun(IUBase):
         self._end_time: datetime = self._start_time + self._duration
         self._remaining_time: timedelta = self._end_time - self._start_time
         self._percent_complete: int = 0
+        self._status = self._get_status(stime)
+
+    @property
+    def expired(self) -> bool:
+        """Indicate if run has expired"""
+        return self._status == IURunStatus.EXPIRED
+
+    @property
+    def running(self) -> bool:
+        """Indicate if run is running"""
+        return self._status == IURunStatus.RUNNING
+
+    @property
+    def future(self) -> bool:
+        """Indicate if run is in the future"""
+        return self._status == IURunStatus.FUTURE
 
     @property
     def start_time(self) -> datetime:
@@ -1209,21 +1248,17 @@ class IURun(IUBase):
         """Check if this is a manual run"""
         return self._schedule is None
 
-    def is_running(self, stime: datetime) -> bool:
-        """Check if this schedule is running"""
-        return self._start_time <= stime < self._end_time
+    def _get_status(self, stime: datetime) -> IURunStatus:
+        """Determine the state of this run"""
+        return IURunStatus.status(stime, self._start_time, self._end_time)
 
-    def is_expired(self, stime: datetime) -> bool:
-        """Check if this schedule is expired"""
-        return stime >= self._end_time
-
-    def is_future(self, stime: datetime) -> bool:
-        """Check if this is a future run"""
-        return self.start_time > stime
+    def update_status(self, stime: datetime) -> None:
+        """Update the status of the run"""
+        self._status = self._get_status(stime)
 
     def update_time_remaining(self, stime: datetime) -> bool:
         """Update the count down timers"""
-        if self.is_running(stime):
+        if self.running:
             self._remaining_time = self._end_time - stime
             total_duration: timedelta = self._end_time - self._start_time
             time_elapsed: timedelta = stime - self._start_time
@@ -1279,6 +1314,7 @@ class IURunQueue(list[IURun]):
 
     def add(
         self,
+        stime: datetime,
         start_time: datetime,
         duration: timedelta,
         zone: "IUZone",
@@ -1288,7 +1324,7 @@ class IURunQueue(list[IURun]):
     ) -> IURun:
         # pylint: disable=too-many-arguments
         """Add a run to the queue"""
-        run = IURun(start_time, duration, zone, schedule, sequence_run, zone_run)
+        run = IURun(stime, start_time, duration, zone, schedule, sequence_run, zone_run)
         self.append(run)
         self._sorted = False
         return run
@@ -1297,24 +1333,20 @@ class IURunQueue(list[IURun]):
         """Flag the current run to be cancelled"""
         self._cancel_request = stime
 
-    def clear_all(self) -> bool:
+    def clear_all(self) -> None:
         """Clear out all runs"""
-        modified: bool = False
-        if len(self) > 0:
-            self._current_run = None
-            self._next_run = None
-            super().clear()
-            modified = True
-        return modified
+        self._current_run = None
+        self._next_run = None
+        super().clear()
 
-    def clear_runs(self, stime: datetime, include_sequence: bool) -> bool:
+    def clear_runs(self, include_sequence: bool) -> bool:
         """Clear out the queue except for manual and running schedules"""
         modified = False
         i = len(self) - 1
         while i >= 0:
             run = self[i]
             if (include_sequence or not run.is_sequence) and not (
-                run.is_running(stime) or run.is_manual()
+                run.running or run.is_manual()
             ):
                 self.pop_run(i)
                 modified = True
@@ -1375,16 +1407,26 @@ class IURunQueue(list[IURun]):
             modified = True
         return modified
 
-    def remove_expired(self, stime: datetime) -> bool:
+    def remove_expired(self, stime: datetime, postamble: timedelta) -> bool:
         """Remove any expired runs from the queue"""
         modified: bool = False
-
+        if postamble is None:
+            postamble = timedelta(0)
         i = len(self) - 1
         while i >= 0:
             run = self[i]
-            if run.is_expired(stime):
-                self.pop_run(i)
-                modified = True
+            if not run.is_sequence:
+                if run.expired and stime > run.end_time + postamble:
+                    self.pop_run(i)
+                    modified = True
+            else:
+                if (
+                    run.sequence_run.expired
+                    and run.expired
+                    and stime > run.end_time + postamble
+                ):
+                    self.pop_run(i)
+                    modified = True
             i -= 1
         return modified
 
@@ -1415,7 +1457,12 @@ class IURunQueue(list[IURun]):
         """Remove the run from the queue"""
         return self.pop_run(self.index(run))
 
-    def update_queue(self, stime: datetime) -> IURQStatus:
+    def update_run_status(self, stime) -> None:
+        """Update the status of the runs"""
+        for run in self:
+            run.update_status(stime)
+
+    def update_queue(self) -> IURQStatus:
         """Update the run queue. Sort the queue, remove expired runs
         and set current and next runs. This is the final operation after
         all additions and deletions.
@@ -1433,22 +1480,25 @@ class IURunQueue(list[IURun]):
                 status |= IURQStatus.CANCELED
             self._cancel_request = None
 
-        if self.remove_expired(stime):
-            status |= IURQStatus.REDUCED
-
         # Try to find a running schedule
+        if self._current_run is not None and self._current_run.expired:
+            self._current_run = None
+            status |= IURQStatus.UPDATED
         if self._current_run is None:
             for run in self:
-                if run.is_running(stime) and run.duration != timedelta(0):
+                if run.running and run.duration != timedelta(0):
                     self._current_run = run
                     self._next_run = None
                     status |= IURQStatus.UPDATED
                     break
 
         # Try to find the next schedule
+        if self._next_run is not None and self._next_run.expired:
+            self._next_run = None
+            status |= IURQStatus.UPDATED
         if self._next_run is None:
             for run in self:
-                if run.is_future(stime) and run.duration != timedelta(0):
+                if run.future and run.duration != timedelta(0):
                     self._next_run = run
                     status |= IURQStatus.UPDATED
                     break
@@ -1456,8 +1506,8 @@ class IURunQueue(list[IURun]):
         # Figure out the next state change
         dates: list[datetime] = [utc_eot()]
         for run in self:
-            if not run.is_expired(stime):
-                if run.is_running(stime):
+            if not run.expired:
+                if run.running:
                     dates.append(run.end_time)
                 else:
                     dates.append(run.start_time)
@@ -1502,13 +1552,14 @@ class IUScheduleQueue(IURunQueue):
             duration = min(duration, self._maximum)
         return duration
 
-    def clear_runs(self, stime: datetime) -> bool:
+    def clear_runs(self) -> bool:
         """Clear out the queue except for manual and running schedules"""
         # pylint: disable=arguments-differ
-        return super().clear_runs(stime, False)
+        return super().clear_runs(False)
 
     def add(
         self,
+        stime: datetime,
         start_time: datetime,
         duration: timedelta,
         zone: "IUZone",
@@ -1519,11 +1570,22 @@ class IUScheduleQueue(IURunQueue):
         # pylint: disable=arguments-differ
         # pylint: disable=too-many-arguments
         return super().add(
-            start_time, self.constrain(duration), zone, schedule, sequence_run, None
+            stime,
+            start_time,
+            self.constrain(duration),
+            zone,
+            schedule,
+            sequence_run,
+            None,
         )
 
     def add_manual(
-        self, start_time: datetime, duration: timedelta, zone: "IUZone", queue: bool
+        self,
+        stime: datetime,
+        start_time: datetime,
+        duration: timedelta,
+        zone: "IUZone",
+        queue: bool,
     ) -> IURun:
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
@@ -1539,7 +1601,7 @@ class IUScheduleQueue(IURunQueue):
         self._current_run = None
         self._next_run = None
         duration = max(duration, granularity_time())
-        return self.add(start_time, duration, zone, None, None)
+        return self.add(stime, start_time, duration, zone, None, None)
 
     def merge_one(
         self,
@@ -1556,7 +1618,7 @@ class IUScheduleQueue(IURunQueue):
         last_run = self.find_last_run(schedule)
         if last_run is not None:
             next_time = last_run.end_time + granularity_time()
-            is_running = last_run.is_running(stime)
+            is_running = last_run.running
         else:
             next_time = stime
             is_running = False
@@ -1567,7 +1629,7 @@ class IUScheduleQueue(IURunQueue):
         )
 
         if next_run is not None:
-            self.add(next_run, duration, zone, schedule, None)
+            self.add(stime, next_run, duration, zone, schedule, None)
             modified = True
 
         return modified
@@ -1862,6 +1924,7 @@ class IUZone(IUBase):
                     return
                 duration = self._adjustment.adjust(duration)
             self._run_queue.add_manual(
+                stime,
                 self._controller.manual_run_start(stime, delay, queue),
                 duration,
                 self,
@@ -1963,10 +2026,9 @@ class IUZone(IUBase):
         for run in run_list:
             run[TIMELINE_STATUS] = RES_TIMELINE_HISTORY
 
-        stime = self._coordinator.service_time()
         for run in self._run_queue:
             dct = run.as_dict()
-            if run.is_running(stime):
+            if run.running:
                 dct[TIMELINE_STATUS] = RES_TIMELINE_RUNNING
             elif run == self._run_queue.next_run:
                 dct[TIMELINE_STATUS] = RES_TIMELINE_NEXT
@@ -2009,7 +2071,7 @@ class IUZone(IUBase):
 
         return status
 
-    def check_run(self, stime: datetime, parent_enabled: bool) -> bool:
+    def check_run(self, parent_enabled: bool) -> bool:
         """Update the run status"""
         is_running: bool = False
         state_changed: bool = False
@@ -2018,7 +2080,7 @@ class IUZone(IUBase):
             (
                 self.is_enabled
                 and self._run_queue.current_run is not None
-                and self._run_queue.current_run.is_running(stime)
+                and self._run_queue.current_run.running
             )
             or (
                 self._allow_manual
@@ -2100,10 +2162,10 @@ class IUZone(IUBase):
 class IUZoneQueue(IURunQueue):
     """Class to hold the upcoming zones to run"""
 
-    def clear_runs(self, stime: datetime) -> bool:
+    def clear_runs(self) -> bool:
         """Clear out the queue except for manual and running schedules"""
         # pylint: disable=arguments-differ
-        return super().clear_runs(stime, True)
+        return super().clear_runs(True)
 
     def find_run(
         self,
@@ -2124,6 +2186,7 @@ class IUZoneQueue(IURunQueue):
 
     def add_zone(
         self,
+        stime: datetime,
         zone_run: IURun,
         preamble: timedelta,
         postamble: timedelta,
@@ -2143,6 +2206,7 @@ class IUZoneQueue(IURunQueue):
             run = None
         if run is None:
             run = self.add(
+                stime,
                 start_time,
                 duration,
                 zone_run.zone,
@@ -2155,7 +2219,7 @@ class IUZoneQueue(IURunQueue):
     def rebuild_schedule(
         self,
         stime: datetime,
-        zones: "list[IUZone]",
+        zones: list[IUZone],
         preamble: timedelta,
         postamble: timedelta,
         clear_all: bool,
@@ -2166,10 +2230,11 @@ class IUZoneQueue(IURunQueue):
         if clear_all:
             self.clear_all()
         else:
-            self.clear_runs(stime)
+            self.clear_runs()
         for zone in zones:
             for run in zone.runs:
-                self.add_zone(run, preamble, postamble, clear_all)
+                if not run.expired:
+                    self.add_zone(stime, run, preamble, postamble, clear_all)
         status |= IURQStatus.EXTENDED | IURQStatus.REDUCED
         return status
 
@@ -2392,12 +2457,11 @@ class IUSequenceRun(IUBase):
         self._runs_pre_allocate: list[IUSequenceRunAllocation] = []
         self._runs: dict[IURun, IUSequenceZoneRun] = weakref.WeakKeyDictionary()
         self._active_zone: IUSequenceZoneRun = None
-        self._running = False
-        self._expired = False
         self._start_time: datetime = None
         self._end_time: datetime = None
         self._accumulated_duration = timedelta(0)
         self._first_zone: IUZone = None
+        self._status = IURunStatus.UNKNOWN
 
     @property
     def sequence(self) -> "IUSequence":
@@ -2427,12 +2491,12 @@ class IUSequenceRun(IUBase):
     @property
     def running(self) -> bool:
         """Indicate if this sequence is running"""
-        return self._running
+        return self._status == IURunStatus.RUNNING
 
     @property
     def expired(self) -> bool:
         """Indicate if this sequence has expired"""
-        return self._expired
+        return self._status == IURunStatus.EXPIRED
 
     @property
     def active_zone(self) -> IUSequenceZoneRun:
@@ -2516,7 +2580,7 @@ class IUSequenceRun(IUBase):
 
         return self._end_time - self._start_time
 
-    def allocate_runs(self, start_time: datetime) -> None:
+    def allocate_runs(self, stime: datetime, start_time: datetime) -> None:
         """Allocate runs"""
         delta = start_time - self._start_time
         self._start_time += delta
@@ -2524,12 +2588,13 @@ class IUSequenceRun(IUBase):
         for item in self._runs_pre_allocate:
             zone = item.zone
             run = zone.runs.add(
-                item.start + delta, item.duration, zone, self._schedule, self
+                stime, item.start + delta, item.duration, zone, self._schedule, self
             )
             self._runs[run] = item.sequence_zone_run
             self._accumulated_duration += run.duration
             zone.request_update()
         self._runs_pre_allocate.clear()
+        self._status = IURunStatus.status(stime, self.start_time, self.end_time)
 
     def first_zone(self) -> IUZone:
         """Return the first zone"""
@@ -2559,9 +2624,11 @@ class IUSequenceRun(IUBase):
             result += period_end - period_start
         return result
 
-    def on_time(self) -> timedelta:
+    def on_time(self, include_expired=False) -> timedelta:
         """Return the total time this run is on"""
-        return self._calc_on_time(self._runs.keys())
+        return self._calc_on_time(
+            run for run in self._runs if include_expired or not run.expired
+        )
 
     def zone_runs(self, sequence_zone: IUSequenceZone) -> list[IURun]:
         """Get the list of runs associated with the sequence zone"""
@@ -2580,14 +2647,13 @@ class IUSequenceRun(IUBase):
             return sequence_zone_run.sequence_zone
         return None
 
-    def update(self, stime: datetime) -> bool:
+    def update(self) -> bool:
         """Update the status of the sequence"""
         result = False
         for run, sequence_zone_run in self._runs.items():
-            is_running = run.is_running(stime)
-            if is_running and not self._running:
+            if run.running and not self.running:
                 # Sequence/sequence zone is starting
-                self._running = True
+                self._status = IURunStatus.RUNNING
                 self._active_zone = sequence_zone_run
                 self._coordinator.notify_sequence(
                     EVENT_START,
@@ -2598,17 +2664,17 @@ class IUSequenceRun(IUBase):
                 )
                 result |= True
 
-            elif is_running and sequence_zone_run != self._active_zone:
+            elif run.running and sequence_zone_run != self._active_zone:
                 # Sequence zone is changing
                 self._active_zone = sequence_zone_run
                 result |= True
 
-            elif not is_running and sequence_zone_run == self._active_zone:
+            elif not run.running and sequence_zone_run == self._active_zone:
                 # Sequence zone is finishing
                 self._active_zone = None
                 if self.run_index(run) == len(self._runs) - 1:
                     # Sequence is finishing
-                    self._expired = True
+                    self._status = IURunStatus.EXPIRED
                     self._coordinator.notify_sequence(
                         EVENT_FINISH,
                         self._controller,
@@ -2620,7 +2686,7 @@ class IUSequenceRun(IUBase):
 
         return result
 
-    def as_dict(self) -> dict:
+    def as_dict(self, include_expired=False) -> dict:
         """Return this sequence run as a dict"""
         result = {}
         result[ATTR_INDEX] = self._sequence.index
@@ -2630,7 +2696,7 @@ class IUSequenceRun(IUBase):
         result[ATTR_STATUS] = self._sequence.status
         result[ATTR_ICON] = self._sequence.icon
         result[ATTR_START] = dt.as_local(self._start_time)
-        result[ATTR_DURATION] = to_secs(self.on_time())
+        result[ATTR_DURATION] = to_secs(self.on_time(include_expired))
         result[ATTR_ADJUSTMENT] = str(self._sequence.adjustment)
         if not self.is_manual():
             result[ATTR_SCHEDULE] = {
@@ -2644,7 +2710,11 @@ class IUSequenceRun(IUBase):
             }
         result[ATTR_ZONES] = []
         for zone in self._sequence.zones:
-            runs = self.zone_runs(zone)
+            runs = (
+                run
+                for run in self.zone_runs(zone)
+                if include_expired or not run.expired
+            )
             sqr = {}
             sqr[ATTR_INDEX] = zone.index
             sqr[ATTR_ENABLED] = zone.enabled
@@ -2784,13 +2854,15 @@ class IUSequenceQueue(list[IUSequenceRun]):
         self._sorted = True
         return True
 
-    def remove_expired(self) -> bool:
+    def remove_expired(self, stime: datetime, postamble: timedelta) -> bool:
         """Remove any expired sequence runs from the queue"""
+        if postamble is None:
+            postamble = timedelta(0)
         modified: bool = False
         i = len(self) - 1
         while i >= 0:
             sqr = self[i]
-            if sqr.expired:
+            if sqr.expired and stime > sqr.end_time + postamble:
                 self._current_run = None
                 self._next_run = None
                 self.pop(i)
@@ -2798,7 +2870,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
             i -= 1
         return modified
 
-    def update_queue(self, stime: datetime) -> IURQStatus:
+    def update_queue(self) -> IURQStatus:
         """Update the run queue"""
         # pylint: disable=too-many-branches
         status = IURQStatus(0)
@@ -2807,13 +2879,10 @@ class IUSequenceQueue(list[IUSequenceRun]):
             status |= IURQStatus.SORTED
 
         for run in self:
-            if run.update(stime):
+            if run.update():
                 self._current_run = None
                 self._next_run = None
                 status |= IURQStatus.CHANGED
-
-        if self.remove_expired():
-            status |= IURQStatus.REDUCED
 
         if self._current_run is None:
             for run in self:
@@ -3600,9 +3669,9 @@ class IUController(IUBase):
         # self._zones.clear()
         self._run_queue.clear_all()
 
-    def clear_zone_runs(self, stime: datetime, zone: IUZone) -> None:
+    def clear_zone_runs(self, zone: IUZone) -> None:
         """Clear out zone run queues"""
-        zone.runs.clear_runs(stime)
+        zone.runs.clear_runs()
         for sequence in self._sequences:
             if zone in sequence.zone_list():
                 sequence.runs.clear_runs()
@@ -3684,14 +3753,14 @@ class IUController(IUBase):
                     sequences[run.sequence] = run
         return sequences
 
-    def sequence_status(self) -> list[dict]:
+    def sequence_status(self, include_expired=False) -> list[dict]:
         """Return the sequence status or run information"""
         result: list[dict] = []
         runs = self.up_next()
         for sequence in self._sequences:
             run = runs.get(sequence)
             if run is not None:
-                result.append(run.as_dict())
+                result.append(run.as_dict(include_expired))
             else:
                 result.append(IUSequenceRun.skeleton(sequence))
         return result
@@ -3758,7 +3827,7 @@ class IUController(IUBase):
                 stime, sequence, schedule, sequence_run.first_zone(), total_time
             )
             if start_time is not None:
-                sequence_run.allocate_runs(start_time)
+                sequence_run.allocate_runs(stime, start_time)
                 sequence.runs.add(sequence_run)
                 status |= IURQStatus.EXTENDED
         return status
@@ -3776,6 +3845,10 @@ class IUController(IUBase):
             for zone in self._zones:
                 zone.clear_run_queue()
             status |= IURQStatus.CLEARED
+        else:
+            for zone in self._zones:
+                zone.runs.update_run_status(stime)
+            self._run_queue.update_run_status(stime)
 
         if self._suspend_until is not None and stime >= self._suspend_until:
             self._suspend_until = None
@@ -3818,10 +3891,10 @@ class IUController(IUBase):
 
         # Post processing
         for sequence in self._sequences:
-            zone_status |= sequence.runs.update_queue(stime)
+            zone_status |= sequence.runs.update_queue()
 
         for zone in self._zones:
-            zts = zone.runs.update_queue(stime)
+            zts = zone.runs.update_queue()
             if IURQStatus.CANCELED in zts:
                 zone.request_update()
             zone_status |= zts
@@ -3837,7 +3910,17 @@ class IUController(IUBase):
             status |= self._run_queue.rebuild_schedule(
                 stime, self._zones, self._preamble, self._postamble, clear_all
             )
-        status |= self._run_queue.update_queue(stime)
+        status |= self._run_queue.update_queue()
+
+        # Purge expired runs
+        for sequence in self._sequences:
+            if sequence.runs.remove_expired(stime, self._postamble):
+                zone_status |= IURQStatus.REDUCED
+        for zone in self._zones:
+            if zone.runs.remove_expired(stime, self._postamble):
+                status |= IURQStatus.REDUCED
+        if self._run_queue.remove_expired(stime, None):
+            status |= IURQStatus.REDUCED
 
         if not status.is_empty():
             self.request_update(False)
@@ -3861,7 +3944,7 @@ class IUController(IUBase):
 
         # Gather zones that have changed status
         for zone in self._zones:
-            if zone.check_run(stime, is_enabled):
+            if zone.check_run(is_enabled):
                 zones_changed.append(zone.index)
 
         # Handle off zones before master
@@ -4081,7 +4164,7 @@ class IUController(IUBase):
                     sequence.runs.clear_runs()
                     sequences_changed = True
             if sequences_changed:
-                self._run_queue.clear_runs(stime)
+                self._run_queue.clear_runs()
                 self.request_update(True)
                 result = True
         return result
@@ -4115,7 +4198,7 @@ class IUController(IUBase):
                     sequence.runs.clear_runs()
                     sequences_changed = True
             if sequences_changed:
-                self._run_queue.clear_runs(stime)
+                self._run_queue.clear_runs()
                 self.request_update(True)
                 result = True
         return result
@@ -4130,7 +4213,7 @@ class IUController(IUBase):
             for zone in self._zones:
                 if self.check_item(zone.index, zone_list):
                     if zone.service_adjust_time(data, stime):
-                        self.clear_zone_runs(stime, zone)
+                        self.clear_zone_runs(zone)
                         result = True
         else:
             sequences_changed = False
@@ -4146,7 +4229,7 @@ class IUController(IUBase):
                     sequence.runs.clear_runs()
                     sequences_changed = True
             if sequences_changed:
-                self._run_queue.clear_runs(stime)
+                self._run_queue.clear_runs()
                 self.request_update(True)
                 result = True
         return result
@@ -5685,14 +5768,14 @@ class IUCoordinator:
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
             if zone is not None:
                 if changed := zone.service_call(data1, stime, service):
-                    controller.clear_zone_runs(stime, zone)
+                    controller.clear_zone_runs(zone)
             else:
                 changed = controller.service_call(data1, stime, service)
         elif service == SERVICE_SUSPEND:
             render_positive_time_period(self._hass, data1, CONF_FOR)
             if zone is not None:
                 if changed := zone.service_suspend(data1, stime):
-                    controller.clear_zone_runs(stime, zone)
+                    controller.clear_zone_runs(zone)
             else:
                 changed = controller.service_suspend(data1, stime)
 
@@ -5710,7 +5793,7 @@ class IUCoordinator:
             render_positive_float(self._hass, data1, CONF_PERCENTAGE)
             if zone is not None:
                 if changed := zone.service_adjust_time(data1, stime):
-                    controller.clear_zone_runs(stime, zone)
+                    controller.clear_zone_runs(zone)
             else:
                 changed = controller.service_adjust_time(data1, stime)
         elif service == SERVICE_MANUAL_RUN:

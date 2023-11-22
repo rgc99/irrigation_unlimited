@@ -237,6 +237,97 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         ]
 
         await exam.run_until("2021-01-04 06:14")
+        assert exam.coordinator.controllers[0].sequence_status(True) == [
+            {
+                "index": 0,
+                "name": "Seq 1",
+                "enabled": True,
+                "suspended": None,
+                "status": "on",
+                "icon": "mdi:play-circle-outline",
+                "start": mk_local("2021-01-04 06:05"),
+                "duration": 2160,
+                "adjustment": "",
+                "schedule": {"index": 0, "name": "Schedule 1"},
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": 360,
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": 720,
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": 1080,
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                    },
+                ],
+            },
+            {
+                "index": 1,
+                "name": "Seq 2",
+                "enabled": True,
+                "suspended": None,
+                "status": "on",
+                "icon": "mdi:play-circle-outline",
+                "start": mk_local("2021-01-04 06:10"),
+                "duration": 2160,
+                "adjustment": "",
+                "schedule": {"index": 0, "name": "Schedule 1"},
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": 360,
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": 720,
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": 1080,
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                    },
+                ],
+            },
+        ]
+
         assert hass.states.get("binary_sensor.irrigation_unlimited_c1_m").attributes[
             "sequence_status"
         ] == [
