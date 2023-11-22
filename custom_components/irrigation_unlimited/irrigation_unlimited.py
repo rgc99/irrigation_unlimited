@@ -2638,7 +2638,10 @@ class IUSequenceRun(IUBase):
 
     def run_index(self, run: IURun) -> int:
         """Extract the index from the supplied run"""
-        return list(self._runs.keys()).index(run)
+        for i, key in enumerate(self._runs):
+            if key == run:
+                return i
+        return None
 
     def sequence_zone(self, run: IURun) -> IUSequenceZone:
         """Extract the sequence zone from the run"""
