@@ -483,7 +483,6 @@ async def test_history_disabled(hass: ha.HomeAssistant, allow_memory_db):
     # pylint: disable=protected-access
 
     async with IUExam(hass, "test_history_disabled.yaml") as exam:
-
         await exam.load_dependencies()
 
         with patch(
@@ -675,3 +674,4 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                 }
             finally:
                 exam.coordinator.history._callback = callback_save
+                exam.coordinator.history.finalise()
