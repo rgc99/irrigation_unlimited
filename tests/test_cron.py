@@ -23,6 +23,4 @@ async def test_cron(hass: ha.HomeAssistant, skip_history):
             await exam.run_all()
             exam.check_summary()
 
-            assert (
-                sum([1 for call in mock.call_args_list if call.args[1] == "CRON"]) == 2
-            )
+            assert sum(1 for call in mock.call_args_list if call.args[1] == "CRON") == 2
