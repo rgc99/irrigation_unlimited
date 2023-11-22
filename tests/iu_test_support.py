@@ -139,6 +139,13 @@ class IUExam:
             return as_local(self._coordinator.tester.virtual_time(as_utc(atime)))
         return None
 
+    def lvts(self, atime: datetime) -> str:
+        """Return the actual time as virtual in local as a string"""
+        ltime = self.lvt(atime)
+        if ltime is not None:
+            return fmt_local(ltime)
+        return None
+
     def no_check(self, check_off: bool = True) -> None:
         """Disable checking results"""
         global NO_CHECK
