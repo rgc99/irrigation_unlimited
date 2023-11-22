@@ -193,6 +193,7 @@ class IUExam:
         if self._core_config_changed:
             await reset_hass_config(self._hass)
             self._core_config_changed = False
+        self._coordinator.history.finalise()
         _LOGGER.debug("Finished exam: %s", self.config_file_full)
 
     async def __aenter__(self):
