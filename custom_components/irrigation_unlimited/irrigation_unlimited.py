@@ -4620,6 +4620,7 @@ class IUTester:
                 poll_func(test.start, True)
                 self._test_initialised = True
             elif test.is_finished(atime):  # End of current test
+                poll_func(test.end, False)
                 if self._autoplay:
                     test = self.next_test(atime)
                     if test is not None:
@@ -4637,7 +4638,6 @@ class IUTester:
                         poll_func(atime, True)
                 else:  # End single test
                     self.end_test(atime)
-                    # poll_func(atime, True)
             else:  # Continue existing test
                 poll_func(test.virtual_time(atime))
         else:  # Out of tests to run
