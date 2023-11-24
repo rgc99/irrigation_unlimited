@@ -20,7 +20,7 @@ from homeassistant.core import (
     Event as HAEvent,
 )
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.template import Template
+from homeassistant.helpers.template import Template, render_complex
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_call_later,
@@ -306,13 +306,12 @@ def utc_eot() -> datetime:
     return datetime.max.replace(tzinfo=timezone.utc)
 
 
-def render_positive_time_period(hass: HomeAssistant, data: dict, key: str) -> None:
+def render_positive_time_period(data: dict, key: str) -> None:
     """Resolve a template that specifies a timedelta"""
-    if isinstance(data.get(key), Template):
-        template: Template = data[key]
-        template.hass = hass
+    if key in data:
         schema = vol.Schema({key: cv.positive_time_period})
-        data[key] = schema({key: template.async_render()})[key]
+        rendered = render_complex(data[key])
+        data[key] = schema({key: rendered})[key]
 
 
 def render_positive_float(hass: HomeAssistant, data: dict, key: str) -> None:
@@ -5766,6 +5765,8 @@ class IUCoordinator:
         changed = True
         stime = self.service_time()
 
+        self._logger.log_service_call(service, stime, controller, zone, data, DEBUG)
+
         data1 = dict(data)
 
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
@@ -5775,7 +5776,7 @@ class IUCoordinator:
             else:
                 changed = controller.service_call(data1, stime, service)
         elif service == SERVICE_SUSPEND:
-            render_positive_time_period(self._hass, data1, CONF_FOR)
+            render_positive_time_period(data1, CONF_FOR)
             if zone is not None:
                 if changed := zone.service_suspend(data1, stime):
                     controller.clear_zone_runs(zone)
@@ -5788,11 +5789,11 @@ class IUCoordinator:
             else:
                 controller.service_cancel(data1, stime)
         elif service == SERVICE_TIME_ADJUST:
-            render_positive_time_period(self._hass, data1, CONF_ACTUAL)
-            render_positive_time_period(self._hass, data1, CONF_INCREASE)
-            render_positive_time_period(self._hass, data1, CONF_DECREASE)
-            render_positive_time_period(self._hass, data1, CONF_MINIMUM)
-            render_positive_time_period(self._hass, data1, CONF_MAXIMUM)
+            render_positive_time_period(data1, CONF_ACTUAL)
+            render_positive_time_period(data1, CONF_INCREASE)
+            render_positive_time_period(data1, CONF_DECREASE)
+            render_positive_time_period(data1, CONF_MINIMUM)
+            render_positive_time_period(data1, CONF_MAXIMUM)
             render_positive_float(self._hass, data1, CONF_PERCENTAGE)
             if zone is not None:
                 if changed := zone.service_adjust_time(data1, stime):
@@ -5800,13 +5801,13 @@ class IUCoordinator:
             else:
                 changed = controller.service_adjust_time(data1, stime)
         elif service == SERVICE_MANUAL_RUN:
-            render_positive_time_period(self._hass, data1, CONF_TIME)
+            render_positive_time_period(data1, CONF_TIME)
             if zone is not None:
                 zone.service_manual_run(data1, stime)
             else:
                 controller.service_manual_run(data1, stime)
         elif service == SERVICE_LOAD_SCHEDULE:
-            render_positive_time_period(self._hass, data1, CONF_DURATION)
+            render_positive_time_period(data1, CONF_DURATION)
             self.service_load_schedule(data1)
         else:
             return

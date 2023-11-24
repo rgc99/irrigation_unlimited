@@ -111,4 +111,21 @@ async def test_template_manual_run(
         )
         await exam.finish_test()
 
+        await set_dummy_value("21")
+        await exam.begin_test(7)
+        await exam.run_until("2021-01-04 06:00:29")
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c2_m",
+                "time": {
+                    "hours": 0,
+                    "minutes": "{{ states('input_text.dummy_text_1') }}",
+                    "seconds": 0,
+                },
+                "sequence_id": 1,
+            },
+        )
+        await exam.finish_test()
+
         exam.check_summary()
