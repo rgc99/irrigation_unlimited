@@ -1706,6 +1706,11 @@ class IUZone(IUBase):
         self._user = IUUser()
 
     @property
+    def controller(self) -> "IUController":
+        """Return our parent (controller)"""
+        return self._controller
+
+    @property
     def unique_id(self) -> str:
         """Return the HA unique_id for the zone"""
         return f"c{self._controller.index + 1}_z{self.index + 1}"
