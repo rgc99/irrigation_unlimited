@@ -1105,6 +1105,15 @@ class IURun(IUBase):
         self._remaining_time: timedelta = self._end_time - self._start_time
         self._percent_complete: int = 0
         self._status = self._get_status(stime)
+        self.master_ref: weakref.ReferenceType["IURun"] = None
+
+    @property
+    def master_obj(self) -> "IURun":
+        """Return the associated master run"""
+        # pylint: disable=not-callable
+        if self.master_ref is not None and self.master_ref() is not None:
+            return self.master_ref()
+        return None
 
     @property
     def expired(self) -> bool:
@@ -1450,6 +1459,9 @@ class IURunQueue(list[IURun]):
             self._next_run = None
         if run == self._next_run:
             self._next_run = None
+        if (obj := run.master_obj) is not None:
+            run.zone.controller.runs.remove_run(obj)
+            run.master_ref = None
         return run
 
     def remove_run(self, run: IURun) -> "IURun":
@@ -2171,30 +2183,12 @@ class IUZoneQueue(IURunQueue):
         # pylint: disable=arguments-differ
         return super().clear_runs(True)
 
-    def find_run(
-        self,
-        start_time: datetime,
-        zone_run: IURun,
-    ) -> IURun:
-        """Find the specified run in the queue"""
-        for run in self:
-            if (
-                start_time == run.start_time
-                and zone_run.zone == run.zone
-                and run.schedule is not None
-                and zone_run.schedule is not None
-                and run.schedule == zone_run.schedule
-            ):
-                return run
-        return None
-
     def add_zone(
         self,
         stime: datetime,
         zone_run: IURun,
         preamble: timedelta,
         postamble: timedelta,
-        no_find: bool,
     ) -> IURun:
         """Add a new master run to the queue"""
         start_time = zone_run.start_time
@@ -2204,20 +2198,15 @@ class IUZoneQueue(IURunQueue):
             duration += preamble
         if postamble is not None:
             duration += postamble
-        if not no_find:
-            run = self.find_run(start_time, zone_run)
-        else:
-            run = None
-        if run is None:
-            run = self.add(
-                stime,
-                start_time,
-                duration,
-                zone_run.zone,
-                zone_run.schedule,
-                zone_run.sequence_run,
-                zone_run,
-            )
+        run = self.add(
+            stime,
+            start_time,
+            duration,
+            zone_run.zone,
+            zone_run.schedule,
+            zone_run.sequence_run,
+            zone_run,
+        )
         return run
 
     def rebuild_schedule(
@@ -2226,19 +2215,17 @@ class IUZoneQueue(IURunQueue):
         zones: list[IUZone],
         preamble: timedelta,
         postamble: timedelta,
-        clear_all: bool,
     ) -> IURQStatus:
         """Create a superset of all the zones."""
         # pylint: disable=too-many-arguments
+
         status = IURQStatus(0)
-        if clear_all:
-            self.clear_all()
-        else:
-            self.clear_runs()
         for zone in zones:
             for run in zone.runs:
-                if not run.expired:
-                    self.add_zone(stime, run, preamble, postamble, clear_all)
+                if run.master_obj is None:
+                    run.master_ref = weakref.ref(
+                        self.add_zone(stime, run, preamble, postamble)
+                    )
         status |= IURQStatus.EXTENDED | IURQStatus.REDUCED
         return status
 
@@ -3913,9 +3900,8 @@ class IUController(IUBase):
             | IURQStatus.CANCELED
             | IURQStatus.CHANGED
         ):
-            clear_all = zone_status.has_any(IURQStatus.CLEARED | IURQStatus.CANCELED)
             status |= self._run_queue.rebuild_schedule(
-                stime, self._zones, self._preamble, self._postamble, clear_all
+                stime, self._zones, self._preamble, self._postamble
             )
         status |= self._run_queue.update_queue()
 
@@ -4171,7 +4157,6 @@ class IUController(IUBase):
                     sequence.runs.clear_runs()
                     sequences_changed = True
             if sequences_changed:
-                self._run_queue.clear_runs()
                 self.request_update(True)
                 result = True
         return result
@@ -4205,7 +4190,6 @@ class IUController(IUBase):
                     sequence.runs.clear_runs()
                     sequences_changed = True
             if sequences_changed:
-                self._run_queue.clear_runs()
                 self.request_update(True)
                 result = True
         return result
@@ -4236,7 +4220,6 @@ class IUController(IUBase):
                     sequence.runs.clear_runs()
                     sequences_changed = True
             if sequences_changed:
-                self._run_queue.clear_runs()
                 self.request_update(True)
                 result = True
         return result

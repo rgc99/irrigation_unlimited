@@ -337,6 +337,14 @@ class IUExam:
     def check_labyrinth(self) -> None:
         """Check the run integrity between controller, zone and sequence runs"""
 
+        def print_run(run: IURun) -> None:
+            schedule = run.schedule.name if run.schedule else "manual"
+            print(
+                f"zone: {run.zone.id1}, "
+                f"start: {fmt_local(run.start_time)}, "
+                f"schedule: {schedule}"
+            )
+
         def check_controller(controller: IUController) -> None:
             lst = list(controller.runs)
             controller_runs: set[IURun] = set(lst)
@@ -365,13 +373,31 @@ class IUExam:
                     sqr.symmetric_difference(sequence_runs),
                     key=lambda run: run.start_time,
                 ):
-                    schedule = run.schedule.name if run.schedule else "manual"
-                    print(
-                        f"zone: {run.zone.id1}, "
-                        f"start: {fmt_local(run.start_time)}, "
-                        f"schedule: {schedule}"
-                    )
+                    print_run(run)
                 assert False, "Zone and sequence runs not identical"
+
+            referred = set(
+                run.master_obj for run in zone_runs if run.master_obj is not None
+            )
+            if controller_runs != referred:
+                for run in sorted(
+                    referred.symmetric_difference(controller_runs),
+                    key=lambda run: run.start_time,
+                ):
+                    print_run(run)
+                assert False, "Controller and referred zones runs not identical"
+
+            referrer = set(run for run in zone_runs if run.master_obj is not None)
+            if zone_runs != referrer:
+                for run in sorted(
+                    referrer.symmetric_difference(zone_runs),
+                    key=lambda run: run.start_time,
+                ):
+                    print_run(run)
+
+            assert len(zone_runs) == len(
+                controller_runs
+            ), f"Controller ({len(controller_runs)}) and zones ({len(zone_runs)}) not identical"
 
         for controller in self._coordinator.controllers:
             check_controller(controller)
