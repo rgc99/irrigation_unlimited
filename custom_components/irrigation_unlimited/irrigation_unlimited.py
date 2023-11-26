@@ -2835,9 +2835,9 @@ class IUSequenceQueue(list[IUSequenceRun]):
         while i >= 0:
             sqr = self[i]
             if not (sqr.is_manual() or sqr.running):
-                sqr = self.pop(i)
-                for run in sqr.runs:
+                for run in list(sqr.runs):
                     run.zone.runs.remove_run(run)
+                self.pop(i)
                 modified = True
             i -= 1
         if modified:
