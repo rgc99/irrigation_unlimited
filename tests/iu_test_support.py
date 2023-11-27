@@ -221,6 +221,7 @@ class IUExam:
         """Finish a test"""
 
         await self.run_until(None)
+        self.check_labyrinth()
 
         test = self._coordinator.tester.last_test
         try:
@@ -268,8 +269,6 @@ class IUExam:
                 self._current_time = next_awakening
             else:
                 break
-        if stop_at is None:
-            self.check_labyrinth()
 
     async def run_for(self, duration: timedelta | str) -> None:
         """Run for a period of time"""
