@@ -1105,15 +1105,7 @@ class IURun(IUBase):
         self._remaining_time: timedelta = self._end_time - self._start_time
         self._percent_complete: int = 0
         self._status = self._get_status(stime)
-        self.master_ref: weakref.ReferenceType["IURun"] = None
-
-    @property
-    def master_obj(self) -> "IURun":
-        """Return the associated master run"""
-        # pylint: disable=not-callable
-        if self.master_ref is not None and self.master_ref() is not None:
-            return self.master_ref()
-        return None
+        self.master_run: "IURun" = None
 
     @property
     def expired(self) -> bool:
@@ -1459,9 +1451,9 @@ class IURunQueue(list[IURun]):
             self._next_run = None
         if run == self._next_run:
             self._next_run = None
-        if (obj := run.master_obj) is not None:
-            run.zone.controller.runs.remove_run(obj)
-            run.master_ref = None
+        if run.master_run is not None:
+            run.zone.controller.runs.remove_run(run.master_run)
+            run.master_run = None
         return run
 
     def remove_run(self, run: IURun) -> "IURun":
@@ -1966,11 +1958,7 @@ class IUZone(IUBase):
     def clear(self) -> None:
         """Reset this zone"""
         self._schedules.clear()
-        self.clear_run_queue()
-
-    def clear_run_queue(self) -> None:
-        """Clear out the run queue completely"""
-        self._run_queue.clear_all()
+        self.controller.clear_zones([self])
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUZone":
         """Load zone data from the configuration"""
@@ -2060,7 +2048,7 @@ class IUZone(IUBase):
         status = IURQStatus(0)
 
         if self._dirty:
-            self._run_queue.clear_all()
+            self.controller.clear_zones([self])
             status |= IURQStatus.CLEARED
 
         if self._suspend_until is not None and stime >= self._suspend_until:
@@ -2222,10 +2210,8 @@ class IUZoneQueue(IURunQueue):
         status = IURQStatus(0)
         for zone in zones:
             for run in zone.runs:
-                if run.master_obj is None:
-                    run.master_ref = weakref.ref(
-                        self.add_zone(stime, run, preamble, postamble)
-                    )
+                if run.master_run is None:
+                    run.master_run = self.add_zone(stime, run, preamble, postamble)
         status |= IURQStatus.EXTENDED | IURQStatus.REDUCED
         return status
 
@@ -2807,13 +2793,10 @@ class IUSequenceQueue(list[IUSequenceRun]):
         self._sorted = False
         return run
 
-    def clear_all(self) -> bool:
+    def clear_all(self) -> None:
         """Clear out all runs"""
-        if len(self) > 0:
-            self._current_run = None
-            super().clear()
-            return True
-        return False
+        self._current_run = None
+        super().clear()
 
     def clear_runs(self) -> bool:
         """Clear out the queue except for manual and running schedules."""
@@ -2822,7 +2805,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
         while i >= 0:
             sqr = self[i]
             if not (sqr.is_manual() or sqr.running):
-                for run in list(sqr.runs):
+                for run in sqr.runs:
                     run.zone.runs.remove_run(run)
                 self.pop(i)
                 modified = True
@@ -3661,7 +3644,26 @@ class IUController(IUBase):
         """Clear out the controller"""
         # Don't clear zones
         # self._zones.clear()
-        self._run_queue.clear_all()
+        self.clear_zones(None)
+
+    def clear_zones(self, zones: list[IUZone]) -> None:
+        """Clear out the specified zone run queues"""
+        if zones is None:
+            self.runs.clear_all()
+            for sequence in self._sequences:
+                sequence.runs.clear_all()
+            for zone in self._zones:
+                zone.runs.clear_all()
+        else:
+            for run in self.runs:
+                if run.zone in zones:
+                    self.runs.remove(run)
+            for sequence in self._sequences:
+                for zone in sequence.zone_list():
+                    if zone in zones:
+                        sequence.runs.clear_all()
+            for zone in zones:
+                zone.runs.clear_all()
 
     def clear_zone_runs(self, zone: IUZone) -> None:
         """Clear out zone run queues"""
@@ -3833,11 +3835,7 @@ class IUController(IUBase):
         status = IURQStatus(0)
 
         if self._dirty or force:
-            self._run_queue.clear_all()
-            for sequence in self._sequences:
-                sequence.runs.clear_all()
-            for zone in self._zones:
-                zone.clear_run_queue()
+            self.clear_zones(None)
             status |= IURQStatus.CLEARED
         else:
             for zone in self._zones:
@@ -5753,8 +5751,6 @@ class IUCoordinator:
         changed = True
         stime = self.service_time()
 
-        self._logger.log_service_call(service, stime, controller, zone, data, DEBUG)
-
         data1 = dict(data)
 
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
@@ -5823,6 +5819,7 @@ class IUCoordinator:
     def start_test(self, test_no: int) -> datetime:
         """Main entry to start a test"""
         self._last_tick = None
+        self._last_muster = None
         next_time = dt.utcnow()
         if self._tester.start_test(test_no, next_time) is not None:
             self.timer(next_time)

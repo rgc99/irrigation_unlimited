@@ -376,23 +376,34 @@ class IUExam:
                 assert False, "Zone and sequence runs not identical"
 
             referred = set(
-                run.master_obj for run in zone_runs if run.master_obj is not None
+                run.master_run for run in zone_runs if run.master_run is not None
             )
             if controller_runs != referred:
+                if len(controller_runs) > len(referred):
+                    print("Controller contains more items than referred zone")
+                else:
+                    print("Referred zone contains more items than controller")
+                for run in zone_runs:
+                    print_run(run)
                 for run in sorted(
                     referred.symmetric_difference(controller_runs),
                     key=lambda run: run.start_time,
                 ):
                     print_run(run)
-                assert False, "Controller and referred zones runs not identical"
+                assert False, "Controller and referred zone runs not identical"
 
-            referrer = set(run for run in zone_runs if run.master_obj is not None)
+            referrer = set(run for run in zone_runs if run.master_run is not None)
             if zone_runs != referrer:
+                if len(zone_runs) > len(referrer):
+                    print("Zone contains more items than referred zone")
+                else:
+                    print("Referred zone contains more items than zone")
                 for run in sorted(
                     referrer.symmetric_difference(zone_runs),
                     key=lambda run: run.start_time,
                 ):
                     print_run(run)
+                assert False, "Zone and referred zone runs not identical"
 
             assert len(zone_runs) == len(
                 controller_runs
