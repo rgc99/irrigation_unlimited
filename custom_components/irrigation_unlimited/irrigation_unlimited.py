@@ -2448,6 +2448,7 @@ class IUSequenceRun(IUBase):
         self._runs_pre_allocate: list[IUSequenceRunAllocation] = []
         self._runs: dict[IURun, IUSequenceZoneRun] = weakref.WeakKeyDictionary()
         self._active_zone: IUSequenceZoneRun = None
+        self._current_zone: IUSequenceZoneRun = None
         self._start_time: datetime = None
         self._end_time: datetime = None
         self._accumulated_duration = timedelta(0)
@@ -2639,6 +2640,20 @@ class IUSequenceRun(IUBase):
             return sequence_zone_run.sequence_zone
         return None
 
+    def next_sequence_zone(
+        self, sequence_zone_run: IUSequenceZoneRun
+    ) -> IUSequenceZoneRun:
+        """Return the next sequence zone run in the run queue"""
+        result: IUSequenceZoneRun = None
+        found = False
+        for szr in self.runs.values():
+            if not found and szr == sequence_zone_run:
+                found = True
+            if found and szr.sequence_zone != sequence_zone_run.sequence_zone:
+                result = szr
+                break
+        return result
+
     def update(self) -> bool:
         """Update the status of the sequence"""
         result = False
@@ -2647,6 +2662,7 @@ class IUSequenceRun(IUBase):
                 # Sequence/sequence zone is starting
                 self._status = IURunStatus.RUNNING
                 self._active_zone = sequence_zone_run
+                self._current_zone = sequence_zone_run
                 self._coordinator.notify_sequence(
                     EVENT_START,
                     self._controller,
@@ -2659,11 +2675,13 @@ class IUSequenceRun(IUBase):
             elif run.running and sequence_zone_run != self._active_zone:
                 # Sequence zone is changing
                 self._active_zone = sequence_zone_run
+                self._current_zone = sequence_zone_run
                 result |= True
 
             elif not run.running and sequence_zone_run == self._active_zone:
                 # Sequence zone is finishing
                 self._active_zone = None
+                self._current_zone = self.next_sequence_zone(sequence_zone_run)
                 if self.run_index(run) == len(self._runs) - 1:
                     # Sequence is finishing
                     self._status = IURunStatus.EXPIRED
