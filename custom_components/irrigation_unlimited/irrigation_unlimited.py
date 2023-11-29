@@ -2220,7 +2220,6 @@ class IUZoneQueue(IURunQueue):
         postamble: timedelta,
     ) -> IURQStatus:
         """Create a superset of all the zones."""
-        # pylint: disable=too-many-arguments
 
         status = IURQStatus(0)
         for zone in zones:
