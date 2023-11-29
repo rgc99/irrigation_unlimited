@@ -2549,9 +2549,7 @@ class IUSequenceRun(IUBase):
                             duration_adjusted = duration
 
                         zone_run_time = next_run
-                        for zone_repeat in range(  # pylint: disable=unused-variable
-                            sequence_zone.repeat
-                        ):
+                        for zone_repeat in range(sequence_zone.repeat):
                             self._runs_pre_allocate.append(
                                 IUSequenceRunAllocation(
                                     zone_run_time,
