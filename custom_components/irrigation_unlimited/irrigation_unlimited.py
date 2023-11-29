@@ -1127,10 +1127,20 @@ class IURun(IUBase):
         """Return the start time"""
         return self._start_time
 
+    @start_time.setter
+    def start_time(self, value: datetime) -> None:
+        """Set the start time"""
+        self._start_time = value
+
     @property
     def duration(self) -> timedelta:
         """Return the duration"""
         return self._duration
+
+    @duration.setter
+    def duration(self, value: timedelta) -> None:
+        """Set the duration"""
+        self._duration = value
 
     @property
     def zone(self) -> "IUZone":
@@ -1162,6 +1172,11 @@ class IURun(IUBase):
     def end_time(self) -> datetime:
         """Return the finish time"""
         return self._end_time
+
+    @end_time.setter
+    def end_time(self, value: datetime) -> None:
+        """Set the end time"""
+        self._end_time = value
 
     @property
     def time_remaining(self) -> timedelta:
