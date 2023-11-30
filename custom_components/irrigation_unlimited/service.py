@@ -97,7 +97,7 @@ def register_component_services(
     @callback
     async def load_schedule_service_handler(call: ServiceCall) -> None:
         """Reload schedule."""
-        coordinator.service_call(call.service, None, None, call.data)
+        coordinator.service_call(call.service, None, None, None, call.data)
 
     component.hass.services.async_register(
         DOMAIN,
