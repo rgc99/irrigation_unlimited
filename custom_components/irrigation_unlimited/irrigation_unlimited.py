@@ -2181,11 +2181,6 @@ class IUZone(IUBase):
 class IUZoneQueue(IURunQueue):
     """Class to hold the upcoming zones to run"""
 
-    def clear_runs(self) -> bool:
-        """Clear out the queue except for manual and running schedules"""
-        # pylint: disable=arguments-differ
-        return super().clear_runs(True)
-
     def add_zone(
         self,
         stime: datetime,
@@ -3940,8 +3935,6 @@ class IUController(IUBase):
         for zone in self._zones:
             if zone.runs.remove_expired(stime, self._postamble):
                 status |= IURQStatus.REDUCED
-        if self._run_queue.remove_expired(stime, None):
-            status |= IURQStatus.REDUCED
 
         if not status.is_empty():
             self.request_update(False)
