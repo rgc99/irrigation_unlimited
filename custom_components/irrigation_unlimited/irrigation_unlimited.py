@@ -2645,6 +2645,50 @@ class IUSequenceRun(IUBase):
                 break
         return result
 
+    def advance(
+        self, stime: datetime, duration: timedelta, runs: list[IURun] = None
+    ) -> None:
+        """Advance the sequence run. If duration is positive runs will be
+        extended if running or delayed if in the future. If duration is
+        negative runs will shortened or even skipped. The system will
+        require a full muster as the status of runs, zones and sequences
+        could have altered."""
+
+        def update_run(stime: datetime, duration: timedelta, run: IURun) -> None:
+            if run is None or run.expired:
+                return
+            if duration > timedelta(0):
+                if run.running:
+                    run.end_time += duration
+                elif run.future:
+                    run.start_time += duration
+                    run.end_time += duration
+            else:
+                if run.running:
+                    run.end_time = max(run.end_time + duration, run.start_time)
+                elif run.future:
+                    run.start_time = max(run.start_time + duration, stime)
+                    run.end_time = max(run.end_time + duration, run.start_time)
+            run.duration = run.end_time - run.start_time
+            run.update_status(stime)
+            run.update_time_remaining(stime)
+
+        if self.running:
+            if runs is None:
+                runs = self.runs
+            for run in runs:
+                update_run(stime, duration, run)
+                if run.master_run is not None:
+                    update_run(stime, duration, run.master_run)
+
+            end_time: datetime = None
+            for run in self.runs:
+                if end_time is None or run.end_time > end_time:
+                    end_time = run.end_time
+            self._end_time = end_time
+
+            self.update()
+
     def update(self) -> bool:
         """Update the status of the sequence"""
         result = False
