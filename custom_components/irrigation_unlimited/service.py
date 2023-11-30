@@ -30,6 +30,8 @@ from .const import (
     SERVICE_TOGGLE,
     SERVICE_LOAD_SCHEDULE,
     SERVICE_SUSPEND,
+    SERVICE_SKIP,
+    SERVICE_PAUSE,
 )
 
 
@@ -61,6 +63,13 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
     )
     platform.async_register_entity_service(
         SERVICE_SUSPEND, SUSPEND_SCHEMA, async_entity_service_handler
+    )
+    platform.async_register_entity_service(
+        SERVICE_SKIP, ENTITY_SCHEMA, async_entity_service_handler
+    )
+
+    platform.async_register_entity_service(
+        SERVICE_PAUSE, ENTITY_SCHEMA, async_entity_service_handler
     )
 
 
