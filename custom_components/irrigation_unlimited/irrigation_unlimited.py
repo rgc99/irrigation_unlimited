@@ -172,6 +172,8 @@ from .const import (
     SERVICE_TIME_ADJUST,
     SERVICE_LOAD_SCHEDULE,
     SERVICE_SUSPEND,
+    SERVICE_SKIP,
+    SERVICE_PAUSE,
     STATUS_BLOCKED,
     STATUS_PAUSED,
     STATUS_DISABLED,
@@ -2449,6 +2451,8 @@ class IUSequenceRun(IUBase):
         self._accumulated_duration = timedelta(0)
         self._first_zone: IUZone = None
         self._status = IURunStatus.UNKNOWN
+        self._paused = False
+        self._last_pause: datetime = None
 
     @property
     def sequence(self) -> "IUSequence":
@@ -2645,6 +2649,19 @@ class IUSequenceRun(IUBase):
                 break
         return result
 
+    def sequence_zone_runs(self, sequence_zone_run: IUSequenceZoneRun) -> list[IURun]:
+        """Return all the run associated with the sequence zone"""
+        result: list[IURun] = []
+        found = False
+        for run, szr in self.runs.items():
+            if not found and szr == sequence_zone_run:
+                found = True
+            if found and szr.sequence_zone == sequence_zone_run.sequence_zone:
+                result.append(run)
+            if found and szr.sequence_zone != sequence_zone_run.sequence_zone:
+                break
+        return result
+
     def advance(
         self, stime: datetime, duration: timedelta, runs: list[IURun] = None
     ) -> None:
@@ -2688,6 +2705,56 @@ class IUSequenceRun(IUBase):
             self._end_time = end_time
 
             self.update()
+
+    def skip(self, stime: datetime) -> None:
+        """Skip to the next sequence zone"""
+        current_start: datetime = None
+        current_end: datetime = None
+        current_runs = self.sequence_zone_runs(self._current_zone)
+        for run in current_runs:
+            if current_start is None or run.start_time < current_start:
+                current_start = run.start_time
+            if current_end is None or run.end_time > current_end:
+                current_end = run.end_time
+
+        next_start: datetime = None
+        next_end: datetime = None
+        nsz = self.next_sequence_zone(self._current_zone)
+        if nsz is not None:
+            for run in self.sequence_zone_runs(nsz):
+                if next_start is None or run.start_time < next_start:
+                    next_start = run.start_time
+                if next_end is None or run.end_time > next_end:
+                    next_end = run.end_time
+            duration = next_start - stime
+            if self._active_zone is not None:
+                delay = max(next_start - current_end, timedelta(0))
+            else:
+                delay = max(current_start - stime, timedelta(0))
+        else:
+            duration = current_end - stime
+            delay = timedelta(0)
+
+        # Next zone is overlapped with current
+        if next_start is not None and next_start < current_end:
+            self.advance(stime, -(current_end - stime), current_runs)
+        self.advance(stime, -(duration - delay))
+
+    def pause(self, stime: datetime) -> None:
+        """Skip to the next sequence zone"""
+        self._paused = not self._paused
+        if self._paused:
+            self._last_pause = stime
+        else:
+            self._last_pause = None
+
+    def update_pause(self, stime: datetime) -> bool:
+        """Muster this sequence run"""
+        if self._paused and stime != self._last_pause:
+            self.advance(stime, stime - self._last_pause)
+            self._last_pause = stime
+            return True
+        return False
 
     def update(self) -> bool:
         """Update the status of the sequence"""
@@ -3464,6 +3531,20 @@ class IUSequence(IUBase):
         if not self._finalised:
             self._finalised = True
 
+    def service_skip(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Skip to the next sequence zone"""
+        # pylint: disable=unused-argument
+        for sqr in self._run_queue:
+            if sqr.running:
+                sqr.skip(stime)
+
+    def service_pause(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Pause the sequence"""
+        # pylint: disable=unused-argument
+        for sqr in self._run_queue:
+            if sqr.running:
+                sqr.pause(stime)
+
 
 class IUController(IUBase):
     """Irrigation Unlimited Controller (Master) class"""
@@ -3903,6 +3984,10 @@ class IUController(IUBase):
             self.clear_zones(None)
             status |= IURQStatus.CLEARED
         else:
+            for sequence in self._sequences:
+                for sqr in sequence.runs:
+                    if sqr.update_pause(stime):
+                        status |= IURQStatus.CHANGED
             for zone in self._zones:
                 zone.runs.update_run_status(stime)
             self._run_queue.update_run_status(stime)
@@ -5854,6 +5939,12 @@ class IUCoordinator:
                 zone.service_manual_run(data1, stime)
             else:
                 controller.service_manual_run(data1, stime)
+        elif service == SERVICE_SKIP:
+            if sequence is not None:
+                sequence.service_skip(data1, stime)
+        elif service == SERVICE_PAUSE:
+            if sequence is not None:
+                sequence.service_pause(data1, stime)
         elif service == SERVICE_LOAD_SCHEDULE:
             render_positive_time_period(data1, CONF_DURATION)
             self.service_load_schedule(data1)

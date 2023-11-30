@@ -130,6 +130,8 @@ SERVICE_TIME_ADJUST = "adjust_time"
 SERVICE_MANUAL_RUN = "manual_run"
 SERVICE_LOAD_SCHEDULE = "load_schedule"
 SERVICE_SUSPEND = "suspend"
+SERVICE_SKIP = "skip"
+SERVICE_PAUSE = "pause"
 
 # Events
 EVENT_START = "start"
