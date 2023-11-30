@@ -2585,10 +2585,6 @@ class IUSequenceRun(IUBase):
         """Return the first zone"""
         return self._first_zone
 
-    def delete_run(self, run: IURun) -> None:
-        """Remove a zone run from this sequence run"""
-        self._runs.pop(run)
-
     @staticmethod
     def _calc_on_time(runs: list[IURun]) -> timedelta:
         """Return the total time this list of runs is on. Accounts for
