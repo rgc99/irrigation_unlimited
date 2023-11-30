@@ -345,7 +345,3 @@ class IUSequenceEntity(IUEntity):
         else:
             attr[ATTR_NEXT_SCHEDULE] = None
         return attr
-
-    def dispatch(self, service: str, call: ServiceCall) -> None:
-        """Dispatcher for service calls. *Not yet implemented*"""
-        return None  # Mute service calls on sequences
