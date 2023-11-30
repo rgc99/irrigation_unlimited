@@ -4296,7 +4296,7 @@ class IUEvent:
 
     def __str__(self) -> str:
         return (
-            f"{{t: '{dt2lstr(self._time)}', "
+            f"- {{t: '{dt2lstr(self._time)}', "
             f"c: {self._controller}, "
             f"z: {self._zone}, "
             f"s: {str(int(self._state))}}}"
