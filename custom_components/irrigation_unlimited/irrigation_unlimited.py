@@ -5774,6 +5774,7 @@ class IUCoordinator:
         service: str,
         controller: IUController,
         zone: IUZone,
+        sequence: IUSequence,
         data: MappingProxyType,
     ) -> None:
         """Entry point for all service calls."""

@@ -147,7 +147,7 @@ class IURestore:
             svd[CONF_SEQUENCE_ID] = sequence.index + 1
             if sequence_zone is not None:
                 svd[CONF_ZONES] = [sequence_zone.index + 1]
-        self._coordinator.service_call(svc, controller, zone, svd)
+        self._coordinator.service_call(svc, controller, zone, None, svd)
 
     def _restore_suspend(
         self,
@@ -169,7 +169,7 @@ class IURestore:
             svd[CONF_SEQUENCE_ID] = sequence.index + 1
             if sequence_zone is not None:
                 svd[CONF_ZONES] = [sequence_zone.index + 1]
-        self._coordinator.service_call(SERVICE_SUSPEND, controller, zone, svd)
+        self._coordinator.service_call(SERVICE_SUSPEND, controller, zone, None, svd)
 
     def _restore_adjustment(
         self,
@@ -188,7 +188,7 @@ class IURestore:
             svd[CONF_SEQUENCE_ID] = sequence.index + 1
             if sequence_zone is not None:
                 svd[CONF_ZONES] = [sequence_zone.index + 1]
-        self._coordinator.service_call(SERVICE_TIME_ADJUST, controller, zone, svd)
+        self._coordinator.service_call(SERVICE_TIME_ADJUST, controller, zone, None, svd)
 
     def _restore_sequence_zone(
         self, data: dict, controller: IUController, sequence: IUSequence
@@ -282,7 +282,9 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
                 if state.attributes.get(ATTR_ENABLED, True)
                 else SERVICE_DISABLE
             )
-            self._coordinator.service_call(service, self._controller, self._zone, {})
+            self._coordinator.service_call(
+                service, self._controller, self._zone, None, {}
+            )
         return
 
     async def async_will_remove_from_hass(self):
@@ -293,7 +295,9 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
 
     def dispatch(self, service: str, call: ServiceCall) -> None:
         """Dispatcher for service calls"""
-        self._coordinator.service_call(service, self._controller, self._zone, call.data)
+        self._coordinator.service_call(
+            service, self._controller, self._zone, self._sequence, call.data
+        )
 
 
 class IUComponent(RestoreEntity):
@@ -334,7 +338,7 @@ class IUComponent(RestoreEntity):
 
     def dispatch(self, service: str, call: ServiceCall) -> None:
         """Service call dispatcher"""
-        self._coordinator.service_call(service, None, None, call.data)
+        self._coordinator.service_call(service, None, None, None, call.data)
 
     @property
     def should_poll(self):
