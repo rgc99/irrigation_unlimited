@@ -3049,7 +3049,7 @@ class IUSequence(IUBase):
         self._enabled: bool = True
         # Private variables
         self._is_on = False
-        self._is_paused = False
+        self._is_in_delay = False
         self._run_queue = IUSequenceQueue()
         self._schedules: list[IUSchedule] = []
         self._zones: list[IUSequenceZone] = []
@@ -3174,9 +3174,9 @@ class IUSequence(IUBase):
         return self._is_on
 
     @property
-    def is_paused(self) -> bool:
-        """Return is the sequence is paused"""
-        return self._is_paused
+    def is_in_delay(self) -> bool:
+        """Return is the sequence is waiting between zones"""
+        return self._is_in_delay
 
     @property
     def icon(self) -> str:
@@ -3185,7 +3185,7 @@ class IUSequence(IUBase):
             if self.enabled:
                 if self.suspended is None:
                     if self.is_on:
-                        if self.is_paused:
+                        if self.is_in_delay:
                             return ICON_SEQUENCE_PAUSED
                         return ICON_SEQUENCE_ON
                     return ICON_SEQUENCE_OFF
@@ -3200,7 +3200,7 @@ class IUSequence(IUBase):
             if self.enabled:
                 if self.suspended is None:
                     if self.is_on:
-                        if self.is_paused:
+                        if self.is_in_delay:
                             return STATUS_PAUSED
                         return STATE_ON
                     return STATE_OFF
@@ -3481,8 +3481,8 @@ class IUSequence(IUBase):
             self.request_update()
 
         is_paused = is_running and self._run_queue.current_run.active_zone is None
-        if is_paused ^ self._is_paused:
-            self._is_paused = not self._is_paused
+        if is_paused ^ self._is_in_delay:
+            self._is_in_delay = not self._is_in_delay
             self.request_update()
 
         return state_changed
