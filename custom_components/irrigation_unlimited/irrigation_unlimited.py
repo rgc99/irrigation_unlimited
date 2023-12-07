@@ -3109,12 +3109,12 @@ class IUSequence(IUBase):
         return self._initialised
 
     @property
-    def schedules(self) -> "list[IUSchedule]":
+    def schedules(self) -> list[IUSchedule]:
         """Return the list of schedules for this sequence"""
         return self._schedules
 
     @property
-    def zones(self) -> "list[IUSequenceZone]":
+    def zones(self) -> list[IUSequenceZone]:
         """Return the list of sequence zones"""
         return self._zones
 
@@ -3230,7 +3230,7 @@ class IUSequence(IUBase):
         return False
 
     def zone_enabled(
-        self, sequence_zone: IUSequenceZone, sqr: "IUSequenceRun" = None
+        self, sequence_zone: IUSequenceZone, sqr: IUSequenceRun = None
     ) -> bool:
         """Return True if at least one real zone referenced by the
         sequence_zone is enabled"""
@@ -3263,14 +3263,14 @@ class IUSequence(IUBase):
         return delay
 
     def zone_delay(
-        self, sequence_zone: IUSequenceZone, sqr: "IUSequenceRun"
+        self, sequence_zone: IUSequenceZone, sqr: IUSequenceRun
     ) -> timedelta:
         """Return the delay for the specified zone"""
         if self.zone_enabled(sequence_zone, sqr):
             return self.zone_delay_config(sequence_zone)
         return timedelta(0)
 
-    def total_delay(self, sqr: "IUSequenceRun") -> timedelta:
+    def total_delay(self, sqr: IUSequenceRun) -> timedelta:
         """Return the total delay for all the zones"""
         delay = timedelta(0)
         last_zone: IUSequenceZone = None
@@ -3295,7 +3295,7 @@ class IUSequence(IUBase):
         return duration
 
     def zone_duration_base(
-        self, sequence_zone: IUSequenceZone, sqr: "IUSequenceRun"
+        self, sequence_zone: IUSequenceZone, sqr: IUSequenceRun
     ) -> timedelta:
         """Return the base duration for the specified zone"""
         if self.zone_enabled(sequence_zone, sqr):
@@ -3303,7 +3303,7 @@ class IUSequence(IUBase):
         return timedelta(0)
 
     def zone_duration(
-        self, sequence_zone: IUSequenceZone, sqr: "IUSequenceRun"
+        self, sequence_zone: IUSequenceZone, sqr: IUSequenceRun
     ) -> timedelta:
         """Return the duration for the specified zone including adjustments
         and constraints"""
@@ -3317,14 +3317,14 @@ class IUSequence(IUBase):
         self,
         sequence_zone: IUSequenceZone,
         duration_factor: float,
-        sqr: "IUSequenceRun",
+        sqr: IUSequenceRun,
     ) -> timedelta:
         """Return the final zone time after the factor has been applied"""
         duration = self.zone_duration(sequence_zone, sqr) * duration_factor
         duration = self.constrain(sequence_zone, duration)
         return round_td(duration)
 
-    def total_duration(self, sqr: "IUSequenceRun") -> timedelta:
+    def total_duration(self, sqr: IUSequenceRun) -> timedelta:
         """Return the total duration for all the zones"""
         duration = timedelta(0)
         for zone in self._zones:
@@ -3333,7 +3333,7 @@ class IUSequence(IUBase):
         return duration
 
     def total_duration_adjusted(
-        self, total_duration, sqr: "IUSequenceRun"
+        self, total_duration, sqr: IUSequenceRun
     ) -> timedelta:
         """Return the adjusted duration"""
         if total_duration is None:
@@ -3344,7 +3344,7 @@ class IUSequence(IUBase):
         return total_duration
 
     def total_time_final(
-        self, total_time: timedelta, sqr: "IUSequenceRun"
+        self, total_time: timedelta, sqr: IUSequenceRun
     ) -> timedelta:
         """Return the adjusted total time for the sequence"""
         if total_time is not None and self.has_adjustment(False):
@@ -3357,7 +3357,7 @@ class IUSequence(IUBase):
 
         return total_time
 
-    def duration_factor(self, total_time: timedelta, sqr: "IUSequenceRun") -> float:
+    def duration_factor(self, total_time: timedelta, sqr: IUSequenceRun) -> float:
         """Given a new total run time, calculate how much to shrink or expand each
         zone duration. Final time will be approximate as the new durations must
         be rounded to internal boundaries"""
@@ -3410,7 +3410,7 @@ class IUSequence(IUBase):
         for zone in result:
             yield zone
 
-    def load(self, config: OrderedDict) -> "IUSequence":
+    def load(self, config: OrderedDict) -> IUSequence:
         """Load sequence data from the configuration"""
         self.clear()
         self._name = config.get(CONF_NAME, f"Run {self.index + 1}")
@@ -3429,7 +3429,7 @@ class IUSequence(IUBase):
         self._dirty = True
         return self
 
-    def as_dict(self, sqr: "IUSequenceRun" = None) -> OrderedDict:
+    def as_dict(self, sqr: IUSequenceRun = None) -> OrderedDict:
         """Return this sequence as a dict"""
         total_delay = self.total_delay(sqr)
         total_duration = self.total_duration(sqr)
