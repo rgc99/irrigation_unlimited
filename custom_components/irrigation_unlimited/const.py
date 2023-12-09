@@ -24,6 +24,7 @@ ICON_SEQUENCE_OFF = "mdi:stop-circle-outline"
 ICON_SEQUENCE_PAUSED = "mdi:pause-circle-outline"
 ICON_SEQUENCE_ZONE_ON = "mdi:play-circle-outline"
 ICON_SEQUENCE_ZONE_OFF = "mdi:stop-circle-outline"
+ICON_SEQUENCE_DELAY = "mdi:timer-sand"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
@@ -146,6 +147,7 @@ STATUS_SUSPENDED = "suspended"
 STATUS_BLOCKED = "blocked"
 STATUS_INITIALISING = "initialising"
 STATUS_PAUSED = "paused"
+STATUS_DELAY = "delay"
 
 # Timeline labels
 TIMELINE_STATUS = "status"

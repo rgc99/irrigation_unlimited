@@ -139,6 +139,7 @@ from .const import (
     ICON_CONTROLLER_PAUSED,
     ICON_DISABLED,
     ICON_SUSPENDED,
+    ICON_SEQUENCE_DELAY,
     ICON_SEQUENCE_PAUSED,
     ICON_SEQUENCE_ZONE_OFF,
     ICON_SEQUENCE_ZONE_ON,
@@ -175,6 +176,7 @@ from .const import (
     SERVICE_SKIP,
     SERVICE_PAUSE,
     STATUS_BLOCKED,
+    STATUS_DELAY,
     STATUS_PAUSED,
     STATUS_DISABLED,
     STATUS_SUSPENDED,
@@ -2746,18 +2748,20 @@ class IUSequenceRun(IUBase):
         self.advance(stime, -(duration - delay))
 
     def pause(self, stime: datetime) -> None:
-        """Skip to the next sequence zone"""
+        """Pause the sequence run"""
+        # pylint: disable=unused-argument
         self._paused = not self._paused
-        if self._paused:
-            self._last_pause = stime
-        else:
-            self._last_pause = None
 
     def update_pause(self, stime: datetime) -> bool:
-        """Muster this sequence run"""
-        if self._paused and stime != self._last_pause:
-            self.advance(stime, stime - self._last_pause)
+        """Move the runs forward in time"""
+        if self._paused:
+            if self._last_pause is not None:
+                self.advance(stime, stime - self._last_pause)
             self._last_pause = stime
+            return True
+        if self._last_pause is not None:
+            self.advance(stime, stime - self._last_pause)
+            self._last_pause = None
             return True
         return False
 
@@ -3196,8 +3200,10 @@ class IUSequence(IUBase):
             if self.enabled:
                 if self.suspended is None:
                     if self.is_on:
-                        if self.is_in_delay:
+                        if self.is_paused:
                             return ICON_SEQUENCE_PAUSED
+                        if self.is_in_delay:
+                            return ICON_SEQUENCE_DELAY
                         return ICON_SEQUENCE_ON
                     return ICON_SEQUENCE_OFF
                 return ICON_SUSPENDED
@@ -3211,8 +3217,10 @@ class IUSequence(IUBase):
             if self.enabled:
                 if self.suspended is None:
                     if self.is_on:
-                        if self.is_in_delay:
+                        if self.is_paused:
                             return STATUS_PAUSED
+                        if self.is_in_delay:
+                            return STATUS_DELAY
                         return STATE_ON
                     return STATE_OFF
                 return STATUS_SUSPENDED
@@ -3496,7 +3504,7 @@ class IUSequence(IUBase):
             self._is_in_delay = not self._is_in_delay
             self.request_update()
 
-        is_paused = is_running and self._run_queue.current_run._paused
+        is_paused = is_running and self._run_queue.current_run.paused
         if is_paused ^ self._paused:
             self._paused = not self._paused
             self.request_update()
