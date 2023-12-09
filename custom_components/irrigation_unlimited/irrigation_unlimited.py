@@ -3340,9 +3340,7 @@ class IUSequence(IUBase):
         duration *= self._repeat
         return duration
 
-    def total_duration_adjusted(
-        self, total_duration, sqr: IUSequenceRun
-    ) -> timedelta:
+    def total_duration_adjusted(self, total_duration, sqr: IUSequenceRun) -> timedelta:
         """Return the adjusted duration"""
         if total_duration is None:
             total_duration = self.total_duration(sqr)
@@ -3351,9 +3349,7 @@ class IUSequence(IUBase):
             total_duration = max(total_duration, timedelta(0))
         return total_duration
 
-    def total_time_final(
-        self, total_time: timedelta, sqr: IUSequenceRun
-    ) -> timedelta:
+    def total_time_final(self, total_time: timedelta, sqr: IUSequenceRun) -> timedelta:
         """Return the adjusted total time for the sequence"""
         if total_time is not None and self.has_adjustment(False):
             total_delay = self.total_delay(sqr)
