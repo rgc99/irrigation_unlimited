@@ -3418,7 +3418,7 @@ class IUSequence(IUBase):
         for zone in result:
             yield zone
 
-    def load(self, config: OrderedDict) -> IUSequence:
+    def load(self, config: OrderedDict) -> "IUSequence":
         """Load sequence data from the configuration"""
         self.clear()
         self._name = config.get(CONF_NAME, f"Run {self.index + 1}")
