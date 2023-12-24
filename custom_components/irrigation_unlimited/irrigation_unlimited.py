@@ -1070,12 +1070,15 @@ class IUVolume:
         return value
 
     def event_hook(self, event: HAEvent) -> HAEvent:
+        """A pass through place for testing to patch and update
+        parameters in the event message"""
+        return event
+
     def start_record(self, stime: datetime) -> None:
         """Start recording volume information"""
-        if self._sensor_id is None:
-            return
 
         def sensor_state_change(event: HAEvent):
+            event = self.event_hook(event)
             try:
                 value = self.read_sensor(event.time_fired)
             except ValueError as e:
