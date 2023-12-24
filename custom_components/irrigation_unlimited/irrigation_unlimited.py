@@ -958,10 +958,13 @@ class IUVolume:
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, hass: HomeAssistant, coordinator: "IUCoordinator") -> None:
+    def __init__(
+        self, hass: HomeAssistant, coordinator: "IUCoordinator", zone: "IUZone"
+    ) -> None:
         # Passed parameters
         self._hass = hass
         self._coordinator = coordinator
+        self._zone = zone
         # Config parameters
         self._sensor_id: str = None
         self._volume_rounding = 3
@@ -1730,7 +1733,7 @@ class IUZone(IUBase):
         self._suspend_until: datetime = None
         self._dirty: bool = True
         self._switch = IUSwitch(hass, coordinator, controller, self)
-        self._volume = IUVolume(hass, coordinator)
+        self._volume = IUVolume(hass, coordinator, self)
         self._user = IUUser()
 
     @property
@@ -3602,7 +3605,7 @@ class IUController(IUBase):
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
         self._suspend_until: datetime = None
-        self._volume = IUVolume(hass, coordinator)
+        self._volume = IUVolume(hass, coordinator, None)
         self._user = IUUser()
         self._dirty: bool = True
 
