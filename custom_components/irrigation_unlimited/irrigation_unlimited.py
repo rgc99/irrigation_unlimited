@@ -953,10 +953,24 @@ class IUSwitch:
                 self._check_back_time = stime + self._check_back_delay
 
 
+class IUVolumeSensorError(Exception):
+    """Error reading sensor"""
+
+
+class IUVolumeSensorReading(NamedTuple):
+    """Irrigation Unlimited volume sensor reading class"""
+
+    timestamp: datetime
+    value: float
+
+
 class IUVolume:
     """Irrigation Unlimited Volume class"""
 
     # pylint: disable=too-many-instance-attributes
+
+    MAX_READINGS = 20
+    SMA_WINDOW = 10
 
     def __init__(
         self, hass: HomeAssistant, coordinator: "IUCoordinator", zone: "IUZone"
@@ -976,7 +990,11 @@ class IUVolume:
         self._start_volume: float = None
         self._total_volume: float = None
         self._start_time: datetime = None
-        self._duration: timedelta = None
+        self._end_time: datetime = None
+        self._flow_rate_averages: list[float] = []
+        self._flow_rate_sma_sum: float = 0
+        self._flow_rate_sma: float = None
+        self._sensor_readings: list[IUVolumeSensorReading] = []
 
     @property
     def total(self) -> float | None:
@@ -988,11 +1006,8 @@ class IUVolume:
     @property
     def flow_rate(self) -> str | None:
         """Return the flow rate"""
-        if self._total_volume is not None and self._duration is not None:
-            rate = (
-                self._total_volume * self._flow_scale / self._duration.total_seconds()
-            )
-            return round(rate, self._flow_rounding)
+        if self._flow_rate_sma is not None:
+            return round(self._flow_rate_sma * self._flow_scale, self._flow_rounding)
         return None
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
@@ -1008,39 +1023,88 @@ class IUVolume:
             load_params(all_zones.get(CONF_VOLUME))
         load_params(config.get(CONF_VOLUME))
 
+    def read_sensor(self, stime: datetime) -> float:
+        """Read the sensor data"""
+        sensor = self._hass.states.get(self._sensor_id)
+        if sensor is None:
+            raise IUVolumeSensorError(f"Sensor not found: {self._sensor_id}")
+        value = float(sensor.state)
+        if value < 0:
+            raise ValueError(f"Negative sensor value: {sensor.state}")
+
+        if len(self._sensor_readings) > 0:
+            last_reading = self._sensor_readings[-1]
+            volume = value - last_reading.value
+            delta = (stime - last_reading.timestamp).total_seconds()
+
+            if delta == 0:
+                raise ValueError(f"Sensor time has not advanced: {stime}")
+            if delta < 0:
+                raise ValueError(
+                    "Sensor time has gone backwards: "
+                    f"previous: {last_reading.timestamp}, "
+                    f"current: {stime}"
+                )
+            if volume < 0:
+                raise ValueError(
+                    "Sensor value has gone backwards: "
+                    f"previous: {last_reading.value}, "
+                    f"current: {value}"
+                )
+
+            # Update moving average of the rate
+            rate = volume / delta
+            self._flow_rate_sma_sum += rate
+            self._flow_rate_averages.append(rate)
+            if len(self._flow_rate_averages) > IUVolume.SMA_WINDOW:
+                self._flow_rate_sma_sum -= self._flow_rate_averages.pop(0)
+            self._flow_rate_sma = self._flow_rate_sma_sum / len(
+                self._flow_rate_averages
+            )
+
+        # Update bookkeeping
+        self._sensor_readings.append(IUVolumeSensorReading(stime, value))
+        if len(self._sensor_readings) > IUVolume.MAX_READINGS:
+            self._sensor_readings.pop(0)
+
+        return value
+
+    def event_hook(self, event: HAEvent) -> HAEvent:
     def start_record(self, stime: datetime) -> None:
         """Start recording volume information"""
         if self._sensor_id is None:
             return
 
         def sensor_state_change(event: HAEvent):
-            # pylint: disable=unused-argument
-            sensor = self._hass.states.get(self._sensor_id)
-            if sensor is not None:
-                try:
-                    value = float(sensor.state)
-                except ValueError:
-                    return
-                self._total_volume = value - self._start_volume
-
-        self._start_volume = self._total_volume = None
-        self._start_time = self._duration = None
-        sensor = self._hass.states.get(self._sensor_id)
-        if sensor is not None:
             try:
-                self._start_volume = float(sensor.state)
-            except ValueError:
-                self._coordinator.logger.log_invalid_meter_value(stime, sensor.state)
+                value = self.read_sensor(event.time_fired)
+            except ValueError as e:
+                self._coordinator.logger.log_invalid_meter_value(stime, e)
+            except IUVolumeSensorError:
+                self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
             else:
-                self._callback_remove = async_track_state_change_event(
-                    self._hass, self._sensor_id, sensor_state_change
-                )
-                self._start_time = stime
+                self._total_volume = value - self._start_volume
+        if self._sensor_id is None:
+            return
+        self._start_volume = self._total_volume = None
+        self._start_time = stime
+        self._sensor_readings.clear()
+
+        try:
+            self._start_volume = self.read_sensor(stime)
+        except ValueError as e:
+            self._coordinator.logger.log_invalid_meter_value(stime, e)
+        except IUVolumeSensorError:
+            self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
         else:
+            self._callback_remove = async_track_state_change_event(
+                self._hass, self._sensor_id, sensor_state_change
+            )
             self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
 
     def end_record(self, stime: datetime) -> None:
         """Finish recording volume information"""
+        self._end_time = stime
         if self._callback_remove is not None:
             self._callback_remove()
             self._callback_remove = None
