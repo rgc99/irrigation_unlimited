@@ -1,6 +1,7 @@
 """irrigation_unlimited volume test module"""
 from unittest.mock import patch
 from datetime import datetime
+import asyncio
 import homeassistant.core as ha
 from homeassistant.util import dt
 from custom_components.irrigation_unlimited.const import (
@@ -8,8 +9,9 @@ from custom_components.irrigation_unlimited.const import (
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IULogger,
+    IUVolume,
 )
-from tests.iu_test_support import IUExam
+from tests.iu_test_support import IUExam, mk_local
 
 IUExam.quiet_mode()
 
@@ -85,7 +87,7 @@ async def test_volume_class(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 await exam.run_until("2021-01-04 06:10")
                 await set_sensor(hass, "input_text.dummy_sensor_1", "110.0")
                 await exam.run_until("2021-01-04 06:45")
-                assert mock_meter_value.call_count == 1
+                assert mock_meter_value.call_count == 2
                 sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
                 assert sta.attributes["volume"] == 10.000
                 await exam.finish_test()
@@ -96,14 +98,34 @@ async def test_volume_class(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 await exam.run_until("2021-01-04 06:10")
                 await set_sensor(hass, "input_text.dummy_sensor_1", "zzz")
                 await exam.run_until("2021-01-04 06:45")
-                assert mock_meter_value.call_count == 2
+                assert mock_meter_value.call_count == 3
+                sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+                assert sta.attributes["volume"] is None
+                await exam.finish_test()
+
+                # Negative sensor value
+                await exam.begin_test(6)
+                await set_sensor(hass, "input_text.dummy_sensor_1", "-621.505")
+                await exam.run_until("2021-01-04 06:45")
+                assert mock_meter_value.call_count == 4
+                sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+                assert sta.attributes["volume"] is None
+                await exam.finish_test()
+
+                # Sensor goes negative
+                await exam.begin_test(7)
+                await set_sensor(hass, "input_text.dummy_sensor_1", "621.505")
+                await exam.run_until("2021-01-04 06:10")
+                await set_sensor(hass, "input_text.dummy_sensor_1", "611.345")
+                await exam.run_until("2021-01-04 06:45")
+                assert mock_meter_value.call_count == 5
                 sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
                 assert sta.attributes["volume"] is None
                 await exam.finish_test()
 
                 # Sensor goes MIA
                 calls_id = mock_meter_id.call_count
-                await exam.begin_test(6)
+                await exam.begin_test(8)
                 await set_sensor(hass, "input_text.dummy_sensor_1", "524.941")
                 await exam.run_until("2021-01-04 06:09")
                 old_id = exam.coordinator.controllers[0].zones[0].volume._sensor_id
@@ -113,6 +135,7 @@ async def test_volume_class(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                     ].volume._sensor_id = "input_text.does_not_exist"
                     await exam.run_until("2021-01-04 06:10")
                     assert mock_meter_id.call_count == calls_id
+                    await set_sensor(hass, "input_text.dummy_sensor_1", "525.692")
                     await exam.run_until("2021-01-04 06:11:30")
                     assert mock_meter_id.call_count == calls_id + 1
                     await exam.run_until("2021-01-04 06:45")
@@ -124,7 +147,7 @@ async def test_volume_class(hass: ha.HomeAssistant, skip_dependencies, skip_hist
 
                 # A good run
                 calls_id = mock_meter_id.call_count
-                await exam.begin_test(7)
+                await exam.begin_test(9)
                 await set_sensor(hass, "input_text.dummy_sensor_1", "745.004")
                 await set_sensor(hass, "input_text.dummy_sensor_2", "6.270")
                 await exam.run_until("2021-01-04 06:07")
@@ -144,7 +167,7 @@ async def test_volume_class(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 await exam.run_until("2021-01-04 06:23")
                 await set_sensor(hass, "input_text.dummy_sensor_2", "11.042")
                 await exam.run_until("2021-01-04 06:45")
-                assert mock_meter_value.call_count == 2
+                assert mock_meter_value.call_count == 5
                 sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
                 assert sta.attributes["volume"] == 10.998
                 sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
@@ -152,7 +175,42 @@ async def test_volume_class(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 assert mock_meter_id.call_count == calls_id + 1
                 await exam.finish_test()
 
-                exam.check_summary()
+                with patch.object(IUVolume, "event_hook") as mock:
+                    event_time: datetime = None
+
+                    def state_change(event: ha.Event) -> ha.Event:
+                        nonlocal event_time
+                        event.time_fired = event_time
+                        return event
+
+                    mock.side_effect = state_change
+
+                    # Event time does not change
+                    await exam.begin_test(10)
+                    await set_sensor(hass, "input_text.dummy_sensor_1", "730.739")
+                    await exam.run_until("2021-01-04 06:07")
+                    event_time = mk_local("2021-01-04 06:07")
+                    await set_sensor(hass, "input_text.dummy_sensor_1", "745.004")
+                    await exam.run_until("2021-01-04 06:08")
+                    await set_sensor(hass, "input_text.dummy_sensor_1", "756.002")
+                    await exam.run_until("2021-01-04 06:45")
+                    assert mock_meter_value.call_count == 6
+                    await exam.finish_test()
+
+                    # Event time goes backwards
+                    await exam.begin_test(11)
+                    await set_sensor(hass, "input_text.dummy_sensor_1", "730.739")
+                    await exam.run_until("2021-01-04 06:07")
+                    event_time = mk_local("2021-01-04 06:07")
+                    await set_sensor(hass, "input_text.dummy_sensor_1", "745.004")
+                    await exam.run_until("2021-01-04 06:08")
+                    event_time = mk_local("2021-01-04 06:06")
+                    await set_sensor(hass, "input_text.dummy_sensor_1", "756.002")
+                    await exam.run_until("2021-01-04 06:45")
+                    assert mock_meter_value.call_count == 7
+                    await exam.finish_test()
+
+        exam.check_summary()
 
 
 async def test_volume_extensive(
@@ -182,35 +240,52 @@ async def test_volume_extensive(
         controller_flows: list[float] = []
         zone_volumes: list[float] = []
         zone_flows: list[float] = []
-        zone: int = None
-        for dts, value, sensor in read_data("tests/logs/volume_sensor.log"):
-            await exam.run_until(dts)
 
-            if value.endswith("%"):
-                await exam.call(
-                    SERVICE_TIME_ADJUST,
-                    {
-                        "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                        "sequence_id": 1,
-                        "percentage": value[-4:-1].strip(),
-                    },
-                )
+        with patch.object(IUVolume, "event_hook") as mock:
+            zone: int = None
+            event_time: datetime = None
+            trackers_processed: int = 0
 
-                continue
+            def state_change(event: ha.Event) -> ha.Event:
+                nonlocal event_time, trackers_processed
+                event.time_fired = event_time
+                trackers_processed += 1
+                return event
 
-            if value == "on":
-                zone = hass.states.get(
-                    "binary_sensor.irrigation_unlimited_c1_m"
-                ).attributes["current_zone"]
-            elif value == "off":
-                sta = hass.states.get(f"binary_sensor.irrigation_unlimited_c1_z{zone}")
-                zone_volumes.append(sta.attributes["volume"])
-                zone_flows.append(sta.attributes["flow_rate"])
-                sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
-                controller_volumes.append(sta.attributes["volume"])
-                controller_flows.append(sta.attributes["flow_rate"])
-            else:
-                await set_sensor(hass, "input_text.dummy_sensor", value)
+            mock.side_effect = state_change
+            for event_time, value, sensor in read_data("tests/logs/volume_sensor.log"):
+                await exam.run_until(event_time)
+
+                if value.endswith("%"):
+                    await exam.call(
+                        SERVICE_TIME_ADJUST,
+                        {
+                            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                            "sequence_id": 1,
+                            "percentage": value[-4:-1].strip(),
+                        },
+                    )
+
+                    continue
+
+                if value == "on":
+                    zone = hass.states.get(
+                        "binary_sensor.irrigation_unlimited_c1_m"
+                    ).attributes["current_zone"]
+                elif value == "off":
+                    sta = hass.states.get(
+                        f"binary_sensor.irrigation_unlimited_c1_z{zone}"
+                    )
+                    zone_volumes.append(sta.attributes["volume"])
+                    zone_flows.append(sta.attributes["flow_rate"])
+                    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
+                    controller_volumes.append(sta.attributes["volume"])
+                    controller_flows.append(sta.attributes["flow_rate"])
+                else:
+                    await set_sensor(hass, "input_text.dummy_sensor", value)
+                    while trackers_processed < IUVolume.trackers:
+                        await asyncio.sleep(0)
+                    trackers_processed = 0
 
         volume_results = [
             0.128,
@@ -231,19 +306,19 @@ async def test_volume_extensive(
         assert zone_volumes == volume_results
 
         flow_results = [
-            0.284,
-            0.403,
-            0.133,
-            0.158,
-            0.1,
-            0.097,
-            0.158,
-            0.124,
-            0.357,
-            0.3,
-            0.069,
-            0.16,
-            1.118,
+            0.29,
+            0.401,
+            0.136,
+            0.148,
+            0.095,
+            0.092,
+            0.152,
+            0.126,
+            0.355,
+            0.306,
+            0.065,
+            0.154,
+            1.119,
         ]
         assert controller_flows == flow_results
         assert zone_flows == flow_results
