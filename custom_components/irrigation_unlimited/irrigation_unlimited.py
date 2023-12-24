@@ -971,6 +971,7 @@ class IUVolume:
 
     MAX_READINGS = 20
     SMA_WINDOW = 10
+    listeners: int = 0
     trackers: int = 0
 
     def __init__(
@@ -992,6 +993,9 @@ class IUVolume:
         self._total_volume: float = None
         self._start_time: datetime = None
         self._end_time: datetime = None
+        self._listeners: dict[
+            str, Callable[[datetime, "IUZone", float, float], None]
+        ] = {}
         self._flow_rate_averages: list[float] = []
         self._flow_rate_sma_sum: float = 0
         self._flow_rate_sma: float = None
@@ -1088,6 +1092,15 @@ class IUVolume:
                 self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
             else:
                 self._total_volume = value - self._start_volume
+                # Notifiy our trackers
+                for listener in self._listeners.values():
+                    listener(
+                        event.time_fired,
+                        self._zone,
+                        self._total_volume,
+                        self._flow_rate_sma,
+                    )
+
         if self._sensor_id is None:
             return
         self._start_volume = self._total_volume = None
@@ -1114,6 +1127,18 @@ class IUVolume:
             self._callback_remove = None
             IUVolume.trackers -= 1
 
+    def track_volume_change(
+        self, uid: int, action: Callable[[datetime, "IUZone", float, float], None]
+    ) -> CALLBACK_TYPE:
+        """Track the volume"""
+
+        def remove_listener() -> None:
+            del self._listeners[uid]
+            IUVolume.listeners -= 1
+
+        self._listeners[uid] = action
+        IUVolume.listeners += 1
+        return remove_listener
 
 
 class IURunStatus(Enum):
