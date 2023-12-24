@@ -971,6 +971,7 @@ class IUVolume:
 
     MAX_READINGS = 20
     SMA_WINDOW = 10
+    trackers: int = 0
 
     def __init__(
         self, hass: HomeAssistant, coordinator: "IUCoordinator", zone: "IUZone"
@@ -1103,7 +1104,7 @@ class IUVolume:
             self._callback_remove = async_track_state_change_event(
                 self._hass, self._sensor_id, sensor_state_change
             )
-            self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
+            IUVolume.trackers += 1
 
     def end_record(self, stime: datetime) -> None:
         """Finish recording volume information"""
@@ -1111,23 +1112,8 @@ class IUVolume:
         if self._callback_remove is not None:
             self._callback_remove()
             self._callback_remove = None
-        if self._start_volume is not None:
-            sensor = self._hass.states.get(self._sensor_id)
-            if sensor is not None:
-                try:
-                    value = float(sensor.state)
-                except ValueError:
-                    self._coordinator.logger.log_invalid_meter_value(
-                        stime, sensor.state
-                    )
-                    self._total_volume = None
-                else:
-                    self._total_volume = value - self._start_volume
-                    self._duration = stime - self._start_time
-            else:
-                self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
-                self._total_volume = None
-                self._duration = None
+            IUVolume.trackers -= 1
+
 
 
 class IURunStatus(Enum):
