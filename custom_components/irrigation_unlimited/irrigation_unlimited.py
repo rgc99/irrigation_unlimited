@@ -353,6 +353,11 @@ class IUBase:
         return self._uid
 
     @property
+    def uid(self) -> int:
+        """Return the unique id"""
+        return self._uid
+
+    @property
     def index(self) -> int:
         """Return position within siblings"""
         return self._index
