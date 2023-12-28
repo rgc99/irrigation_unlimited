@@ -200,7 +200,10 @@ from .const import (
     CONF_SCHEDULE_ID,
     CONF_FROM,
     CONF_VOLUME,
-    CONF_PRECISION,
+    CONF_VOLUME_PRECISION,
+    CONF_VOLUME_SCALE,
+    CONF_FLOW_RATE_PRECISION,
+    CONF_FLOW_RATE_SCALE,
     CONF_QUEUE,
     CONF_QUEUE_MANUAL,
     CONF_USER,
@@ -983,10 +986,10 @@ class IUVolume:
         self._zone = zone
         # Config parameters
         self._sensor_id: str = None
-        self._volume_rounding = 3
-        self._volume_scale = 1
-        self._flow_rounding = 3
-        self._flow_scale = 3600
+        self._volume_precision: int = 3
+        self._volume_scale: float = 1
+        self._flow_rate_precision: int = 3
+        self._flow_rate_scale: float = 3600
         # Private variables
         self._callback_remove: CALLBACK_TYPE = None
         self._start_volume: float = None
@@ -1022,7 +1025,16 @@ class IUVolume:
             if config is None:
                 return
             self._sensor_id = config.get(CONF_ENTITY_ID, self._sensor_id)
-            self._volume_rounding = config.get(CONF_PRECISION, self._volume_rounding)
+            self._volume_precision = config.get(
+                CONF_VOLUME_PRECISION, self._volume_precision
+            )
+            self._volume_scale = config.get(CONF_VOLUME_SCALE, self._volume_scale)
+            self._flow_rate_precision = config.get(
+                CONF_FLOW_RATE_PRECISION, self._flow_rate_precision
+            )
+            self._flow_rate_scale = config.get(
+                CONF_FLOW_RATE_SCALE, self._flow_rate_scale
+            )
 
         if all_zones is not None:
             load_params(all_zones.get(CONF_VOLUME))

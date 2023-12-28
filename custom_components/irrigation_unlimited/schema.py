@@ -82,7 +82,10 @@ from .const import (
     CONF_SCHEDULE_ID,
     CONF_FROM,
     CONF_VOLUME,
-    CONF_PRECISION,
+    CONF_VOLUME_PRECISION,
+    CONF_VOLUME_SCALE,
+    CONF_FLOW_RATE_PRECISION,
+    CONF_FLOW_RATE_SCALE,
     CONF_QUEUE,
     CONF_QUEUE_MANUAL,
     CONF_USER,
@@ -211,7 +214,10 @@ CHECK_BACK_SCHEMA = vol.Schema(
 VOLUME_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_ENTITY_ID): cv.entity_id,
-        vol.Optional(CONF_PRECISION): cv.positive_int,
+        vol.Optional(CONF_VOLUME_PRECISION): cv.positive_int,
+        vol.Optional(CONF_VOLUME_SCALE): cv.positive_float,
+        vol.Optional(CONF_FLOW_RATE_PRECISION): cv.positive_int,
+        vol.Optional(CONF_FLOW_RATE_SCALE): cv.positive_float,
     }
 )
 
