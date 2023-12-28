@@ -24,6 +24,10 @@ irrigation_unlimited:
           timeline: true
         volume:
           entity_id: "input_text.dummy_sensor"
+          volume_scale: 1000
+          volume_precision: 0
+          flow_rate_scale: 60
+          flow_rate_precision: 1
         allow_manual: true
         # duration: "0:10:00"
       zones:

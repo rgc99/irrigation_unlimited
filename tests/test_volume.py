@@ -240,6 +240,7 @@ async def test_volume_extensive(
         controller_flows: list[float] = []
         zone_volumes: list[float] = []
         zone_flows: list[float] = []
+        sequence_volumes: list[float] = []
 
         with patch.object(IUVolume, "event_hook") as mock:
             zone: int = None
@@ -278,6 +279,8 @@ async def test_volume_extensive(
                     )
                     zone_volumes.append(sta.attributes["volume"])
                     zone_flows.append(sta.attributes["flow_rate"])
+                    sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_s1")
+                    sequence_volumes.append(sta.attributes["volume"])
                     sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
                     controller_volumes.append(sta.attributes["volume"])
                     controller_flows.append(sta.attributes["flow_rate"])
@@ -287,7 +290,7 @@ async def test_volume_extensive(
                         await asyncio.sleep(0)
                     trackers_processed = 0
 
-        volume_results = [
+        assert controller_volumes == [
             0.128,
             0.121,
             0.060,
@@ -302,10 +305,40 @@ async def test_volume_extensive(
             0.072,
             0.671,
         ]
-        assert controller_volumes == volume_results
-        assert zone_volumes == volume_results
 
-        flow_results = [
+        assert zone_volumes == [
+            128.0,
+            121.0,
+            60.0,
+            71.0,
+            30.0,
+            58.0,
+            95.0,
+            56.0,
+            134.0,
+            45.0,
+            31.0,
+            72.0,
+            671.0,
+        ]
+
+        assert sequence_volumes == [
+            128.0,
+            249.0,
+            309.0,
+            380.0,
+            410.0,
+            468.0,
+            563.0,
+            619.0,
+            753.0,
+            798.0,
+            829.0,
+            901.0,
+            1572.0,
+        ]
+
+        assert controller_flows == [
             0.29,
             0.401,
             0.136,
@@ -320,8 +353,22 @@ async def test_volume_extensive(
             0.154,
             1.119,
         ]
-        assert controller_flows == flow_results
-        assert zone_flows == flow_results
+
+        assert zone_flows == [
+            4.8,
+            6.7,
+            2.3,
+            2.5,
+            1.6,
+            1.5,
+            2.5,
+            2.1,
+            5.9,
+            5.1,
+            1.1,
+            2.6,
+            18.7,
+        ]
 
         await exam.finish_test()
 
