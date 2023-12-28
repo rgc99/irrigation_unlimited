@@ -5353,7 +5353,7 @@ class IULogger:
 
     def log_invalid_meter_value(self, stime: datetime, value: str, level=ERROR) -> None:
         """Warn the volume meter value is invalid"""
-        self._format(level, "VOLUME_VALUE", stime, f"value: {value}")
+        self._format(level, "VOLUME_VALUE", stime, f"{value}")
 
 
 class IUClock:
