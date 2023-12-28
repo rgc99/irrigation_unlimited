@@ -9,6 +9,7 @@ from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
 import json
+from decimal import Decimal
 from enum import Enum, Flag, auto
 import voluptuous as vol
 from crontab import CronTab
@@ -964,7 +965,7 @@ class IUVolumeSensorReading(NamedTuple):
     """Irrigation Unlimited volume sensor reading class"""
 
     timestamp: datetime
-    value: float
+    value: Decimal
 
 
 class IUVolume:
@@ -992,30 +993,30 @@ class IUVolume:
         self._flow_rate_scale: float = 3600
         # Private variables
         self._callback_remove: CALLBACK_TYPE = None
-        self._start_volume: float = None
-        self._total_volume: float = None
+        self._start_volume: Decimal = None
+        self._total_volume: Decimal = None
         self._start_time: datetime = None
         self._end_time: datetime = None
         self._listeners: dict[
-            str, Callable[[datetime, "IUZone", float, float], None]
+            str, Callable[[datetime, "IUZone", Decimal, Decimal], None]
         ] = {}
-        self._flow_rate_averages: list[float] = []
-        self._flow_rate_sma_sum: float = 0
-        self._flow_rate_sma: float = None
+        self._flow_rates: list[Decimal] = []
+        self._flow_rate_sum = Decimal(0)
+        self._flow_rate_sma: Decimal = None
         self._sensor_readings: list[IUVolumeSensorReading] = []
 
     @property
     def total(self) -> float | None:
         """Return the total value"""
         if self._total_volume is not None:
-            return round(self._total_volume * self._volume_scale, self._volume_rounding)
+            return float(self._total_volume)
         return None
 
     @property
-    def flow_rate(self) -> str | None:
+    def flow_rate(self) -> float | None:
         """Return the flow rate"""
         if self._flow_rate_sma is not None:
-            return round(self._flow_rate_sma * self._flow_scale, self._flow_rounding)
+            return float(self._flow_rate_sma)
         return None
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
@@ -1040,7 +1041,7 @@ class IUVolume:
             load_params(all_zones.get(CONF_VOLUME))
         load_params(config.get(CONF_VOLUME))
 
-    def read_sensor(self, stime: datetime) -> float:
+    def read_sensor(self, stime: datetime) -> Decimal:
         """Read the sensor data"""
         sensor = self._hass.states.get(self._sensor_id)
         if sensor is None:
@@ -1049,42 +1050,46 @@ class IUVolume:
         if value < 0:
             raise ValueError(f"Negative sensor value: {sensor.state}")
 
+        volume = Decimal(f"{value * self._volume_scale:.{self._volume_precision}f}")
+
         if len(self._sensor_readings) > 0:
             last_reading = self._sensor_readings[-1]
-            volume = value - last_reading.value
-            delta = (stime - last_reading.timestamp).total_seconds()
+            volume_delta = volume - last_reading.value
+            time_delta = Decimal(
+                f"{(stime - last_reading.timestamp).total_seconds():.6f}"
+            )
 
-            if delta == 0:
+            if time_delta == 0:
                 raise ValueError(f"Sensor time has not advanced: {stime}")
-            if delta < 0:
+            if time_delta < 0:
                 raise ValueError(
                     "Sensor time has gone backwards: "
                     f"previous: {last_reading.timestamp}, "
                     f"current: {stime}"
                 )
-            if volume < 0:
+            if volume_delta < 0:
                 raise ValueError(
                     "Sensor value has gone backwards: "
                     f"previous: {last_reading.value}, "
-                    f"current: {value}"
+                    f"current: {volume}"
                 )
 
             # Update moving average of the rate
-            rate = volume / delta
-            self._flow_rate_sma_sum += rate
-            self._flow_rate_averages.append(rate)
-            if len(self._flow_rate_averages) > IUVolume.SMA_WINDOW:
-                self._flow_rate_sma_sum -= self._flow_rate_averages.pop(0)
-            self._flow_rate_sma = self._flow_rate_sma_sum / len(
-                self._flow_rate_averages
-            )
+            rate = volume_delta * Decimal(self._flow_rate_scale) / time_delta
+            self._flow_rate_sum += rate
+            self._flow_rates.append(rate)
+            if len(self._flow_rates) > IUVolume.SMA_WINDOW:
+                self._flow_rate_sum -= self._flow_rates.pop(0)
+            self._flow_rate_sma = (
+                self._flow_rate_sum / len(self._flow_rates)
+            ).quantize(Decimal(10) ** -self._flow_rate_precision)
 
         # Update bookkeeping
-        self._sensor_readings.append(IUVolumeSensorReading(stime, value))
+        self._sensor_readings.append(IUVolumeSensorReading(stime, volume))
         if len(self._sensor_readings) > IUVolume.MAX_READINGS:
             self._sensor_readings.pop(0)
 
-        return value
+        return volume
 
     def event_hook(self, event: HAEvent) -> HAEvent:
         """A pass through place for testing to patch and update
@@ -1104,6 +1109,7 @@ class IUVolume:
                 self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
             else:
                 self._total_volume = value - self._start_volume
+
                 # Notifiy our trackers
                 for listener in self._listeners.values():
                     listener(
