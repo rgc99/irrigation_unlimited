@@ -316,6 +316,7 @@ class IUSequenceEntity(IUEntity):
         attr[ATTR_ZONE_COUNT] = len(self._sequence.zones)
         attr[ATTR_SCHEDULE_COUNT] = len(self._sequence.schedules)
         attr[ATTR_ADJUSTMENT] = str(self._sequence.adjustment)
+        attr[ATTR_VOLUME] = self._sequence.volume
         if (current := self._sequence.runs.current_run) is not None:
             if current.active_zone is not None:
                 attr[ATTR_CURRENT_ZONE] = current.active_zone.sequence_zone.id1
@@ -332,7 +333,6 @@ class IUSequenceEntity(IUEntity):
         else:
             attr[ATTR_CURRENT_ZONE] = None
             attr[ATTR_CURRENT_SCHEDULE] = None
-
         if (next_run := self._sequence.runs.next_run) is not None:
             attr[ATTR_NEXT_START] = dt.as_local(next_run.start_time)
             attr[ATTR_NEXT_DURATION] = str(next_run.total_time)
