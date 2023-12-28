@@ -3204,6 +3204,7 @@ class IUSequence(IUBase):
         self._initialised: bool = False
         self._finalised: bool = False
         self._sequence_sensor: Entity = None
+        self._volume: Decimal = None
         self._dirty = True
 
     @property
