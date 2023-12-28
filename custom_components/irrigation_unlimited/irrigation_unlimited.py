@@ -2559,6 +2559,8 @@ class IUSequenceRun(IUBase):
         self._status = IURunStatus.UNKNOWN
         self._paused = False
         self._last_pause: datetime = None
+        self._volume_trackers: list[CALLBACK_TYPE] = []
+        self._volume_stats: dict[IUSequenceZoneRun, dict[IUZone, Decimal]] = {}
 
     @property
     def sequence(self) -> "IUSequence":
@@ -2869,8 +2871,31 @@ class IUSequenceRun(IUBase):
             return True
         return False
 
+    def _update_volume(
+        self, stime: datetime, zone: IUZone, volume: Decimal, rate: Decimal
+    ) -> None:
+        # pylint: disable=unused-argument
+        if self._active_zone not in self._volume_stats:
+            self._volume_stats[self._active_zone] = {}
+        self._volume_stats[self._active_zone][zone] = volume
+        self._sequence.volume = sum(
+            sum(sta.values()) for sta in self._volume_stats.values()
+        )
+
     def update(self) -> bool:
         """Update the status of the sequence"""
+
+        def enable_trackers(sequence_zone: IUSequenceZone) -> None:
+            for zone in sequence_zone.zones:
+                self._volume_trackers.append(
+                    zone.volume.track_volume_change(self.uid, self._update_volume)
+                )
+
+        def remove_trackers() -> None:
+            for tracker in self._volume_trackers:
+                tracker()
+            self._volume_trackers.clear()
+
         result = False
         for run, sequence_zone_run in self._runs.items():
             if run.running and not self.running:
@@ -2885,17 +2910,22 @@ class IUSequenceRun(IUBase):
                     self._schedule,
                     self,
                 )
+                enable_trackers(sequence_zone_run.sequence_zone)
+                self._sequence.volume = None
                 result |= True
 
             elif run.running and sequence_zone_run != self._active_zone:
                 # Sequence zone is changing
                 self._active_zone = sequence_zone_run
                 self._current_zone = sequence_zone_run
+                remove_trackers()
+                enable_trackers(sequence_zone_run.sequence_zone)
                 result |= True
 
             elif not run.running and sequence_zone_run == self._active_zone:
                 # Sequence zone is finishing
                 self._active_zone = None
+                remove_trackers()
                 self._current_zone = self.next_sequence_zone(sequence_zone_run)
                 if self.run_index(run) == len(self._runs) - 1:
                     # Sequence is finishing
@@ -3205,6 +3235,17 @@ class IUSequence(IUBase):
     @sequence_sensor.setter
     def sequence_sensor(self, value: Entity) -> None:
         self._sequence_sensor = value
+
+    @property
+    def volume(self) -> float:
+        """Return the volume consumption"""
+        if self._volume is not None:
+            return float(self._volume)
+        return None
+
+    @volume.setter
+    def volume(self, value: Decimal) -> None:
+        self._volume = value
 
     @property
     def is_setup(self) -> bool:
