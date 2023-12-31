@@ -1111,7 +1111,7 @@ class IUVolume:
                 self._total_volume = value - self._start_volume
 
                 # Notifiy our trackers
-                for listener in self._listeners.values():
+                for listener in list(self._listeners.values()):
                     listener(
                         event.time_fired,
                         self._zone,
@@ -2357,6 +2357,7 @@ class IUSequenceZone(IUBase):
         self._duration: timedelta = None
         self._repeat: int = None
         self._enabled: bool = True
+        self._volume: float = None
         # Private variables
         self._adjustment = IUAdjustment()
         self._suspend_until: datetime = None
@@ -2385,6 +2386,11 @@ class IUSequenceZone(IUBase):
     def repeat(self) -> int:
         """Returns the number of repeats for this sequence"""
         return self._repeat
+
+    @property
+    def volume(self) -> float:
+        """Return the volume limit for this sequence"""
+        return self._volume
 
     @property
     def is_enabled(self) -> bool:
@@ -2471,6 +2477,7 @@ class IUSequenceZone(IUBase):
         self._duration = wash_td(config.get(CONF_DURATION))
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
+        self._volume = config.get(CONF_VOLUME, self._volume)
         build_zones()
         return self
 
@@ -2881,6 +2888,12 @@ class IUSequenceRun(IUBase):
         self._sequence.volume = sum(
             sum(sta.values()) for sta in self._volume_stats.values()
         )
+        if (limit := self._active_zone.sequence_zone.volume) is not None:
+            current_vol = sum(self._volume_stats[self._active_zone].values())
+            if current_vol >= limit:
+                self._coordinator.service_call(
+                    SERVICE_SKIP, self._controller, None, self._sequence, {}
+                )
 
     def update(self) -> bool:
         """Update the status of the sequence"""
