@@ -331,6 +331,35 @@ def render_positive_float(hass: HomeAssistant, data: dict, key: str) -> None:
         data[key] = schema({key: template.async_render()})[key]
 
 
+def check_item(index: int, items: list[int] | None) -> bool:
+    """If items is None or contains only a 0 (match all) then
+    return True. Otherwise check if index + 1 is in the list"""
+    return items is None or (items is not None and items == [0]) or index + 1 in items
+
+
+def s2b(test: bool, service: str) -> bool:
+    """Convert the service code to bool"""
+    if service == SERVICE_ENABLE:
+        return True
+    if service == SERVICE_DISABLE:
+        return False
+    return not test  # Must be SERVICE_TOGGLE
+
+
+def suspend_until_date(
+    data: MappingProxyType,
+    stime: datetime,
+) -> datetime:
+    """Determine the suspend date and time"""
+    if CONF_UNTIL in data:
+        suspend_time = dt.as_utc(data[CONF_UNTIL])
+    elif CONF_FOR in data:
+        suspend_time = stime + data[CONF_FOR]
+    else:
+        suspend_time = None
+    return wash_dt(suspend_time)
+
+
 class IUJSONEncoder(json.JSONEncoder):
     """JSON serialiser to handle ISO datetime output"""
 
@@ -2007,7 +2036,7 @@ class IUZone(IUBase):
             return STATUS_BLOCKED
         return STATUS_INITIALISING
 
-    def service_call(
+    def service_edt(
         self, data: MappingProxyType, stime: datetime, service: str
     ) -> bool:
         """Handler for enable/disable/toggle service call"""
@@ -2030,7 +2059,7 @@ class IUZone(IUBase):
         sequence_id = data.get(CONF_SEQUENCE_ID)
         if sequence_id is not None:
             self._coordinator.logger.log_sequence_entity(stime)
-        suspend_time = self._controller.suspend_until_date(data, stime)
+        suspend_time = suspend_until_date(data, stime)
         if suspend_time != self._suspend_until:
             self.suspended = suspend_time
             return True
@@ -3714,26 +3743,103 @@ class IUSequence(IUBase):
         if not self._finalised:
             self._finalised = True
 
-    def service_skip(self, data: MappingProxyType, stime: datetime) -> bool:
-        """Skip to the next sequence zone"""
+    def service_edt(
+        self, data: MappingProxyType, stime: datetime, service: str
+    ) -> bool:
+        """Service handler for enable/disable/toggle"""
         # pylint: disable=unused-argument
-        for sqr in self._run_queue:
-            if sqr.running:
-                sqr.skip(stime)
+        changed = False
+        zone_list: list[int] = data.get(CONF_ZONES)
+        if zone_list is None:
+            new_state = s2b(self.enabled, service)
+            if self.enabled != new_state:
+                self.enabled = new_state
+                changed = True
+        else:
+            for sequence_zone in self.zones:
+                if check_item(sequence_zone.index, zone_list):
+                    new_state = s2b(sequence_zone.enabled, service)
+                    if sequence_zone.enabled != new_state:
+                        sequence_zone.enabled = new_state
+                        changed = True
+        if changed:
+            self._run_queue.clear_runs()
+        return changed
 
-    def service_pause(self, data: MappingProxyType, stime: datetime) -> bool:
-        """Pause the sequence"""
+    def service_suspend(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Service handler for suspend"""
+        changed = False
+        suspend_time = suspend_until_date(data, stime)
+        zone_list: list[int] = data.get(CONF_ZONES)
+        if zone_list is None:
+            if self.suspended != suspend_time:
+                self.suspended = suspend_time
+                changed = True
+        else:
+            for sequence_zone in self.zones:
+                if check_item(sequence_zone.index, zone_list):
+                    if sequence_zone.suspended != suspend_time:
+                        sequence_zone.suspended = suspend_time
+                        changed = True
+        if changed:
+            self._run_queue.clear_runs()
+        return changed
+
+    def service_adjust_time(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Service handler for adjust_time"""
         # pylint: disable=unused-argument
-        for sqr in self._run_queue:
-            if sqr.running:
-                sqr.pause(stime)
+        changed = False
+        zone_list: list[int] = data.get(CONF_ZONES)
+        if zone_list is None:
+            changed = self.adjustment.load(data)
+        else:
+            for sequence_zone in self.zones:
+                if check_item(sequence_zone.index, zone_list):
+                    changed |= sequence_zone.adjustment.load(data)
+        if changed:
+            self._run_queue.clear_runs()
+        return changed
+
+    def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
+        """Service handler for manual_run"""
+        duration = wash_td(data.get(CONF_TIME))
+        delay = wash_td(data.get(CONF_DELAY, timedelta(0)))
+        queue = data.get(CONF_QUEUE, self._controller.queue_manual)
+        if duration is not None and duration == timedelta(0):
+            duration = None
+        self._controller.muster_sequence(
+            self._controller.manual_run_start(stime, delay, queue), self, None, duration
+        )
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
         """Cancel the sequence"""
         # pylint: disable=unused-argument
+        changed = False
         for sqr in self._run_queue:
             if sqr.running:
                 sqr.cancel(stime)
+                changed = True
+        return changed
+
+    def service_skip(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Skip to the next sequence zone"""
+        # pylint: disable=unused-argument
+        changed = False
+        for sqr in self._run_queue:
+            if sqr.running:
+                sqr.skip(stime)
+                changed = True
+        return changed
+
+    def service_pause(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Pause the sequence"""
+        # pylint: disable=unused-argument
+        changed = False
+        for sqr in self._run_queue:
+            if sqr.running:
+                sqr.pause(stime)
+                changed = True
+        return changed
 
 
 class IUController(IUBase):
@@ -4392,13 +4498,6 @@ class IUController(IUBase):
         self._switch.call_switch(state, stime)
         self._coordinator.status_changed(stime, self, None, state)
 
-    def check_item(self, index: int, items: list[int] | None) -> bool:
-        """If items is None or contains only a 0 (match all) then
-        return True. Otherwise check if index + 1 is in the list"""
-        return (
-            items is None or (items is not None and items == [0]) or index + 1 in items
-        )
-
     def decode_sequence_id(
         self, stime: datetime, sequence_id: int | None
     ) -> list[int] | None:
@@ -4437,128 +4536,60 @@ class IUController(IUBase):
                 nst = max(end_times) + delay
         return nst
 
-    def suspend_until_date(
-        self,
-        data: MappingProxyType,
-        stime: datetime,
-    ) -> datetime:
-        """Determine the suspend date and time"""
-        if CONF_UNTIL in data:
-            suspend_time = dt.as_utc(data[CONF_UNTIL])
-        elif CONF_FOR in data:
-            suspend_time = stime + data[CONF_FOR]
-        else:
-            suspend_time = None
-        return wash_dt(suspend_time)
-
-    def service_call(
+    def service_edt(
         self, data: MappingProxyType, stime: datetime, service: str
     ) -> bool:
         """Handler for enable/disable/toggle service call"""
         # pylint: disable=too-many-branches, too-many-nested-blocks
-
-        def s2b(test: bool, service: str) -> bool:
-            """Convert the service code to bool"""
-            if service == SERVICE_ENABLE:
-                return True
-            if service == SERVICE_DISABLE:
-                return False
-            return not test  # Must be SERVICE_TOGGLE
-
-        result = False
-        zone_list: list[int] = data.get(CONF_ZONES)
+        changed = False
         sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
         if sequence_list is None:
             new_state = s2b(self.enabled, service)
             if self.enabled != new_state:
                 self.enabled = new_state
-                result = True
+                changed = True
         else:
-            sequences_changed = False
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
-                changed = False
-                if zone_list is None:
-                    new_state = s2b(sequence.enabled, service)
-                    if sequence.enabled != new_state:
-                        sequence.enabled = new_state
-                        changed = True
-                else:
-                    for sequence_zone in sequence.zones:
-                        if self.check_item(sequence_zone.index, zone_list):
-                            new_state = s2b(sequence_zone.enabled, service)
-                            if sequence_zone.enabled != new_state:
-                                sequence_zone.enabled = new_state
-                                changed = True
-                if changed:
-                    sequence.runs.clear_runs()
-                    sequences_changed = True
-            if sequences_changed:
+                changed |= sequence.service_edt(data, stime, service)
+            if changed:
                 self.request_update(True)
-                result = True
-        return result
+        return changed
 
     def service_suspend(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the suspend service call"""
         # pylint: disable=too-many-nested-blocks
-        result = False
-        suspend_time = self.suspend_until_date(data, stime)
+        changed = False
+        suspend_time = suspend_until_date(data, stime)
         sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
         if sequence_list is None:
             if suspend_time != self._suspend_until:
                 self.suspended = suspend_time
-                result = True
+                changed = True
         else:
-            zone_list: list[int] = data.get(CONF_ZONES)
-            sequences_changed = False
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
-                changed = False
-                if zone_list is None:
-                    if sequence.suspended != suspend_time:
-                        sequence.suspended = suspend_time
-                        changed = True
-                else:
-                    for sequence_zone in sequence.zones:
-                        if self.check_item(sequence_zone.index, zone_list):
-                            if sequence_zone.suspended != suspend_time:
-                                sequence_zone.suspended = suspend_time
-                                changed = True
-                if changed:
-                    sequence.runs.clear_runs()
-                    sequences_changed = True
-            if sequences_changed:
+                changed |= sequence.service_suspend(data, stime)
+            if changed:
                 self.request_update(True)
-                result = True
-        return result
+        return changed
 
     def service_adjust_time(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the adjust_time service call"""
         # pylint: disable=too-many-nested-blocks
-        result = False
+        changed = False
         zone_list: list[int] = data.get(CONF_ZONES)
         sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
         if sequence_list is None:
             for zone in self._zones:
-                if self.check_item(zone.index, zone_list):
+                if check_item(zone.index, zone_list):
                     if zone.service_adjust_time(data, stime):
                         self.clear_zone_runs(zone)
-                        result = True
+                        changed = True
         else:
-            sequences_changed = False
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
-                changed = False
-                if zone_list is None:
-                    changed = sequence.adjustment.load(data)
-                else:
-                    for sequence_zone in sequence.zones:
-                        if self.check_item(sequence_zone.index, zone_list):
-                            changed |= sequence_zone.adjustment.load(data)
-                if changed:
-                    sequence.runs.clear_runs()
-                    sequences_changed = True
-            if sequences_changed:
+                changed |= sequence.service_adjust_time(data, stime)
+            if changed:
                 self.request_update(True)
-                result = True
-        return result
+        return changed
 
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Handler for the manual_run service call"""
@@ -4569,16 +4600,8 @@ class IUController(IUBase):
                 if zone_list is None or zone.index + 1 in zone_list:
                     zone.service_manual_run(data, stime)
         else:
-            sequence = self.get_sequence(sequence_id - 1)
-            if sequence is not None:
-                duration = wash_td(data.get(CONF_TIME))
-                delay = wash_td(data.get(CONF_DELAY, timedelta(0)))
-                queue = data.get(CONF_QUEUE, self._queue_manual)
-                if duration is not None and duration == timedelta(0):
-                    duration = None
-                self.muster_sequence(
-                    self.manual_run_start(stime, delay, queue), sequence, None, duration
-                )
+            if (sequence := self.get_sequence(sequence_id - 1)) is not None:
+                sequence.service_manual_run(data, stime)
             else:
                 self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
 
@@ -6088,26 +6111,29 @@ class IUCoordinator:
         data: MappingProxyType,
     ) -> None:
         """Entry point for all service calls."""
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-arguments,too-many-statements
         changed = True
         stime = self.service_time()
 
         data1 = dict(data)
 
         if service in [SERVICE_ENABLE, SERVICE_DISABLE, SERVICE_TOGGLE]:
-            if zone is not None:
-                if changed := zone.service_call(data1, stime, service):
+            if sequence is not None:
+                changed = sequence.service_edt(data1, stime, service)
+            elif zone is not None:
+                if changed := zone.service_edt(data1, stime, service):
                     controller.clear_zone_runs(zone)
             else:
-                changed = controller.service_call(data1, stime, service)
+                changed = controller.service_edt(data1, stime, service)
         elif service == SERVICE_SUSPEND:
             render_positive_time_period(data1, CONF_FOR)
-            if zone is not None:
+            if sequence is not None:
+                changed = sequence.service_suspend(data1, stime)
+            elif zone is not None:
                 if changed := zone.service_suspend(data1, stime):
                     controller.clear_zone_runs(zone)
             else:
                 changed = controller.service_suspend(data1, stime)
-
         elif service == SERVICE_CANCEL:
             if sequence is not None:
                 sequence.service_cancel(data1, stime)
@@ -6122,14 +6148,18 @@ class IUCoordinator:
             render_positive_time_period(data1, CONF_MINIMUM)
             render_positive_time_period(data1, CONF_MAXIMUM)
             render_positive_float(self._hass, data1, CONF_PERCENTAGE)
-            if zone is not None:
+            if sequence is not None:
+                changed = sequence.service_adjust_time(data1, stime)
+            elif zone is not None:
                 if changed := zone.service_adjust_time(data1, stime):
                     controller.clear_zone_runs(zone)
             else:
                 changed = controller.service_adjust_time(data1, stime)
         elif service == SERVICE_MANUAL_RUN:
             render_positive_time_period(data1, CONF_TIME)
-            if zone is not None:
+            if sequence is not None:
+                sequence.service_manual_run(data1, stime)
+            elif zone is not None:
                 zone.service_manual_run(data1, stime)
             else:
                 controller.service_manual_run(data1, stime)
