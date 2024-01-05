@@ -2878,6 +2878,10 @@ class IUSequenceRun(IUBase):
             return True
         return False
 
+    def cancel(self, stime: datetime) -> None:
+        """Cancel the sequence run"""
+        self.advance(stime, -(self._end_time - stime))
+
     def update(self) -> bool:
         """Update the status of the sequence"""
 
@@ -3723,6 +3727,13 @@ class IUSequence(IUBase):
         for sqr in self._run_queue:
             if sqr.running:
                 sqr.pause(stime)
+
+    def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Cancel the sequence"""
+        # pylint: disable=unused-argument
+        for sqr in self._run_queue:
+            if sqr.running:
+                sqr.cancel(stime)
 
 
 class IUController(IUBase):
@@ -6098,7 +6109,9 @@ class IUCoordinator:
                 changed = controller.service_suspend(data1, stime)
 
         elif service == SERVICE_CANCEL:
-            if zone is not None:
+            if sequence is not None:
+                sequence.service_cancel(data1, stime)
+            elif zone is not None:
                 zone.service_cancel(data1, stime)
             else:
                 controller.service_cancel(data1, stime)
