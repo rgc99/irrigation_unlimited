@@ -2878,30 +2878,30 @@ class IUSequenceRun(IUBase):
             return True
         return False
 
-    def _update_volume(
-        self, stime: datetime, zone: IUZone, volume: Decimal, rate: Decimal
-    ) -> None:
-        # pylint: disable=unused-argument
-        if self._active_zone not in self._volume_stats:
-            self._volume_stats[self._active_zone] = {}
-        self._volume_stats[self._active_zone][zone] = volume
-        self._sequence.volume = sum(
-            sum(sta.values()) for sta in self._volume_stats.values()
-        )
-        if (limit := self._active_zone.sequence_zone.volume) is not None:
-            current_vol = sum(self._volume_stats[self._active_zone].values())
-            if current_vol >= limit:
-                self._coordinator.service_call(
-                    SERVICE_SKIP, self._controller, None, self._sequence, {}
-                )
-
     def update(self) -> bool:
         """Update the status of the sequence"""
+
+        def update_volume(
+            stime: datetime, zone: IUZone, volume: Decimal, rate: Decimal
+        ) -> None:
+            # pylint: disable=unused-argument
+            if self._active_zone not in self._volume_stats:
+                self._volume_stats[self._active_zone] = {}
+            self._volume_stats[self._active_zone][zone] = volume
+            self._sequence.volume = sum(
+                sum(sta.values()) for sta in self._volume_stats.values()
+            )
+            if (limit := self._active_zone.sequence_zone.volume) is not None:
+                current_vol = sum(self._volume_stats[self._active_zone].values())
+                if current_vol >= limit:
+                    self._coordinator.service_call(
+                        SERVICE_SKIP, self._controller, None, self._sequence, {}
+                    )
 
         def enable_trackers(sequence_zone: IUSequenceZone) -> None:
             for zone in sequence_zone.zones:
                 self._volume_trackers.append(
-                    zone.volume.track_volume_change(self.uid, self._update_volume)
+                    zone.volume.track_volume_change(self.uid, update_volume)
                 )
 
         def remove_trackers() -> None:
