@@ -2597,6 +2597,8 @@ class IUSequenceRun(IUBase):
         self._last_pause: datetime = None
         self._volume_trackers: list[CALLBACK_TYPE] = []
         self._volume_stats: dict[IUSequenceZoneRun, dict[IUZone, Decimal]] = {}
+        self._remaining_time = timedelta(0)
+        self._percent_complete: int = 0
 
     @property
     def sequence(self) -> "IUSequence":
@@ -2647,6 +2649,16 @@ class IUSequenceRun(IUBase):
     def runs(self) -> dict[IURun, IUSequenceZoneRun]:
         """Return the runs"""
         return self._runs
+
+    @property
+    def time_remaining(self) -> timedelta:
+        """Return the amount of time left to run"""
+        return self._remaining_time
+
+    @property
+    def percent_complete(self) -> float:
+        """Return the percentage completed"""
+        return self._percent_complete
 
     def is_manual(self) -> bool:
         """Check if this is a manual run"""
@@ -2716,7 +2728,8 @@ class IUSequenceRun(IUBase):
                         duration_max = max(duration_max, zone_run_time - next_run)
                 next_run += duration_max
 
-        return self._end_time - self._start_time
+        self._remaining_time = self._end_time - self._start_time
+        return self._remaining_time
 
     def allocate_runs(self, stime: datetime, start_time: datetime) -> None:
         """Allocate runs"""
@@ -2987,6 +3000,19 @@ class IUSequenceRun(IUBase):
 
         return result
 
+    def update_time_remaining(self, stime: datetime) -> bool:
+        """Update the count down timers"""
+        if self.running:
+            self._remaining_time = self._end_time - stime
+            total_duration = self._end_time - self._start_time
+            time_elapsed = stime - self._start_time
+            if total_duration > timedelta(0):
+                self._percent_complete = int((time_elapsed / total_duration) * 100)
+            else:
+                self._percent_complete = 0
+            return True
+        return False
+
     def as_dict(self, include_expired=False) -> dict:
         """Return this sequence run as a dict"""
         result = {}
@@ -3206,6 +3232,13 @@ class IUSequenceQueue(list[IUSequenceRun]):
         self._next_event = min(dates)
 
         return status
+
+    def update_sensor(self, stime: datetime) -> bool:
+        """Update the count down timers"""
+        result = False
+        for run in self:
+            result |= run.update_time_remaining(stime)
+        return result
 
     def as_list(self) -> list:
         """Return a list of runs"""
@@ -3710,6 +3743,7 @@ class IUSequence(IUBase):
 
         if self._sequence_sensor is not None:
             if do_on is False:
+                updated |= self._run_queue.update_sensor(stime)
                 do_update = not self.is_on and self._sensor_update_required
             else:
                 if self.is_on:

@@ -324,6 +324,8 @@ class IUSequenceEntity(IUEntity):
                 attr[ATTR_CURRENT_ZONE] = None
             attr[ATTR_CURRENT_START] = dt.as_local(current.start_time)
             attr[ATTR_CURRENT_DURATION] = str(current.total_time)
+            attr[ATTR_TIME_REMAINING] = str(current.time_remaining)
+            attr[ATTR_PERCENT_COMPLETE] = current.percent_complete
             if current.schedule is not None:
                 attr[ATTR_CURRENT_SCHEDULE] = current.schedule.id1
                 attr[ATTR_CURRENT_NAME] = current.schedule.name
@@ -333,6 +335,7 @@ class IUSequenceEntity(IUEntity):
         else:
             attr[ATTR_CURRENT_ZONE] = None
             attr[ATTR_CURRENT_SCHEDULE] = None
+            attr[ATTR_PERCENT_COMPLETE] = 0
         if (next_run := self._sequence.runs.next_run) is not None:
             attr[ATTR_NEXT_START] = dt.as_local(next_run.start_time)
             attr[ATTR_NEXT_DURATION] = str(next_run.total_time)
