@@ -111,6 +111,8 @@ async def test_wash():
 async def test_nc_classes():
     """Test various classes that do not require a coordinator."""
 
+    reset_granularity()
+
     # IUAdjustment object
     assert str(IUAdjustment("=0:10:10")) == "=0:10:00"
     assert str(IUAdjustment("%50.5")) == "%50.5"
