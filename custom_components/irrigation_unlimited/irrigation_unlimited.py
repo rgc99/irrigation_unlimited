@@ -2901,7 +2901,9 @@ class IUSequenceRun(IUBase):
         self.advance(stime, -(duration - delay))
 
     def pause(self, stime: datetime) -> None:
-        """Pause the sequence run"""
+        """Pause the sequence run. At present this is a freeze rather
+        than a pause. What is on will stay that way including master
+        which may be in a post-amble state."""
         # pylint: disable=unused-argument
         self._paused = not self._paused
 
