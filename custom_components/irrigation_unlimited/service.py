@@ -18,6 +18,7 @@ from .schema import (
     RELOAD_SERVICE_SCHEMA,
     LOAD_SCHEDULE_SCHEMA,
     SUSPEND_SCHEMA,
+    CANCEL_SCHEMA,
 )
 
 from .const import (
@@ -53,7 +54,7 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
         SERVICE_TOGGLE, ENABLE_DISABLE_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
-        SERVICE_CANCEL, ENTITY_SCHEMA, async_entity_service_handler
+        SERVICE_CANCEL, CANCEL_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
         SERVICE_TIME_ADJUST, TIME_ADJUST_SCHEMA, async_entity_service_handler

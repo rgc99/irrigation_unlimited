@@ -427,4 +427,10 @@ SUSPEND_SCHEMA = vol.All(
     cv.has_at_least_one_key(CONF_FOR, CONF_UNTIL, CONF_RESET),
 )
 
+CANCEL_SCHEMA = {
+    vol.Required(CONF_ENTITY_ID): cv.entity_ids,
+    vol.Optional(CONF_ZONES): cv.ensure_list,
+    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+}
+
 RELOAD_SERVICE_SCHEMA = vol.Schema({})

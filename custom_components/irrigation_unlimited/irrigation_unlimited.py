@@ -4638,13 +4638,22 @@ class IUController(IUBase):
             else:
                 self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
 
-    def service_cancel(self, data: MappingProxyType, stime: datetime) -> None:
+    def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the cancel service call"""
+        changed = False
         zone_list: list[int] = data.get(CONF_ZONES, None)
-        for zone in self._zones:
-            if zone_list is None or zone.index + 1 in zone_list:
-                zone.service_cancel(data, stime)
-
+        sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
+        if sequence_list is None:
+            for zone in self._zones:
+                if zone_list is None or zone.index + 1 in zone_list:
+                    zone.service_cancel(data, stime)
+                    changed = True
+        else:
+            for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
+                changed |= sequence.service_cancel(data, stime)
+            if changed:
+                self.request_update(True)
+        return changed
 
 class IUEvent:
     """This class represents a single event"""
@@ -6169,11 +6178,11 @@ class IUCoordinator:
                 changed = controller.service_suspend(data1, stime)
         elif service == SERVICE_CANCEL:
             if sequence is not None:
-                sequence.service_cancel(data1, stime)
+                changed = sequence.service_cancel(data1, stime)
             elif zone is not None:
                 zone.service_cancel(data1, stime)
             else:
-                controller.service_cancel(data1, stime)
+                changed =controller.service_cancel(data1, stime)
         elif service == SERVICE_TIME_ADJUST:
             render_positive_time_period(data1, CONF_ACTUAL)
             render_positive_time_period(data1, CONF_INCREASE)
