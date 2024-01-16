@@ -2792,10 +2792,8 @@ class IUSequenceRun(IUBase):
 
     def sequence_zone(self, run: IURun) -> IUSequenceZone:
         """Extract the sequence zone from the run"""
-        sequence_zone_run = self._runs.get(run, None)
-        if sequence_zone_run is not None:
-            return sequence_zone_run.sequence_zone
-        return None
+        szr = self._runs.get(run, None)
+        return szr.sequence_zone if szr is not None else None
 
     def next_sequence_zone(
         self, sequence_zone_run: IUSequenceZoneRun
@@ -3002,16 +3000,15 @@ class IUSequenceRun(IUBase):
 
     def update_time_remaining(self, stime: datetime) -> bool:
         """Update the count down timers"""
-        if self.running:
-            self._remaining_time = self._end_time - stime
-            total_duration = self._end_time - self._start_time
-            time_elapsed = stime - self._start_time
-            if total_duration > timedelta(0):
-                self._percent_complete = int((time_elapsed / total_duration) * 100)
-            else:
-                self._percent_complete = 0
-            return True
-        return False
+        if not self.running:
+            return False
+        self._remaining_time = self._end_time - stime
+        elapsed = stime - self._start_time
+        duration = self._end_time - self._start_time
+        self._percent_complete = (
+            int((elapsed / duration) * 100) if duration > timedelta(0) else 0
+        )
+        return True
 
     def as_dict(self, include_expired=False) -> dict:
         """Return this sequence run as a dict"""
