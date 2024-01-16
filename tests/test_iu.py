@@ -268,6 +268,11 @@ async def test_iu_minimal(hass: ha.HomeAssistant, skip_dependencies, skip_histor
     # pylint: disable=unused-argument
 
     async with IUExam(hass, "test_minimal.yaml") as exam:
+        assert (
+            exam.coordinator.controllers[0].sequences[0].sequence_sensor.entity_id
+            == "binary_sensor.irrigation_unlimited_c1_s1"
+        )
+
         assert exam.coordinator.get(1) is None
         assert exam.coordinator.controllers[0].get_zone(1) is None
         assert exam.coordinator.controllers[0].get_sequence(1) is None
