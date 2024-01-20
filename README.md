@@ -754,8 +754,8 @@ Suspend operation of a controller, zone, sequence or sequence zone for a period 
 | Service data attribute | Type | Required | Description |
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
-| `sequence_id` | [number](#145-sequence) | no | Sequence to enable/disable/toggle. |
-| `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
+| `sequence_id` | [number](#145-sequence) | no | Sequence to suspend. |
+| `zones` | [number/list](#146-zones) | no | Sequence zones to suspend. |
 | `for` | [duration](#142-duration-time-period) | see below* | Suspend for a period of time. Supports [templating](#144-templating). |
 | `until` | string | see below* | Suspend until a point in time. Format is `%Y-%m-%d %H:%M:%S` for example `2023-08-01 07:30:00`. |
 | `reset` | none | see below* | Reset or cancel the current suspension. |
