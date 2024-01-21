@@ -180,6 +180,28 @@ cancel:
           integration: irrigation_unlimited
           domain: binary_sensor
 
+    sequence_id:
+      name: Sequence Id
+      description: Id of the sequence to cancel (entity_id should be the controller).
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
+    zones:
+      name: Zones
+      description: Id(s) of the zone
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 9999
+          mode: box
+
 adjust_time:
   name: Adjust time
   description: Adjust the run times.
