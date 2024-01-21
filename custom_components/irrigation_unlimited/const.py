@@ -118,6 +118,7 @@ CONF_QUEUE = "queue"
 CONF_QUEUE_MANUAL = "queue_manual"
 CONF_USER = "user"
 CONF_TOGGLE = "toggle"
+CONF_EXTENDED_CONFIG = "extended_config"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

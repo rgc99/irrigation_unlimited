@@ -209,6 +209,7 @@ from .const import (
     CONF_QUEUE_MANUAL,
     CONF_USER,
     CONF_TOGGLE,
+    CONF_EXTENDED_CONFIG,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -2153,26 +2154,27 @@ class IUZone(IUBase):
             self.clear()
             self._finalised = True
 
-    def as_dict(self) -> OrderedDict:
+    def as_dict(self, extended=False) -> OrderedDict:
         """Return this zone as a dict"""
-        if self.runs.current_run is not None:
-            current_duration = self.runs.current_run.duration
-        else:
-            current_duration = timedelta(0)
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self.name
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self.enabled
         result[ATTR_SUSPENDED] = self.suspended
-        result[CONF_ICON] = self.icon
-        result[CONF_ZONE_ID] = self._zone_id
-        result[CONF_ENTITY_BASE] = self.entity_base
-        result[ATTR_STATUS] = self.status
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
-        result[ATTR_CURRENT_DURATION] = current_duration
-        result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
-        result[ATTR_SWITCH_ENTITIES] = self._switch.switch_entity_id
+        if extended:
+            if self.runs.current_run is not None:
+                current_duration = self.runs.current_run.duration
+            else:
+                current_duration = timedelta(0)
+            result[CONF_ICON] = self.icon
+            result[CONF_ZONE_ID] = self._zone_id
+            result[CONF_ENTITY_BASE] = self.entity_base
+            result[ATTR_STATUS] = self.status
+            result[ATTR_CURRENT_DURATION] = current_duration
+            result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
+            result[ATTR_SWITCH_ENTITIES] = self._switch.switch_entity_id
         return result
 
     def timeline(self) -> list:
@@ -2510,24 +2512,31 @@ class IUSequenceZone(IUBase):
         build_zones()
         return self
 
-    def as_dict(self, duration_factor: float, sqr: "IUSequenceRun" = None) -> dict:
+    def as_dict(
+        self, duration_factor: float, extended=False, sqr: "IUSequenceRun" = None
+    ) -> dict:
         """Return this sequence zone as a dict"""
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self.enabled
         result[ATTR_SUSPENDED] = self.suspended
-        result[CONF_ICON] = self.icon()
-        result[ATTR_STATUS] = self.status()
-        result[CONF_DELAY] = self._sequence.zone_delay(self, sqr)
-        result[ATTR_BASE_DURATION] = self._sequence.zone_duration_base(self, sqr)
-        result[ATTR_ADJUSTED_DURATION] = self._sequence.zone_duration(self, sqr)
-        result[ATTR_FINAL_DURATION] = self._sequence.zone_duration_final(
-            self, duration_factor, sqr
-        )
-        result[CONF_ZONES] = list(zone.index + self.ZONE_OFFSET for zone in self._zones)
-        result[ATTR_CURRENT_DURATION] = self._sequence.runs.active_zone_duration(self)
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
+        if extended:
+            result[CONF_ICON] = self.icon()
+            result[ATTR_STATUS] = self.status()
+            result[CONF_DELAY] = self._sequence.zone_delay(self, sqr)
+            result[ATTR_BASE_DURATION] = self._sequence.zone_duration_base(self, sqr)
+            result[ATTR_ADJUSTED_DURATION] = self._sequence.zone_duration(self, sqr)
+            result[ATTR_FINAL_DURATION] = self._sequence.zone_duration_final(
+                self, duration_factor, sqr
+            )
+            result[CONF_ZONES] = list(
+                zone.index + self.ZONE_OFFSET for zone in self._zones
+            )
+            result[ATTR_CURRENT_DURATION] = self._sequence.runs.active_zone_duration(
+                self
+            )
         return result
 
     def muster(self, stime: datetime) -> IURQStatus:
@@ -3657,7 +3666,7 @@ class IUSequence(IUBase):
         self._dirty = True
         return self
 
-    def as_dict(self, sqr: IUSequenceRun = None) -> OrderedDict:
+    def as_dict(self, extended=False, sqr: IUSequenceRun = None) -> OrderedDict:
         """Return this sequence as a dict"""
         total_delay = self.total_delay(sqr)
         total_duration = self.total_duration(sqr)
@@ -3671,20 +3680,21 @@ class IUSequence(IUBase):
         result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
         result[ATTR_SUSPENDED] = self.suspended
-        result[ATTR_ICON] = self.icon
-        result[ATTR_STATUS] = self.status
-        result[ATTR_DEFAULT_DURATION] = self._duration
-        result[ATTR_DEFAULT_DELAY] = self._delay
-        result[ATTR_DURATION_FACTOR] = duration_factor
-        result[ATTR_TOTAL_DELAY] = total_delay
-        result[ATTR_TOTAL_DURATION] = total_duration
-        result[ATTR_ADJUSTED_DURATION] = total_duration_adjusted
-        result[ATTR_CURRENT_DURATION] = self.runs.current_duration
         result[ATTR_ADJUSTMENT] = str(self._adjustment)
-        result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
         result[CONF_SEQUENCE_ZONES] = [
-            szn.as_dict(duration_factor) for szn in self._zones
+            szn.as_dict(duration_factor, extended) for szn in self._zones
         ]
+        if extended:
+            result[ATTR_ICON] = self.icon
+            result[ATTR_STATUS] = self.status
+            result[ATTR_DEFAULT_DURATION] = self._duration
+            result[ATTR_DEFAULT_DELAY] = self._delay
+            result[ATTR_DURATION_FACTOR] = duration_factor
+            result[ATTR_TOTAL_DELAY] = total_delay
+            result[ATTR_TOTAL_DURATION] = total_duration
+            result[ATTR_ADJUSTED_DURATION] = total_duration_adjusted
+            result[ATTR_CURRENT_DURATION] = self.runs.current_duration
+            result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
         return result
 
     def muster(self, stime: datetime) -> IURQStatus:
@@ -4190,20 +4200,21 @@ class IUController(IUBase):
             self.clear()
             self._finalised = True
 
-    def as_dict(self) -> OrderedDict:
+    def as_dict(self, extended=False) -> OrderedDict:
         """Return this controller as a dict"""
         result = OrderedDict()
         result[CONF_INDEX] = self._index
         result[CONF_NAME] = self._name
-        result[CONF_CONTROLLER_ID] = self._controller_id
-        result[CONF_ENTITY_BASE] = self.entity_base
-        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
         result[CONF_ENABLED] = self._enabled
         result[ATTR_SUSPENDED] = self.suspended
-        result[CONF_ICON] = self.icon
-        result[ATTR_STATUS] = self.status
-        result[CONF_ZONES] = [zone.as_dict() for zone in self._zones]
-        result[CONF_SEQUENCES] = [seq.as_dict() for seq in self._sequences]
+        result[CONF_ZONES] = [zone.as_dict(extended) for zone in self._zones]
+        result[CONF_SEQUENCES] = [seq.as_dict(extended) for seq in self._sequences]
+        result[CONF_STATE] = STATE_ON if self.is_on else STATE_OFF
+        if extended:
+            result[CONF_CONTROLLER_ID] = self._controller_id
+            result[CONF_ENTITY_BASE] = self.entity_base
+            result[CONF_ICON] = self.icon
+            result[ATTR_STATUS] = self.status
         return result
 
     def sequence_runs(self) -> list[IUSequenceRun]:
@@ -4654,6 +4665,7 @@ class IUController(IUBase):
             if changed:
                 self.request_update(True)
         return changed
+
 
 class IUEvent:
     """This class represents a single event"""
@@ -5688,6 +5700,9 @@ class IUCoordinator:
         self._hass = hass
         # Config parameters
         self._refresh_interval: timedelta = None
+        self._sync_switches: bool = True
+        self._rename_entities = False
+        self._extended_config = False
         # Private variables
         self._controllers: list[IUController] = []
         self._is_on: bool = False
@@ -5705,8 +5720,6 @@ class IUCoordinator:
         self._clock = IUClock(self._hass, self, self._async_timer)
         self._history = IUHistory(self._hass, self.service_history)
         self._restored_from_configuration: bool = False
-        self._sync_switches: bool = True
-        self._rename_entities = False
         self._finalised = False
 
     @property
@@ -5767,7 +5780,7 @@ class IUCoordinator:
     @property
     def configuration(self) -> str:
         """Return the system configuration as JSON"""
-        return json.dumps(self.as_dict(), cls=IUJSONEncoder)
+        return json.dumps(self.as_dict(self._extended_config), cls=IUJSONEncoder)
 
     @property
     def restored_from_configuration(self) -> bool:
@@ -5832,6 +5845,7 @@ class IUCoordinator:
         )
         self._sync_switches = config.get(CONF_SYNC_SWITCHES, True)
         self._rename_entities = config.get(CONF_RENAME_ENTITIES, self._rename_entities)
+        self._extended_config = config.get(CONF_EXTENDED_CONFIG, self._extended_config)
 
         cidx: int = 0
         for cidx, controller_config in enumerate(config[CONF_CONTROLLERS]):
@@ -5852,11 +5866,11 @@ class IUCoordinator:
 
         return self
 
-    def as_dict(self) -> OrderedDict:
+    def as_dict(self, extended=False) -> OrderedDict:
         """Returns the coordinator as a dict"""
         result = OrderedDict()
-        result[CONF_VERSION] = "1.0.0"
-        result[CONF_CONTROLLERS] = [ctr.as_dict() for ctr in self._controllers]
+        result[CONF_VERSION] = "1.0.1"
+        result[CONF_CONTROLLERS] = [ctr.as_dict(extended) for ctr in self._controllers]
         return result
 
     def muster(self, stime: datetime, force: bool) -> IURQStatus:
@@ -6182,7 +6196,7 @@ class IUCoordinator:
             elif zone is not None:
                 zone.service_cancel(data1, stime)
             else:
-                changed =controller.service_cancel(data1, stime)
+                changed = controller.service_cancel(data1, stime)
         elif service == SERVICE_TIME_ADJUST:
             render_positive_time_period(data1, CONF_ACTUAL)
             render_positive_time_period(data1, CONF_INCREASE)

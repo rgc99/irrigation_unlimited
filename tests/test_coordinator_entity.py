@@ -1,4 +1,5 @@
 """Test irrigation_unlimited coordinator entity operations."""
+import json
 from datetime import datetime
 import homeassistant.core as ha
 import homeassistant.util.dt as dt
@@ -91,4 +92,53 @@ async def test_coordinator_entity(
             mk_local("2021-01-04 06:05:30"),
             mk_local("2021-01-04 06:05:00"),
         ]
+        exam.check_summary()
+
+
+async def test_coordinator_config_essential(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test coordinator configuration attribute essential keys."""
+
+    async with IUExam(hass, "test_coordinator_entity.yaml") as exam:
+        await exam.begin_test(1)
+
+        # Check essential keys are in configuration
+        config = json.loads(
+            hass.states.get("irrigation_unlimited.coordinator").attributes[
+                "configuration"
+            ]
+        )
+
+        controller_keys = ("state", "index", "enabled", "suspended", "name")
+        zone_keys = ("state", "index", "enabled", "suspended", "adjustment", "name")
+        sequence_keys = ("state", "index", "enabled", "suspended", "adjustment", "name")
+        sqz_keys = ("state", "index", "enabled", "suspended", "adjustment")
+        assert len(config["controllers"]) > 0
+        for controller in config["controllers"]:
+            assert all(key in controller for key in controller_keys)
+            assert len(controller["zones"]) > 0
+            for zone in controller["zones"]:
+                assert all(key in zone for key in zone_keys)
+            assert len(controller["sequences"]) > 0
+            for sequence in controller["sequences"]:
+                assert all(key in sequence for key in sequence_keys)
+                assert len(sequence["sequence_zones"]) > 0
+                for sqz in sequence["sequence_zones"]:
+                    assert all(key in sqz for key in sqz_keys)
+
+        await exam.finish_test()
+
+        exam.check_summary()
+
+
+async def test_coordinator_config_extended(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test coordinator configuration attribute extended keys."""
+
+    async with IUExam(hass, "test_coordinator_extended.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.finish_test()
+
         exam.check_summary()

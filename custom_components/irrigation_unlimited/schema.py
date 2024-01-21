@@ -90,6 +90,7 @@ from .const import (
     CONF_QUEUE_MANUAL,
     CONF_USER,
     CONF_TOGGLE,
+    CONF_EXTENDED_CONFIG,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -364,6 +365,7 @@ IRRIGATION_SCHEMA = vol.Schema(
         vol.Optional(CONF_TESTING): TEST_SCHEMA,
         vol.Optional(CONF_HISTORY): HISTORY_SCHEMA,
         vol.Optional(CONF_CLOCK): CLOCK_SCHEMA,
+        vol.Optional(CONF_EXTENDED_CONFIG): cv.boolean,
     }
 )
 
