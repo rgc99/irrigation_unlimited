@@ -206,6 +206,7 @@ ATTR_SUSPENDED = "suspended"
 ATTR_VOLUME = "volume"
 ATTR_FLOW_RATE = "flow_rate"
 ATTR_SWITCH_ENTITIES = "switch_entity_id"
+ATTR_SEQUENCE_COUNT = "sequence_count"
 
 # Resources
 RES_MANUAL = "Manual"

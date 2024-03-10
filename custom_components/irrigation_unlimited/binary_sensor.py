@@ -49,6 +49,7 @@ from .const import (
     RES_NONE,
     ATTR_VOLUME,
     ATTR_FLOW_RATE,
+    ATTR_SEQUENCE_COUNT,
 )
 
 
@@ -159,6 +160,7 @@ class IUMasterEntity(IUEntity):
         attr[ATTR_SUSPENDED] = self._controller.suspended
         attr[ATTR_STATUS] = self._controller.status
         attr[ATTR_ZONE_COUNT] = len(self._controller.zones)
+        attr[ATTR_SEQUENCE_COUNT] = len(self._controller.sequences)
         attr[CONF_ZONES] = ""
         attr[ATTR_SEQUENCE_STATUS] = self._controller.sequence_status()
         current = self._controller.runs.current_run
