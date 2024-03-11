@@ -2841,8 +2841,9 @@ class IUSequenceRun(IUBase):
         negative runs will shortened or even skipped. The system will
         require a full muster as the status of runs, zones and sequences
         could have altered."""
-
-        def update_run(stime: datetime, duration: timedelta, run: IURun) -> None:
+        def update_run(
+            stime: datetime, duration: timedelta, run: IURun | list[IURun] | None
+        ) -> None:
             if run is None or run.expired:
                 return
             if duration > timedelta(0):
@@ -2864,6 +2865,8 @@ class IUSequenceRun(IUBase):
         if self.running:
             if runs is None:
                 runs = self.runs
+            elif not isinstance(runs, list):
+                runs = [runs]
             for run in runs:
                 update_run(stime, duration, run)
                 if run.master_run is not None:
