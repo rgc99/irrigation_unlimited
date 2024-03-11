@@ -1,11 +1,12 @@
 """Constants for irrigation_unlimited."""
+
 # Base component constants
 NAME = "Irrigation Unlimited"
 DOMAIN = "irrigation_unlimited"
 DOMAIN_DATA = f"{DOMAIN}_data"
 COORDINATOR = "coordinator"
 COMPONENT = "component"
-VERSION = "2023.11.0"
+VERSION = "2024.1.1"
 ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
 ISSUE_URL = "https://github.com/rgc99/irrigation_unlimited/issues"
 
