@@ -1,4 +1,5 @@
 """Binary sensor platform for irrigation_unlimited."""
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_component import EntityComponent
@@ -349,4 +350,5 @@ class IUSequenceEntity(IUEntity):
                 attr[ATTR_NEXT_NAME] = RES_MANUAL
         else:
             attr[ATTR_NEXT_SCHEDULE] = None
+        attr[ATTR_ZONES] = self._sequence.ha_zone_attr()
         return attr

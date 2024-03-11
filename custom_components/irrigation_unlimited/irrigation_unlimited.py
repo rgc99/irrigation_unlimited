@@ -2561,6 +2561,30 @@ class IUSequenceZone(IUBase):
             )
         return result
 
+    def ha_attr(self) -> dict:
+        """Return the HA attributes"""
+
+        def zone_runs() -> list[IURun]:
+            result: list[IURun] = []
+            if (sqr := self._sequence.runs.current_run) is None:
+                sqr = self._sequence.runs.next_run
+            if sqr is not None:
+                for run in sqr.zone_runs(self):
+                    if not run.expired:
+                        result.append(run)
+            return result
+
+        result = {}
+        result[ATTR_INDEX] = self.index
+        result[ATTR_ENABLED] = self.enabled
+        result[ATTR_SUSPENDED] = self.suspended
+        result[ATTR_STATUS] = self.status()
+        result[ATTR_ICON] = self.icon()
+        result[ATTR_ADJUSTMENT] = str(self.adjustment)
+        result[ATTR_ZONE_IDS] = self.zone_ids
+        result[ATTR_DURATION] = str(calc_on_time(zone_runs()))
+        return result
+
     def muster(self, stime: datetime) -> IURQStatus:
         """Muster this sequence zone"""
         status = IURQStatus(0)
@@ -3701,6 +3725,10 @@ class IUSequence(IUBase):
             result[ATTR_CURRENT_DURATION] = self.runs.current_duration
             result[CONF_SCHEDULES] = [sch.as_dict() for sch in self._schedules]
         return result
+
+    def ha_zone_attr(self) -> list[dict]:
+        """Return the HA zone attributes"""
+        return [szn.ha_attr() for szn in self._zones]
 
     def muster(self, stime: datetime) -> IURQStatus:
         """Muster this sequence"""
