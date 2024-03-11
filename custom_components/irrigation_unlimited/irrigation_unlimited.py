@@ -1,4 +1,5 @@
 """Irrigation Unlimited Coordinator and sub classes"""
+
 # pylint: disable=too-many-lines
 import weakref
 from datetime import datetime, time, timedelta, timezone, date
@@ -1430,6 +1431,26 @@ class IURun(IUBase):
         return result
 
 
+def calc_on_time(runs: list[IURun]) -> timedelta:
+    """Return the total time this list of runs is on. Accounts for
+    overlapping time periods"""
+    result = timedelta(0)
+    period_start: datetime = None
+    period_end: datetime = None
+
+    for run in runs:
+        if period_end is None or run.start_time > period_end:
+            if period_end is not None:
+                result += period_end - period_start
+            period_start = run.start_time
+            period_end = run.end_time
+        else:
+            period_end = max(period_end, run.end_time)
+    if period_end is not None:
+        result += period_end - period_start
+    return result
+
+
 class IURunQueue(list[IURun]):
     """Irrigation Unlimited class to hold the upcoming runs"""
 
@@ -2761,29 +2782,9 @@ class IUSequenceRun(IUBase):
         """Return the first zone"""
         return self._first_zone
 
-    @staticmethod
-    def _calc_on_time(runs: list[IURun]) -> timedelta:
-        """Return the total time this list of runs is on. Accounts for
-        overlapping time periods"""
-        result = timedelta(0)
-        period_start: datetime = None
-        period_end: datetime = None
-
-        for run in runs:
-            if period_end is None or run.start_time > period_end:
-                if period_end is not None:
-                    result += period_end - period_start
-                period_start = run.start_time
-                period_end = run.end_time
-            else:
-                period_end = max(period_end, run.end_time)
-        if period_end is not None:
-            result += period_end - period_start
-        return result
-
     def on_time(self, include_expired=False) -> timedelta:
         """Return the total time this run is on"""
-        return self._calc_on_time(
+        return calc_on_time(
             run for run in self._runs if include_expired or not run.expired
         )
 
@@ -3057,7 +3058,7 @@ class IUSequenceRun(IUBase):
             sqr[ATTR_SUSPENDED] = zone.suspended
             sqr[ATTR_STATUS] = zone.status()
             sqr[ATTR_ICON] = zone.icon()
-            sqr[ATTR_DURATION] = to_secs(self._calc_on_time(runs))
+            sqr[ATTR_DURATION] = to_secs(calc_on_time(runs))
             sqr[ATTR_ADJUSTMENT] = str(zone.adjustment)
             sqr[ATTR_ZONE_IDS] = zone.zone_ids
             result[ATTR_ZONES].append(sqr)
