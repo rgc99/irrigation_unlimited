@@ -3,6 +3,7 @@
 import weakref
 from datetime import datetime, time, timedelta, timezone, date
 from collections import deque
+from collections.abc import Iterator
 from types import MappingProxyType
 from typing import OrderedDict, NamedTuple, Callable, Awaitable
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
@@ -3639,7 +3640,7 @@ class IUSequence(IUBase):
             result = self.add_zone(IUSequenceZone(self._controller, self, index))
         return result
 
-    def zone_list(self) -> list[IUZone]:
+    def zone_list(self) -> Iterator[list[IUZone]]:
         """Generator to return all referenced zones"""
         result: set[IUZone] = set()
         for sequence_zone in self._zones:
