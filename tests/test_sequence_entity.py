@@ -1,4 +1,5 @@
 """irrigation_unlimited test unit for IUSequenceRun object"""
+
 # pylint: disable=too-many-lines
 import homeassistant.core as ha
 from homeassistant.const import (
@@ -44,6 +45,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_duration": "0:38:00",
                 "next_schedule": 1,
                 "next_name": "Dawn",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -65,6 +98,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_duration": "0:27:00",
                 "next_schedule": 1,
                 "next_name": "Morning",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -86,6 +151,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -101,6 +183,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:stop-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -122,6 +221,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:timer-sand",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -141,6 +257,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -162,6 +295,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -181,6 +331,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -202,6 +369,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -221,6 +405,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -242,6 +443,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:timer-sand",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -261,6 +479,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -282,6 +517,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -301,6 +553,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -322,6 +591,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -337,6 +623,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:stop-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -354,6 +657,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:stop-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -369,6 +689,23 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:stop-circle-outline",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
 
@@ -404,6 +741,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_name": "Dawn",
                 "icon": "mdi:stop-circle-outline",
                 "friendly_name": "Seq 1",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -423,6 +792,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": None,
                 "icon": "mdi:stop-circle-outline",
                 "friendly_name": "Seq 2",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:00:00",
+                    },
+                ],
             },
         )
         await exam.finish_test()
@@ -460,6 +861,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Dawn",
                 "icon": "mdi:stop-circle-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -475,6 +908,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "percent_complete": 0,
                 "next_schedule": None,
                 "icon": "mdi:circle-off-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:00:00",
+                    },
+                ],
             },
         )
         await exam.finish_test()
@@ -516,6 +981,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_name": "Dawn",
                 "icon": "mdi:stop-circle-outline",
                 "friendly_name": "Seq 1",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -535,6 +1032,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": None,
                 "icon": "mdi:timer-outline",
                 "friendly_name": "Seq 2",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "blocked",
+                        "icon": "mdi:alert-octagon-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:00:00",
+                    },
+                ],
             },
         )
         await exam.finish_test()
@@ -565,6 +1094,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -585,6 +1146,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:pause-circle-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
         await exam.run_until("2023-11-16 06:26")
@@ -612,6 +1205,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -632,6 +1257,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:17:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
         await exam.finish_test()
@@ -662,6 +1319,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 2,
                 "next_name": "Dusk",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["2", "3"],
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["4"],
+                        "duration": "0:18:00",
+                    },
+                ],
             },
         )
         exam.check_iu_entity(
@@ -682,6 +1371,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:timer-sand",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
         await exam.run_until("2023-11-16 06:14")
@@ -703,6 +1424,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "next_schedule": 1,
                 "next_name": "Morning",
                 "icon": "mdi:play-circle-outline",
+                "zones": [
+                    {
+                        "index": 0,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["1"],
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "index": 1,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["3"],
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "index": 2,
+                        "enabled": True,
+                        "suspended": None,
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "adjustment": "",
+                        "zone_ids": ["5"],
+                        "duration": "0:13:00",
+                    },
+                ],
             },
         )
         await exam.finish_test()
