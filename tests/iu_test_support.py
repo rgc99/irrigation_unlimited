@@ -1,4 +1,5 @@
 """Irrigation Unlimited test support routines"""
+
 import os
 from unittest.mock import patch
 import logging
@@ -412,20 +413,33 @@ class IUExam:
         for controller in self._coordinator.controllers:
             check_controller(controller)
 
-    def check_attr(self, attr: dict, fields: dict) -> None:
+    def check_attr(self, fields: dict, attr: dict) -> None:
         """Check the specified fields in the attributes"""
+
+        def check_field(field: str, expected, attribute) -> dict:
+            result = {}
+            if attribute != expected:
+                result[field] = {}
+                result[field]["expected"] = expected
+                result[field]["found"] = attribute
+            return result
+
         bad = {}
         for field in fields:
             if field in attr:
-                if fields[field] != attr[field]:
-                    bad[field] = {}
-                    bad[field]["found"] = fields[field]
-                    bad[field]["expected"] = attr[field]
+                if isinstance(fields[field], list):
+                    for count, item in enumerate(fields[field]):
+                        if isinstance(item, dict):
+                            self.check_attr(item, attr[field][count])
+                        else:
+                            bad |= check_field(field, item, attr[field][count])
+                else:
+                    bad |= check_field(field, fields[field], attr[field])
             else:
                 bad[field] = "NOT FOUND"
         assert not bad, f"Attributes do not match {bad}"
 
-    def check_iu_entity(self, iu_id: str, state: str, attributes: dict) -> None:
+    def check_iu_entity(self, iu_id: str, state: str, fields: dict) -> None:
         """Check the irrigation unlimited entity"""
         entity_id = "binary_sensor.irrigation_unlimited_" + iu_id
         entity = self._hass.states.get(entity_id)
@@ -433,7 +447,7 @@ class IUExam:
         assert (
             entity.state == state
         ), f"State does not match: expected: {entity.state} found: {state}"
-        self.check_attr(entity.attributes, attributes)
+        self.check_attr(fields, entity.attributes)
 
     def print_iu_entity(self, iu_id: str) -> None:
         """Print out the irrigation unlimited entity in a format compatible
