@@ -42,7 +42,6 @@ from .const import (
     DOMAIN,
     COORDINATOR,
     CONF_SCHEDULES,
-    CONF_ZONES,
     CONF_ZONE_ID,
     RES_MANUAL,
     RES_NOT_RUNNING,
@@ -50,6 +49,7 @@ from .const import (
     ATTR_VOLUME,
     ATTR_FLOW_RATE,
     ATTR_SEQUENCE_COUNT,
+    ATTR_ZONES,
 )
 
 
@@ -161,7 +161,7 @@ class IUMasterEntity(IUEntity):
         attr[ATTR_STATUS] = self._controller.status
         attr[ATTR_ZONE_COUNT] = len(self._controller.zones)
         attr[ATTR_SEQUENCE_COUNT] = len(self._controller.sequences)
-        attr[CONF_ZONES] = ""
+        attr[ATTR_ZONES] = ""
         attr[ATTR_SEQUENCE_STATUS] = self._controller.sequence_status()
         current = self._controller.runs.current_run
         if current is not None:
