@@ -1155,7 +1155,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                         "icon": "mdi:play-circle-outline",
                         "adjustment": "",
                         "zone_ids": ["1"],
-                        "duration": "0:05:00",
+                        "duration": "0:01:00",
                     },
                     {
                         "index": 1,
@@ -1266,7 +1266,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                         "icon": "mdi:play-circle-outline",
                         "adjustment": "",
                         "zone_ids": ["1"],
-                        "duration": "0:17:00",
+                        "duration": "0:01:00",
                     },
                     {
                         "index": 1,

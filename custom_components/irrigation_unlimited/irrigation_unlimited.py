@@ -1198,12 +1198,15 @@ class IURunStatus(Enum):
     FUTURE = auto()
     RUNNING = auto()
     EXPIRED = auto()
+    PAUSED = auto()
 
     @staticmethod
     def status(
-        stime: datetime, start_time: datetime, end_time: datetime
+        stime: datetime, start_time: datetime, end_time: datetime, paused: datetime
     ) -> "IURunStatus":
         """Determine the state of this object"""
+        if paused is not None:
+            return IURunStatus.PAUSED
         if start_time > stime:
             return IURunStatus.FUTURE
         if start_time <= stime < end_time:
@@ -1244,6 +1247,7 @@ class IURun(IUBase):
         self._end_time: datetime = self._start_time + self._duration
         self._remaining_time: timedelta = self._end_time - self._start_time
         self._percent_complete: int = 0
+        self._pause_time: datetime = None
         self._status = self._get_status(stime)
         self.master_run: "IURun" = None
 
@@ -1261,6 +1265,11 @@ class IURun(IUBase):
     def future(self) -> bool:
         """Indicate if run is in the future"""
         return self._status == IURunStatus.FUTURE
+
+    @property
+    def paused(self) -> bool:
+        """Indicate if run is paused"""
+        return self._status == IURunStatus.PAUSED
 
     @property
     def start_time(self) -> datetime:
@@ -1405,7 +1414,9 @@ class IURun(IUBase):
 
     def _get_status(self, stime: datetime) -> IURunStatus:
         """Determine the state of this run"""
-        return IURunStatus.status(stime, self._start_time, self._end_time)
+        return IURunStatus.status(
+            stime, self._start_time, self._end_time, self._pause_time
+        )
 
     def update_status(self, stime: datetime) -> None:
         """Update the status of the run"""
@@ -1420,6 +1431,19 @@ class IURun(IUBase):
             self._percent_complete = int((time_elapsed / total_duration) * 100)
             return True
         return False
+
+    def pause(self, stime: datetime, state: bool) -> None:
+        """Change the pause status of the run"""
+        if state and self._pause_time is None:
+            self._pause_time = stime
+        elif not state and self._pause_time is not None:
+            delta = stime - self._pause_time
+            self._start_time += delta
+            self._end_time += delta
+            self._pause_time = None
+        else:
+            return
+        self.update_status(stime)
 
     def as_dict(self) -> OrderedDict:
         """Return this run as a dict"""
@@ -1684,7 +1708,7 @@ class IURunQueue(list[IURun]):
         # Figure out the next state change
         dates: list[datetime] = [utc_eot()]
         for run in self:
-            if not run.expired:
+            if not (run.expired or run.paused):
                 if run.running:
                     dates.append(run.end_time)
                 else:
@@ -2648,7 +2672,7 @@ class IUSequenceRun(IUBase):
         self._accumulated_duration = timedelta(0)
         self._first_zone: IUZone = None
         self._status = IURunStatus.UNKNOWN
-        self._paused = False
+        self._paused: datetime = None
         self._last_pause: datetime = None
         self._volume_trackers: list[CALLBACK_TYPE] = []
         self._volume_stats: dict[IUSequenceZoneRun, dict[IUZone, Decimal]] = {}
@@ -2691,14 +2715,19 @@ class IUSequenceRun(IUBase):
         return self._status == IURunStatus.EXPIRED
 
     @property
-    def active_zone(self) -> IUSequenceZoneRun:
-        """Return the active zone in the sequence"""
-        return self._active_zone
+    def future(self) -> bool:
+        """Indicate if this sequence starts in the future"""
+        return self._status == IURunStatus.FUTURE
 
     @property
     def paused(self) -> bool:
-        """Return true if in a pause state"""
-        return self._paused
+        """Indicate if this sequence is paused"""
+        return self._status == IURunStatus.PAUSED
+
+    @property
+    def active_zone(self) -> IUSequenceZoneRun:
+        """Return the active zone in the sequence"""
+        return self._active_zone
 
     @property
     def runs(self) -> dict[IURun, IUSequenceZoneRun]:
@@ -2800,7 +2829,9 @@ class IUSequenceRun(IUBase):
             self._accumulated_duration += run.duration
             zone.request_update()
         self._runs_pre_allocate.clear()
-        self._status = IURunStatus.status(stime, self.start_time, self.end_time)
+        self._status = IURunStatus.status(
+            stime, self.start_time, self.end_time, self._paused
+        )
 
     def first_zone(self) -> IUZone:
         """Return the first zone"""
@@ -2815,7 +2846,9 @@ class IUSequenceRun(IUBase):
     def zone_runs(self, sequence_zone: IUSequenceZone) -> list[IURun]:
         """Get the list of runs associated with the sequence zone"""
         return [
-            run for run, sqz in self._runs.items() if sqz.sequence_zone == sequence_zone
+            run
+            for run, sqz in self._runs.items()
+            if sqz is not None and sqz.sequence_zone == sequence_zone
         ]
 
     def run_index(self, run: IURun) -> int:
@@ -2837,6 +2870,8 @@ class IUSequenceRun(IUBase):
         result: IUSequenceZoneRun = None
         found = False
         for szr in self.runs.values():
+            if szr is None:
+                continue
             if not found and szr == sequence_zone_run:
                 found = True
             if found and szr.sequence_zone != sequence_zone_run.sequence_zone:
@@ -2858,20 +2893,25 @@ class IUSequenceRun(IUBase):
         return result
 
     def advance(
-        self, stime: datetime, duration: timedelta, runs: list[IURun] = None
+        self,
+        stime: datetime,
+        duration: timedelta,
+        runs: list[IURun] = None,
+        shift_start: bool = False,
     ) -> None:
         """Advance the sequence run. If duration is positive runs will be
         extended if running or delayed if in the future. If duration is
         negative runs will shortened or even skipped. The system will
         require a full muster as the status of runs, zones and sequences
         could have altered."""
-        def update_run(
-            stime: datetime, duration: timedelta, run: IURun | list[IURun] | None
-        ) -> None:
-            if run is None or run.expired:
+
+        def update_run(stime: datetime, duration: timedelta, run: IURun) -> None:
+            if run.expired:
                 return
             if duration > timedelta(0):
                 if run.running:
+                    if shift_start:
+                        run.start_time += duration
                     run.end_time += duration
                 elif run.future:
                     run.start_time += duration
@@ -2889,12 +2929,11 @@ class IUSequenceRun(IUBase):
         if self.running:
             if runs is None:
                 runs = self.runs
-            elif not isinstance(runs, list):
-                runs = [runs]
             for run in runs:
-                update_run(stime, duration, run)
-                if run.master_run is not None:
-                    update_run(stime, duration, run.master_run)
+                if not run.expired:
+                    update_run(stime, duration, run)
+                    if run.master_run is not None:
+                        update_run(stime, duration, run.master_run)
 
             end_time: datetime = None
             for run in self.runs:
@@ -2936,27 +2975,105 @@ class IUSequenceRun(IUBase):
         # Next zone is overlapped with current
         if next_start is not None and next_start < current_end:
             self.advance(stime, -(current_end - stime), current_runs)
-        self.advance(stime, -(duration - delay))
+        self.advance(stime, -(duration - delay), self._runs)
 
     def pause(self, stime: datetime) -> None:
-        """Pause the sequence run. At present this is a freeze rather
-        than a pause. What is on will stay that way including master
-        which may be in a post-amble state."""
-        # pylint: disable=unused-argument
-        self._paused = not self._paused
+        """Pause the sequence run"""
 
-    def update_pause(self, stime: datetime) -> bool:
-        """Move the runs forward in time"""
-        if self._paused:
-            if self._last_pause is not None:
-                self.advance(stime, stime - self._last_pause)
-            self._last_pause = stime
-            return True
-        if self._last_pause is not None:
-            self.advance(stime, stime - self._last_pause)
-            self._last_pause = None
-            return True
-        return False
+        def pause_run(stime: datetime, state: bool, runs: list[IURun]) -> None:
+            """Put the run and master in or out of pause state"""
+            for run in runs:
+                run.pause(stime, state)
+                if run.master_run is not None:
+                    run.master_run.pause(stime, state)
+
+        def run_state(run: IURun) -> int:
+            """Return the state of the run.
+            1 = expired
+            2 = preamble (positive)
+            3 = running
+            4 = postamble (positive)
+            5 = preamble (negative)
+            6 = postamble (negative)
+            7 = future
+            """
+            if run.expired and run.master_run.expired:
+                return 1
+            if run.future and run.master_run.running:
+                return 2
+            if run.expired and run.master_run.running:
+                return 4
+            if run.running and run.master_run.future:
+                return 5
+            if run.running and run.master_run.expired:
+                return 6
+            if run.future and run.master_run.future:
+                return 7
+            if run.running:
+                return 3
+            return 0
+
+        def split_run(run: IURun, start: datetime, duration=timedelta(0)) -> None:
+            split = run.zone.runs.add(
+                stime,
+                start,
+                duration,
+                run.zone,
+                run.schedule,
+                self,
+            )
+            self._runs[split] = None
+
+        if self._paused is None:
+            runs = self._runs.copy()
+            pause_list = self._runs.copy()
+            over_run = timedelta(0)
+            for run in runs:
+                state = run_state(run)
+                if state == 2:
+                    split_run(run, stime - self._controller.postamble)
+                elif state == 3:
+                    # Create a master postamble run out
+                    if (
+                        self._controller.postamble is not None
+                        and self._controller.postamble < timedelta(0)
+                    ):
+                        over_run = -self._controller.postamble
+                        run.master_run.start_time = stime + over_run
+                    run.start_time = stime
+                    split_run(run, stime, over_run)
+                elif state == 6:
+                    pause_list.pop(run)
+                elif state == 5:
+                    split_run(run, stime)
+                    run.start_time = stime
+                    run.master_run.start_time = stime - self._controller.preamble
+                elif state == 4:
+                    split_run(run, run.master_run.end_time - self._controller.postamble)
+            if over_run != timedelta(0):
+                self.advance(stime, -over_run, runs)
+            pause_run(stime, True, pause_list)
+            self._paused = stime
+            self._status = IURunStatus.PAUSED
+        else:
+            pause_run(stime, False, self._runs)
+            self._end_time += stime - self._paused
+            self._paused = None
+            self._status = IURunStatus.status(
+                stime, self._start_time, self._end_time, self._paused
+            )
+
+            next_start = min(
+                (run.start_time for run in self._runs if not run.expired), default=None
+            )
+            if next_start is not None:
+                offset = stime - next_start
+                if (
+                    self._controller.preamble is not None
+                    and self._controller.preamble > timedelta(0)
+                ):
+                    offset += self._controller.preamble
+                self.advance(stime, offset, self._runs, shift_start=True)
 
     def cancel(self, stime: datetime) -> None:
         """Cancel the sequence run"""
@@ -2993,8 +3110,12 @@ class IUSequenceRun(IUBase):
                 tracker()
             self._volume_trackers.clear()
 
+        if self.paused:
+            return False
         result = False
         for run, sequence_zone_run in self._runs.items():
+            if sequence_zone_run is None:
+                continue
             if run.running and not self.running:
                 # Sequence/sequence zone is starting
                 self._status = IURunStatus.RUNNING
@@ -3754,7 +3875,10 @@ class IUSequence(IUBase):
         is_running = parent_enabled and (
             self.is_enabled
             and self._run_queue.current_run is not None
-            and self._run_queue.current_run.running
+            and (
+                self._run_queue.current_run.running
+                or self._run_queue.current_run.paused
+            )
         )
 
         state_changed = is_running ^ self._is_on
@@ -3910,9 +4034,21 @@ class IUSequence(IUBase):
     def service_pause(self, data: MappingProxyType, stime: datetime) -> bool:
         """Pause the sequence"""
         # pylint: disable=unused-argument
+
+        def is_preamble(sqr: IUSequenceRun) -> bool:
+            return (
+                self._controller.preamble is not None
+                and sqr.future
+                and stime > sqr.start_time - self._controller.preamble
+            )
+
         changed = False
         for sqr in self._run_queue:
-            if sqr.running:
+            if (
+                sqr.paused
+                or is_preamble(sqr)
+                or (sqr.end_time >= stime and sqr.running)
+            ):
                 sqr.pause(stime)
                 changed = True
         return changed
@@ -4049,6 +4185,11 @@ class IUController(IUBase):
     def preamble(self) -> timedelta:
         """Return the preamble time for the controller"""
         return self._preamble
+
+    @property
+    def postamble(self) -> timedelta:
+        """Return the postamble time for the controller"""
+        return self._postamble
 
     @property
     def queue_manual(self) -> bool:
@@ -4357,10 +4498,6 @@ class IUController(IUBase):
             self.clear_zones(None)
             status |= IURQStatus.CLEARED
         else:
-            for sequence in self._sequences:
-                for sqr in sequence.runs:
-                    if sqr.update_pause(stime):
-                        status |= IURQStatus.CHANGED
             for zone in self._zones:
                 zone.runs.update_run_status(stime)
             self._run_queue.update_run_status(stime)

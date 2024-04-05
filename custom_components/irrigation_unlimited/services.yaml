@@ -343,6 +343,20 @@ manual_run:
           max: 9999
           mode: box
 
+pause:
+  name: Pause
+  description: Pause a running sequence
+  fields:
+    entity_id:
+      name: Entity Id
+      description: Name of the Irrigation Unlimited sequence entity.
+      example: "binary_sensor.irrigation_unlimited_c1_s1"
+      required: true
+      selector:
+        entity:
+          integration: irrigation_unlimited
+          domain: binary_sensor
+
 reload:
   name: Reload
   description: Reload the configuration
