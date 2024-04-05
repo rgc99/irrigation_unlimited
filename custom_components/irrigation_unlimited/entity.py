@@ -1,5 +1,7 @@
 """HA entity classes"""
+
 import json
+from collections.abc import Iterator
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.core import ServiceCall
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -229,7 +231,7 @@ class IURestore:
             self._restore_zone(z_data, controller)
         self._check_is_on(data, controller, None, None, None)
 
-    def report_is_on(self) -> str:
+    def report_is_on(self) -> Iterator[str]:
         """Generate a list of incomplete cycles"""
         for item in self._is_on:
             yield ",".join(
