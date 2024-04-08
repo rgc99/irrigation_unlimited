@@ -26,7 +26,6 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.template import Template, render_complex
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
-    async_call_later,
     async_track_state_change_event,
 )
 from homeassistant.helpers import sun
@@ -6184,7 +6183,7 @@ class IUCoordinator:
             EVENT_HOMEASSISTANT_STOP, self._async_shutdown_listener
         )
 
-    async def _async_replay_last_timer(self, atime: datetime) -> None:
+    def _replay_last_timer(self, atime: datetime) -> None:
         """Update after a service call"""
         self.request_update(False)
         self._muster_required = True
@@ -6406,7 +6405,7 @@ class IUCoordinator:
             self._logger.log_service_call(
                 service, stime, controller, zone, sequence, data1
             )
-            async_call_later(self._hass, 0, self._async_replay_last_timer)
+            self._replay_last_timer(stime)
         else:
             self._logger.log_service_call(
                 service, stime, controller, zone, sequence, data1, DEBUG
