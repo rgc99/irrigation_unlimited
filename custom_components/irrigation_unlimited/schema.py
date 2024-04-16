@@ -1,4 +1,5 @@
 """This module holds the vaious schemas"""
+
 from datetime import datetime, date
 import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
@@ -432,6 +433,11 @@ SUSPEND_SCHEMA = vol.All(
 CANCEL_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,
     vol.Optional(CONF_ZONES): cv.ensure_list,
+    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+}
+
+PAUSE_RESUME_SCHEMA = {
+    vol.Required(CONF_ENTITY_ID): cv.entity_ids,
     vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
 }
 

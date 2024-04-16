@@ -138,6 +138,7 @@ SERVICE_LOAD_SCHEDULE = "load_schedule"
 SERVICE_SUSPEND = "suspend"
 SERVICE_SKIP = "skip"
 SERVICE_PAUSE = "pause"
+SERVICE_RESUME = "resume"
 
 # Events
 EVENT_START = "start"

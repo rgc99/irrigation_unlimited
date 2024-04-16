@@ -13,6 +13,7 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_TIME_ADJUST,
     SERVICE_SUSPEND,
     SERVICE_PAUSE,
+    SERVICE_RESUME,
     SERVICE_SKIP,
 )
 
@@ -1182,7 +1183,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         )
         await exam.run_until("2023-11-16 06:26")
         await exam.call(
-            SERVICE_PAUSE,
+            SERVICE_RESUME,
             {
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
             },

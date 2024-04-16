@@ -357,6 +357,42 @@ pause:
           integration: irrigation_unlimited
           domain: binary_sensor
 
+    sequence_id:
+      name: Sequence Id
+      description: Id of the sequence to run.
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
+resume:
+  name: Resume
+  description: Resume a paused sequence
+  fields:
+    entity_id:
+      name: Entity Id
+      description: Name of the Irrigation Unlimited sequence entity.
+      example: "binary_sensor.irrigation_unlimited_c1_s1"
+      required: true
+      selector:
+        entity:
+          integration: irrigation_unlimited
+          domain: binary_sensor
+
+    sequence_id:
+      name: Sequence Id
+      description: Id of the sequence to run.
+      example: 1
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 9999
+          mode: box
+
 reload:
   name: Reload
   description: Reload the configuration

@@ -19,6 +19,7 @@ from .schema import (
     LOAD_SCHEDULE_SCHEMA,
     SUSPEND_SCHEMA,
     CANCEL_SCHEMA,
+    PAUSE_RESUME_SCHEMA,
 )
 
 from .const import (
@@ -33,6 +34,7 @@ from .const import (
     SERVICE_SUSPEND,
     SERVICE_SKIP,
     SERVICE_PAUSE,
+    SERVICE_RESUME,
 )
 
 
@@ -70,7 +72,11 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
     )
 
     platform.async_register_entity_service(
-        SERVICE_PAUSE, ENTITY_SCHEMA, async_entity_service_handler
+        SERVICE_PAUSE, PAUSE_RESUME_SCHEMA, async_entity_service_handler
+    )
+
+    platform.async_register_entity_service(
+        SERVICE_RESUME, PAUSE_RESUME_SCHEMA, async_entity_service_handler
     )
 
 

@@ -177,6 +177,7 @@ from .const import (
     SERVICE_SUSPEND,
     SERVICE_SKIP,
     SERVICE_PAUSE,
+    SERVICE_RESUME,
     STATUS_BLOCKED,
     STATUS_DELAY,
     STATUS_PAUSED,
@@ -1431,17 +1432,21 @@ class IURun(IUBase):
             return True
         return False
 
-    def pause(self, stime: datetime, state: bool) -> None:
+    def pause(self, stime: datetime) -> None:
         """Change the pause status of the run"""
-        if state and self._pause_time is None:
-            self._pause_time = stime
-        elif not state and self._pause_time is not None:
-            delta = stime - self._pause_time
-            self._start_time += delta
-            self._end_time += delta
-            self._pause_time = None
-        else:
+        if self._pause_time is not None:
             return
+        self._pause_time = stime
+        self.update_status(stime)
+
+    def resume(self, stime: datetime) -> None:
+        """Resume a paused run"""
+        if self._pause_time is None:
+            return
+        delta = stime - self._pause_time
+        self._start_time += delta
+        self._end_time += delta
+        self._pause_time = None
         self.update_status(stime)
 
     def as_dict(self) -> OrderedDict:
@@ -2979,12 +2984,12 @@ class IUSequenceRun(IUBase):
     def pause(self, stime: datetime) -> None:
         """Pause the sequence run"""
 
-        def pause_run(stime: datetime, state: bool, runs: list[IURun]) -> None:
-            """Put the run and master in or out of pause state"""
+        def pause_run(stime: datetime, runs: list[IURun]) -> None:
+            """Put the run and master into pause state"""
             for run in runs:
-                run.pause(stime, state)
+                run.pause(stime)
                 if run.master_run is not None:
-                    run.master_run.pause(stime, state)
+                    run.master_run.pause(stime)
 
         def run_state(run: IURun) -> int:
             """Return the state of the run.
@@ -3023,56 +3028,69 @@ class IUSequenceRun(IUBase):
             )
             self._runs[split] = None
 
-        if self._paused is None:
-            runs = self._runs.copy()
-            pause_list = self._runs.copy()
-            over_run = timedelta(0)
-            for run in runs:
-                state = run_state(run)
-                if state == 2:
-                    split_run(run, stime - self._controller.postamble)
-                elif state == 3:
-                    # Create a master postamble run out
-                    if (
-                        self._controller.postamble is not None
-                        and self._controller.postamble < timedelta(0)
-                    ):
-                        over_run = -self._controller.postamble
-                        run.master_run.start_time = stime + over_run
-                    run.start_time = stime
-                    split_run(run, stime, over_run)
-                elif state == 6:
-                    pause_list.pop(run)
-                elif state == 5:
-                    split_run(run, stime)
-                    run.start_time = stime
-                    run.master_run.start_time = stime - self._controller.preamble
-                elif state == 4:
-                    split_run(run, run.master_run.end_time - self._controller.postamble)
-            if over_run != timedelta(0):
-                self.advance(stime, -over_run, runs)
-            pause_run(stime, True, pause_list)
-            self._paused = stime
-            self._status = IURunStatus.PAUSED
-        else:
-            pause_run(stime, False, self._runs)
-            self._end_time += stime - self._paused
-            self._paused = None
-            self._status = IURunStatus.status(
-                stime, self._start_time, self._end_time, self._paused
-            )
-
-            next_start = min(
-                (run.start_time for run in self._runs if not run.expired), default=None
-            )
-            if next_start is not None:
-                offset = stime - next_start
+        if self._paused is not None:
+            return
+        runs = self._runs.copy()
+        pause_list = self._runs.copy()
+        over_run = timedelta(0)
+        for run in runs:
+            state = run_state(run)
+            if state == 2:
+                split_run(run, stime - self._controller.postamble)
+            elif state == 3:
+                # Create a master postamble run out
                 if (
-                    self._controller.preamble is not None
-                    and self._controller.preamble > timedelta(0)
+                    self._controller.postamble is not None
+                    and self._controller.postamble < timedelta(0)
                 ):
-                    offset += self._controller.preamble
-                self.advance(stime, offset, self._runs, shift_start=True)
+                    over_run = -self._controller.postamble
+                    run.master_run.start_time = stime + over_run
+                run.start_time = stime
+                split_run(run, stime, over_run)
+            elif state == 6:
+                pause_list.pop(run)
+            elif state == 5:
+                split_run(run, stime)
+                run.start_time = stime
+                run.master_run.start_time = stime - self._controller.preamble
+            elif state == 4:
+                split_run(run, run.master_run.end_time - self._controller.postamble)
+        if over_run != timedelta(0):
+            self.advance(stime, -over_run, runs)
+        pause_run(stime, pause_list)
+        self._paused = stime
+        self._status = IURunStatus.PAUSED
+
+    def resume(self, stime: datetime) -> None:
+        """Resume the sequence run"""
+
+        def resume_run(stime: datetime, runs: list[IURun]) -> None:
+            """Take the run and master out of pause state"""
+            for run in runs:
+                run.resume(stime)
+                if run.master_run is not None:
+                    run.master_run.resume(stime)
+
+        if self._paused is None:
+            return
+        resume_run(stime, self._runs)
+        self._end_time += stime - self._paused
+        self._paused = None
+        self._status = IURunStatus.status(
+            stime, self._start_time, self._end_time, self._paused
+        )
+
+        next_start = min(
+            (run.start_time for run in self._runs if not run.expired), default=None
+        )
+        if next_start is not None:
+            offset = stime - next_start
+            if (
+                self._controller.preamble is not None
+                and self._controller.preamble > timedelta(0)
+            ):
+                offset += self._controller.preamble
+            self.advance(stime, offset, self._runs, shift_start=True)
 
     def cancel(self, stime: datetime) -> None:
         """Cancel the sequence run"""
@@ -4043,12 +4061,20 @@ class IUSequence(IUBase):
 
         changed = False
         for sqr in self._run_queue:
-            if (
-                sqr.paused
-                or is_preamble(sqr)
-                or (sqr.end_time >= stime and sqr.running)
+            if not sqr.paused and (
+                is_preamble(sqr) or (sqr.end_time >= stime and sqr.running)
             ):
                 sqr.pause(stime)
+                changed = True
+        return changed
+
+    def service_resume(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Resume the sequence"""
+        # pylint: disable=unused-argument
+        changed = False
+        for sqr in self._run_queue:
+            if sqr.paused:
+                sqr.resume(stime)
                 changed = True
         return changed
 
@@ -4833,6 +4859,24 @@ class IUController(IUBase):
                 changed |= sequence.service_cancel(data, stime)
             if changed:
                 self.request_update(True)
+        return changed
+
+    def service_pause(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Handler for the pause service call"""
+        changed = False
+        sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
+        if sequence_list is not None:
+            for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
+                changed |= sequence.service_pause(data, stime)
+        return changed
+
+    def service_resume(self, data: MappingProxyType, stime: datetime) -> bool:
+        """Handler for the resume service call"""
+        changed = False
+        sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
+        if sequence_list is not None:
+            for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
+                changed |= sequence.service_resume(data, stime)
         return changed
 
 
@@ -6393,7 +6437,18 @@ class IUCoordinator:
                 sequence.service_skip(data1, stime)
         elif service == SERVICE_PAUSE:
             if sequence is not None:
-                sequence.service_pause(data1, stime)
+                changed = sequence.service_pause(data1, stime)
+            elif zone is not None:
+                pass
+            else:
+                controller.service_pause(data1, stime)
+        elif service == SERVICE_RESUME:
+            if sequence is not None:
+                changed = sequence.service_resume(data1, stime)
+            elif zone is not None:
+                pass
+            else:
+                controller.service_resume(data1, stime)
         elif service == SERVICE_LOAD_SCHEDULE:
             render_positive_time_period(data1, CONF_DURATION)
             self.service_load_schedule(data1)
