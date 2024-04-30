@@ -8,7 +8,7 @@
 [![License][license-shield]][license]
 
 [![hacs][hacsbadge]][hacs]
-![Project Maintenance][maintenance-shield]
+[![Project Maintenance][maintenance-shield]](https://github.com/rgc99)
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
 [![Community Forum][forum-shield]][forum]
