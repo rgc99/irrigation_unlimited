@@ -21,6 +21,7 @@ from homeassistant.core import (
     CALLBACK_TYPE,
     DOMAIN as HADOMAIN,
     Event as HAEvent,
+    split_entity_id,
 )
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.template import Template, render_complex
@@ -46,12 +47,17 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
+    SERVICE_CLOSE_VALVE,
+    SERVICE_OPEN_VALVE,
+    SERVICE_CLOSE_COVER,
+    SERVICE_OPEN_COVER,
     STATE_OFF,
     STATE_ON,
     WEEKDAYS,
     ATTR_ENTITY_ID,
     CONF_FOR,
     CONF_UNTIL,
+    Platform,
 )
 
 from .history import IUHistory
@@ -860,13 +866,30 @@ class IUSwitch:
 
     def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
         """Make the HA call to physically turn the switch on/off"""
-        self._hass.async_create_task(
-            self._hass.services.async_call(
-                HADOMAIN,
-                SERVICE_TURN_ON if state else SERVICE_TURN_OFF,
-                {ATTR_ENTITY_ID: entity_id},
+
+        def make_call(entity: str) -> None:
+            domain = split_entity_id(entity)[0]
+            match domain:
+                case Platform.VALVE:
+                    service = SERVICE_OPEN_VALVE if state else SERVICE_CLOSE_VALVE
+                case Platform.COVER:
+                    service = SERVICE_OPEN_COVER if state else SERVICE_CLOSE_COVER
+                case _:
+                    domain = HADOMAIN
+                    service = SERVICE_TURN_ON if state else SERVICE_TURN_OFF
+            self._hass.async_create_task(
+                self._hass.services.async_call(
+                    domain,
+                    service,
+                    {ATTR_ENTITY_ID: entity},
+                )
             )
-        )
+
+        if isinstance(entity_id, list):
+            for ent in entity_id:
+                make_call(ent)
+        else:
+            make_call(entity_id)
 
     def _check_back(self, atime: datetime) -> None:
         """Recheck the switch in HA to see if state concurs"""

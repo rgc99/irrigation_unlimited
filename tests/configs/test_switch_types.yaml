@@ -1,0 +1,56 @@
+default_config:
+
+# Dummy switches
+input_boolean:
+  dummy_switch_c1_m:
+    name: Dummy Master Switch
+
+  dummy_switch_c1_z1:
+    name: Dummy Zone Switch 1
+
+  dummy_cover_switch:
+    name: Dummy Cover Switch
+
+
+irrigation_unlimited:
+  refresh_interval: 2000
+  controllers:
+    - name: 'My Garden'
+      zones:
+        - name: 'Zone 1'
+          entity_id: dummy_domain.dummy_entity
+          schedules:
+            time: "06:05"
+            duration: "00:10"
+          check_back:
+            states: none
+  testing:
+    enabled: true
+    output_events: false
+    show_log: false
+    autoplay: false
+    times:
+      - name: '1-Homeassistant generic domain (switch, light)'
+        start: '2021-01-04 06:00'
+        end: '2021-01-04 06:30'
+        results:
+          - {t: '2021-01-04 06:05:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 06:05:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 0, s: 0}
+      - name: '2-Valve domain'
+        start: '2021-01-04 06:00'
+        end: '2021-01-04 06:30'
+        results:
+          - {t: '2021-01-04 06:05:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 06:05:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 0, s: 0}
+      - name: '3-Cover domain'
+        start: '2021-01-04 06:00'
+        end: '2021-01-04 06:30'
+        results:
+          - {t: '2021-01-04 06:05:00', c: 1, z: 0, s: 1}
+          - {t: '2021-01-04 06:05:00', c: 1, z: 1, s: 1}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 1, s: 0}
+          - {t: '2021-01-04 06:15:00', c: 1, z: 0, s: 0}
