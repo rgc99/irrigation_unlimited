@@ -200,17 +200,21 @@ LOAD_SCHEDULE_SCHEMA = vol.Schema(
     }
 )
 
-CHECK_BACK_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_STATES): vol.Any("none", "all", "on", "off"),
-        vol.Optional(CONF_DELAY): cv.positive_int,
-        vol.Optional(CONF_RETRIES): cv.positive_int,
-        vol.Optional(CONF_RESYNC): cv.boolean,
-        vol.Optional(CONF_STATE_ON): cv.string,  # Deprecated
-        vol.Optional(CONF_STATE_OFF): cv.string,  # Deprecated
-        vol.Optional(CONF_ENTITY_ID): cv.entity_id,
-        vol.Optional(CONF_TOGGLE): cv.boolean,
-    }
+CHECK_BACK_SCHEMA = vol.All(
+    cv.deprecated(CONF_STATE_ON),
+    cv.deprecated(CONF_STATE_OFF),
+    vol.Schema(
+        {
+            vol.Optional(CONF_STATES): vol.Any("none", "all", "on", "off"),
+            vol.Optional(CONF_DELAY): cv.positive_int,
+            vol.Optional(CONF_RETRIES): cv.positive_int,
+            vol.Optional(CONF_RESYNC): cv.boolean,
+            vol.Optional(CONF_STATE_ON): cv.string,  # Deprecated
+            vol.Optional(CONF_STATE_OFF): cv.string,  # Deprecated
+            vol.Optional(CONF_ENTITY_ID): cv.entity_id,
+            vol.Optional(CONF_TOGGLE): cv.boolean,
+        }
+    ),
 )
 
 VOLUME_SCHEMA = vol.Schema(
