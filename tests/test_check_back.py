@@ -1,4 +1,5 @@
 """irrigation_unlimited check_back tester"""
+
 from datetime import datetime, timedelta
 from unittest.mock import patch
 import homeassistant.core as ha
@@ -288,16 +289,12 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     {
                         "domain": "homeassistant",
                         "service": "turn_off",
-                        "service_data": {
-                            "entity_id": ["input_boolean.dummy_switch_z1"]
-                        },
+                        "service_data": {"entity_id": "input_boolean.dummy_switch_z1"},
                     },
                     {
                         "domain": "homeassistant",
                         "service": "turn_on",
-                        "service_data": {
-                            "entity_id": ["input_boolean.dummy_switch_z1"]
-                        },
+                        "service_data": {"entity_id": "input_boolean.dummy_switch_z1"},
                     },
                 ]
                 assert hass.states.get("input_boolean.dummy_switch_z1").state == "on"
