@@ -75,75 +75,76 @@ async def test_switch_types(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         zs0 = exam.coordinator.controllers[0].zones[0]._switch
 
         # Test HA generic (switch, light) turn_off, turn_on
-        entity_id = f"{Platform.SWITCH}.test_valve"
-        hass.states.async_set(entity_id, STATE_OFF)
-        off_calls = async_mock_service(hass, ha.DOMAIN, SERVICE_TURN_OFF)
-        on_calls = async_mock_service(hass, ha.DOMAIN, SERVICE_TURN_ON)
+        switch_entity_id = f"{Platform.SWITCH}.test_switch"
+        hass.states.async_set(switch_entity_id, STATE_OFF)
+        ha_off_calls = async_mock_service(hass, ha.DOMAIN, SERVICE_TURN_OFF)
+        ha_on_calls = async_mock_service(hass, ha.DOMAIN, SERVICE_TURN_ON)
 
-        zs0._switch_entity_id = [entity_id]
-        zs0._state_on = STATE_ON
-        zs0._state_off = STATE_OFF
-
+        zs0._switch_entity_id = [switch_entity_id]
         await exam.run_test(1)
 
-        assert len(off_calls) == 1
-        call = off_calls[0]
+        assert len(ha_off_calls) == 1
+        call = ha_off_calls[0]
         assert call.domain == ha.DOMAIN
         assert call.service == SERVICE_TURN_OFF
-        assert call.data == {"entity_id": entity_id}
+        assert call.data == {"entity_id": switch_entity_id}
 
-        assert len(on_calls) == 1
-        call = on_calls[0]
+        assert len(ha_on_calls) == 1
+        call = ha_on_calls[0]
         assert call.domain == ha.DOMAIN
         assert call.service == SERVICE_TURN_ON
-        assert call.data == {"entity_id": entity_id}
+        assert call.data == {"entity_id": switch_entity_id}
 
         # Test valve platform
-        entity_id = f"{Platform.VALVE}.test_valve"
-        hass.states.async_set(entity_id, STATE_CLOSED)
-        off_calls = async_mock_service(hass, Platform.VALVE, SERVICE_CLOSE_VALVE)
-        on_calls = async_mock_service(hass, Platform.VALVE, SERVICE_OPEN_VALVE)
+        valve_entity_id = f"{Platform.VALVE}.test_valve"
+        hass.states.async_set(valve_entity_id, STATE_CLOSED)
+        valve_off_calls = async_mock_service(hass, Platform.VALVE, SERVICE_CLOSE_VALVE)
+        valve_on_calls = async_mock_service(hass, Platform.VALVE, SERVICE_OPEN_VALVE)
 
-        zs0._switch_entity_id = [entity_id]
-        zs0._state_on = STATE_OPEN
-        zs0._state_off = STATE_CLOSED
-
+        zs0._switch_entity_id = [valve_entity_id]
         await exam.run_test(2)
 
-        assert len(off_calls) == 1
-        call = off_calls[0]
+        assert len(valve_off_calls) == 1
+        call = valve_off_calls[0]
         assert call.domain == Platform.VALVE
         assert call.service == SERVICE_CLOSE_VALVE
-        assert call.data == {"entity_id": entity_id}
+        assert call.data == {"entity_id": valve_entity_id}
 
-        assert len(on_calls) == 1
-        call = on_calls[0]
+        assert len(valve_on_calls) == 1
+        call = valve_on_calls[0]
         assert call.domain == Platform.VALVE
         assert call.service == SERVICE_OPEN_VALVE
-        assert call.data == {"entity_id": entity_id}
+        assert call.data == {"entity_id": valve_entity_id}
 
         # Test cover platform
-        entity_id = f"{Platform.COVER}.test_valve"
-        hass.states.async_set(entity_id, STATE_CLOSED)
-        off_calls = async_mock_service(hass, Platform.COVER, SERVICE_CLOSE_COVER)
-        on_calls = async_mock_service(hass, Platform.COVER, SERVICE_OPEN_COVER)
+        cover_entity_id = f"{Platform.COVER}.test_cover"
+        hass.states.async_set(cover_entity_id, STATE_CLOSED)
+        cover_off_calls = async_mock_service(hass, Platform.COVER, SERVICE_CLOSE_COVER)
+        cover_on_calls = async_mock_service(hass, Platform.COVER, SERVICE_OPEN_COVER)
 
-        zs0._switch_entity_id = [entity_id]
-        zs0._state_on = STATE_OPEN
-        zs0._state_off = STATE_CLOSED
-
+        zs0._switch_entity_id = [cover_entity_id]
         await exam.run_test(3)
 
-        assert len(off_calls) == 1
-        call = off_calls[0]
+        assert len(cover_off_calls) == 1
+        call = cover_off_calls[0]
         assert call.domain == Platform.COVER
         assert call.service == SERVICE_CLOSE_COVER
-        assert call.data == {"entity_id": entity_id}
+        assert call.data == {"entity_id": cover_entity_id}
 
-        assert len(on_calls) == 1
-        call = on_calls[0]
+        assert len(valve_on_calls) == 1
+        call = cover_on_calls[0]
         assert call.domain == Platform.COVER
         assert call.service == SERVICE_OPEN_COVER
-        assert call.data == {"entity_id": entity_id}
+        assert call.data == {"entity_id": cover_entity_id}
+
+        # Mixed entity domains
+        zs0._switch_entity_id = [switch_entity_id, valve_entity_id, cover_entity_id]
+        await exam.run_test(4)
+        assert len(ha_off_calls) == 2
+        assert len(ha_on_calls) == 2
+        assert len(valve_off_calls) == 2
+        assert len(valve_on_calls) == 2
+        assert len(cover_off_calls) == 2
+        assert len(cover_on_calls) == 2
 
         exam.check_summary()

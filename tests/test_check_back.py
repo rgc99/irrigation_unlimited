@@ -165,6 +165,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     {
                         "vtime": parse_utc("2021-01-04 15:12:00"),
                         "expected": "on",
+                        "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
@@ -172,6 +173,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     {
                         "vtime": parse_utc("2021-01-04 15:12:30"),
                         "expected": "on",
+                        "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
@@ -195,6 +197,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     {
                         "vtime": parse_utc("2021-01-04 15:12:00"),
                         "expected": "on",
+                        "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
@@ -202,6 +205,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     {
                         "vtime": parse_utc("2021-01-04 15:12:30"),
                         "expected": "on",
+                        "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
@@ -209,6 +213,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     {
                         "vtime": parse_utc("2021-01-04 15:13:00"),
                         "expected": "on",
+                        "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
@@ -218,6 +223,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                     {
                         "vtime": parse_utc("2021-01-04 15:13:30"),
                         "expected": "on",
+                        "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
