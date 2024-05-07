@@ -147,6 +147,7 @@ from .const import (
     ICON_CONTROLLER_OFF,
     ICON_CONTROLLER_ON,
     ICON_CONTROLLER_PAUSED,
+    ICON_CONTROLLER_DELAY,
     ICON_DISABLED,
     ICON_SUSPENDED,
     ICON_SEQUENCE_DELAY,
@@ -4284,7 +4285,7 @@ class IUController(IUBase):
                 if self.is_on:
                     return ICON_CONTROLLER_ON
                 if self.is_paused:
-                    return ICON_CONTROLLER_PAUSED
+                    return ICON_CONTROLLER_DELAY
                 return ICON_CONTROLLER_OFF
             return ICON_SUSPENDED
         return ICON_DISABLED
@@ -4307,7 +4308,7 @@ class IUController(IUBase):
                     if self._is_on:
                         return STATE_ON
                     if self._run_queue.in_sequence:
-                        return STATUS_PAUSED
+                        return STATUS_DELAY
                     return STATE_OFF
                 return STATUS_SUSPENDED
             return STATUS_DISABLED
