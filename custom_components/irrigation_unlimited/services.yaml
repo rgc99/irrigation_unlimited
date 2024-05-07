@@ -349,7 +349,7 @@ pause:
   fields:
     entity_id:
       name: Entity Id
-      description: Name of the Irrigation Unlimited sequence entity.
+      description: Name of the Irrigation Unlimited controller or sequence entity.
       example: "binary_sensor.irrigation_unlimited_c1_s1"
       required: true
       selector:
@@ -359,7 +359,7 @@ pause:
 
     sequence_id:
       name: Sequence Id
-      description: Id of the sequence to run.
+      description: Used when entity_id is the controller. Id of the sequence to pause (0=all sequences)
       example: 1
       required: false
       selector:
@@ -374,7 +374,7 @@ resume:
   fields:
     entity_id:
       name: Entity Id
-      description: Name of the Irrigation Unlimited sequence entity.
+      description: Name of the Irrigation Unlimited contoller or sequence entity.
       example: "binary_sensor.irrigation_unlimited_c1_s1"
       required: true
       selector:
@@ -384,7 +384,7 @@ resume:
 
     sequence_id:
       name: Sequence Id
-      description: Id of the sequence to run.
+      description: Used when entity_id is the controller. Id of the sequence to resume (0=all sequences).
       example: 1
       required: false
       selector:
