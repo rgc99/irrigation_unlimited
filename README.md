@@ -48,13 +48,14 @@
   - [6.8. Tips](#68-tips)
 - [7. Services](#7-services)
   - [7.1. Services `enable`, `disable` and `toggle`](#71-services-enable-disable-and-toggle)
-  - [7.2. Service `suspend`](#72-service-suspend)
-  - [7.3. Service `cancel`](#73-service-cancel)
-  - [7.4. Service `manual_run`](#74-service-manual_run)
-  - [7.5. Service `adjust_time`](#75-service-adjust_time)
-  - [7.6. Service `load_schedule`](#76-service-load_schedule)
-  - [7.7. Service `reload`](#77-service-reload)
-  - [7.8. Service call access roadmap](#78-service-call-access-roadmap)
+  - [7.2. Services `pause` and `resume`](#72-services-pause-and-resume)
+  - [7.3. Service `suspend`](#72-service-suspend)
+  - [7.4. Service `cancel`](#73-service-cancel)
+  - [7.5. Service `manual_run`](#74-service-manual_run)
+  - [7.6. Service `adjust_time`](#75-service-adjust_time)
+  - [7.7. Service `load_schedule`](#76-service-load_schedule)
+  - [7.8. Service `reload`](#77-service-reload)
+  - [7.9. Service call access roadmap](#78-service-call-access-roadmap)
 - [8. Frontend](#8-frontend)
   - [8.1. Generic Cards](#81-generic-cards)
   - [8.2. Timeline](#82-timeline)
@@ -745,7 +746,18 @@ Enables/disables/toggles the controller, zone, sequence or sequence zone respect
 | `sequence_id` | [number](#145-sequence) | no | Sequence to enable/disable/toggle. |
 | `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
 
-### 7.2. Service `suspend`
+### 7.2. Services `pause` and `resume`
+
+Pauses/resumes the controller, zone, sequence or sequence zone respectively. This service call "stops the clock" when `paused` so to speak and "continues to run it" upon `resume'.
+
+This is particularly helpful in a use case scenario where a main water supply is used for both irrigation and ie filling a domestic cold water tank at the same time. If the water pressure is only sufficient for either irrigaton or tank filling, this service call allows to `pause` the irrigation whilst a tank is filled, and then `resumes' irrigation without interrupting the time allocated to the sequences or zones thereof. 
+
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to pause/resume. |
+| `sequence_id` | [number](#145-sequence) | no | Sequence to pause/resume. If set to 0 then all sequences of the controller will be effected. |
+
+### 7.3. Service `suspend`
 
 NOTE: Available from release 2023.9.0.
 
@@ -762,7 +774,7 @@ Suspend operation of a controller, zone, sequence or sequence zone for a period 
 
 \* Must have one and only one of `for`, `until` or `reset`.
 
-### 7.3. Service `cancel`
+### 7.4. Service `cancel`
 
 Cancels the current running schedule.
 
@@ -770,7 +782,7 @@ Cancels the current running schedule.
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to cancel. |
 
-### 7.4. Service `manual_run`
+### 7.5. Service `manual_run`
 
 Turn on the controller or zone for a period of time. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence. Zone times are calculated and rounded to the nearest time boundary. This means the total run time may vary from the specified time.
 
@@ -782,7 +794,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | `queue` | boolean | no | Queue or run immediately. |
 | `sequence_id` | [number](#145-sequence) | no | Sequence to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. |
 
-### 7.5. Service `adjust_time`
+### 7.6. Service `adjust_time`
 
 Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
@@ -805,7 +817,7 @@ Tip: Use forecast and observation data collected by weather integrations in auto
 
 \* Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`.
 
-### 7.6. Service `load_schedule`
+### 7.7. Service `load_schedule`
 
 Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched.
 
@@ -821,11 +833,11 @@ Reload a schedule. This will allow an edit to an existing schedule. All fields a
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | | Enable/disable the schedule |
 
-### 7.7. Service `reload`
+### 7.8. Service `reload`
 
 Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading. Note: since version 2021.10.0 all settings can be changed including new controllers and zones.
 
-### 7.8. Service call access roadmap
+### 7.9. Service call access roadmap
 
 A reminder that sequences directly descend from a controller. Therefore service calls that manipulate a sequence should address the parent controller. An entity_id of a zone when trying to adjust a sequence will most likely not have the desired effect.
 
