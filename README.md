@@ -62,7 +62,7 @@
   - [8.3. Frontend Requirements](#83-frontend-requirements)
   - [8.4. Manual run card](#84-manual-run-card)
   - [8.5. Enable-disable card](#85-enable-disable-card)
-  - [8.5. Pause-resume button](#86-pause-resume-button)
+  - [8.6. Pause-resume button](#86-pause-resume-button)
 - [9. Automation](#9-automation)
   - [9.1. ESPHome](#91-esphome)
   - [9.2. HAsmartirrigation](#92-hasmartirrigation)
