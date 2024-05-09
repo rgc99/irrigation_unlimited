@@ -62,6 +62,7 @@
   - [8.3. Frontend Requirements](#83-frontend-requirements)
   - [8.4. Manual run card](#84-manual-run-card)
   - [8.5. Enable-disable card](#85-enable-disable-card)
+  - [8.5. Pause-resume button](#86-pause-resume-button)
 - [9. Automation](#9-automation)
   - [9.1. ESPHome](#91-esphome)
   - [9.2. HAsmartirrigation](#92-hasmartirrigation)
@@ -757,6 +758,8 @@ This is particularly helpful in a use case scenario where a main water supply is
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to pause/resume. |
 | `sequence_id` | [number](#145-sequence) | no | Sequence to pause/resume. If set to 0 then all sequences of the controller will be effected. |
 
+There is an example for a [pause-resume button](#86-pause-resume-button). 
+
 ### 7.3. Service `suspend`
 
 NOTE: Available from release 2023.9.0.
@@ -1242,6 +1245,66 @@ Here is a card for manual runs, see [requirements](#83-frontend-requirements) ab
 This card will enable or disable a zone from a dropdown list, see [requirements](#83-frontend-requirements) above. The code is [here](./lovelace/card_enable_disable.yaml). Like the manual run card it requires [paper-buttons-row](https://github.com/jcwillox/lovelace-paper-buttons-row).
 
 ![enable_disable_card](./examples/card_enable_disable.png)
+
+### 8.6. Pause-resume button
+
+The following yaml script can be attached to a front end button to [`pause` and `resume`](#72-services-pause-and-resume) all zones of all sequences of all UI controllers. 
+
+![pause_resume_button](https://private-user-images.githubusercontent.com/4627761/326262270-197da966-c8d6-4d0a-be32-d01d3f5ac8d9.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTUyNDcwOTUsIm5iZiI6MTcxNTI0Njc5NSwicGF0aCI6Ii80NjI3NzYxLzMyNjI2MjI3MC0xOTdkYTk2Ni1jOGQ2LTRkMGEtYmUzMi1kMDFkM2Y1YWM4ZDkuanBnP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwOSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDlUMDkyNjM1WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YWE5OWEyOWRmOTJiZDk1ODA0ZGMxOGJmMTYyMWUyMTI2ODA4NmExYTk2YTAzZDcxYWVjZGQwN2I5MDNmZTExNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.CqC92-XzUGe6KzINdQD2eQmNQ56guZC3sVxTJ2opuMg)
+
+Please note that a group helper for all UI controllers is required for this code sample to work.
+
+```yaml
+group:
+  irrigation_controllers:
+  name: Irrigation Controllers
+  entities:
+    #Add at least one UI controller entity here
+    - binary_sensor.irrigation_unlimited_c1_m
+    - binary_sensor.irrigation_unlimited_c2_m
+    - binary_sensor.irrigation_unlimited_c3_m
+    - binary_sensor.irrigation_unlimited_c4_m
+    - binary_sensor.irrigation_unlimited_c5_m
+    - binary_sensor.irrigation_unlimited_c6_m
+    #Add as many controller entities as you have configured
+
+script:
+  toggle_irrigation:
+      alias: "Irrigation: Pause/Resume all irrigation unlimited controllers"
+      sequence:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {% set paused_sensors = states.binary_sensor 
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$') 
+                        | selectattr('attributes.status', 'equalto', 'paused') 
+                        | map(attribute='entity_id') 
+                        | list %}
+                    {{ paused_sensors | length > 0 }}
+              sequence:
+                - service: irrigation_unlimited.resume
+                  data:
+                    entity_id: group.irrigation_controllers
+                    sequence_id: 0
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {% set paused_sensors = states.binary_sensor 
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$') 
+                        | selectattr('attributes.status', 'equalto', 'paused') 
+                        | map(attribute='entity_id') 
+                        | list %}
+                    {{ paused_sensors | length == 0 and states('group.irrigation_controllers') == 'on' }}
+              sequence:
+                - service: irrigation_unlimited.pause
+                  data:
+                    entity_id: group.irrigation_controllers
+                    sequence_id: 0
+      icon: mdi:play-pause
+```
+
+[Issue 142] (https://github.com/rgc99/irrigation_unlimited/issues/142) has a detailed discussion relating the [`pause` and `resume` service call](#72-services-pause-and-resume) and its various use cases. 
 
 ## 9. Automation
 
