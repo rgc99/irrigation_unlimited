@@ -749,16 +749,16 @@ Enables/disables/toggles the controller, zone, sequence or sequence zone respect
 
 ### 7.2. Services `pause` and `resume`
 
-Pauses/resumes the controller, zone, sequence or sequence zone respectively. This service call "stops the clock" when `paused` so to speak and "continues to run it" upon `resume'.
+Pauses/resumes a sequence. This service call "stops the clock" when `paused` so to speak and "continues to run it" upon `resume`.
 
-This is particularly helpful in a use case scenario where a main water supply is used for both irrigation and ie filling a domestic cold water tank at the same time. If the water pressure is only sufficient for either irrigaton or tank filling, this service call allows to `pause` the irrigation whilst a tank is filled, and then `resumes' irrigation without interrupting the time allocated to the sequences or zones thereof. 
+This is particularly helpful in a use case scenario where a main water supply is used for both irrigation and ie filling a domestic cold water tank at the same time. If the water pressure is only sufficient for either irrigaton or tank filling, this service call allows to `pause` the irrigation whilst a tank is filled, and then `resumes` irrigation without interrupting the time allocated to the sequences or zones thereof. 
 
 | Service data attribute | Type | Required | Description |
 | ---------------------- | ---- | -------- | ----------- |
-| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to pause/resume. |
-| `sequence_id` | [number](#145-sequence) | no | Sequence to pause/resume. If set to 0 then all sequences of the controller will be effected. |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Entity_id of a controller or sequence to pause/resume. If a controller entity is selected it will target the sequence or all sequences (see next parameter). If more than one entity_id are to be targeted a group integration helper may be used. |
+| `sequence_id` | [number](#145-sequence) | only if entity_id represents a controller | Sequence to pause/resume. The sequence_id is only used when the entity_id is the controller. If sequence_id is set to 0 then all sequences of the controller will be effected. |
 
-There is an example for a [pause-resume button](#86-pause-resume-button). 
+There is an example for a [pause-resume button](#86-pause-resume-button) that targets all sequences within all controllers creating a globla `pause` and `resume` button.
 
 ### 7.3. Service `suspend`
 
@@ -1250,7 +1250,7 @@ This card will enable or disable a zone from a dropdown list, see [requirements]
 
 The following yaml script can be attached to a front end button to [`pause` and `resume`](#72-services-pause-and-resume) all zones of all sequences of all UI controllers. 
 
-![pause_resume_button](https://private-user-images.githubusercontent.com/4627761/326262270-197da966-c8d6-4d0a-be32-d01d3f5ac8d9.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTUyNDcwOTUsIm5iZiI6MTcxNTI0Njc5NSwicGF0aCI6Ii80NjI3NzYxLzMyNjI2MjI3MC0xOTdkYTk2Ni1jOGQ2LTRkMGEtYmUzMi1kMDFkM2Y1YWM4ZDkuanBnP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwOSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDlUMDkyNjM1WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YWE5OWEyOWRmOTJiZDk1ODA0ZGMxOGJmMTYyMWUyMTI2ODA4NmExYTk2YTAzZDcxYWVjZGQwN2I5MDNmZTExNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.CqC92-XzUGe6KzINdQD2eQmNQ56guZC3sVxTJ2opuMg)
+![pause_resume_button](./examples/pause-resume-button.png)
 
 Please note that a group helper for all UI controllers is required for this code sample to work.
 
