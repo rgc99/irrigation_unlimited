@@ -374,7 +374,7 @@ resume:
   fields:
     entity_id:
       name: Entity Id
-      description: Name of the Irrigation Unlimited contoller or sequence entity.
+      description: Name of the Irrigation Unlimited controller or sequence entity.
       example: "binary_sensor.irrigation_unlimited_c1_s1"
       required: true
       selector:
