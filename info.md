@@ -21,9 +21,10 @@ This integration is for irrigation systems large and small. It can offer some co
 2. Unlimited zones.
 3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...).  Use cron expressions. Overlapped schedules.
 4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between. A 'playlist' for your zones.
-5. Suitable for indoor (greenhouse, hothouse, undercover areas) and outdoor (gardens, lawns, crops).
-6. Hardware independent. Use your own switches/valve controllers.
-7. Software independent. Pure play python.
+5. Plenty of under-the-hood service calls to programmatically fine-tune irrigation requirements (enable/disable/toggle, pause/resume, suspend/cancel, manual_run, adjust_time, load_schedule, reload)
+7. Suitable for indoor (greenhouse, hothouse, undercover areas) and outdoor (gardens, lawns, crops).
+8. Hardware independent. Use your own switches/valve controllers.
+9. Software independent. Pure play python.
 
 *Practical limitations will depend on your hardware.
 

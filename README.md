@@ -48,19 +48,21 @@
   - [6.8. Tips](#68-tips)
 - [7. Services](#7-services)
   - [7.1. Services `enable`, `disable` and `toggle`](#71-services-enable-disable-and-toggle)
-  - [7.2. Service `suspend`](#72-service-suspend)
-  - [7.3. Service `cancel`](#73-service-cancel)
-  - [7.4. Service `manual_run`](#74-service-manual_run)
-  - [7.5. Service `adjust_time`](#75-service-adjust_time)
-  - [7.6. Service `load_schedule`](#76-service-load_schedule)
-  - [7.7. Service `reload`](#77-service-reload)
-  - [7.8. Service call access roadmap](#78-service-call-access-roadmap)
+  - [7.2. Services `pause` and `resume`](#72-services-pause-and-resume)
+  - [7.3. Service `suspend`](#73-service-suspend)
+  - [7.4. Service `cancel`](#74-service-cancel)
+  - [7.5. Service `manual_run`](#75-service-manual_run)
+  - [7.6. Service `adjust_time`](#76-service-adjust_time)
+  - [7.7. Service `load_schedule`](#77-service-load_schedule)
+  - [7.8. Service `reload`](#78-service-reload)
+  - [7.9. Service call access roadmap](#79-service-call-access-roadmap)
 - [8. Frontend](#8-frontend)
   - [8.1. Generic Cards](#81-generic-cards)
   - [8.2. Timeline](#82-timeline)
   - [8.3. Frontend Requirements](#83-frontend-requirements)
   - [8.4. Manual run card](#84-manual-run-card)
   - [8.5. Enable-disable card](#85-enable-disable-card)
+  - [8.6. Pause-resume button](#86-pause-resume-button)
 - [9. Automation](#9-automation)
   - [9.1. ESPHome](#91-esphome)
   - [9.2. HAsmartirrigation](#92-hasmartirrigation)
@@ -745,7 +747,20 @@ Enables/disables/toggles the controller, zone, sequence or sequence zone respect
 | `sequence_id` | [number](#145-sequence) | no | Sequence to enable/disable/toggle. |
 | `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
 
-### 7.2. Service `suspend`
+### 7.2. Services `pause` and `resume`
+
+Pauses/resumes a sequence. This service call "stops the clock" when `paused` so to speak and "continues to run it" upon `resume`.
+
+This is particularly helpful in a use case scenario where a main water supply is used for both irrigation and ie filling a domestic cold water tank at the same time. If the water pressure is only sufficient for either irrigaton or tank filling, this service call allows to `pause` the irrigation whilst a tank is filled, and then `resumes` irrigation without interrupting the time allocated to the sequences or zones thereof. 
+
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Entity_id of a controller or sequence to pause/resume. If a controller entity is selected it will target the sequence or all sequences (see next parameter). If more than one entity_id are to be targeted a group integration helper may be used. |
+| `sequence_id` | [number](#145-sequence) | only if entity_id represents a controller | Sequence to pause/resume. The sequence_id is only used when the entity_id is the controller. If sequence_id is set to 0 then all sequences of the controller will be effected. |
+
+There is an example for a [pause-resume button](#86-pause-resume-button) that targets all sequences within all controllers creating a globla `pause` and `resume` button.
+
+### 7.3. Service `suspend`
 
 NOTE: Available from release 2023.9.0.
 
@@ -762,7 +777,7 @@ Suspend operation of a controller, zone, sequence or sequence zone for a period 
 
 \* Must have one and only one of `for`, `until` or `reset`.
 
-### 7.3. Service `cancel`
+### 7.4. Service `cancel`
 
 Cancels the current running schedule.
 
@@ -770,7 +785,7 @@ Cancels the current running schedule.
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to cancel. |
 
-### 7.4. Service `manual_run`
+### 7.5. Service `manual_run`
 
 Turn on the controller or zone for a period of time. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence. Zone times are calculated and rounded to the nearest time boundary. This means the total run time may vary from the specified time.
 
@@ -782,7 +797,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | `queue` | boolean | no | Queue or run immediately. |
 | `sequence_id` | [number](#145-sequence) | no | Sequence to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. |
 
-### 7.5. Service `adjust_time`
+### 7.6. Service `adjust_time`
 
 Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
@@ -805,7 +820,7 @@ Tip: Use forecast and observation data collected by weather integrations in auto
 
 \* Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`.
 
-### 7.6. Service `load_schedule`
+### 7.7. Service `load_schedule`
 
 Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched.
 
@@ -821,11 +836,11 @@ Reload a schedule. This will allow an edit to an existing schedule. All fields a
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | | Enable/disable the schedule |
 
-### 7.7. Service `reload`
+### 7.8. Service `reload`
 
 Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading. Note: since version 2021.10.0 all settings can be changed including new controllers and zones.
 
-### 7.8. Service call access roadmap
+### 7.9. Service call access roadmap
 
 A reminder that sequences directly descend from a controller. Therefore service calls that manipulate a sequence should address the parent controller. An entity_id of a zone when trying to adjust a sequence will most likely not have the desired effect.
 
@@ -1230,6 +1245,66 @@ Here is a card for manual runs, see [requirements](#83-frontend-requirements) ab
 This card will enable or disable a zone from a dropdown list, see [requirements](#83-frontend-requirements) above. The code is [here](./lovelace/card_enable_disable.yaml). Like the manual run card it requires [paper-buttons-row](https://github.com/jcwillox/lovelace-paper-buttons-row).
 
 ![enable_disable_card](./examples/card_enable_disable.png)
+
+### 8.6. Pause-resume button
+
+The following yaml script can be attached to a front end button to [`pause` and `resume`](#72-services-pause-and-resume) all zones of all sequences of all UI controllers. 
+
+![pause_resume_button](./examples/pause-resume-button.png)
+
+Please note that a group helper for all UI controllers is required for this code sample to work.
+
+```yaml
+group:
+  irrigation_controllers:
+  name: Irrigation Controllers
+  entities:
+    #Add at least one UI controller entity here
+    - binary_sensor.irrigation_unlimited_c1_m
+    - binary_sensor.irrigation_unlimited_c2_m
+    - binary_sensor.irrigation_unlimited_c3_m
+    - binary_sensor.irrigation_unlimited_c4_m
+    - binary_sensor.irrigation_unlimited_c5_m
+    - binary_sensor.irrigation_unlimited_c6_m
+    #Add as many controller entities as you have configured
+
+script:
+  toggle_irrigation:
+      alias: "Irrigation: Pause/Resume all irrigation unlimited controllers"
+      sequence:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {% set paused_sensors = states.binary_sensor 
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$') 
+                        | selectattr('attributes.status', 'equalto', 'paused') 
+                        | map(attribute='entity_id') 
+                        | list %}
+                    {{ paused_sensors | length > 0 }}
+              sequence:
+                - service: irrigation_unlimited.resume
+                  data:
+                    entity_id: group.irrigation_controllers
+                    sequence_id: 0
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {% set paused_sensors = states.binary_sensor 
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$') 
+                        | selectattr('attributes.status', 'equalto', 'paused') 
+                        | map(attribute='entity_id') 
+                        | list %}
+                    {{ paused_sensors | length == 0 and states('group.irrigation_controllers') == 'on' }}
+              sequence:
+                - service: irrigation_unlimited.pause
+                  data:
+                    entity_id: group.irrigation_controllers
+                    sequence_id: 0
+      icon: mdi:play-pause
+```
+
+[Issue 142] (https://github.com/rgc99/irrigation_unlimited/issues/142) has a detailed discussion relating the [`pause` and `resume` service call](#72-services-pause-and-resume) and its various use cases. 
 
 ## 9. Automation
 
