@@ -1151,15 +1151,16 @@ class IUVolume:
                     f"current: {volume}"
                 )
 
-            # Update moving average of the rate
-            rate = volume_delta * Decimal(self._flow_rate_scale) / time_delta
-            self._flow_rate_sum += rate
-            self._flow_rates.append(rate)
-            if len(self._flow_rates) > IUVolume.SMA_WINDOW:
-                self._flow_rate_sum -= self._flow_rates.pop(0)
-            self._flow_rate_sma = (
-                self._flow_rate_sum / len(self._flow_rates)
-            ).quantize(Decimal(10) ** -self._flow_rate_precision)
+            # Update moving average of the rate. Ignore initial reading.
+            if len(self._sensor_readings) > 1:
+                rate = volume_delta * Decimal(self._flow_rate_scale) / time_delta
+                self._flow_rate_sum += rate
+                self._flow_rates.append(rate)
+                if len(self._flow_rates) > IUVolume.SMA_WINDOW:
+                    self._flow_rate_sum -= self._flow_rates.pop(0)
+                self._flow_rate_sma = (
+                    self._flow_rate_sum / len(self._flow_rates)
+                ).quantize(Decimal(10) ** -self._flow_rate_precision)
 
         # Update bookkeeping
         self._sensor_readings.append(IUVolumeSensorReading(stime, volume))
@@ -1201,6 +1202,9 @@ class IUVolume:
         self._start_volume = self._total_volume = None
         self._start_time = stime
         self._sensor_readings.clear()
+        self._flow_rates.clear()
+        self._flow_rate_sum = 0
+        self._flow_rate_sma = None
 
         try:
             self._start_volume = self.read_sensor(stime)
