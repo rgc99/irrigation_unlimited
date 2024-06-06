@@ -297,8 +297,8 @@ class IUExam:
     async def call(self, service: str, data: dict[str, Any] = None) -> None:
         """Call IU service"""
         await self._hass.services.async_call(DOMAIN, service, data, True)
-        self.check_labyrinth()
         await self._hass.async_block_till_done()
+        self.check_labyrinth()
 
     async def reload(self, config: str) -> None:
         """Reload the specified config file"""
