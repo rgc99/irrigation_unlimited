@@ -1262,7 +1262,6 @@ class IURunStatus(Enum):
             return IURunStatus.RUNNING
         if stime >= end_time:
             return IURunStatus.EXPIRED
-        return IURunStatus.UNKNOWN
 
 
 class IURun(IUBase):
