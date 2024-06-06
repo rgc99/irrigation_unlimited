@@ -1,4 +1,5 @@
 """Test irrigation_unlimited timing operations."""
+
 import datetime
 import json
 import homeassistant.core as ha
@@ -37,6 +38,7 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUJSONEncoder,
     IUSchedule,
     IUSequence,
+    IURunStatus,
 )
 
 IUExam.quiet_mode()
@@ -215,6 +217,39 @@ async def test_nc_classes():
         datetime.datetime.fromisoformat(enc["a_date"])
     ) == datetime.datetime.fromisoformat("2021-01-04T20:10:00+00:00")
     assert enc["a_time"] == 60
+
+    # IURunStatus
+    adate = datetime.datetime.fromisoformat("2021-01-04T20:10:00+00:00")
+    one_sec = datetime.timedelta(seconds=1)
+    assert (
+        IURunStatus.status(adate, adate - one_sec, adate + one_sec, adate)
+        == IURunStatus.PAUSED
+    )
+    assert (
+        IURunStatus.status(adate, adate - one_sec, adate + one_sec, None)
+        == IURunStatus.RUNNING
+    )
+    assert (
+        IURunStatus.status(adate, adate - one_sec, adate - one_sec - one_sec, None)
+        == IURunStatus.EXPIRED
+    )
+    assert (
+        IURunStatus.status(adate, adate - one_sec, adate, None) == IURunStatus.EXPIRED
+    )
+    assert (
+        IURunStatus.status(adate, adate + one_sec, adate + one_sec + one_sec, None)
+        == IURunStatus.FUTURE
+    )
+    assert IURunStatus.status(adate, adate, adate, None) == IURunStatus.EXPIRED
+    assert (
+        IURunStatus.status(adate, adate + one_sec, adate - one_sec, None)
+        == IURunStatus.FUTURE
+    )
+    assert IURunStatus.status(adate, adate + one_sec, adate, None) == IURunStatus.FUTURE
+    assert (
+        IURunStatus.status(adate + one_sec, adate - one_sec, adate, None)
+        == IURunStatus.EXPIRED
+    )
 
 
 async def test_iu_classes(hass: ha.HomeAssistant, skip_dependencies, skip_history):
