@@ -2650,6 +2650,15 @@ class IUSequenceZone(IUBase):
                         result.append(run)
             return result
 
+        def start_time(runs: list[IURun]) -> datetime:
+            result: datetime = None
+            for run in runs:
+                if result == None or run.start_time < result:
+                    result = run.start_time
+            return result
+
+        runs = zone_runs()
+        start = start_time(runs)
         result = {}
         result[ATTR_INDEX] = self.index
         result[ATTR_ENABLED] = self.enabled
@@ -2658,7 +2667,8 @@ class IUSequenceZone(IUBase):
         result[ATTR_ICON] = self.icon()
         result[ATTR_ADJUSTMENT] = str(self.adjustment)
         result[ATTR_ZONE_IDS] = self.zone_ids
-        result[ATTR_DURATION] = str(calc_on_time(zone_runs()))
+        result[ATTR_START] = dt.as_local(start) if start else None
+        result[ATTR_DURATION] = str(calc_on_time(runs))
         return result
 
     def muster(self, stime: datetime) -> IURQStatus:
