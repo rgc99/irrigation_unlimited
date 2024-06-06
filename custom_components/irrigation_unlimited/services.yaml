@@ -397,6 +397,10 @@ reload:
   name: Reload
   description: Reload the configuration
 
+get_info:
+  name: Get Info
+  description: Get configuration information
+
 load_schedule:
   name: Load schedule
   description: Load a schedule.

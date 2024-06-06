@@ -1,11 +1,13 @@
 """This module handles the HA service call interface"""
-from homeassistant.core import ServiceCall, callback
+
+from homeassistant.core import ServiceCall, SupportsResponse, ServiceResponse, callback
 from homeassistant.util import dt
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.const import (
     SERVICE_RELOAD,
+    ATTR_ENTITY_ID,
 )
 
 from .irrigation_unlimited import IUCoordinator
@@ -35,6 +37,16 @@ from .const import (
     SERVICE_SKIP,
     SERVICE_PAUSE,
     SERVICE_RESUME,
+    SERVICE_GET_INFO,
+    ATTR_VERSION,
+    ATTR_CONTROLLERS,
+    ATTR_CONTROLLER_ID,
+    ATTR_ZONES,
+    ATTR_ZONE_ID,
+    ATTR_SEQUENCES,
+    ATTR_INDEX,
+    ATTR_NAME,
+    ATTR_ZONE_IDS,
 )
 
 
@@ -115,9 +127,54 @@ def register_component_services(
         """Reload schedule."""
         coordinator.service_call(call.service, None, None, None, call.data)
 
+    @callback
+    async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Return configuration"""
+        data = {}
+        data[ATTR_VERSION] = "1.0.0"
+        data[ATTR_CONTROLLERS] = [
+            {
+                ATTR_INDEX: ctl.index,
+                ATTR_CONTROLLER_ID: ctl.controller_id,
+                ATTR_NAME: ctl.name,
+                ATTR_ENTITY_ID: ctl.entity_id,
+                ATTR_ZONES: [
+                    {
+                        ATTR_INDEX: zone.index,
+                        ATTR_ZONE_ID: zone.zone_id,
+                        ATTR_NAME: zone.name,
+                        ATTR_ENTITY_ID: zone.entity_id,
+                    }
+                    for zone in ctl.zones
+                ],
+                ATTR_SEQUENCES: [
+                    {
+                        ATTR_INDEX: seq.index,
+                        ATTR_NAME: seq.name,
+                        ATTR_ENTITY_ID: seq.entity_id,
+                        ATTR_ZONES: [
+                            {ATTR_INDEX: sqz.index, ATTR_ZONE_IDS: sqz.zone_ids}
+                            for sqz in seq.zones
+                        ],
+                    }
+                    for seq in ctl.sequences
+                ],
+            }
+            for ctl in coordinator.controllers
+        ]
+        return data
+
     component.hass.services.async_register(
         DOMAIN,
         SERVICE_LOAD_SCHEDULE,
         load_schedule_service_handler,
         LOAD_SCHEDULE_SCHEMA,
+    )
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_GET_INFO,
+        get_info_service_handler,
+        {},
+        supports_response=SupportsResponse.ONLY,
     )

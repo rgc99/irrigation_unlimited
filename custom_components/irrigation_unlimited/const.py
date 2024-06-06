@@ -141,6 +141,7 @@ SERVICE_SUSPEND = "suspend"
 SERVICE_SKIP = "skip"
 SERVICE_PAUSE = "pause"
 SERVICE_RESUME = "resume"
+SERVICE_GET_INFO = "get_info"
 
 # Events
 EVENT_START = "start"
@@ -211,6 +212,11 @@ ATTR_VOLUME = "volume"
 ATTR_FLOW_RATE = "flow_rate"
 ATTR_SWITCH_ENTITIES = "switch_entity_id"
 ATTR_SEQUENCE_COUNT = "sequence_count"
+ATTR_CONTROLLER_ID = "controller_id"
+ATTR_ZONE_ID = "zone_id"
+ATTR_CONTROLLERS = "controllers"
+ATTR_SEQUENCES = "sequences"
+ATTR_VERSION = "version"
 
 # Resources
 RES_MANUAL = "Manual"
