@@ -81,7 +81,12 @@ async def test_switch_types(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         ha_on_calls = async_mock_service(hass, ha.DOMAIN, SERVICE_TURN_ON)
 
         zs0._switch_entity_id = [switch_entity_id]
-        await exam.run_test(1)
+        await exam.begin_test(1)
+        await exam.run_until("2021-01-04 06:05:15")
+        hass.states.async_set(switch_entity_id, STATE_ON)
+        await exam.run_until("2021-01-04 06:15:15")
+        hass.states.async_set(switch_entity_id, STATE_OFF)
+        await exam.finish_test()
 
         assert len(ha_off_calls) == 1
         call = ha_off_calls[0]
@@ -102,7 +107,12 @@ async def test_switch_types(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         valve_on_calls = async_mock_service(hass, Platform.VALVE, SERVICE_OPEN_VALVE)
 
         zs0._switch_entity_id = [valve_entity_id]
-        await exam.run_test(2)
+        await exam.begin_test(2)
+        await exam.run_until("2021-01-04 06:05:15")
+        hass.states.async_set(valve_entity_id, STATE_OPEN)
+        await exam.run_until("2021-01-04 06:15:15")
+        hass.states.async_set(valve_entity_id, STATE_CLOSED)
+        await exam.finish_test()
 
         assert len(valve_off_calls) == 1
         call = valve_off_calls[0]
@@ -123,7 +133,12 @@ async def test_switch_types(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         cover_on_calls = async_mock_service(hass, Platform.COVER, SERVICE_OPEN_COVER)
 
         zs0._switch_entity_id = [cover_entity_id]
-        await exam.run_test(3)
+        await exam.begin_test(3)
+        await exam.run_until("2021-01-04 06:05:15")
+        hass.states.async_set(cover_entity_id, STATE_OPEN)
+        await exam.run_until("2021-01-04 06:15:15")
+        hass.states.async_set(cover_entity_id, STATE_CLOSED)
+        await exam.finish_test()
 
         assert len(cover_off_calls) == 1
         call = cover_off_calls[0]
@@ -139,7 +154,17 @@ async def test_switch_types(hass: ha.HomeAssistant, skip_dependencies, skip_hist
 
         # Mixed entity domains
         zs0._switch_entity_id = [switch_entity_id, valve_entity_id, cover_entity_id]
-        await exam.run_test(4)
+        await exam.begin_test(4)
+        await exam.run_until("2021-01-04 06:05:15")
+        hass.states.async_set(switch_entity_id, STATE_ON)
+        hass.states.async_set(valve_entity_id, STATE_OPEN)
+        hass.states.async_set(cover_entity_id, STATE_OPEN)
+        await exam.run_until("2021-01-04 06:15:15")
+        hass.states.async_set(switch_entity_id, STATE_OFF)
+        hass.states.async_set(valve_entity_id, STATE_CLOSED)
+        hass.states.async_set(cover_entity_id, STATE_CLOSED)
+        await exam.finish_test()
+
         assert len(ha_off_calls) == 2
         assert len(ha_on_calls) == 2
         assert len(valve_off_calls) == 2

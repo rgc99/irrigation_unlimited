@@ -10,8 +10,6 @@ irrigation_unlimited:
           schedules:
             time: "06:05"
             duration: "00:10"
-          check_back:
-            states: none
   testing:
     enabled: true
     output_events: false
