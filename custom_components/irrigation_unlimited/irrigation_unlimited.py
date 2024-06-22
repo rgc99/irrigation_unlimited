@@ -3246,7 +3246,7 @@ class IUSequenceRun(IUBase):
 
     def update_time_remaining(self, stime: datetime) -> bool:
         """Update the count down timers"""
-        if not self.running:
+        if not (self.running or self.paused):
             return False
         self._remaining_time = self._end_time - stime
         elapsed = stime - self._start_time
