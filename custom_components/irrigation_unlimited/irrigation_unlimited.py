@@ -2901,9 +2901,7 @@ class IUSequenceRun(IUBase):
             self._accumulated_duration += run.duration
             zone.request_update()
         self._runs_pre_allocate.clear()
-        self._status = IURunStatus.status(
-            stime, self.start_time, self.end_time, self._paused
-        )
+        self.update_status(stime)
 
     def first_zone(self) -> IUZone:
         """Return the first zone"""
@@ -3012,8 +3010,7 @@ class IUSequenceRun(IUBase):
                 if end_time is None or run.end_time > end_time:
                     end_time = run.end_time
             self._end_time = end_time
-
-            self.update()
+            self.update_status(stime)
 
     def skip(self, stime: datetime) -> None:
         """Skip to the next sequence zone"""
@@ -3144,9 +3141,7 @@ class IUSequenceRun(IUBase):
         resume_run(stime, self._runs)
         self._end_time += stime - self._paused
         self._paused = None
-        self._status = IURunStatus.status(
-            stime, self._start_time, self._end_time, self._paused
-        )
+        self.update_status(stime)
 
         next_start = min(
             (run.start_time for run in self._runs if not run.expired), default=None
