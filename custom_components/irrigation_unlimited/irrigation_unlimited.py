@@ -2993,8 +2993,8 @@ class IUSequenceRun(IUBase):
                     run.start_time = max(run.start_time + duration, stime)
                     run.end_time = max(run.end_time + duration, run.start_time)
             run.duration = run.end_time - run.start_time
-            run.update_status(stime)
             run.update_time_remaining(stime)
+            run.update_status(stime)
 
         if self.running:
             if runs is None:
