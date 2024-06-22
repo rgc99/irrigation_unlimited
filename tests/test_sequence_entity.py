@@ -15,6 +15,7 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_PAUSE,
     SERVICE_RESUME,
     SERVICE_SKIP,
+    SERVICE_CANCEL,
 )
 
 IUExam.quiet_mode()
@@ -1181,7 +1182,7 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 ],
             },
         )
-        await exam.run_until("2023-11-16 06:26")
+        await exam.run_until("2023-11-16 06:19")
         await exam.call(
             SERVICE_RESUME,
             {
@@ -1193,51 +1194,38 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             STATE_ON,
             {
                 "status": "on",
-                "adjustment": "",
-                "current_zone": 3,
+                "current_zone": 2,
                 "current_start": mk_local("2023-11-16 06:05:00"),
                 "current_duration": "0:38:00",
+                "time_remaining": "0:24:00",
+                "percent_complete": 36,
                 "current_schedule": 1,
                 "current_name": "Dawn",
-                "time_remaining": "0:17:00",
-                "percent_complete": 55,
                 "next_start": mk_local("2023-11-16 17:05:00"),
                 "next_duration": "0:38:00",
                 "next_schedule": 2,
                 "next_name": "Dusk",
-                "icon": "mdi:play-circle-outline",
                 "zones": [
                     {
-                        "index": 0,
-                        "enabled": True,
-                        "suspended": None,
                         "status": "off",
                         "icon": "mdi:stop-circle-outline",
-                        "adjustment": "",
-                        "zone_ids": ["1"],
+                        "start": None,
                         "duration": "0:00:00",
                     },
                     {
-                        "index": 1,
-                        "enabled": True,
-                        "suspended": None,
-                        "status": "off",
-                        "icon": "mdi:stop-circle-outline",
-                        "adjustment": "",
-                        "zone_ids": ["2", "3"],
-                        "duration": "0:00:00",
-                    },
-                    {
-                        "index": 2,
-                        "enabled": True,
-                        "suspended": None,
                         "status": "on",
                         "icon": "mdi:play-circle-outline",
-                        "adjustment": "",
-                        "zone_ids": ["4"],
+                        "start": mk_local("2023-11-16 06:12:00"),
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": mk_local("2023-11-16 06:25:00"),
                         "duration": "0:18:00",
                     },
                 ],
+                "icon": "mdi:play-circle-outline",
             },
         )
         exam.check_iu_entity(
@@ -1248,11 +1236,11 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "adjustment": "",
                 "current_zone": 1,
                 "current_start": mk_local("2023-11-16 06:10:00"),
-                "current_duration": "0:39:00",
+                "current_duration": "0:32:00",
                 "current_schedule": 1,
                 "current_name": "Morning",
                 "time_remaining": "0:23:00",
-                "percent_complete": 41,
+                "percent_complete": 28,
                 "next_start": mk_local("2023-11-17 06:10:00"),
                 "next_duration": "0:27:00",
                 "next_schedule": 1,
@@ -1290,6 +1278,249 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                         "duration": "0:13:00",
                     },
                 ],
+            },
+        )
+        await exam.run_until("2023-11-16 06:20:15")
+        await exam.call(
+            SERVICE_PAUSE,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            STATE_ON,
+            {
+                "status": "paused",
+                "current_zone": None,
+                "current_start": mk_local("2023-11-16 06:10:00"),
+                "current_duration": "0:32:00",
+                "time_remaining": "0:21:45",
+                "percent_complete": 32,
+                "current_schedule": 1,
+                "current_name": "Morning",
+                "next_start": mk_local("2023-11-17 06:10:00"),
+                "next_duration": "0:27:00",
+                "next_schedule": 1,
+                "next_name": "Morning",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": mk_local("2023-11-16 06:20:30"),
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": mk_local("2023-11-16 06:29:00"),
+                        "duration": "0:13:00",
+                    },
+                ],
+                "icon": "mdi:pause-circle-outline",
+            },
+        )
+        await exam.run_until("2023-11-16 06:25:15")
+        await exam.call(
+            SERVICE_RESUME,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            STATE_ON,
+            {
+                "status": "on",
+                "current_zone": 2,
+                "current_start": mk_local("2023-11-16 06:10:00"),
+                "current_duration": "0:36:45",
+                "time_remaining": "0:21:30",
+                "percent_complete": 41,
+                "current_schedule": 1,
+                "current_name": "Morning",
+                "next_start": mk_local("2023-11-17 06:10:00"),
+                "next_duration": "0:27:00",
+                "next_schedule": 1,
+                "next_name": "Morning",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "start": mk_local("2023-11-16 06:25:15"),
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": mk_local("2023-11-16 06:33:45"),
+                        "duration": "0:13:00",
+                    },
+                ],
+                "icon": "mdi:play-circle-outline",
+            },
+        )
+        await exam.run_until("2023-11-16 06:40")
+        await exam.call(
+            SERVICE_PAUSE,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            STATE_ON,
+            {
+                "status": "paused",
+                "adjustment": "",
+                "current_zone": 3,
+                "current_start": mk_local("2023-11-16 06:10:00"),
+                "current_duration": "0:36:45",
+                "time_remaining": "0:06:45",
+                "percent_complete": 81,
+                "current_schedule": 1,
+                "current_name": "Morning",
+                "next_start": mk_local("2023-11-17 06:10:00"),
+                "next_duration": "0:27:00",
+                "next_schedule": 1,
+                "next_name": "Morning",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "start": mk_local("2023-11-16 06:40:00"),
+                        "duration": "0:06:45",
+                    },
+                ],
+                "icon": "mdi:pause-circle-outline",
+            },
+        )
+        await exam.run_until("2023-11-16 06:45")
+        await exam.call(
+            SERVICE_RESUME,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            STATE_ON,
+            {
+                "status": "on",
+                "adjustment": "",
+                "current_zone": 3,
+                "current_start": mk_local("2023-11-16 06:10:00"),
+                "current_duration": "0:41:45",
+                "time_remaining": "0:06:45",
+                "percent_complete": 83,
+                "current_schedule": 1,
+                "current_name": "Morning",
+                "next_start": mk_local("2023-11-17 06:10:00"),
+                "next_duration": "0:27:00",
+                "next_schedule": 1,
+                "next_name": "Morning",
+                "zones": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "icon": "mdi:play-circle-outline",
+                        "start": mk_local("2023-11-16 06:45:00"),
+                        "duration": "0:06:45",
+                    },
+                ],
+                "icon": "mdi:play-circle-outline",
+            },
+        )
+        await exam.run_until("2023-11-16 06:52")
+        exam.check_iu_entity(
+            "c1_m",
+            STATE_OFF,
+            {
+                "enabled": True,
+                "suspended": None,
+                "status": "off",
+                "sequence_status": [
+                    {
+                        "status": "off",
+                        "start": mk_local("2023-11-16 17:05:00"),
+                        "duration": 2160,
+                        "zones": [
+                            {
+                                "status": "off",
+                                "duration": 360,
+                            },
+                            {
+                                "status": "off",
+                                "duration": 720,
+                            },
+                            {
+                                "status": "off",
+                                "duration": 1080,
+                            },
+                        ],
+                    },
+                    {
+                        "status": "off",
+                        "start": mk_local("2023-11-17 06:10:00"),
+                        "duration": 1560,
+                        "zones": [
+                            {
+                                "status": "off",
+                                "duration": 300,
+                            },
+                            {
+                                "status": "off",
+                                "duration": 480,
+                            },
+                            {
+                                "status": "off",
+                                "duration": 780,
+                            },
+                        ],
+                    },
+                ],
+                "current_zone": "not running",
+                "percent_complete": 0,
+                "next_zone": 1,
+                "next_name": "Zone 1",
+                "next_start": mk_local("2023-11-16 17:05:00"),
+                "next_duration": "0:06:00",
+                "icon": "mdi:water-off",
             },
         )
         await exam.finish_test()
@@ -1457,6 +1688,154 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                         "duration": "0:13:00",
                     },
                 ],
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(7)
+        await exam.run_until("2023-11-16 06:13")
+        await exam.call(
+            SERVICE_CANCEL,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s1",
+            STATE_ON,
+            {
+                "status": "on",
+                "current_zone": 2,
+                "current_start": mk_local("2023-11-16 06:05:00"),
+                "current_duration": "0:38:00",
+                "time_remaining": "0:30:00",
+                "percent_complete": 21,
+                "current_schedule": 1,
+                "current_name": "Dawn",
+                "next_start": mk_local("2023-11-16 17:05:00"),
+                "next_duration": "0:38:00",
+                "next_schedule": 2,
+                "next_name": "Dusk",
+                "zones": [
+                    {
+                        "status": "off",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "on",
+                        "start": mk_local("2023-11-16 06:12:00"),
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "start": mk_local("2023-11-16 06:25:00"),
+                        "duration": "0:18:00",
+                    },
+                ],
+                "icon": "mdi:play-circle-outline",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            STATE_OFF,
+            {
+                "status": "off",
+                "current_zone": None,
+                "current_start": mk_local("2023-11-16 06:10:00"),
+                "current_duration": "0:03:00",
+                "time_remaining": "0:00:00",
+                "percent_complete": 100,
+                "current_schedule": 1,
+                "current_name": "Morning",
+                "next_start": mk_local("2023-11-17 06:10:00"),
+                "next_duration": "0:27:00",
+                "next_schedule": 1,
+                "next_name": "Morning",
+                "zones": [
+                    {
+                        "status": "off",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                    {
+                        "status": "off",
+                        "start": None,
+                        "duration": "0:00:00",
+                    },
+                ],
+                "icon": "mdi:stop-circle-outline",
+            },
+        )
+        await exam.run_until("2023-11-16 06:45")
+        exam.check_iu_entity(
+            "c1_m",
+            STATE_OFF,
+            {
+                "status": "off",
+                "sequence_status": [
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": mk_local("2023-11-16 17:05:00"),
+                        "duration": 2160,
+                        "adjustment": "",
+                        "schedule": {"index": 1, "name": "Dusk"},
+                        "zones": [
+                            {
+                                "status": "off",
+                                "icon": "mdi:stop-circle-outline",
+                                "duration": 360,
+                            },
+                            {
+                                "status": "off",
+                                "icon": "mdi:stop-circle-outline",
+                                "duration": 720,
+                            },
+                            {
+                                "status": "off",
+                                "icon": "mdi:stop-circle-outline",
+                                "duration": 1080,
+                            },
+                        ],
+                    },
+                    {
+                        "status": "off",
+                        "icon": "mdi:stop-circle-outline",
+                        "start": mk_local("2023-11-17 06:10:00"),
+                        "duration": 1560,
+                        "schedule": {"index": 0, "name": "Morning"},
+                        "zones": [
+                            {
+                                "status": "off",
+                                "icon": "mdi:stop-circle-outline",
+                                "duration": 300,
+                            },
+                            {
+                                "status": "off",
+                                "icon": "mdi:stop-circle-outline",
+                                "duration": 480,
+                            },
+                            {
+                                "status": "off",
+                                "icon": "mdi:stop-circle-outline",
+                                "duration": 780,
+                            },
+                        ],
+                    },
+                ],
+                "current_zone": "not running",
+                "percent_complete": 0,
+                "next_zone": 1,
+                "next_name": "Zone 1",
+                "next_start": mk_local("2023-11-16 17:05:00"),
+                "next_duration": "0:06:00",
+                "icon": "mdi:water-off",
             },
         )
         await exam.finish_test()
