@@ -1492,14 +1492,14 @@ class IURun(IUBase):
 
     def pause(self, stime: datetime) -> None:
         """Change the pause status of the run"""
-        if self._pause_time is not None:
+        if self.expired or self._pause_time is not None:
             return
         self._pause_time = stime
         self.update_status(stime)
 
     def resume(self, stime: datetime) -> None:
         """Resume a paused run"""
-        if self._pause_time is None:
+        if self.expired or self._pause_time is None:
             return
         delta = stime - self._pause_time
         self._start_time += delta
