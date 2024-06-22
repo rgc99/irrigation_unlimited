@@ -3461,7 +3461,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
 
         if self._current_run is None:
             for run in self:
-                if run.running and run.on_time() != timedelta(0):
+                if (run.running or run.paused) and run.on_time() != timedelta(0):
                     self._current_run = run
                     self._next_run = None
                     status |= IURQStatus.UPDATED
@@ -3469,7 +3469,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
 
         if self._next_run is None:
             for run in self:
-                if not run.running and run.on_time() != timedelta(0):
+                if not (run.running or run.paused) and run.on_time() != timedelta(0):
                     self._next_run = run
                     status |= IURQStatus.UPDATED
                     break
