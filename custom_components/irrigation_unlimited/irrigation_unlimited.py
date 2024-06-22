@@ -1482,9 +1482,11 @@ class IURun(IUBase):
         """Update the count down timers"""
         if self.running:
             self._remaining_time = self._end_time - stime
-            total_duration: timedelta = self._end_time - self._start_time
-            time_elapsed: timedelta = stime - self._start_time
-            self._percent_complete = int((time_elapsed / total_duration) * 100)
+            duration: timedelta = self._end_time - self._start_time
+            elapsed: timedelta = stime - self._start_time
+            self._percent_complete = (
+                int((elapsed / duration) * 100) if duration > timedelta(0) else 0
+            )
             return True
         return False
 
