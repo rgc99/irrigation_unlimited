@@ -446,7 +446,7 @@ class IUExam:
         assert entity is not None, f"IU entity {entity_id} not found"
         assert (
             entity.state == state
-        ), f"State does not match: expected: {entity.state} found: {state}"
+        ), f"State does not match: expected: {state} found: {entity.state}"
         self.check_attr(fields, entity.attributes)
 
     def print_iu_entity(self, iu_id: str) -> None:
