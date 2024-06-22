@@ -457,6 +457,32 @@ class IUExam:
         def output(level: int, data: str) -> None:
             print(f"{indent}{' ' * (level - 1) * 4}{data}")
 
+        def print_value(value: Any) -> str:
+            if isinstance(value, datetime):
+                return f'mk_local("{value.strftime("%Y-%m-%d %H:%M:%S")}")'
+            elif isinstance(value, str):
+                return f'"{value}"'
+            else:
+                return f"{value}"
+
+        def print_attrs(level: int, attrs: dict[str, Any]) -> None:
+            output(level, "{")
+            for key, value in attrs:
+                if (
+                    isinstance(value, list)
+                    and len(value) > 0
+                    and isinstance(value[0], dict)
+                ):
+                    # Assume a list of all one type
+                    output(level + 1, f'"{key}": [')
+                    for item in value:
+                        if isinstance(item, dict):
+                            print_attrs(level + 2, item.items())
+                    output(level + 1, "],")
+                else:
+                    output(level + 1, f'"{key}": {print_value(value)},')
+            output(level, "},")
+
         def print_entity(iu_id: str) -> None:
             entity_id = "binary_sensor.irrigation_unlimited_" + iu_id
             entity = self._hass.states.get(entity_id)
@@ -467,18 +493,7 @@ class IUExam:
                 output(2, "STATE_ON,")
             else:
                 output(2, "STATE_OFF,")
-            output(2, "{")
-            for key, value in entity.attributes.items():
-                if isinstance(value, datetime):
-                    output(
-                        3,
-                        f'"{key}": mk_local("{value.strftime("%Y-%m-%d %H:%M:%S")}"),',
-                    )
-                elif isinstance(value, str):
-                    output(3, f'"{key}": "{value}",')
-                else:
-                    output(3, f'"{key}": {value},')
-            output(2, "},")
+            print_attrs(2, entity.attributes.items())
             output(1, ")")
 
         if isinstance(iu_id, str):
