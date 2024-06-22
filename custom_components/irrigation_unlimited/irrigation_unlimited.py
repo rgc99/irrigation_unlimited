@@ -1299,6 +1299,14 @@ class IURun(IUBase):
         self._status = self._get_status(stime)
         self.master_run: "IURun" = None
 
+    def __str__(self) -> str:
+        return (
+            f"status: {self._status.name}, "
+            f"start: {dt2lstr(self.start_time)}, "
+            f"end: {dt2lstr(self.end_time)}, "
+            f"schedule: {self.schedule_name}"
+        )
+
     @property
     def expired(self) -> bool:
         """Indicate if run has expired"""

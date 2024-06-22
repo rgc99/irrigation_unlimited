@@ -35,6 +35,7 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
     round_dt,
     IUAdjustment,
     IUBase,
+    IURun,
     IUJSONEncoder,
     IUSchedule,
     IUSequence,
@@ -249,6 +250,15 @@ async def test_nc_classes():
     assert (
         IURunStatus.status(adate + one_sec, adate - one_sec, adate, None)
         == IURunStatus.EXPIRED
+    )
+
+    # IURun
+    run = IURun(adate, adate, one_sec, None, None, None, None)
+    assert (
+        str(run) == "status: RUNNING, "
+        "start: 2021-01-04 12:10:00, "
+        "end: 2021-01-04 12:10:01, "
+        "schedule: Manual"
     )
 
 
