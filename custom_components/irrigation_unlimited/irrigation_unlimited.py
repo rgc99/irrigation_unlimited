@@ -3010,7 +3010,9 @@ class IUSequenceRun(IUBase):
                 if end_time is None or run.end_time > end_time:
                     end_time = run.end_time
             self._end_time = end_time
+            self.update_time_remaining(stime)
             self.update_status(stime)
+            self.update(stime)
 
     def skip(self, stime: datetime) -> None:
         """Skip to the next sequence zone"""
