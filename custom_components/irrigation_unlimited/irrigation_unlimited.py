@@ -3256,6 +3256,14 @@ class IUSequenceRun(IUBase):
         )
         return True
 
+    def _get_status(self, stime: datetime) -> IURunStatus:
+        """Determine the state of this run"""
+        return IURunStatus.status(stime, self._start_time, self._end_time, self._paused)
+
+    def update_status(self, stime: datetime) -> None:
+        """Update the status of the run"""
+        self._status = self._get_status(stime)
+
     def as_dict(self, include_expired=False) -> dict:
         """Return this sequence run as a dict"""
         result = {}
