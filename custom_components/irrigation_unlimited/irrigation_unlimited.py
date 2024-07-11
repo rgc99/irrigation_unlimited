@@ -1854,13 +1854,15 @@ class IUScheduleQueue(IURunQueue):
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
 
-        if self._current_run is not None:
-            self.pop_run(0)
-
         # Remove any existing manual schedules
         if not queue:
+            if self._current_run is not None:
+                self.pop_run(0)
+
             for manual in (run for run in self if run.is_manual()):
                 self.remove_run(manual)
+        elif self._current_run is not None and not self._current_run.is_manual():
+            self.pop_run(0)
 
         self._current_run = None
         self._next_run = None
@@ -4137,7 +4139,11 @@ class IUSequence(IUBase):
         if duration is not None and duration == timedelta(0):
             duration = None
         self._controller.muster_sequence(
-            self._controller.manual_run_start(stime, delay, queue), self, None, duration
+            stime,
+            self._controller.manual_run_start(stime, delay, queue),
+            self,
+            None,
+            duration,
         )
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
@@ -4561,6 +4567,7 @@ class IUController(IUBase):
     def muster_sequence(
         self,
         stime: datetime,
+        earliest: datetime,
         sequence: IUSequence,
         schedule: IUSchedule,
         total_time: timedelta = None,
@@ -4617,7 +4624,7 @@ class IUController(IUBase):
         total_time = sequence_run.build(duration_factor)
         if total_time > timedelta(0):
             start_time = init_run_time(
-                stime, sequence, schedule, sequence_run.first_zone(), total_time
+                earliest, sequence, schedule, sequence_run.first_zone(), total_time
             )
             if start_time is not None:
                 sequence_run.allocate_runs(stime, start_time)
@@ -4657,34 +4664,35 @@ class IUController(IUBase):
                 sequence.runs.clear_runs()
                 zone_status |= sms
 
-        if not self._coordinator.tester.enabled or self._coordinator.tester.is_testing:
-            # pylint: disable=too-many-nested-blocks
-            # Process sequence schedules
-            for sequence in self._sequences:
-                if sequence.is_enabled:
-                    for schedule in sequence.schedules:
-                        if not schedule.enabled:
-                            continue
-                        next_time = stime
-                        while True:
-                            if self.muster_sequence(
-                                next_time, sequence, schedule, None
-                            ).is_empty():
-                                break
-                            zone_status |= IURQStatus.EXTENDED
+        # Process sequence schedules
+        for sequence in self._sequences:
+            if sequence.is_enabled:
+                for schedule in sequence.schedules:
+                    if not schedule.enabled:
+                        continue
+                    next_time = stime
+                    while True:
+                        if self.muster_sequence(
+                            stime, next_time, sequence, schedule, None
+                        ).is_empty():
+                            break
+                        zone_status |= IURQStatus.EXTENDED
 
-            # Process zone schedules
-            for zone in self._zones:
-                if zone.is_enabled:
-                    zone_status |= zone.muster_schedules(stime)
+        # Process zone schedules
+        for zone in self._zones:
+            if zone.is_enabled:
+                zone_status |= zone.muster_schedules(stime)
 
         # Post processing
         for sequence in self._sequences:
-            zone_status |= sequence.runs.update_queue(stime)
+            sst = sequence.runs.update_queue(stime)
+            if sst.has_any(IURQStatus.UPDATED):
+                sequence.request_update()
+            zone_status |= sst
 
         for zone in self._zones:
             zts = zone.runs.update_queue()
-            if IURQStatus.CANCELED in zts:
+            if zts.has_any(IURQStatus.CANCELED | IURQStatus.UPDATED):
                 zone.request_update()
             zone_status |= zts
 
