@@ -337,6 +337,13 @@ async def test_iu_minimal(hass: ha.HomeAssistant, skip_dependencies, skip_histor
         sqz = exam.coordinator.controllers[0].zones[0].runs.current_run.sequence_zone
         assert sqz.icon() == "mdi:play-circle-outline"
         assert sqz.status() == "on"
+        assert (
+            str(exam.coordinator.controllers[0].sequences[0].runs.current_run)
+            == "status: RUNNING, "
+            "start: 2021-01-04 07:10:00, "
+            "end: 2021-01-04 07:20:00, "
+            "schedule: Schedule 1"
+        )
         await exam.finish_test()
 
 

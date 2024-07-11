@@ -2751,6 +2751,14 @@ class IUSequenceRun(IUBase):
         self._remaining_time = timedelta(0)
         self._percent_complete: int = 0
 
+    def __str__(self) -> str:
+        return (
+            f"status: {self._status.name}, "
+            f"start: {dt2lstr(self.start_time)}, "
+            f"end: {dt2lstr(self.end_time)}, "
+            f"schedule: {self.schedule_name}"
+        )
+
     @property
     def sequence(self) -> "IUSequence":
         """Return the sequence associated with this run"""
@@ -2760,6 +2768,13 @@ class IUSequenceRun(IUBase):
     def schedule(self) -> IUSchedule:
         """Return the schedule associated with this run"""
         return self._schedule
+
+    @property
+    def schedule_name(self) -> str:
+        """Return the name of the schedule"""
+        if self._schedule is not None:
+            return self._schedule.name
+        return RES_MANUAL
 
     @property
     def start_time(self) -> datetime:
