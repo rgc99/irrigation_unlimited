@@ -1174,28 +1174,29 @@ class IUVolume:
         parameters in the event message"""
         return event
 
+    async def sensor_state_change(self, event: HAEvent):
+        event = self.event_hook(event)
+        stime = event.time_fired
+        try:
+            value = self.read_sensor(stime)
+        except ValueError as e:
+            self._coordinator.logger.log_invalid_meter_value(stime, e)
+        except IUVolumeSensorError:
+            self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
+        else:
+            self._total_volume = value - self._start_volume
+
+            # Notifiy our trackers
+            for listener in list(self._listeners.values()):
+                await listener(
+                    stime,
+                    self._zone,
+                    self._total_volume,
+                    self._flow_rate_sma,
+                )
+
     def start_record(self, stime: datetime) -> None:
         """Start recording volume information"""
-
-        def sensor_state_change(event: HAEvent):
-            event = self.event_hook(event)
-            try:
-                value = self.read_sensor(event.time_fired)
-            except ValueError as e:
-                self._coordinator.logger.log_invalid_meter_value(stime, e)
-            except IUVolumeSensorError:
-                self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
-            else:
-                self._total_volume = value - self._start_volume
-
-                # Notifiy our trackers
-                for listener in list(self._listeners.values()):
-                    listener(
-                        event.time_fired,
-                        self._zone,
-                        self._total_volume,
-                        self._flow_rate_sma,
-                    )
 
         if self._sensor_id is None:
             return
@@ -1214,7 +1215,7 @@ class IUVolume:
             self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
         else:
             self._callback_remove = async_track_state_change_event(
-                self._hass, self._sensor_id, sensor_state_change
+                self._hass, self._sensor_id, self.sensor_state_change
             )
             IUVolume.trackers += 1
 
@@ -3182,30 +3183,32 @@ class IUSequenceRun(IUBase):
         """Cancel the sequence run"""
         self.advance(stime, -(self._end_time - stime))
 
+    async def update_volume(
+        self, stime: datetime, zone: IUZone, volume: Decimal, rate: Decimal
+    ) -> None:
+        # pylint: disable=unused-argument
+        if self._active_zone not in self._volume_stats:
+            self._volume_stats[self._active_zone] = {}
+        self._volume_stats[self._active_zone][zone] = volume
+        self._sequence.volume = sum(
+            sum(sta.values()) for sta in self._volume_stats.values()
+        )
+        if (limit := self._active_zone.sequence_zone.volume) is not None:
+            current_vol = sum(self._volume_stats[self._active_zone].values())
+            if current_vol >= limit:
+                await self._coordinator._hass.services.async_call(
+                    DOMAIN,
+                    SERVICE_SKIP,
+                    {ATTR_ENTITY_ID: self._sequence.entity_id},
+                )
+
     def update(self, stime: datetime) -> bool:
         """Update the status of the sequence"""
-
-        def update_volume(
-            stime: datetime, zone: IUZone, volume: Decimal, rate: Decimal
-        ) -> None:
-            # pylint: disable=unused-argument
-            if self._active_zone not in self._volume_stats:
-                self._volume_stats[self._active_zone] = {}
-            self._volume_stats[self._active_zone][zone] = volume
-            self._sequence.volume = sum(
-                sum(sta.values()) for sta in self._volume_stats.values()
-            )
-            if (limit := self._active_zone.sequence_zone.volume) is not None:
-                current_vol = sum(self._volume_stats[self._active_zone].values())
-                if current_vol >= limit:
-                    self._coordinator.service_call(
-                        SERVICE_SKIP, self._controller, None, self._sequence, {}
-                    )
 
         def enable_trackers(sequence_zone: IUSequenceZone) -> None:
             for zone in sequence_zone.zones:
                 self._volume_trackers.append(
-                    zone.volume.track_volume_change(self.uid, update_volume)
+                    zone.volume.track_volume_change(self.uid, self.update_volume)
                 )
 
         def remove_trackers() -> None:
