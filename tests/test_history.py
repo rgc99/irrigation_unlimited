@@ -1,12 +1,17 @@
 """Test irrigation_unlimited history."""
+
 from unittest.mock import patch
 from datetime import datetime, timedelta
 from collections import Counter
 from typing import OrderedDict, List, Any
+from homeassistant.const import (
+    STATE_OFF,
+)
 import homeassistant.core as ha
 from homeassistant.util import dt
 from custom_components.irrigation_unlimited.const import (
     SERVICE_DISABLE,
+    SERVICE_MANUAL_RUN,
 )
 from custom_components.irrigation_unlimited.history import (
     midnight,
@@ -16,6 +21,7 @@ from custom_components.irrigation_unlimited.history import (
 from tests.iu_test_support import (
     IUExam,
     mk_utc,
+    mk_local,
 )
 
 IUExam.quiet_mode()
@@ -180,6 +186,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-06 06:05")),
                         ("end", mk_utc("2021-01-06 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -189,6 +196,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-05 06:05")),
                         ("end", mk_utc("2021-01-05 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -198,6 +206,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 06:05")),
                         ("end", mk_utc("2021-01-04 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "next"),
@@ -207,6 +216,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 05:30")),
                         ("end", mk_utc("2021-01-04 05:32")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -216,6 +226,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 04:30")),
                         ("end", mk_utc("2021-01-04 04:32")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -232,6 +243,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-06 06:10")),
                         ("end", mk_utc("2021-01-06 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -241,6 +253,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-05 06:10")),
                         ("end", mk_utc("2021-01-05 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -250,6 +263,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 06:10")),
                         ("end", mk_utc("2021-01-04 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "next"),
@@ -259,6 +273,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 05:40")),
                         ("end", mk_utc("2021-01-04 05:45")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -268,6 +283,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 05:35")),
                         ("end", mk_utc("2021-01-04 05:38")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -277,6 +293,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 04:35")),
                         ("end", mk_utc("2021-01-04 04:38")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -299,6 +316,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-07 06:05")),
                         ("end", mk_utc("2021-01-07 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -308,6 +326,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-06 06:05")),
                         ("end", mk_utc("2021-01-06 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -317,6 +336,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-05 06:05")),
                         ("end", mk_utc("2021-01-05 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "next"),
@@ -326,6 +346,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 05:30")),
                         ("end", mk_utc("2021-01-04 05:32")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -335,6 +356,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 04:30")),
                         ("end", mk_utc("2021-01-04 04:32")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -351,6 +373,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-07 06:10")),
                         ("end", mk_utc("2021-01-07 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -360,6 +383,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-06 06:10")),
                         ("end", mk_utc("2021-01-06 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -369,6 +393,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-05 06:10")),
                         ("end", mk_utc("2021-01-05 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "next"),
@@ -378,6 +403,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 05:40")),
                         ("end", mk_utc("2021-01-04 05:45")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -387,6 +413,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 05:35")),
                         ("end", mk_utc("2021-01-04 05:38")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -396,6 +423,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-04 04:35")),
                         ("end", mk_utc("2021-01-04 04:38")),
+                        ("schedule", None),
                         ("schedule_name", None),
                         ("adjustment", ""),
                         ("status", "history"),
@@ -413,6 +441,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-07 06:05")),
                         ("end", mk_utc("2021-01-07 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -422,6 +451,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-06 06:05")),
                         ("end", mk_utc("2021-01-06 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -431,6 +461,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-05 06:05")),
                         ("end", mk_utc("2021-01-05 06:15")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "next"),
@@ -447,6 +478,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-07 06:10")),
                         ("end", mk_utc("2021-01-07 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -456,6 +488,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-06 06:10")),
                         ("end", mk_utc("2021-01-06 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "scheduled"),
@@ -465,6 +498,7 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                     [
                         ("start", mk_utc("2021-01-05 06:10")),
                         ("end", mk_utc("2021-01-05 06:20")),
+                        ("schedule", 1),
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "next"),
@@ -571,6 +605,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-03 04:09")),
                                     ("end", mk_utc("2021-01-03 04:16")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -579,6 +614,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-03 04:19")),
                                     ("end", mk_utc("2021-01-03 04:26")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -587,6 +623,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-03 04:29")),
                                     ("end", mk_utc("2021-01-03 04:36")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -595,6 +632,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-04 04:09")),
                                     ("end", mk_utc("2021-01-04 04:16")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -603,6 +641,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-04 04:19")),
                                     ("end", mk_utc("2021-01-04 04:26")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -611,6 +650,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-04 04:29")),
                                     ("end", mk_utc("2021-01-04 04:32")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -624,6 +664,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-03 04:10")),
                                     ("end", mk_utc("2021-01-03 04:15")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -632,6 +673,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-03 04:20")),
                                     ("end", mk_utc("2021-01-03 04:25")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -640,6 +682,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-03 04:30")),
                                     ("end", mk_utc("2021-01-03 04:35")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -648,6 +691,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-04 04:10")),
                                     ("end", mk_utc("2021-01-04 04:15")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -656,6 +700,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-04 04:20")),
                                     ("end", mk_utc("2021-01-04 04:25")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -664,6 +709,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                                 [
                                     ("start", mk_utc("2021-01-04 04:30")),
                                     ("end", mk_utc("2021-01-04 04:32")),
+                                    ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
                                 ]
@@ -674,3 +720,663 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                 }
             finally:
                 exam.coordinator.history._callback = callback_save
+
+
+def hist_data_live_1(
+    hass,
+    start_time: datetime,
+    end_time: datetime,
+    entity_ids: List[str],
+    filters: Any = None,
+    include_start_time_state: bool = True,
+    significant_changes_only: bool = True,
+    minimal_response: bool = False,
+    no_attributes: bool = False,
+) -> dict[str, list[ha.State]]:
+    """Return dummy history data for a scheduled run"""
+
+    result: dict[str, list[ha.State]] = {}
+    idm = "binary_sensor.irrigation_unlimited_c1_m"
+    idz1 = "binary_sensor.irrigation_unlimited_c1_z1"
+    idz2 = "binary_sensor.irrigation_unlimited_c1_z2"
+    attr = {"current_schedule": 1, "current_name": "Schedule 1"}
+
+    result[idm] = []
+    result[idz1] = []
+    result[idz2] = []
+
+    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 06:05:00")))
+    result[idz1].append(ha.State(idz1, "on", attr, mk_utc("2024-07-23 06:05:00")))
+    result[idz1].append(ha.State(idz1, "off", None, mk_utc("2024-07-23 06:11:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 06:11:00")))
+
+    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 06:12:00")))
+    result[idz2].append(ha.State(idz1, "on", attr, mk_utc("2024-07-23 06:12:00")))
+    result[idz2].append(ha.State(idz1, "off", None, mk_utc("2024-07-23 06:24:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 06:24:00")))
+
+    return result
+
+
+def hist_data_live_2(
+    hass,
+    start_time: datetime,
+    end_time: datetime,
+    entity_ids: List[str],
+    filters: Any = None,
+    include_start_time_state: bool = True,
+    significant_changes_only: bool = True,
+    minimal_response: bool = False,
+    no_attributes: bool = False,
+) -> dict[str, list[ha.State]]:
+    """Return dummy history data for a simulated manual run"""
+
+    result: dict[str, list[ha.State]] = {}
+    idm = "binary_sensor.irrigation_unlimited_c1_m"
+    idz1 = "binary_sensor.irrigation_unlimited_c1_z1"
+    idz2 = "binary_sensor.irrigation_unlimited_c1_z2"
+    attr = {"current_schedule": 0, "current_name": "Manual"}
+
+    result[idm] = []
+    result[idz1] = []
+    result[idz2] = []
+
+    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 08:05:00")))
+    result[idz1].append(ha.State(idz1, "on", attr, mk_utc("2024-07-23 08:05:00")))
+    result[idz1].append(ha.State(idz1, "off", None, mk_utc("2024-07-23 08:11:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 08:11:00")))
+
+    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 08:12:00")))
+    result[idz1].append(ha.State(idz2, "on", attr, mk_utc("2024-07-23 08:12:00")))
+    result[idz1].append(ha.State(idz2, "off", None, mk_utc("2024-07-23 08:24:00")))
+    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 08:24:00")))
+
+    return result
+
+
+async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
+    """Test out the IUHistory object"""
+    async with IUExam(hass, "test_history_live.yaml") as exam:
+        await exam.load_dependencies()
+        with patch(
+            "homeassistant.components.recorder.history.get_significant_states"
+        ) as mock:
+
+            mock.side_effect = hist_data_live_1
+            await exam.begin_test(1)
+            exam.check_iu_entity(
+                "c1_z1",
+                STATE_OFF,
+                {
+                    "status": "off",
+                    "current_schedule": None,
+                    "next_schedule": 1,
+                    "next_name": "Schedule 1",
+                    "next_start": mk_local("2024-07-23 06:05:00"),
+                    "next_duration": "0:06:00",
+                    "today_total": 0.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-25 18:05:00"),
+                            "end": mk_local("2024-07-25 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:05:00"),
+                            "end": mk_local("2024-07-25 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:05:00"),
+                            "end": mk_local("2024-07-24 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:05:00"),
+                            "end": mk_local("2024-07-24 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:05:00"),
+                            "end": mk_local("2024-07-23 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 06:05:00"),
+                            "end": mk_local("2024-07-23 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                    ],
+                },
+            )
+            exam.check_iu_entity(
+                "c1_z2",
+                STATE_OFF,
+                {
+                    "current_schedule": None,
+                    "percent_complete": 0,
+                    "next_adjustment": "",
+                    "next_schedule": 1,
+                    "next_name": "Schedule 1",
+                    "next_start": mk_local("2024-07-23 06:12:00"),
+                    "next_duration": "0:12:00",
+                    "today_total": 0.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-25 18:12:00"),
+                            "end": mk_local("2024-07-25 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:12:00"),
+                            "end": mk_local("2024-07-25 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:12:00"),
+                            "end": mk_local("2024-07-24 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:12:00"),
+                            "end": mk_local("2024-07-24 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:12:00"),
+                            "end": mk_local("2024-07-23 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 06:12:00"),
+                            "end": mk_local("2024-07-23 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                    ],
+                },
+            )
+            await exam.run_until("2024-07-23 06:30")
+            exam.check_iu_entity(
+                "c1_z1",
+                STATE_OFF,
+                {
+                    "status": "off",
+                    "current_schedule": None,
+                    "percent_complete": 0,
+                    "next_adjustment": "",
+                    "next_schedule": 2,
+                    "next_name": "Schedule 2",
+                    "next_start": mk_local("2024-07-23 18:05:00"),
+                    "next_duration": "0:06:00",
+                    "today_total": 6.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-26 06:05:00"),
+                            "end": mk_local("2024-07-26 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 18:05:00"),
+                            "end": mk_local("2024-07-25 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:05:00"),
+                            "end": mk_local("2024-07-25 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:05:00"),
+                            "end": mk_local("2024-07-24 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:05:00"),
+                            "end": mk_local("2024-07-24 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:05:00"),
+                            "end": mk_local("2024-07-23 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 06:05:00"),
+                            "end": mk_local("2024-07-23 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "history",
+                        },
+                    ],
+                },
+            )
+            exam.check_iu_entity(
+                "c1_z2",
+                STATE_OFF,
+                {
+                    "current_schedule": None,
+                    "percent_complete": 0,
+                    "next_schedule": 2,
+                    "next_name": "Schedule 2",
+                    "next_start": mk_local("2024-07-23 18:12:00"),
+                    "next_duration": "0:12:00",
+                    "today_total": 12.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-26 06:12:00"),
+                            "end": mk_local("2024-07-26 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 18:12:00"),
+                            "end": mk_local("2024-07-25 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:12:00"),
+                            "end": mk_local("2024-07-25 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:12:00"),
+                            "end": mk_local("2024-07-24 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:12:00"),
+                            "end": mk_local("2024-07-24 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:12:00"),
+                            "end": mk_local("2024-07-23 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 06:12:00"),
+                            "end": mk_local("2024-07-23 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 06:12:00"),
+                            "end": mk_local("2024-07-23 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "history",
+                        },
+                    ],
+                },
+            )
+            await exam.finish_test()
+
+            mock.side_effect = hist_data_live_2
+            await exam.begin_test(2)
+            exam.check_iu_entity(
+                "c1_z1",
+                STATE_OFF,
+                {
+                    "current_schedule": None,
+                    "percent_complete": 0,
+                    "next_adjustment": "",
+                    "next_schedule": 2,
+                    "next_name": "Schedule 2",
+                    "next_start": mk_local("2024-07-23 18:05:00"),
+                    "next_duration": "0:06:00",
+                    "today_total": 0.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-26 06:05:00"),
+                            "end": mk_local("2024-07-26 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 18:05:00"),
+                            "end": mk_local("2024-07-25 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:05:00"),
+                            "end": mk_local("2024-07-25 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:05:00"),
+                            "end": mk_local("2024-07-24 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:05:00"),
+                            "end": mk_local("2024-07-24 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:05:00"),
+                            "end": mk_local("2024-07-23 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                    ],
+                },
+            )
+            exam.check_iu_entity(
+                "c1_z2",
+                STATE_OFF,
+                {
+                    "current_schedule": None,
+                    "percent_complete": 0,
+                    "next_adjustment": "",
+                    "next_schedule": 2,
+                    "next_name": "Schedule 2",
+                    "next_start": mk_local("2024-07-23 18:12:00"),
+                    "next_duration": "0:12:00",
+                    "today_total": 0.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-26 06:12:00"),
+                            "end": mk_local("2024-07-26 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 18:12:00"),
+                            "end": mk_local("2024-07-25 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:12:00"),
+                            "end": mk_local("2024-07-25 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:12:00"),
+                            "end": mk_local("2024-07-24 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:12:00"),
+                            "end": mk_local("2024-07-24 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:12:00"),
+                            "end": mk_local("2024-07-23 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                    ],
+                },
+            )
+            await exam.run_until("2024-07-23 08:05")
+            await exam.call(
+                SERVICE_MANUAL_RUN,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                    "time": "00:19",
+                },
+            )
+            await exam.run_until("2024-07-23 08:30")
+            exam.check_iu_entity(
+                "c1_z1",
+                STATE_OFF,
+                {
+                    "current_schedule": None,
+                    "percent_complete": 0,
+                    "next_adjustment": "",
+                    "next_schedule": 2,
+                    "next_name": "Schedule 2",
+                    "next_start": mk_local("2024-07-23 18:05:00"),
+                    "next_duration": "0:06:00",
+                    "today_total": 18.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-26 06:05:00"),
+                            "end": mk_local("2024-07-26 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 18:05:00"),
+                            "end": mk_local("2024-07-25 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:05:00"),
+                            "end": mk_local("2024-07-25 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:05:00"),
+                            "end": mk_local("2024-07-24 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:05:00"),
+                            "end": mk_local("2024-07-24 06:11:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:05:00"),
+                            "end": mk_local("2024-07-23 18:11:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 08:12:00"),
+                            "end": mk_local("2024-07-23 08:24:00"),
+                            "schedule": 0,
+                            "schedule_name": "Manual",
+                            "adjustment": "",
+                            "status": "history",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 08:05:00"),
+                            "end": mk_local("2024-07-23 08:11:00"),
+                            "schedule": 0,
+                            "schedule_name": "Manual",
+                            "adjustment": "",
+                            "status": "history",
+                        },
+                    ],
+                },
+            )
+            exam.check_iu_entity(
+                "c1_z2",
+                STATE_OFF,
+                {
+                    "current_schedule": None,
+                    "percent_complete": 0,
+                    "next_adjustment": "",
+                    "next_schedule": 2,
+                    "next_name": "Schedule 2",
+                    "next_start": mk_local("2024-07-23 18:12:00"),
+                    "next_duration": "0:12:00",
+                    "today_total": 0.0,
+                    "timeline": [
+                        {
+                            "start": mk_local("2024-07-26 06:12:00"),
+                            "end": mk_local("2024-07-26 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 18:12:00"),
+                            "end": mk_local("2024-07-25 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-25 06:12:00"),
+                            "end": mk_local("2024-07-25 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 18:12:00"),
+                            "end": mk_local("2024-07-24 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-24 06:12:00"),
+                            "end": mk_local("2024-07-24 06:24:00"),
+                            "schedule": 1,
+                            "schedule_name": "Schedule 1",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 18:12:00"),
+                            "end": mk_local("2024-07-23 18:24:00"),
+                            "schedule": 2,
+                            "schedule_name": "Schedule 2",
+                            "adjustment": "",
+                            "status": "next",
+                        },
+                        {
+                            "start": mk_local("2024-07-23 08:12:01"),
+                            "end": mk_local("2024-07-23 08:24:01"),
+                            "schedule": 0,
+                            "schedule_name": "Manual",
+                            "adjustment": "",
+                            "status": "scheduled",
+                        },
+                    ],
+                },
+            )
+            await exam.finish_test()
+
+        exam.check_summary()

@@ -165,6 +165,7 @@ from .const import (
     RES_TIMELINE_SCHEDULED,
     TIMELINE_ADJUSTMENT,
     TIMELINE_END,
+    TIMELINE_SCHEDULE,
     TIMELINE_SCHEDULE_NAME,
     TIMELINE_START,
     MONTHS,
@@ -1530,6 +1531,7 @@ class IURun(IUBase):
         result = OrderedDict()
         result[TIMELINE_START] = self._start_time
         result[TIMELINE_END] = self._end_time
+        result[TIMELINE_SCHEDULE] = self.schedule.id1 if self.schedule else 0
         result[TIMELINE_SCHEDULE_NAME] = self.schedule_name
         result[TIMELINE_ADJUSTMENT] = self.adjustment
         return result

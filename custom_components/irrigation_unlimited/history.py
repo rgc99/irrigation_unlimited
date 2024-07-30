@@ -1,5 +1,6 @@
 """History access and caching. This module runs asynchronously collecting
 and caching history data"""
+
 from datetime import datetime, timedelta
 from typing import Callable, OrderedDict, Any
 from homeassistant.core import HomeAssistant, State, CALLBACK_TYPE
@@ -15,6 +16,7 @@ from homeassistant.const import STATE_ON
 from .const import (
     ATTR_CURRENT_ADJUSTMENT,
     ATTR_CURRENT_NAME,
+    ATTR_CURRENT_SCHEDULE,
     CONF_ENABLED,
     CONF_HISTORY,
     CONF_HISTORY_REFRESH,
@@ -22,6 +24,7 @@ from .const import (
     CONF_REFRESH_INTERVAL,
     CONF_SPAN,
     TIMELINE_ADJUSTMENT,
+    TIMELINE_SCHEDULE,
     TIMELINE_SCHEDULE_NAME,
     TIMELINE_START,
     TIMELINE_END,
@@ -166,6 +169,7 @@ class IUHistory:
             result = OrderedDict()
             result[TIMELINE_START] = round_seconds_dt(item.last_changed)
             result[TIMELINE_END] = round_seconds_dt(end)
+            result[TIMELINE_SCHEDULE] = item.attributes.get(ATTR_CURRENT_SCHEDULE)
             result[TIMELINE_SCHEDULE_NAME] = item.attributes.get(ATTR_CURRENT_NAME)
             result[TIMELINE_ADJUSTMENT] = item.attributes.get(
                 ATTR_CURRENT_ADJUSTMENT, ""

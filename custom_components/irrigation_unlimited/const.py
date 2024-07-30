@@ -162,6 +162,7 @@ STATUS_DELAY = "delay"
 TIMELINE_STATUS = "status"
 TIMELINE_START = "start"
 TIMELINE_END = "end"
+TIMELINE_SCHEDULE = "schedule"
 TIMELINE_SCHEDULE_NAME = "schedule_name"
 TIMELINE_ADJUSTMENT = "adjustment"
 
