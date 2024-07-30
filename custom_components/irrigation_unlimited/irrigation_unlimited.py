@@ -1064,10 +1064,10 @@ class IUVolume:
         self._zone = zone
         # Config parameters
         self._sensor_id: str = None
-        self._volume_precision: int = 3
-        self._volume_scale: float = 1
-        self._flow_rate_precision: int = 3
-        self._flow_rate_scale: float = 3600
+        self._volume_precision: int = None
+        self._volume_scale: float = None
+        self._flow_rate_precision: int = None
+        self._flow_rate_scale: float = None
         # Private variables
         self._callback_remove: CALLBACK_TYPE = None
         self._start_volume: Decimal = None
@@ -1078,9 +1078,11 @@ class IUVolume:
             str, Callable[[datetime, "IUZone", Decimal, Decimal], None]
         ] = {}
         self._flow_rates: list[Decimal] = []
-        self._flow_rate_sum = Decimal(0)
+        self._flow_rate_sum: Decimal = None
         self._flow_rate_sma: Decimal = None
         self._sensor_readings: list[IUVolumeSensorReading] = []
+        self.reset_config()
+        self.reset_readings()
 
     @property
     def total(self) -> float | None:
@@ -1095,6 +1097,25 @@ class IUVolume:
         if self._flow_rate_sma is not None:
             return float(self._flow_rate_sma)
         return None
+
+    def reset_config(self) -> None:
+        """Reset this object"""
+        self.end_record(None)
+        self._sensor_id = None
+        self._volume_precision = 3
+        self._volume_scale = 1
+        self._flow_rate_precision = 3
+        self._flow_rate_scale = 3600
+
+    def reset_readings(self) -> None:
+        """Reset reading parameters"""
+        self._start_volume = None
+        self._total_volume = None
+        self._start_time = None
+        self._sensor_readings.clear()
+        self._flow_rates.clear()
+        self._flow_rate_sum = 0
+        self._flow_rate_sma = None
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
         """Load volume data from the configuration"""
@@ -1114,6 +1135,8 @@ class IUVolume:
                 CONF_FLOW_RATE_SCALE, self._flow_rate_scale
             )
 
+        self.reset_config()
+        self.reset_readings()
         if all_zones is not None:
             load_params(all_zones.get(CONF_VOLUME))
         load_params(config.get(CONF_VOLUME))
@@ -1197,15 +1220,9 @@ class IUVolume:
 
     def start_record(self, stime: datetime) -> None:
         """Start recording volume information"""
-
+        self.reset_readings()
         if self._sensor_id is None:
             return
-        self._start_volume = self._total_volume = None
-        self._start_time = stime
-        self._sensor_readings.clear()
-        self._flow_rates.clear()
-        self._flow_rate_sum = 0
-        self._flow_rate_sma = None
 
         try:
             self._start_volume = self.read_sensor(stime)
