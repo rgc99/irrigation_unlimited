@@ -17,7 +17,7 @@ from homeassistant.helpers.recorder import (
     async_wait_recorder,
 )
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.util.dt import parse_datetime, as_utc, as_local
+from homeassistant.util.dt import parse_datetime, as_utc, as_local, UTC
 
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
@@ -459,6 +459,8 @@ class IUExam:
 
         def print_value(value: Any) -> str:
             if isinstance(value, datetime):
+                if value.tzinfo == UTC:
+                    value = as_local(value)
                 return f'mk_local("{value.strftime("%Y-%m-%d %H:%M:%S")}")'
             elif isinstance(value, str):
                 return f'"{value}"'
