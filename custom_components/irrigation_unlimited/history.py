@@ -5,7 +5,11 @@ from datetime import datetime, timedelta
 from typing import Callable, OrderedDict, Any
 from homeassistant.core import HomeAssistant, State, CALLBACK_TYPE
 from homeassistant.util import dt
-from homeassistant.components.recorder.const import DATA_INSTANCE as RECORDER_INSTANCE
+
+try:
+    from homeassistant.helpers.recorder import DATA_INSTANCE
+except ImportError:
+    from homeassistant.components.recorder.const import DATA_INSTANCE
 from homeassistant.components.recorder import get_instance
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
@@ -201,7 +205,7 @@ class IUHistory:
             return
 
         start = self._stime - self._history_span
-        if RECORDER_INSTANCE in self._hass.data:
+        if DATA_INSTANCE in self._hass.data:
             data = await get_instance(self._hass).async_add_executor_job(
                 history.get_significant_states,
                 self._hass,
