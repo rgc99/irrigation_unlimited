@@ -1612,7 +1612,7 @@ The time period (duration) type is a string in the format HH:MM, HH:MM:SS, the n
 
 ### 14.3 Switch entities
 
-These can be any entity from the `switch` or `light` platforms or anything that supports the `turn_on` and `turn_off` actions. Multiple entities can be a CSV string or a list. Here is a code snippet to show different ways to specify the entity_ids.
+These can be any entity from the `switch`, `light`, `valve` or `cover` platforms or anything that supports the `turn_on` and `turn_off` actions. Multiple entities can be a CSV string or a list. Here is a code snippet to show different ways to specify the entity_ids.
 
 ```yaml
   ...
