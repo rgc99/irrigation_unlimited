@@ -2315,6 +2315,8 @@ class IUZone(IUBase):
             run[TIMELINE_STATUS] = RES_TIMELINE_HISTORY
 
         for run in self._run_queue:
+            if run.duration == timedelta(0):
+                continue
             dct = run.as_dict()
             if run.running:
                 dct[TIMELINE_STATUS] = RES_TIMELINE_RUNNING

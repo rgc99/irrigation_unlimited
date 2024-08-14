@@ -4,13 +4,141 @@ import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
     SERVICE_PAUSE,
     SERVICE_RESUME,
+    DOMAIN,
+    EVENT_FINISH,
+    EVENT_START,
 )
-from tests.iu_test_support import IUExam
+from tests.iu_test_support import IUExam, mk_local
 
 IUExam.quiet_mode()
 
 
 # pylint: disable=unused-argument
+async def test_service_sequence_pause_resume_notify(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test pause/resume service calls to sequence notifications"""
+    async with IUExam(hass, "service_sequence_pause_resume_notify.yaml") as exam:
+        event_data: list[ha.Event] = []
+
+        def handle_event(event: ha.Event):
+            nonlocal event_data
+            event_data.append(
+                {
+                    "event_type": event.event_type,
+                    "event_time": exam.virtual_time,
+                    "data": event.data,
+                }
+            )
+
+        hass.bus.async_listen(f"{DOMAIN}_{EVENT_START}", handle_event)
+        hass.bus.async_listen(f"{DOMAIN}_{EVENT_FINISH}", handle_event)
+
+        await exam.begin_test(1)
+        await exam.run_until("2024-08-14 06:07:00")
+        await exam.call(
+            SERVICE_PAUSE,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_z1",
+            "off",
+            {
+                "timeline": [
+                    {
+                        "start": mk_local("2024-08-16 06:05:00"),
+                        "end": mk_local("2024-08-16 06:09:00"),
+                        "schedule": 1,
+                        "schedule_name": "Schedule 1",
+                        "adjustment": "",
+                        "status": "scheduled",
+                    },
+                    {
+                        "start": mk_local("2024-08-15 06:05:00"),
+                        "end": mk_local("2024-08-15 06:09:00"),
+                        "schedule": 1,
+                        "schedule_name": "Schedule 1",
+                        "adjustment": "",
+                        "status": "next",
+                    },
+                    {
+                        "start": mk_local("2024-08-14 06:07:00"),
+                        "end": mk_local("2024-08-14 06:09:00"),
+                        "schedule": 1,
+                        "schedule_name": "Schedule 1",
+                        "adjustment": "",
+                        "status": "scheduled",
+                    },
+                ],
+            },
+        )
+        await exam.run_until("2024-08-14 06:12:00")
+        await exam.call(
+            SERVICE_RESUME,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_z1",
+            "on",
+            {
+                "timeline": [
+                    {
+                        "start": mk_local("2024-08-16 06:05:00"),
+                        "end": mk_local("2024-08-16 06:09:00"),
+                        "schedule": 1,
+                        "schedule_name": "Schedule 1",
+                        "adjustment": "",
+                        "status": "scheduled",
+                    },
+                    {
+                        "start": mk_local("2024-08-15 06:05:00"),
+                        "end": mk_local("2024-08-15 06:09:00"),
+                        "schedule": 1,
+                        "schedule_name": "Schedule 1",
+                        "adjustment": "",
+                        "status": "next",
+                    },
+                    {
+                        "start": mk_local("2024-08-14 06:12:00"),
+                        "end": mk_local("2024-08-14 06:14:00"),
+                        "schedule": 1,
+                        "schedule_name": "Schedule 1",
+                        "adjustment": "",
+                        "status": "running",
+                    },
+                ],
+            },
+        )
+        await exam.finish_test()
+        assert event_data == [
+            {
+                "event_type": "irrigation_unlimited_start",
+                "event_time": mk_local("2024-08-14 06:05"),
+                "data": {
+                    "controller": {"index": 0, "name": "Test Controller"},
+                    "sequence": {"index": 0, "name": "Seq 1"},
+                    "run": {"duration": 600},
+                    "schedule": {"index": 0, "name": "Schedule 1"},
+                },
+            },
+            {
+                "event_type": "irrigation_unlimited_finish",
+                "event_time": mk_local("2024-08-14 06:20"),
+                "data": {
+                    "controller": {"index": 0, "name": "Test Controller"},
+                    "sequence": {"index": 0, "name": "Seq 1"},
+                    "run": {"duration": 900},
+                    "schedule": {"index": 0, "name": "Schedule 1"},
+                },
+            },
+        ]
+        exam.check_summary()
+
+
 async def test_service_sequence_pause_resume_multi(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
 ):
