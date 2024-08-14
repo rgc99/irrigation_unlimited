@@ -419,6 +419,10 @@ class IUExam:
         def check_field(field: str, expected, attribute) -> dict:
             result = {}
             if attribute != expected:
+                if isinstance(expected, datetime):
+                    expected = fmt_local(expected)
+                if isinstance(attribute, datetime):
+                    attribute = fmt_local(attribute)
                 result[field] = {}
                 result[field]["expected"] = expected
                 result[field]["found"] = attribute
