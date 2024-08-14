@@ -3,7 +3,7 @@
 from unittest.mock import patch
 from datetime import datetime, timedelta
 from collections import Counter
-from typing import OrderedDict, List, Any
+from typing import OrderedDict, List, Any, NamedTuple
 from homeassistant.const import (
     STATE_OFF,
 )
@@ -40,111 +40,98 @@ def hist_data(
     minimal_response: bool = False,
     no_attributes: bool = False,
 ) -> dict[str, list[ha.State]]:
-    """Return dummy history data"""
-
-    result: dict[str, list[ha.State]] = {}
-    idx = "binary_sensor.irrigation_unlimited_c1_m"
-    if idx in entity_ids:
-        result[idx] = []
-        if start_time >= mk_utc("2020-12-28 00:00:00") and end_time <= mk_utc(
-            "2021-01-04 23:59:59"
-        ):
-            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:29:00")))
-            result[idx].append(
-                ha.State(idx, "off", None, mk_utc("2021-01-04 04:33:00"))
-            )
-            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 05:29:00")))
-            result[idx].append(
-                ha.State(idx, "off", None, mk_utc("2021-01-04 05:33:00"))
-            )
-    idx = "binary_sensor.irrigation_unlimited_c1_z1"
-    if idx in entity_ids:
-        result[idx] = []
-        if start_time >= mk_utc("2020-12-28 00:00:00") and end_time <= mk_utc(
-            "2021-01-04 23:59:59"
-        ):
-            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:30:00")))
-            result[idx].append(
-                ha.State(idx, "off", None, mk_utc("2021-01-04 04:32:00"))
-            )
-            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 05:30:00")))
-            result[idx].append(
-                ha.State(idx, "off", None, mk_utc("2021-01-04 05:32:00"))
-            )
-    idx = "binary_sensor.irrigation_unlimited_c1_z2"
-    if idx in entity_ids:
-        result[idx] = []
-        if start_time >= mk_utc("2020-12-28 00:00:00") and end_time <= mk_utc(
-            "2021-01-04 23:59:59"
-        ):
-            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 04:35:00")))
-            result[idx].append(
-                ha.State(idx, "off", None, mk_utc("2021-01-04 04:38:00"))
-            )
-            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 05:35:00")))
-            result[idx].append(
-                ha.State(idx, "off", None, mk_utc("2021-01-04 05:38:00"))
-            )
-            result[idx].append(ha.State(idx, "on", None, mk_utc("2021-01-04 05:40:00")))
-            result[idx].append(
-                ha.State(idx, "off", None, mk_utc("2021-01-04 05:45:00"))
-            )
-
-    return result
-
-
-def hist_data_2(
-    hass,
-    start_time: datetime,
-    end_time: datetime,
-    entity_ids: List[str],
-    filters: Any = None,
-    include_start_time_state: bool = True,
-    significant_changes_only: bool = True,
-    minimal_response: bool = False,
-    no_attributes: bool = False,
-) -> dict[str, list[ha.State]]:
-    """Return dummy history data. Random off at start and left running at end"""
+    """Return dummy history data for a scheduled run"""
 
     result: dict[str, list[ha.State]] = {}
     idm = "binary_sensor.irrigation_unlimited_c1_m"
-    idz = "binary_sensor.irrigation_unlimited_c1_z1"
-    result[idm] = []
-    result[idz] = []
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:00:00")))
-    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:00:00")))
+    idz1 = "binary_sensor.irrigation_unlimited_c1_z1"
+    idz2 = "binary_sensor.irrigation_unlimited_c1_z2"
+    ats1 = {"current_schedule": 1, "current_name": "Schedule 1"}
+    atm = {"current_schedule": 0, "current_name": "Manual"}
 
-    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-03 04:09:00")))
-    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-03 04:10:00")))
-    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:15:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:16:00")))
+    class Event(NamedTuple):
+        atime: datetime
+        entity_id: str
 
-    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-03 04:19:00")))
-    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-03 04:20:00")))
-    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:25:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:26:00")))
+    class State(NamedTuple):
+        state: str
+        attributes: dict
 
-    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-03 04:29:00")))
-    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-03 04:30:00")))
-    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-03 04:35:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-03 04:36:00")))
+    data: dict[Event, State] = {
+        # test_history_main
+        Event(mk_utc("2021-01-04 04:29:00"), idm): State("on", None),
+        Event(mk_utc("2021-01-04 04:30:00"), idz1): State("on", None),
+        Event(mk_utc("2021-01-04 04:32:00"), idz1): State("off", None),
+        Event(mk_utc("2021-01-04 04:33:00"), idm): State("off", None),
+        Event(mk_utc("2021-01-04 04:35:00"), idz2): State("on", None),
+        Event(mk_utc("2021-01-04 04:38:00"), idz2): State("off", None),
+        Event(mk_utc("2021-01-04 05:29:00"), idm): State("on", None),
+        Event(mk_utc("2021-01-04 05:30:00"), idz1): State("on", None),
+        Event(mk_utc("2021-01-04 05:32:00"), idz1): State("off", None),
+        Event(mk_utc("2021-01-04 05:33:00"), idm): State("off", None),
+        Event(mk_utc("2021-01-04 05:35:00"), idz2): State("on", None),
+        Event(mk_utc("2021-01-04 05:38:00"), idz2): State("off", None),
+        Event(mk_utc("2021-01-04 05:40:00"), idz2): State("on", None),
+        Event(mk_utc("2021-01-04 05:45:00"), idz2): State("off", None),
+        # test_history_object
+        Event(mk_utc("2021-06-03 04:00:00"), idm): State("off", None),
+        Event(mk_utc("2021-06-03 04:00:00"), idz1): State("off", None),
+        Event(mk_utc("2021-06-03 04:09:00"), idm): State("on", None),
+        Event(mk_utc("2021-06-03 04:10:00"), idz1): State("on", None),
+        Event(mk_utc("2021-06-03 04:15:00"), idz1): State("off", None),
+        Event(mk_utc("2021-06-03 04:16:00"), idm): State("off", None),
+        Event(mk_utc("2021-06-03 04:19:00"), idm): State("on", None),
+        Event(mk_utc("2021-06-03 04:20:00"), idz1): State("on", None),
+        Event(mk_utc("2021-06-03 04:25:00"), idz1): State("off", None),
+        Event(mk_utc("2021-06-03 04:26:00"), idm): State("off", None),
+        Event(mk_utc("2021-06-03 04:29:00"), idm): State("on", None),
+        Event(mk_utc("2021-06-03 04:30:00"), idz1): State("on", None),
+        Event(mk_utc("2021-06-03 04:35:00"), idz1): State("off", None),
+        Event(mk_utc("2021-06-03 04:36:00"), idm): State("off", None),
+        Event(mk_utc("2021-06-04 04:09:00"), idm): State("on", None),
+        Event(mk_utc("2021-06-04 04:10:00"), idz1): State("on", None),
+        Event(mk_utc("2021-06-04 04:15:00"), idz1): State("off", None),
+        Event(mk_utc("2021-06-04 04:16:00"), idm): State("off", None),
+        Event(mk_utc("2021-06-04 04:19:00"), idm): State("on", None),
+        Event(mk_utc("2021-06-04 04:20:00"), idz1): State("on", None),
+        Event(mk_utc("2021-06-04 04:25:00"), idz1): State("off", None),
+        Event(mk_utc("2021-06-04 04:26:00"), idm): State("off", None),
+        Event(mk_utc("2021-06-04 04:29:00"), idm): State("on", None),
+        Event(mk_utc("2021-06-04 04:30:00"), idz1): State("on", None),
+        Event(mk_utc("2021-06-05 04:09:00"), idm): State("on", None),
+        Event(mk_utc("2021-06-05 04:10:00"), idz1): State("on", None),
+        # test_history_live - Test 1
+        Event(mk_utc("2024-07-16 06:05:00"), idm): State("on", ats1),
+        Event(mk_utc("2024-07-16 06:05:00"), idz1): State("on", ats1),
+        Event(mk_utc("2024-07-16 06:11:00"), idz1): State("off", None),
+        Event(mk_utc("2024-07-16 06:11:00"), idm): State("off", None),
+        Event(mk_utc("2024-07-16 06:12:00"), idm): State("on", ats1),
+        Event(mk_utc("2024-07-16 06:12:00"), idz2): State("on", ats1),
+        Event(mk_utc("2024-07-16 06:24:00"), idz2): State("off", None),
+        Event(mk_utc("2024-07-16 06:24:00"), idm): State("off", None),
+        # test_history_live - Test 2
+        Event(mk_utc("2024-07-23 08:05:00"), idm): State("on", atm),
+        Event(mk_utc("2024-07-23 08:05:00"), idz1): State("on", atm),
+        Event(mk_utc("2024-07-23 08:11:00"), idz1): State("off", None),
+        Event(mk_utc("2024-07-23 08:11:00"), idm): State("off", None),
+        Event(mk_utc("2024-07-23 08:12:00"), idm): State("on", atm),
+        Event(mk_utc("2024-07-23 08:12:00"), idz2): State("on", atm),
+        Event(mk_utc("2024-07-23 08:24:00"), idz2): State("off", None),
+        Event(mk_utc("2024-07-23 08:24:00"), idm): State("off", None),
+    }
 
-    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-04 04:09:00")))
-    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-04 04:10:00")))
-    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-04 04:15:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-04 04:16:00")))
-
-    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-04 04:19:00")))
-    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-04 04:20:00")))
-    result[idz].append(ha.State(idz, "off", None, mk_utc("2021-01-04 04:25:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2021-01-04 04:26:00")))
-
-    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-04 04:29:00")))
-    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-04 04:30:00")))
-
-    result[idm].append(ha.State(idm, "on", None, mk_utc("2021-01-05 04:09:00")))
-    result[idz].append(ha.State(idz, "on", None, mk_utc("2021-01-05 04:10:00")))
-
+    data = dict(sorted(data.items(), key=lambda x: x[0].atime))
+    for event, state in data.items():
+        if (
+            event.entity_id in entity_ids
+            and event.atime >= start_time
+            and event.atime <= end_time
+        ):
+            if event.entity_id not in result:
+                result[event.entity_id] = []
+            result[event.entity_id].append(
+                ha.State(event.entity_id, state.state, state.attributes, event.atime)
+            )
     return result
 
 
@@ -163,7 +150,7 @@ async def test_history_routines():
     ) == dt.as_local(datetime(2021, 1, 4))
 
 
-async def test_history(hass: ha.HomeAssistant, allow_memory_db):
+async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
     """Test out the history caching and timeline"""
     # pylint: disable=redefined-outer-name
 
@@ -467,6 +454,26 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                         ("status", "next"),
                     ]
                 ),
+                OrderedDict(
+                    [
+                        ("start", mk_utc("2021-01-04 05:30")),
+                        ("end", mk_utc("2021-01-04 05:32")),
+                        ("schedule", None),
+                        ("schedule_name", None),
+                        ("adjustment", ""),
+                        ("status", "history"),
+                    ]
+                ),
+                OrderedDict(
+                    [
+                        ("start", mk_utc("2021-01-04 04:30")),
+                        ("end", mk_utc("2021-01-04 04:32")),
+                        ("schedule", None),
+                        ("schedule_name", None),
+                        ("adjustment", ""),
+                        ("status", "history"),
+                    ]
+                ),
             ]
             assert state.attributes["timeline"] == timeline
 
@@ -502,6 +509,36 @@ async def test_history(hass: ha.HomeAssistant, allow_memory_db):
                         ("schedule_name", "Schedule 1"),
                         ("adjustment", ""),
                         ("status", "next"),
+                    ]
+                ),
+                OrderedDict(
+                    [
+                        ("start", mk_utc("2021-01-04 05:40")),
+                        ("end", mk_utc("2021-01-04 05:45")),
+                        ("schedule", None),
+                        ("schedule_name", None),
+                        ("adjustment", ""),
+                        ("status", "history"),
+                    ]
+                ),
+                OrderedDict(
+                    [
+                        ("start", mk_utc("2021-01-04 05:35")),
+                        ("end", mk_utc("2021-01-04 05:38")),
+                        ("schedule", None),
+                        ("schedule_name", None),
+                        ("adjustment", ""),
+                        ("status", "history"),
+                    ]
+                ),
+                OrderedDict(
+                    [
+                        ("start", mk_utc("2021-01-04 04:35")),
+                        ("end", mk_utc("2021-01-04 04:38")),
+                        ("schedule", None),
+                        ("schedule_name", None),
+                        ("adjustment", ""),
+                        ("status", "history"),
                     ]
                 ),
             ]
@@ -560,7 +597,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
     async with IUExam(hass, "test_skeleton.yaml") as exam:
         await exam.load_dependencies()
 
-        stime = mk_utc("2021-01-04 04:32:00")
+        stime = mk_utc("2021-06-04 04:32:00")
         exam.coordinator.history.load(None, False)
         assert exam.coordinator.history._enabled is True
         exam.coordinator.history.load({"history": {"enabled": False}}, True)
@@ -571,7 +608,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
         with patch(
             "homeassistant.components.recorder.history.get_significant_states"
         ) as mock:
-            mock.side_effect = hist_data_2
+            mock.side_effect = hist_data
 
             callback_save = exam.coordinator.history._callback
             exam.coordinator.history._callback = service_history
@@ -603,8 +640,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                         "timeline": [
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-03 04:09")),
-                                    ("end", mk_utc("2021-01-03 04:16")),
+                                    ("start", mk_utc("2021-06-03 04:09")),
+                                    ("end", mk_utc("2021-06-03 04:16")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -612,8 +649,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-03 04:19")),
-                                    ("end", mk_utc("2021-01-03 04:26")),
+                                    ("start", mk_utc("2021-06-03 04:19")),
+                                    ("end", mk_utc("2021-06-03 04:26")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -621,8 +658,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-03 04:29")),
-                                    ("end", mk_utc("2021-01-03 04:36")),
+                                    ("start", mk_utc("2021-06-03 04:29")),
+                                    ("end", mk_utc("2021-06-03 04:36")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -630,8 +667,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-04 04:09")),
-                                    ("end", mk_utc("2021-01-04 04:16")),
+                                    ("start", mk_utc("2021-06-04 04:09")),
+                                    ("end", mk_utc("2021-06-04 04:16")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -639,8 +676,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-04 04:19")),
-                                    ("end", mk_utc("2021-01-04 04:26")),
+                                    ("start", mk_utc("2021-06-04 04:19")),
+                                    ("end", mk_utc("2021-06-04 04:26")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -648,8 +685,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-04 04:29")),
-                                    ("end", mk_utc("2021-01-04 04:32")),
+                                    ("start", mk_utc("2021-06-04 04:29")),
+                                    ("end", mk_utc("2021-06-04 04:32")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -662,8 +699,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                         "timeline": [
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-03 04:10")),
-                                    ("end", mk_utc("2021-01-03 04:15")),
+                                    ("start", mk_utc("2021-06-03 04:10")),
+                                    ("end", mk_utc("2021-06-03 04:15")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -671,8 +708,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-03 04:20")),
-                                    ("end", mk_utc("2021-01-03 04:25")),
+                                    ("start", mk_utc("2021-06-03 04:20")),
+                                    ("end", mk_utc("2021-06-03 04:25")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -680,8 +717,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-03 04:30")),
-                                    ("end", mk_utc("2021-01-03 04:35")),
+                                    ("start", mk_utc("2021-06-03 04:30")),
+                                    ("end", mk_utc("2021-06-03 04:35")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -689,8 +726,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-04 04:10")),
-                                    ("end", mk_utc("2021-01-04 04:15")),
+                                    ("start", mk_utc("2021-06-04 04:10")),
+                                    ("end", mk_utc("2021-06-04 04:15")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -698,8 +735,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-04 04:20")),
-                                    ("end", mk_utc("2021-01-04 04:25")),
+                                    ("start", mk_utc("2021-06-04 04:20")),
+                                    ("end", mk_utc("2021-06-04 04:25")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -707,8 +744,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                             ),
                             OrderedDict(
                                 [
-                                    ("start", mk_utc("2021-01-04 04:30")),
-                                    ("end", mk_utc("2021-01-04 04:32")),
+                                    ("start", mk_utc("2021-06-04 04:30")),
+                                    ("end", mk_utc("2021-06-04 04:32")),
                                     ("schedule", None),
                                     ("schedule_name", None),
                                     ("adjustment", ""),
@@ -722,78 +759,6 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                 exam.coordinator.history._callback = callback_save
 
 
-def hist_data_live_1(
-    hass,
-    start_time: datetime,
-    end_time: datetime,
-    entity_ids: List[str],
-    filters: Any = None,
-    include_start_time_state: bool = True,
-    significant_changes_only: bool = True,
-    minimal_response: bool = False,
-    no_attributes: bool = False,
-) -> dict[str, list[ha.State]]:
-    """Return dummy history data for a scheduled run"""
-
-    result: dict[str, list[ha.State]] = {}
-    idm = "binary_sensor.irrigation_unlimited_c1_m"
-    idz1 = "binary_sensor.irrigation_unlimited_c1_z1"
-    idz2 = "binary_sensor.irrigation_unlimited_c1_z2"
-    attr = {"current_schedule": 1, "current_name": "Schedule 1"}
-
-    result[idm] = []
-    result[idz1] = []
-    result[idz2] = []
-
-    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 06:05:00")))
-    result[idz1].append(ha.State(idz1, "on", attr, mk_utc("2024-07-23 06:05:00")))
-    result[idz1].append(ha.State(idz1, "off", None, mk_utc("2024-07-23 06:11:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 06:11:00")))
-
-    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 06:12:00")))
-    result[idz2].append(ha.State(idz1, "on", attr, mk_utc("2024-07-23 06:12:00")))
-    result[idz2].append(ha.State(idz1, "off", None, mk_utc("2024-07-23 06:24:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 06:24:00")))
-
-    return result
-
-
-def hist_data_live_2(
-    hass,
-    start_time: datetime,
-    end_time: datetime,
-    entity_ids: List[str],
-    filters: Any = None,
-    include_start_time_state: bool = True,
-    significant_changes_only: bool = True,
-    minimal_response: bool = False,
-    no_attributes: bool = False,
-) -> dict[str, list[ha.State]]:
-    """Return dummy history data for a simulated manual run"""
-
-    result: dict[str, list[ha.State]] = {}
-    idm = "binary_sensor.irrigation_unlimited_c1_m"
-    idz1 = "binary_sensor.irrigation_unlimited_c1_z1"
-    idz2 = "binary_sensor.irrigation_unlimited_c1_z2"
-    attr = {"current_schedule": 0, "current_name": "Manual"}
-
-    result[idm] = []
-    result[idz1] = []
-    result[idz2] = []
-
-    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 08:05:00")))
-    result[idz1].append(ha.State(idz1, "on", attr, mk_utc("2024-07-23 08:05:00")))
-    result[idz1].append(ha.State(idz1, "off", None, mk_utc("2024-07-23 08:11:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 08:11:00")))
-
-    result[idm].append(ha.State(idm, "on", attr, mk_utc("2024-07-23 08:12:00")))
-    result[idz1].append(ha.State(idz2, "on", attr, mk_utc("2024-07-23 08:12:00")))
-    result[idz1].append(ha.State(idz2, "off", None, mk_utc("2024-07-23 08:24:00")))
-    result[idm].append(ha.State(idm, "off", None, mk_utc("2024-07-23 08:24:00")))
-
-    return result
-
-
 async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
     """Test out the IUHistory object"""
     async with IUExam(hass, "test_history_live.yaml") as exam:
@@ -801,8 +766,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
         with patch(
             "homeassistant.components.recorder.history.get_significant_states"
         ) as mock:
-
-            mock.side_effect = hist_data_live_1
+            mock.side_effect = hist_data
             await exam.begin_test(1)
             exam.check_iu_entity(
                 "c1_z1",
@@ -812,53 +776,53 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                     "current_schedule": None,
                     "next_schedule": 1,
                     "next_name": "Schedule 1",
-                    "next_start": mk_local("2024-07-23 06:05:00"),
+                    "next_start": mk_local("2024-07-16 06:05:00"),
                     "next_duration": "0:06:00",
                     "today_total": 0.0,
                     "timeline": [
                         {
-                            "start": mk_local("2024-07-25 18:05:00"),
-                            "end": mk_local("2024-07-25 18:11:00"),
+                            "start": mk_local("2024-07-18 18:05:00"),
+                            "end": mk_local("2024-07-18 18:11:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-25 06:05:00"),
-                            "end": mk_local("2024-07-25 06:11:00"),
+                            "start": mk_local("2024-07-18 06:05:00"),
+                            "end": mk_local("2024-07-18 06:11:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 18:05:00"),
-                            "end": mk_local("2024-07-24 18:11:00"),
+                            "start": mk_local("2024-07-17 18:05:00"),
+                            "end": mk_local("2024-07-17 18:11:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 06:05:00"),
-                            "end": mk_local("2024-07-24 06:11:00"),
+                            "start": mk_local("2024-07-17 06:05:00"),
+                            "end": mk_local("2024-07-17 06:11:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-23 18:05:00"),
-                            "end": mk_local("2024-07-23 18:11:00"),
+                            "start": mk_local("2024-07-16 18:05:00"),
+                            "end": mk_local("2024-07-16 18:11:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-23 06:05:00"),
-                            "end": mk_local("2024-07-23 06:11:00"),
+                            "start": mk_local("2024-07-16 06:05:00"),
+                            "end": mk_local("2024-07-16 06:11:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
@@ -876,53 +840,53 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                     "next_adjustment": "",
                     "next_schedule": 1,
                     "next_name": "Schedule 1",
-                    "next_start": mk_local("2024-07-23 06:12:00"),
+                    "next_start": mk_local("2024-07-16 06:12:00"),
                     "next_duration": "0:12:00",
                     "today_total": 0.0,
                     "timeline": [
                         {
-                            "start": mk_local("2024-07-25 18:12:00"),
-                            "end": mk_local("2024-07-25 18:24:00"),
+                            "start": mk_local("2024-07-18 18:12:00"),
+                            "end": mk_local("2024-07-18 18:24:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-25 06:12:00"),
-                            "end": mk_local("2024-07-25 06:24:00"),
+                            "start": mk_local("2024-07-18 06:12:00"),
+                            "end": mk_local("2024-07-18 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 18:12:00"),
-                            "end": mk_local("2024-07-24 18:24:00"),
+                            "start": mk_local("2024-07-17 18:12:00"),
+                            "end": mk_local("2024-07-17 18:24:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 06:12:00"),
-                            "end": mk_local("2024-07-24 06:24:00"),
+                            "start": mk_local("2024-07-17 06:12:00"),
+                            "end": mk_local("2024-07-17 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-23 18:12:00"),
-                            "end": mk_local("2024-07-23 18:24:00"),
+                            "start": mk_local("2024-07-16 18:12:00"),
+                            "end": mk_local("2024-07-16 18:24:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-23 06:12:00"),
-                            "end": mk_local("2024-07-23 06:24:00"),
+                            "start": mk_local("2024-07-16 06:12:00"),
+                            "end": mk_local("2024-07-16 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
@@ -931,7 +895,8 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                     ],
                 },
             )
-            await exam.run_until("2024-07-23 06:30")
+
+            await exam.run_until("2024-07-16 06:30")
             exam.check_iu_entity(
                 "c1_z1",
                 STATE_OFF,
@@ -942,61 +907,61 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                     "next_adjustment": "",
                     "next_schedule": 2,
                     "next_name": "Schedule 2",
-                    "next_start": mk_local("2024-07-23 18:05:00"),
+                    "next_start": mk_local("2024-07-16 18:05:00"),
                     "next_duration": "0:06:00",
                     "today_total": 6.0,
                     "timeline": [
                         {
-                            "start": mk_local("2024-07-26 06:05:00"),
-                            "end": mk_local("2024-07-26 06:11:00"),
+                            "start": mk_local("2024-07-19 06:05:00"),
+                            "end": mk_local("2024-07-19 06:11:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-25 18:05:00"),
-                            "end": mk_local("2024-07-25 18:11:00"),
+                            "start": mk_local("2024-07-18 18:05:00"),
+                            "end": mk_local("2024-07-18 18:11:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-25 06:05:00"),
-                            "end": mk_local("2024-07-25 06:11:00"),
+                            "start": mk_local("2024-07-18 06:05:00"),
+                            "end": mk_local("2024-07-18 06:11:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 18:05:00"),
-                            "end": mk_local("2024-07-24 18:11:00"),
+                            "start": mk_local("2024-07-17 18:05:00"),
+                            "end": mk_local("2024-07-17 18:11:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 06:05:00"),
-                            "end": mk_local("2024-07-24 06:11:00"),
+                            "start": mk_local("2024-07-17 06:05:00"),
+                            "end": mk_local("2024-07-17 06:11:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-23 18:05:00"),
-                            "end": mk_local("2024-07-23 18:11:00"),
+                            "start": mk_local("2024-07-16 18:05:00"),
+                            "end": mk_local("2024-07-16 18:11:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "next",
                         },
                         {
-                            "start": mk_local("2024-07-23 06:05:00"),
-                            "end": mk_local("2024-07-23 06:11:00"),
+                            "start": mk_local("2024-07-16 06:05:00"),
+                            "end": mk_local("2024-07-16 06:11:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
@@ -1013,69 +978,69 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                     "percent_complete": 0,
                     "next_schedule": 2,
                     "next_name": "Schedule 2",
-                    "next_start": mk_local("2024-07-23 18:12:00"),
+                    "next_start": mk_local("2024-07-16 18:12:00"),
                     "next_duration": "0:12:00",
                     "today_total": 12.0,
                     "timeline": [
                         {
-                            "start": mk_local("2024-07-26 06:12:00"),
-                            "end": mk_local("2024-07-26 06:24:00"),
+                            "start": mk_local("2024-07-19 06:12:00"),
+                            "end": mk_local("2024-07-19 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-25 18:12:00"),
-                            "end": mk_local("2024-07-25 18:24:00"),
+                            "start": mk_local("2024-07-18 18:12:00"),
+                            "end": mk_local("2024-07-18 18:24:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-25 06:12:00"),
-                            "end": mk_local("2024-07-25 06:24:00"),
+                            "start": mk_local("2024-07-18 06:12:00"),
+                            "end": mk_local("2024-07-18 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 18:12:00"),
-                            "end": mk_local("2024-07-24 18:24:00"),
+                            "start": mk_local("2024-07-17 18:12:00"),
+                            "end": mk_local("2024-07-17 18:24:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-24 06:12:00"),
-                            "end": mk_local("2024-07-24 06:24:00"),
+                            "start": mk_local("2024-07-17 06:12:00"),
+                            "end": mk_local("2024-07-17 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-23 18:12:00"),
-                            "end": mk_local("2024-07-23 18:24:00"),
+                            "start": mk_local("2024-07-16 18:12:00"),
+                            "end": mk_local("2024-07-16 18:24:00"),
                             "schedule": 2,
                             "schedule_name": "Schedule 2",
                             "adjustment": "",
                             "status": "next",
                         },
                         {
-                            "start": mk_local("2024-07-23 06:12:00"),
-                            "end": mk_local("2024-07-23 06:24:00"),
+                            "start": mk_local("2024-07-16 06:12:00"),
+                            "end": mk_local("2024-07-16 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
                             "status": "scheduled",
                         },
                         {
-                            "start": mk_local("2024-07-23 06:12:00"),
-                            "end": mk_local("2024-07-23 06:24:00"),
+                            "start": mk_local("2024-07-16 06:12:00"),
+                            "end": mk_local("2024-07-16 06:24:00"),
                             "schedule": 1,
                             "schedule_name": "Schedule 1",
                             "adjustment": "",
@@ -1086,7 +1051,6 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
             )
             await exam.finish_test()
 
-            mock.side_effect = hist_data_live_2
             await exam.begin_test(2)
             exam.check_iu_entity(
                 "c1_z1",
@@ -1236,7 +1200,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                     "next_name": "Schedule 2",
                     "next_start": mk_local("2024-07-23 18:05:00"),
                     "next_duration": "0:06:00",
-                    "today_total": 18.0,
+                    "today_total": 6.0,
                     "timeline": [
                         {
                             "start": mk_local("2024-07-26 06:05:00"),
@@ -1287,14 +1251,6 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                             "status": "next",
                         },
                         {
-                            "start": mk_local("2024-07-23 08:12:00"),
-                            "end": mk_local("2024-07-23 08:24:00"),
-                            "schedule": 0,
-                            "schedule_name": "Manual",
-                            "adjustment": "",
-                            "status": "history",
-                        },
-                        {
                             "start": mk_local("2024-07-23 08:05:00"),
                             "end": mk_local("2024-07-23 08:11:00"),
                             "schedule": 0,
@@ -1316,7 +1272,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                     "next_name": "Schedule 2",
                     "next_start": mk_local("2024-07-23 18:12:00"),
                     "next_duration": "0:12:00",
-                    "today_total": 0.0,
+                    "today_total": 12.0,
                     "timeline": [
                         {
                             "start": mk_local("2024-07-26 06:12:00"),
