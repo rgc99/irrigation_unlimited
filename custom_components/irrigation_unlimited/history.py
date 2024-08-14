@@ -195,9 +195,6 @@ class IUHistory:
                 run_history.append(create_record(front_marker, item.last_changed))
                 front_marker = None
 
-        if front_marker is not None:
-            run_history.append(create_record(front_marker, stime))
-
         return run_history
 
     async def _async_update_history(self, stime: datetime) -> None:
