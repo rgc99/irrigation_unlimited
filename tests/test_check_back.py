@@ -163,7 +163,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 assert len(switch_event_errors) == 0
                 assert sync_event_errors == [
                     {
-                        "vtime": parse_utc("2021-01-04 15:12:00"),
+                        "vtime": parse_utc("2021-01-04 15:12:30"),
                         "expected": "on",
                         "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
@@ -171,7 +171,7 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                         "zone": {"index": 1, "name": "Zone 2"},
                     },
                     {
-                        "vtime": parse_utc("2021-01-04 15:12:30"),
+                        "vtime": parse_utc("2021-01-04 15:13:00"),
                         "expected": "on",
                         "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",
@@ -195,14 +195,6 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                 assert mock_switch_logger.call_count == 1
                 assert sync_event_errors == [
                     {
-                        "vtime": parse_utc("2021-01-04 15:12:00"),
-                        "expected": "on",
-                        "found": "off",
-                        "entity_id": "input_boolean.dummy_switch_z3",
-                        "controller": {"index": 0, "name": "Test controller 1"},
-                        "zone": {"index": 1, "name": "Zone 2"},
-                    },
-                    {
                         "vtime": parse_utc("2021-01-04 15:12:30"),
                         "expected": "on",
                         "found": "off",
@@ -218,10 +210,18 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
                         "controller": {"index": 0, "name": "Test controller 1"},
                         "zone": {"index": 1, "name": "Zone 2"},
                     },
+                    {
+                        "vtime": parse_utc("2021-01-04 15:13:30"),
+                        "expected": "on",
+                        "found": "off",
+                        "entity_id": "input_boolean.dummy_switch_z3",
+                        "controller": {"index": 0, "name": "Test controller 1"},
+                        "zone": {"index": 1, "name": "Zone 2"},
+                    },
                 ]
                 assert switch_event_errors == [
                     {
-                        "vtime": parse_utc("2021-01-04 15:13:30"),
+                        "vtime": parse_utc("2021-01-04 15:14:00"),
                         "expected": "on",
                         "found": "off",
                         "entity_id": "input_boolean.dummy_switch_z3",

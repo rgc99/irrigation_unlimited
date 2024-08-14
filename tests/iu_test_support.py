@@ -264,10 +264,10 @@ class IUExam:
             await self._hass.async_block_till_done()
             self._coordinator.tester.ticker = min(next_awakening, astop_at)
             if next_awakening <= astop_at:
+                self._current_time = next_awakening
                 self._coordinator.timer(next_awakening)
                 self._coordinator.clock.test_ticker_fired(next_awakening)
                 await self._hass.async_block_till_done()
-                self._current_time = next_awakening
             else:
                 break
 
