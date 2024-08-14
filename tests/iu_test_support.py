@@ -432,11 +432,16 @@ class IUExam:
         for field in fields:
             if field in attr:
                 if isinstance(fields[field], list):
-                    for count, item in enumerate(fields[field]):
-                        if isinstance(item, dict):
-                            self.check_attr(item, attr[field][count])
-                        else:
-                            bad |= check_field(field, item, attr[field][count])
+                    if len(fields[field]) < len(attr[field]):
+                        bad[field] = "List has more items"
+                    elif len(fields[field]) > len(attr[field]):
+                        bad[field] = "List has fewer items"
+                    else:
+                        for count, item in enumerate(fields[field]):
+                            if isinstance(item, dict):
+                                self.check_attr(item, attr[field][count])
+                            else:
+                                bad |= check_field(field, item, attr[field][count])
                 else:
                     bad |= check_field(field, fields[field], attr[field])
             else:
