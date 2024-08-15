@@ -1562,7 +1562,7 @@ class IURunQueue(list[IURun]):
 
     # pylint: disable=too-many-public-methods
 
-    DAYS_SPAN: int = 3
+    DAYS_SPAN: float = 3.0
 
     def __init__(self) -> None:
         super().__init__()
@@ -1664,7 +1664,7 @@ class IURunQueue(list[IURun]):
         fsd = IURunQueue.DAYS_SPAN
         if all_zones is not None:
             fsd = all_zones.get(CONF_FUTURE_SPAN, fsd)
-        fsd = max(config.get(CONF_FUTURE_SPAN, fsd), 1)
+        fsd = max(config.get(CONF_FUTURE_SPAN, fsd), 1 / 24)
         self._future_span = wash_td(timedelta(days=fsd))
         return self
 
