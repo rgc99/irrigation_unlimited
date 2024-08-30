@@ -136,8 +136,6 @@ class IUHistory:
 
     def _today_duration(self, stime: datetime, data: list[State]) -> timedelta:
         """Return the total on time"""
-        # pylint: disable=no-self-use
-
         elapsed = timedelta(0)
         front_marker: State = None
         start = midnight(stime)
@@ -167,7 +165,7 @@ class IUHistory:
 
     def _run_history(self, stime: datetime, data: list[State]) -> list:
         """Return the on/off series"""
-        # pylint: disable=no-self-use
+        # pylint: disable=unused-argument
 
         def create_record(item: State, end: datetime) -> dict:
             result = OrderedDict()

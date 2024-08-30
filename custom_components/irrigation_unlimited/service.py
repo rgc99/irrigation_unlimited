@@ -130,6 +130,7 @@ def register_component_services(
     @callback
     async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
         """Return configuration"""
+        # pylint: disable=unused-argument
         data = {}
         data[ATTR_VERSION] = "1.0.0"
         data[ATTR_CONTROLLERS] = [

@@ -146,7 +146,6 @@ from .const import (
     ICON_BLOCKED,
     ICON_CONTROLLER_OFF,
     ICON_CONTROLLER_ON,
-    ICON_CONTROLLER_PAUSED,
     ICON_CONTROLLER_DELAY,
     ICON_DISABLED,
     ICON_SUSPENDED,
@@ -1182,6 +1181,7 @@ class IUVolume:
                 self._flow_rates.append(rate)
                 if len(self._flow_rates) > IUVolume.SMA_WINDOW:
                     self._flow_rate_sum -= self._flow_rates.pop(0)
+                # pylint: disable=invalid-unary-operand-type
                 self._flow_rate_sma = (
                     self._flow_rate_sum / len(self._flow_rates)
                 ).quantize(Decimal(10) ** -self._flow_rate_precision)
@@ -1199,6 +1199,7 @@ class IUVolume:
         return event
 
     async def sensor_state_change(self, event: HAEvent):
+        """Callback for when the sensor has changed"""
         event = self.event_hook(event)
         stime = event.time_fired
         try:
@@ -1281,6 +1282,7 @@ class IURunStatus(Enum):
             return IURunStatus.RUNNING
         if stime >= end_time:
             return IURunStatus.EXPIRED
+        return IURunStatus.UNKNOWN
 
 
 class IURun(IUBase):
@@ -2537,22 +2539,22 @@ class IUSequenceZone(IUBase):
 
     @property
     def duration(self) -> timedelta:
-        """Returns the duration for this sequence"""
+        """Returns the duration for this sequence zone"""
         return self._duration
 
     @property
     def delay(self) -> timedelta:
-        """ "Returns the post delay for this sequence"""
+        """ "Returns the post delay for this sequence zone"""
         return self._delay
 
     @property
     def repeat(self) -> int:
-        """Returns the number of repeats for this sequence"""
+        """Returns the number of repeats for this sequence zone"""
         return self._repeat
 
     @property
     def volume(self) -> float:
-        """Return the volume limit for this sequence"""
+        """Return the volume limit for this sequence zone"""
         return self._volume
 
     @property
@@ -2687,7 +2689,7 @@ class IUSequenceZone(IUBase):
         def start_time(runs: list[IURun]) -> datetime:
             result: datetime = None
             for run in runs:
-                if result == None or run.start_time < result:
+                if result is None or run.start_time < result:
                     result = run.start_time
             return result
 
@@ -2837,7 +2839,8 @@ class IUSequenceRun(IUBase):
 
     @property
     def active_zone(self) -> IUSequenceZoneRun:
-        """Return the active zone in the sequence"""
+        """Return the active zone in the sequence. Maybe None
+        if sequence is in a delay state"""
         return self._active_zone
 
     @property
@@ -3107,6 +3110,7 @@ class IUSequenceRun(IUBase):
             6 = postamble (negative)
             7 = future
             """
+            # pylint: disable=too-many-return-statements
             if run.expired and run.master_run.expired:
                 return 1
             if run.future and run.master_run.running:
@@ -3207,6 +3211,7 @@ class IUSequenceRun(IUBase):
     async def update_volume(
         self, stime: datetime, zone: IUZone, volume: Decimal, rate: Decimal
     ) -> None:
+        """Notification for when the volume has changed"""
         # pylint: disable=unused-argument
         if self._active_zone not in self._volume_stats:
             self._volume_stats[self._active_zone] = {}
@@ -3217,7 +3222,7 @@ class IUSequenceRun(IUBase):
         if (limit := self._active_zone.sequence_zone.volume) is not None:
             current_vol = sum(self._volume_stats[self._active_zone].values())
             if current_vol >= limit:
-                await self._coordinator._hass.services.async_call(
+                await self._coordinator.hass.services.async_call(
                     DOMAIN,
                     SERVICE_SKIP,
                     {ATTR_ENTITY_ID: self._sequence.entity_id},
@@ -4596,7 +4601,7 @@ class IUController(IUBase):
         schedule: IUSchedule,
         total_time: timedelta = None,
     ) -> IURQStatus:
-        # pylint: disable=too-many-locals, too-many-statements
+        # pylint: disable=too-many-locals, too-many-statements, too-many-arguments
         """Muster the sequences for the controller"""
 
         def init_run_time(
@@ -6090,6 +6095,11 @@ class IUCoordinator:
         self._history = IUHistory(self._hass, self.service_history)
         self._restored_from_configuration: bool = False
         self._finalised = False
+
+    @property
+    def hass(self) -> HomeAssistant:
+        """Return the HomeAssistant object"""
+        return self._hass
 
     @property
     def entity_id(self) -> str:
