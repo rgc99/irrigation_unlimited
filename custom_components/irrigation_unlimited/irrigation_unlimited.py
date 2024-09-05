@@ -2935,6 +2935,8 @@ class IUSequenceRun(IUBase):
         self._start_time += delta
         self._end_time += delta
         for item in self._runs_pre_allocate:
+            if self._current_zone is None:
+                self._current_zone = item.sequence_zone_run
             zone = item.zone
             run = zone.runs.add(
                 stime, item.start + delta, item.duration, zone, self._schedule, self
@@ -3296,7 +3298,6 @@ class IUSequenceRun(IUBase):
                 # Sequence zone is finishing
                 self._active_zone = None
                 remove_trackers()
-                self._current_zone = self.next_sequence_zone(szr)
                 if run["end_time"] == last_date:
                     # Sequence is finishing
                     self._status = IURunStatus.EXPIRED
@@ -3307,6 +3308,8 @@ class IUSequenceRun(IUBase):
                         self._schedule,
                         self,
                     )
+                else:
+                    self._current_zone = self.next_sequence_zone(szr)
                 result |= True
 
         return result
