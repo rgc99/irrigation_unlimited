@@ -445,6 +445,4 @@ PAUSE_RESUME_SCHEMA = {
     vol.Optional(CONF_SEQUENCE_ID): cv.ensure_list,
 }
 
-}
-
 RELOAD_SERVICE_SCHEMA = vol.Schema({})
