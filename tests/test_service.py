@@ -1,4 +1,5 @@
 """Test integration_unlimited service calls."""
+
 # pylint: disable=too-many-lines
 from unittest.mock import patch
 import homeassistant.core as ha
@@ -1082,11 +1083,41 @@ async def test_service_suspend_sequence_bad(
         print(mock.call_args_list)
         assert (
             sum(
-                    1
-                    for call in mock.call_args_list
-                    if call.args[0] == 20 and call.args[1] == "CALL"
+                1
+                for call in mock.call_args_list
+                if call.args[0] == 20 and call.args[1] == "CALL"
             )
             == 1
         )
 
 
+async def test_service_sequence_id_list(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test service calls using sequence_id as a list"""
+    async with IUExam(hass, "service_sequence_id_list.yaml") as exam:
+        await exam.run_test(1)
+
+        await exam.begin_test(2)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": [1],
+                "percentage": 50,
+            },
+        )
+        await exam.finish_test()
+
+        await exam.begin_test(3)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": [0],
+                "percentage": 25,
+            },
+        )
+        await exam.finish_test()
+
+        exam.check_summary()

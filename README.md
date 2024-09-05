@@ -744,32 +744,30 @@ Enables/disables/toggles the controller, zone, sequence or sequence zone respect
 | Service data attribute | Type | Required | Description |
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to enable/disable/toggle. |
-| `sequence_id` | [number](#145-sequence) | no | Sequence to enable/disable/toggle. |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to enable/disable/toggle. Entity must be a controller. |
 | `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
 
 ### 7.2. Services `pause` and `resume`
 
 Pauses/resumes a sequence. This service call "stops the clock" when `paused` so to speak and "continues to run it" upon `resume`.
 
-This is particularly helpful in a use case scenario where a main water supply is used for both irrigation and ie filling a domestic cold water tank at the same time. If the water pressure is only sufficient for either irrigaton or tank filling, this service call allows to `pause` the irrigation whilst a tank is filled, and then `resumes` irrigation without interrupting the time allocated to the sequences or zones thereof. 
+This is particularly helpful in a use case scenario where a main water supply is used for both irrigation and ie filling a domestic cold water tank at the same time. If the water pressure is only sufficient for either irrigaton or tank filling, this service call allows to `pause` the irrigation whilst a tank is filled, and then `resumes` irrigation without interrupting the time allocated to the sequences or zones thereof.
 
 | Service data attribute | Type | Required | Description |
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Entity_id of a controller or sequence to pause/resume. If a controller entity is selected it will target the sequence or all sequences (see next parameter). If more than one entity_id are to be targeted a group integration helper may be used. |
-| `sequence_id` | [number](#145-sequence) | only if entity_id represents a controller | Sequence to pause/resume. The sequence_id is only used when the entity_id is the controller. If sequence_id is set to 0 then all sequences of the controller will be effected. |
+| `sequence_id` | [number/list](#145-sequence) | only if entity_id represents a controller | Sequence to pause/resume. The sequence_id is only used when the entity_id is the controller. If sequence_id is set to 0 then all sequences of the controller will be effected. |
 
 There is an example for a [pause-resume button](#86-pause-resume-button) that targets all sequences within all controllers creating a globla `pause` and `resume` button.
 
 ### 7.3. Service `suspend`
-
-NOTE: Available from release 2023.9.0.
 
 Suspend operation of a controller, zone, sequence or sequence zone for a period of time. This is like a temporary `disable` that will automatically reset.
 
 | Service data attribute | Type | Required | Description |
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
-| `sequence_id` | [number](#145-sequence) | no | Sequence to suspend. |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to suspend. Entity must be a controller. |
 | `zones` | [number/list](#146-zones) | no | Sequence zones to suspend. |
 | `for` | [duration](#142-duration-time-period) | see below* | Suspend for a period of time. Supports [templating](#144-templating). |
 | `until` | string | see below* | Suspend until a point in time. Format is `%Y-%m-%d %H:%M:%S` for example `2023-08-01 07:30:00`. |
@@ -795,7 +793,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | `time` | [duration](#142-duration-time-period) | no | Total time to run. Supports [templating](#144-templating). If not provided or is "0:00:00" then adjusted defaults will be applied |
 | `delay` | [duration](#142-duration-time-period) | no | Delay between runs when queued |
 | `queue` | boolean | no | Queue or run immediately. |
-| `sequence_id` | [number](#145-sequence) | no | Sequence to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. |
+| `sequence_id` | [number/list](#145-sequences) | no | Sequences to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. Entity must be a controller. |
 
 ### 7.6. Service `adjust_time`
 
@@ -815,7 +813,7 @@ Tip: Use forecast and observation data collected by weather integrations in auto
 | `reset` | none | see below* | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings). |
 | `minimum` | [duration](#142-duration-time-period) | no | Set the minimum run time. Supports [templating](#144-templating). |
 | `maximum` | [duration](#142-duration-time-period) | no | Set the maximum run time. Note: The default is no limit. Supports [templating](#144-templating). |
-| `sequence_id` | [number](#145-sequence) | no | Sequence to adjust. |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to adjust. Entity must be a controller. |
 | `zones` | [number/list](#146-zones) | no | Zones to adjust. |
 
 \* Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`.

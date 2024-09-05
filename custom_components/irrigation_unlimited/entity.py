@@ -146,7 +146,7 @@ class IURestore:
         svc = SERVICE_ENABLE if data.get(CONF_ENABLED) else SERVICE_DISABLE
         svd = {}
         if sequence is not None:
-            svd[CONF_SEQUENCE_ID] = sequence.index + 1
+            svd[CONF_SEQUENCE_ID] = [sequence.index + 1]
             if sequence_zone is not None:
                 svd[CONF_ZONES] = [sequence_zone.index + 1]
         self._coordinator.service_call(svc, controller, zone, None, svd)
@@ -168,7 +168,7 @@ class IURestore:
         else:
             svd[CONF_RESET] = None
         if sequence is not None:
-            svd[CONF_SEQUENCE_ID] = sequence.index + 1
+            svd[CONF_SEQUENCE_ID] = [sequence.index + 1]
             if sequence_zone is not None:
                 svd[CONF_ZONES] = [sequence_zone.index + 1]
         self._coordinator.service_call(SERVICE_SUSPEND, controller, zone, None, svd)
@@ -187,7 +187,7 @@ class IURestore:
         if (svd := IUAdjustment(data.get(ATTR_ADJUSTMENT)).to_dict()) == {}:
             svd[CONF_RESET] = None
         if sequence is not None:
-            svd[CONF_SEQUENCE_ID] = sequence.index + 1
+            svd[CONF_SEQUENCE_ID] = [sequence.index + 1]
             if sequence_zone is not None:
                 svd[CONF_ZONES] = [sequence_zone.index + 1]
         self._coordinator.service_call(SERVICE_TIME_ADJUST, controller, zone, None, svd)

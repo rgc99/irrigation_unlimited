@@ -382,7 +382,7 @@ ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
 ENABLE_DISABLE_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,
     vol.Optional(CONF_ZONES): cv.ensure_list,
-    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+    vol.Optional(CONF_SEQUENCE_ID): cv.ensure_list,
 }
 
 TIME_ADJUST_SCHEMA = vol.All(
@@ -403,7 +403,7 @@ TIME_ADJUST_SCHEMA = vol.All(
             vol.Optional(CONF_MINIMUM): cv.positive_time_period_template,
             vol.Optional(CONF_MAXIMUM): cv.positive_time_period_template,
             vol.Optional(CONF_ZONES): cv.ensure_list,
-            vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+            vol.Optional(CONF_SEQUENCE_ID): cv.ensure_list,
         }
     ),
     cv.has_at_least_one_key(
@@ -417,7 +417,7 @@ MANUAL_RUN_SCHEMA = {
     vol.Optional(CONF_DELAY): cv.time_period,
     vol.Optional(CONF_QUEUE): cv.boolean,
     vol.Optional(CONF_ZONES): cv.ensure_list,
-    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+    vol.Optional(CONF_SEQUENCE_ID): cv.ensure_list,
 }
 
 SUSPEND_SCHEMA = vol.All(
@@ -428,7 +428,7 @@ SUSPEND_SCHEMA = vol.All(
             vol.Exclusive(CONF_UNTIL, "time_method"): cv.datetime,
             vol.Exclusive(CONF_RESET, "time_method"): None,
             vol.Optional(CONF_ZONES): cv.ensure_list,
-            vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+            vol.Optional(CONF_SEQUENCE_ID): cv.ensure_list,
         }
     ),
     cv.has_at_least_one_key(CONF_FOR, CONF_UNTIL, CONF_RESET),
@@ -437,12 +437,14 @@ SUSPEND_SCHEMA = vol.All(
 CANCEL_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,
     vol.Optional(CONF_ZONES): cv.ensure_list,
-    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+    vol.Optional(CONF_SEQUENCE_ID): cv.ensure_list,
 }
 
 PAUSE_RESUME_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,
-    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
+    vol.Optional(CONF_SEQUENCE_ID): cv.ensure_list,
+}
+
 }
 
 RELOAD_SERVICE_SCHEMA = vol.Schema({})

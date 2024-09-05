@@ -4887,20 +4887,23 @@ class IUController(IUBase):
         self._coordinator.status_changed(stime, self, None, state)
 
     def decode_sequence_id(
-        self, stime: datetime, sequence_id: int | None
+        self, stime: datetime, sequences: list | None
     ) -> list[int] | None:
         """Convert supplied 1's based id into a list of sequence
         indexes and validate"""
-        if sequence_id is None:
+        if sequences is None:
             return None
         sequence_list: list[int] = []
-        if sequence_id == 0:
+        if sequences == [0]:
             sequence_list.extend(sequence.index for sequence in self._sequences)
         else:
-            if self.get_sequence(sequence_id - 1) is not None:
-                sequence_list.append(sequence_id - 1)
-            else:
-                self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
+            for sequence_id in sequences:
+                if self.get_sequence(sequence_id - 1) is not None:
+                    sequence_list.append(sequence_id - 1)
+                else:
+                    self._coordinator.logger.log_invalid_sequence(
+                        stime, self, sequence_id
+                    )
         return sequence_list
 
     def manual_run_start(
@@ -4981,17 +4984,15 @@ class IUController(IUBase):
 
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Handler for the manual_run service call"""
-        sequence_id = data.get(CONF_SEQUENCE_ID, None)
-        if sequence_id is None:
+        sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
+        if sequence_list is None:
             zone_list: list[int] = data.get(CONF_ZONES, None)
             for zone in self._zones:
                 if zone_list is None or zone.index + 1 in zone_list:
                     zone.service_manual_run(data, stime)
         else:
-            if (sequence := self.get_sequence(sequence_id - 1)) is not None:
+            for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
                 sequence.service_manual_run(data, stime)
-            else:
-                self._coordinator.logger.log_invalid_sequence(stime, self, sequence_id)
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the cancel service call"""
