@@ -115,11 +115,11 @@ async def async_reload_platform(
                 new_entities.append(
                     IUSequenceEntity(coordinator, controller, None, sequence)
                 )
+    for entity in old_entities:
+        await platform.async_remove_entity(entity)
     if len(new_entities) > 0:
         await platform.async_add_entities(new_entities)
         coordinator.initialise()
-    for entity in old_entities:
-        await platform.async_remove_entity(entity)
 
     return True
 

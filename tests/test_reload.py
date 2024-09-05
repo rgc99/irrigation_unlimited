@@ -1,4 +1,5 @@
 """Test integration_unlimited reload service calls."""
+
 from datetime import timedelta
 import pytest
 import homeassistant.core as ha
@@ -237,3 +238,42 @@ async def test_service_reload_shrink_while_on(
         # don't attempt to finish or check results, there are none.
         # await exam.finish_test()
         # check_summary(full_path)
+
+
+async def test_service_reload_multi(hass: ha.HomeAssistant, skip_history):
+    """Test reliablity on multiple reload calls"""
+
+    async with IUExam(hass, "service_reload_multi.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.finish_test()
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        await exam.reload("service_reload_multi.yaml")
+        assert exam.coordinator.controllers[0].master_sensor is not None
+        assert exam.coordinator.controllers[0].zones[0].zone_sensor is not None
+        # exam.check_summary()
