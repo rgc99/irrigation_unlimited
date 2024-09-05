@@ -1841,3 +1841,36 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         await exam.finish_test()
 
         exam.check_summary()
+
+
+async def test_sequence_repeat(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test Sequence repeats."""
+    # pylint: disable=unused-argument
+    # pylint: disable=too-many-statements
+    async with IUExam(hass, "test_sequence_repeat.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.run_until("2024-09-05 06:06")
+        exam.check_iu_entity(
+            "c1_s1",
+            STATE_ON,
+            {
+                "index": 0,
+                "time_remaining": "1:10:00",
+                "percent_complete": 1,
+                "repeat": "1/2",
+            },
+        )
+        await exam.run_until("2024-09-05 06:40:30")
+        exam.check_iu_entity(
+            "c1_s1",
+            STATE_ON,
+            {
+                "index": 0,
+                "time_remaining": "0:36:00",
+                "percent_complete": 49,
+                "repeat": "2/2",
+            },
+        )
+        await exam.finish_test()
+
+        exam.check_summary()

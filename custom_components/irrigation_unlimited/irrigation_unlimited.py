@@ -2844,6 +2844,11 @@ class IUSequenceRun(IUBase):
         return self._active_zone
 
     @property
+    def current_zone(self) -> IUSequenceZoneRun:
+        """Return the current/running zone in the sequence"""
+        return self._current_zone
+
+    @property
     def runs(self) -> dict[IURun, IUSequenceZoneRun]:
         """Return the runs"""
         return self._runs

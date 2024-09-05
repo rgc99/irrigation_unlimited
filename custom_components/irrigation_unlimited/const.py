@@ -218,6 +218,7 @@ ATTR_ZONE_ID = "zone_id"
 ATTR_CONTROLLERS = "controllers"
 ATTR_SEQUENCES = "sequences"
 ATTR_VERSION = "version"
+ATTR_REPEAT = "repeat"
 
 # Resources
 RES_MANUAL = "Manual"
