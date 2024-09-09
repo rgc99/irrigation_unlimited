@@ -1,4 +1,5 @@
 """Test irrigation_unlimited events."""
+
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
@@ -31,27 +32,63 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
 
         assert event_data == [
             {
-                "controller": {"index": 0, "name": "Test controller 1"},
-                "sequence": {"index": 0, "name": "Seq 1"},
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                "controller": {
+                    "index": 0,
+                    "controller_id": "ctrl_1",
+                    "name": "Test controller 1",
+                },
+                "sequence": {"index": 0, "sequence_id": "seq_1", "name": "Seq 1"},
                 "run": {"duration": 5460},
-                "schedule": {"index": 0, "name": "Schedule 1"},
+                "schedule": {
+                    "index": 0,
+                    "schedule_id": "sched_1",
+                    "name": "Schedule 1",
+                },
             },
             {
-                "controller": {"index": 0, "name": "Test controller 1"},
-                "sequence": {"index": 0, "name": "Seq 1"},
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                "controller": {
+                    "index": 0,
+                    "controller_id": "ctrl_1",
+                    "name": "Test controller 1",
+                },
+                "sequence": {"index": 0, "sequence_id": "seq_1", "name": "Seq 1"},
                 "run": {"duration": 5460},
-                "schedule": {"index": 0, "name": "Schedule 1"},
+                "schedule": {
+                    "index": 0,
+                    "schedule_id": "sched_1",
+                    "name": "Schedule 1",
+                },
             },
             {
-                "controller": {"index": 0, "name": "Test controller 1"},
-                "sequence": {"index": 1, "name": "Seq 2"},
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
+                "controller": {
+                    "index": 0,
+                    "controller_id": "ctrl_1",
+                    "name": "Test controller 1",
+                },
+                "sequence": {"index": 1, "sequence_id": "seq_2", "name": "Seq 2"},
                 "run": {"duration": 2280},
-                "schedule": {"index": 0, "name": "Schedule 1"},
+                "schedule": {
+                    "index": 0,
+                    "schedule_id": "sched_2",
+                    "name": "Schedule 1",
+                },
             },
             {
-                "controller": {"index": 0, "name": "Test controller 1"},
-                "sequence": {"index": 1, "name": "Seq 2"},
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s2",
+                "controller": {
+                    "index": 0,
+                    "controller_id": "ctrl_1",
+                    "name": "Test controller 1",
+                },
+                "sequence": {"index": 1, "sequence_id": "seq_2", "name": "Seq 2"},
                 "run": {"duration": 2280},
-                "schedule": {"index": 0, "name": "Schedule 1"},
+                "schedule": {
+                    "index": 0,
+                    "schedule_id": "sched_2",
+                    "name": "Schedule 1",
+                },
             },
         ]

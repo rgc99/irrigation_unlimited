@@ -119,20 +119,30 @@ async def test_service_sequence_pause_resume_notify(
                 "event_type": "irrigation_unlimited_start",
                 "event_time": mk_local("2024-08-14 06:05"),
                 "data": {
-                    "controller": {"index": 0, "name": "Test Controller"},
-                    "sequence": {"index": 0, "name": "Seq 1"},
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test Controller",
+                    },
+                    "sequence": {"index": 0, "sequence_id": "1", "name": "Seq 1"},
                     "run": {"duration": 600},
-                    "schedule": {"index": 0, "name": "Schedule 1"},
+                    "schedule": {"index": 0, "schedule_id": None, "name": "Schedule 1"},
                 },
             },
             {
                 "event_type": "irrigation_unlimited_finish",
                 "event_time": mk_local("2024-08-14 06:20"),
                 "data": {
-                    "controller": {"index": 0, "name": "Test Controller"},
-                    "sequence": {"index": 0, "name": "Seq 1"},
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test Controller",
+                    },
+                    "sequence": {"index": 0, "sequence_id": "1", "name": "Seq 1"},
                     "run": {"duration": 900},
-                    "schedule": {"index": 0, "name": "Schedule 1"},
+                    "schedule": {"index": 0, "schedule_id": None, "name": "Schedule 1"},
                 },
             },
         ]

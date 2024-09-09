@@ -68,34 +68,43 @@ irrigation_unlimited:
           - {t: '2021-01-04 09:55:00', c: 1, z: 0, s: 0}
   controllers:
     - name: "Test controller 1"
+      controller_id: 'ctrl_1'
       zones:
         - name: "Zone 1"
+          zone_id: 'zone_1'
         - name: "Zone 2"
+          zone_id: 'zone_2'
         - name: "Zone 3"
+          zone_id: 'zone_3'
         - name: "Zone 4"
+          zone_id: 'zone_4'
       sequences:
         - name: "Seq 1"
+          sequence_id: 'seq_1'
           delay: "0:01:00"
           repeat: 2
           schedules:
             - time: "06:05"
+              schedule_id: 'sched_1'
           zones:
-            - zone_id: 1
+            - zone_id: zone_1
               duration: "0:06:00"
               repeat: 2
-            - zone_id: [2, 3]
+            - zone_id: [zone_2, zone_3]
               duration: "0:12:00"
-            - zone_id: 4
+            - zone_id: zone_4
               duration: "0:18:00"
         - name: "Seq 2"
+          sequence_id: 'seq_2'
           delay: "0:01:00"
           schedules:
             - time: "09:55"
+              schedule_id: 'sched_2'
               anchor: finish
           zones:
-            - zone_id: 1
+            - zone_id: zone_1
               duration: "0:06:00"
-            - zone_id: [2, 3]
+            - zone_id: [zone_2, zone_3]
               duration: "0:12:00"
-            - zone_id: 4
+            - zone_id: zone_4
               duration: "0:18:00"

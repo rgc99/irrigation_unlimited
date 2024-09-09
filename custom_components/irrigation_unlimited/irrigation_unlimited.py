@@ -6470,14 +6470,31 @@ class IUCoordinator:
         """Send out a notification for start/finish to a sequence"""
         # pylint: disable=too-many-arguments
         data = {
-            CONF_CONTROLLER: {CONF_INDEX: controller.index, CONF_NAME: controller.name},
-            CONF_SEQUENCE: {CONF_INDEX: sequence.index, CONF_NAME: sequence.name},
+            CONF_ENTITY_ID: sequence.entity_id,
+            CONF_CONTROLLER: {
+                CONF_INDEX: controller.index,
+                CONF_CONTROLLER_ID: controller.controller_id,
+                CONF_NAME: controller.name,
+            },
+            CONF_SEQUENCE: {
+                CONF_INDEX: sequence.index,
+                CONF_SEQUENCE_ID: sequence.sequence_id,
+                CONF_NAME: sequence.name,
+            },
             CONF_RUN: {CONF_DURATION: round(sequence_run.total_time.total_seconds())},
         }
         if schedule is not None:
-            data[CONF_SCHEDULE] = {CONF_INDEX: schedule.index, CONF_NAME: schedule.name}
+            data[CONF_SCHEDULE] = {
+                CONF_INDEX: schedule.index,
+                CONF_SCHEDULE_ID: schedule.schedule_id,
+                CONF_NAME: schedule.name,
+            }
         else:
-            data[CONF_SCHEDULE] = {CONF_INDEX: None, CONF_NAME: RES_MANUAL}
+            data[CONF_SCHEDULE] = {
+                CONF_INDEX: None,
+                CONF_SCHEDULE_ID: None,
+                CONF_NAME: RES_MANUAL,
+            }
         self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
 
     def notify_switch(
