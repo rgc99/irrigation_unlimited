@@ -280,6 +280,7 @@ SEQUENCE_SCHEMA = vol.Schema(
             cv.ensure_list, [SEQUENCE_SCHEDULE_SCHEMA]
         ),
         vol.Optional(CONF_NAME): cv.string,
+        vol.Optional(CONF_SEQUENCE_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_DELAY): cv.time_period,
         vol.Optional(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_REPEAT): cv.positive_int,

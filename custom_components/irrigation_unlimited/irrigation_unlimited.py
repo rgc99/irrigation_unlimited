@@ -3590,6 +3590,7 @@ class IUSequence(IUBase):
         self._coordinator = coordinator
         self._controller = controller
         # Config parameters
+        self._sequence_id: str = None
         self._name: str = None
         self._delay: timedelta = None
         self._duration: timedelta = None
@@ -3672,6 +3673,11 @@ class IUSequence(IUBase):
     def zones(self) -> list[IUSequenceZone]:
         """Return the list of sequence zones"""
         return self._zones
+
+    @property
+    def sequence_id(self) -> str:
+        """Return the id of the sequence"""
+        return self._sequence_id
 
     @property
     def name(self) -> str:
@@ -3968,6 +3974,7 @@ class IUSequence(IUBase):
     def load(self, config: OrderedDict) -> "IUSequence":
         """Load sequence data from the configuration"""
         self.clear()
+        self._sequence_id = config.get(CONF_SEQUENCE_ID, str(self.index + 1))
         self._name = config.get(CONF_NAME, f"Run {self.index + 1}")
         self._delay = wash_td(config.get(CONF_DELAY))
         self._duration = wash_td(config.get(CONF_DURATION))
@@ -4804,17 +4811,22 @@ class IUController(IUBase):
 
     def check_links(self) -> bool:
         """Check inter object links"""
-
         result = True
         zone_ids = set()
+        sequence_ids = set()
         for zone in self._zones:
             if zone.zone_id in zone_ids:
-                self._coordinator.logger.log_duplicate_id(self, zone, None)
+                self._coordinator.logger.log_duplicate_id(self, zone, None, None)
                 result = False
             else:
                 zone_ids.add(zone.zone_id)
 
         for sequence in self._sequences:
+            if sequence.sequence_id in sequence_ids:
+                self._coordinator.logger.log_duplicate_id(self, None, sequence, None)
+                result = False
+            else:
+                sequence_ids.add(sequence.sequence_id)
             for sequence_zone in sequence.zones:
                 for zone_id in sequence_zone.zone_ids:
                     if zone_id not in zone_ids:
@@ -5782,12 +5794,14 @@ class IULogger:
         self,
         controller: IUController,
         zone: IUZone,
+        sequence: IUSequence,
         schedule: IUSchedule,
         level=WARNING,
     ) -> None:
         """Warn a controller/zone/schedule has a duplicate id"""
-        idl = IUBase.idl([controller, zone, schedule], "0", 1)
-        if not zone and not schedule:
+        # pylint: disable=too-many-arguments
+        idl = IUBase.idl([controller, zone, sequence, schedule], "0", 1)
+        if not zone and not sequence and not schedule:
             self._format(
                 level,
                 "DUPLICATE_ID",
@@ -5817,10 +5831,21 @@ class IULogger:
                 f"controller_id: {controller.controller_id}, "
                 f"zone: {idl[1]}, "
                 f"zone_id: {zone.zone_id if zone else ''}, "
-                f"schedule: {idl[2]}, "
+                f"schedule: {idl[3]}, "
                 f"schedule_id: {schedule.schedule_id if schedule else ''}",
             )
-        else:  # not zone and schedule
+        elif sequence and not schedule:
+            self._format(
+                level,
+                "DUPLICATE_ID",
+                None,
+                f"Duplicate Sequence ID: "
+                f"controller: {idl[0]}, "
+                f"controller_id: {controller.controller_id}, "
+                f"sequence: {idl[2]}, "
+                f"sequence_id: {sequence.sequence_id if sequence else ''}",
+            )
+        elif sequence and schedule:
             self._format(
                 level,
                 "DUPLICATE_ID",
@@ -5828,7 +5853,9 @@ class IULogger:
                 f"Duplicate Schedule ID (sequence): "
                 f"controller: {idl[0]}, "
                 f"controller_id: {controller.controller_id}, "
-                f"schedule: {idl[2]}, "
+                f"sequence: {idl[2]}, "
+                f"sequence_id: {sequence.sequence_id if sequence else ''}, "
+                f"schedule: {idl[3]}, "
                 f"schedule_id: {schedule.schedule_id if schedule else ''}",
             )
 
@@ -6291,7 +6318,7 @@ class IUCoordinator:
         controller_ids = set()
         for controller in self._controllers:
             if controller.controller_id in controller_ids:
-                self._logger.log_duplicate_id(controller, None, None)
+                self._logger.log_duplicate_id(controller, None, None, None)
                 result = False
             else:
                 controller_ids.add(controller.controller_id)
@@ -6304,7 +6331,9 @@ class IUCoordinator:
                 for schedule in zone.schedules:
                     if schedule.schedule_id is not None:
                         if schedule.schedule_id in schedule_ids:
-                            self._logger.log_duplicate_id(controller, zone, schedule)
+                            self._logger.log_duplicate_id(
+                                controller, zone, None, schedule
+                            )
                             result = False
                         else:
                             schedule_ids.add(schedule.schedule_id)
@@ -6312,7 +6341,9 @@ class IUCoordinator:
                 for schedule in sequence.schedules:
                     if schedule.schedule_id is not None:
                         if schedule.schedule_id in schedule_ids:
-                            self._logger.log_duplicate_id(controller, None, schedule)
+                            self._logger.log_duplicate_id(
+                                controller, None, sequence, schedule
+                            )
                             result = False
                         else:
                             schedule_ids.add(schedule.schedule_id)

@@ -34,6 +34,7 @@ irrigation_unlimited:
           zone_id: "zone_3" # Conflicts with Zone 3
       sequences:
         - name: "Sequence 1"
+          sequence_id: "sequence_1"
           schedules:
             - name: Never
               schedule_id: "schedule_2" # Conflicts with Zone 2, Schedule 1
@@ -43,6 +44,10 @@ irrigation_unlimited:
           zones:
             - zone_id: 1
             - zone_id: [1, "no_zone"] # Orphaned
+        - name: "Sequence 2"
+          sequence_id: "sequence_1" # Conflicts with Sequence 1
+          zones:
+            - zone_id: 1
     - name: Controller 2
       controller_id: "1" # Conflicts with controller 1
       zones:
