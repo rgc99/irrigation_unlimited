@@ -387,7 +387,7 @@ ENABLE_DISABLE_SCHEMA = {
 }
 
 TIME_ADJUST_SCHEMA = vol.All(
-    vol.Schema(
+    cv.make_entity_service_schema(
         {
             vol.Required(CONF_ENTITY_ID): cv.entity_ids,
             vol.Exclusive(
@@ -422,7 +422,7 @@ MANUAL_RUN_SCHEMA = {
 }
 
 SUSPEND_SCHEMA = vol.All(
-    vol.Schema(
+    cv.make_entity_service_schema(
         {
             vol.Required(CONF_ENTITY_ID): cv.entity_ids,
             vol.Exclusive(CONF_FOR, "time_method"): cv.positive_time_period_template,
