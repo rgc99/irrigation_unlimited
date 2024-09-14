@@ -20,11 +20,11 @@ This will install `homeassistant`, `pytest`, and `pytest-homeassistant-custom-co
 
 ## Useful commands
 
-Command | Description
-------- | -----------
-`pytest tests/` | This will run all tests in `tests/` and tell you how many passed/failed
-`pytest --durations=10 --cov-report term-missing --cov=custom_components.irrigation_unlimited tests` | This tells `pytest` that your target module to test is `custom_components.irrigation_unlimited` so that it can give you a [code coverage](https://en.wikipedia.org/wiki/Code_coverage) summary, including % of code that was executed and the line numbers of missed executions.
-`pytest tests/test_service.py -k test_service_adjust_time` | Runs the `test_service_adjust_time` test function located in `tests/test_service.py`
+| Command | Description |
+| ------- | ----------- |
+| `pytest tests/` | This will run all tests in `tests/` and tell you how many passed/failed |
+| `pytest --durations=10 --cov-report term-missing --cov=custom_components.irrigation_unlimited tests` | This tells `pytest` that your target module to test is `custom_components.irrigation_unlimited` so that it can give you a [code coverage](https://en.wikipedia.org/wiki/Code_coverage) summary, including % of code that was executed and the line numbers of missed executions |
+| `pytest tests/test_service.py -k test_service_adjust_time` | Runs the `test_service_adjust_time` test function located in `tests/test_service.py` |
 
 ## Configuration
 
@@ -41,7 +41,7 @@ The testing object is useful for running through a predetermined regime. Note: t
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `enabled` | bool | true | Enable/disable testing |
-| `speed` | number | 1.0 | Test speed. A value less than 1 will slow down the system. Values above 1 will speed up tests. A value of 2 will double the speed, 60 will turn minutes to seconds and 3600 will turn hours to seconds. Upper limit will depend on individual systems.|
+| `speed` | number | 1.0 | Test speed. A value less than 1 will slow down the system. Values above 1 will speed up tests. A value of 2 will double the speed, 60 will turn minutes to seconds and 3600 will turn hours to seconds. Upper limit will depend on individual systems |
 | `show_log` | bool | true | Outputs controller and zones to the log |
 | `output_events` | bool | false | Prints event information to the console. Useful for creating the _[Test Result Objects](#test-result-objects)_ |
 | `auto_play` | bool | true | Automatically start tests when system is started or reloaded |
@@ -111,13 +111,13 @@ Note: If the *.yaml file contains a `homeassistant:` section that modifies `unit
 
 ### Properties
 
-Name | Type | Default | Description
----- | ---- | ------- | -----------
-config_directory | str | "tests/configs/" | Sets/gets the path to the config files.
-coordinator | IUCoordinator | read-only | Returns the top level coordinator object.
-track_interval | timedelta | read-only | Returns the system clock interval. The duration of a tick is the combination of the `granularity` and `refresh_interval` settings.
-virtual_time | datetime | read-only | Returns the current 'virtual time' in the test.
-config | ConfigType | read-only | The processed config file.
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| config_directory | str | "tests/configs/" | Sets/gets the path to the config files |
+| coordinator | IUCoordinator | read-only | Returns the top level coordinator object |
+| track_interval | timedelta | read-only | Returns the system clock interval. The duration of a tick is the combination of the `granularity` and `refresh_interval` settings |
+| virtual_time | datetime | read-only | Returns the current 'virtual time' in the test |
+| config | ConfigType | read-only | The processed config file |
 
 ### Methods
 
@@ -125,9 +125,9 @@ config | ConfigType | read-only | The processed config file.
 
 Start a test. Resets the virtual clock to the `start` time defined for the test in the config file.
 
-Parameter Name | Type | Description
----- | ---- | -----------
-test_no | int | The test number to run (1's based).
+| Parameter Name | Type | Description |
+| ---- | ---- | ----------- |
+| test_no | int | The test number to run (1's based) |
 
 #### finish_test()
 
@@ -141,17 +141,17 @@ Sometimes it can be hard to see the forest for all the trees so eliminate some n
 
 Load a component.
 
-Parameter Name | Type | Description
----- | ---- | -----------
-domain | str | The name of the domain to load for example 'homeassistant'.
+| Parameter Name | Type | Description |
+| ---- | ---- | ----------- |
+| domain | str | The name of the domain to load for example 'homeassistant' |
 
 #### run_test(test_no)
 
 Run a single test and check the results.
 
-Parameter Name | Type | Description
----- | ---- | -----------
-test_no | int | The test number to run (1's based).
+| Parameter Name | Type | Description |
+| ---- | ---- | ----------- |
+| test_no | int | The test number to run (1's based) |
 
 #### run_all()
 
@@ -161,19 +161,19 @@ Run all tests in the config and check the results.
 
 Run to a point in time.
 
-Parameter Name | Type | Description
----- | ---- | -----------
-stop_at | datetime | The virtual time.
-stop_at | string | The virtual time "YYYY-MM-DD HH:MM:SS"
+| Parameter Name | Type | Description |
+| ---- | ---- | ----------- |
+| stop_at | datetime | The virtual time |
+| stop_at | string | The virtual time "YYYY-MM-DD HH:MM:SS" |
 
 #### run_for(duration)
 
 Run for a period of time.
 
-Parameter Name | Type | Description
----- | ---- | -----------
-duration | timedelta | The virtual duration.
-duration | string | The virtual durarion "HH:MM:SS"
+| Parameter Name | Type | Description |
+| ---- | ---- | ----------- |
+| duration | timedelta | The virtual duration |
+| duration | string | The virtual durarion "HH:MM:SS" |
 
 #### run_for_1_tick()
 

@@ -4,4 +4,6 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+npm install
+npm install --global rollup
 python3 -m pip install --requirement requirements.txt
