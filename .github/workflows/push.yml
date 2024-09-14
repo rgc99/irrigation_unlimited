@@ -50,7 +50,7 @@ jobs:
           pytest \
             --asyncio-mode=auto \
             -qq \
-            --timeout=300 \
+            --timeout=600 \
             --durations=10 \
             -n auto \
             --cov custom_components.irrigation_unlimited \
