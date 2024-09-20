@@ -3419,8 +3419,10 @@ class IUSequenceQueue(list[IUSequenceRun]):
 
     DAYS_SPAN: int = 3
 
-    def __init__(self) -> None:
+    def __init__(self, sequence: "IUSequence") -> None:
         super().__init__()
+        # Passed parameters
+        self._sequence = sequence
         # Config parameters
         self._future_span = timedelta(days=self.DAYS_SPAN)
         # Private variables
@@ -3480,11 +3482,13 @@ class IUSequenceQueue(list[IUSequenceRun]):
             if not (sqr.is_manual() or sqr.running):
                 for run in sqr.runs:
                     run.zone.runs.remove_run(run)
+                    run.zone.request_update()
                 self.pop(i)
                 modified = True
             i -= 1
         if modified:
             self._next_run = None
+            self._sequence.request_update()
         return modified
 
     def sort(self) -> bool:
@@ -3600,7 +3604,7 @@ class IUSequence(IUBase):
         self._is_on = False
         self._is_in_delay = False
         self._paused = False
-        self._run_queue = IUSequenceQueue()
+        self._run_queue = IUSequenceQueue(self)
         self._schedules: list[IUSchedule] = []
         self._zones: list[IUSequenceZone] = []
         self._adjustment = IUAdjustment()
