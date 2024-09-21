@@ -13,7 +13,6 @@ import time as tm
 import json
 from decimal import Decimal
 from enum import Enum, Flag, auto
-import voluptuous as vol
 from crontab import CronTab
 from homeassistant.core import (
     HomeAssistant,
@@ -328,19 +327,14 @@ def utc_eot() -> datetime:
 def render_positive_time_period(data: dict, key: str) -> None:
     """Resolve a template that specifies a timedelta"""
     if key in data:
-        schema = vol.Schema({key: cv.positive_time_period})
-        rendered = render_complex(data[key])
-        data[key] = schema({key: rendered})[key]
+        data[key] = cv.positive_time_period(render_complex(data[key]))
 
 
-def render_positive_float(hass: HomeAssistant, data: dict, key: str) -> None:
+def render_positive_float(data: dict, key: str) -> None:
     """Resolve a template that specifies a float"""
-    if isinstance(data.get(key), Template):
-        template: Template = data[key]
-        template.hass = hass
-        schema = vol.Schema({key: cv.positive_float})
-        data[key] = schema({key: template.async_render()})[key]
-
+    template: Template = data.get(key)
+    if isinstance(template, Template):
+        data[key] = cv.positive_float(template.async_render())
 
 def check_item(index: int, items: list[int] | None) -> bool:
     """If items is None or contains only a 0 (match all) then
@@ -6645,7 +6639,7 @@ class IUCoordinator:
             render_positive_time_period(data1, CONF_DECREASE)
             render_positive_time_period(data1, CONF_MINIMUM)
             render_positive_time_period(data1, CONF_MAXIMUM)
-            render_positive_float(self._hass, data1, CONF_PERCENTAGE)
+            render_positive_float(data1, CONF_PERCENTAGE)
             if sequence is not None:
                 changed = sequence.service_adjust_time(data1, stime)
             elif zone is not None:
