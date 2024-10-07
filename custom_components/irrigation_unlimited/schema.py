@@ -92,6 +92,7 @@ from .const import (
     CONF_USER,
     CONF_TOGGLE,
     CONF_EXTENDED_CONFIG,
+    CONF_READ_DELAY,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -315,6 +316,7 @@ HISTORY_SCHEMA = vol.Schema(
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
         vol.Optional(CONF_SPAN): cv.positive_int,
+        vol.Optional(CONF_READ_DELAY): cv.positive_int,
     }
 )
 

@@ -25,6 +25,7 @@ from .const import (
     CONF_HISTORY,
     CONF_HISTORY_REFRESH,
     CONF_HISTORY_SPAN,
+    CONF_READ_DELAY,
     CONF_REFRESH_INTERVAL,
     CONF_SPAN,
     TIMELINE_ADJUSTMENT,
@@ -69,6 +70,7 @@ class IUHistory:
         self._history_span = timedelta(days=7)
         self._refresh_interval = timedelta(seconds=120)
         self._enabled = True
+        self._read_delay = timedelta(0)
         # Private variables
         self._history_last: datetime = None
         self._cache: dict[str, Any] = {}
@@ -89,8 +91,8 @@ class IUHistory:
 
     def _get_next_refresh_event(self, utc_time: datetime, force: bool) -> datetime:
         """Calculate the next event time."""
-        if self._history_last is None or force or not self._fixed_clock:
-            return utc_time
+        if self._history_last is None or force:
+            return utc_time + self._read_delay
         return utc_time + self._refresh_interval
 
     def _schedule_refresh(self, force: bool) -> None:
@@ -107,8 +109,7 @@ class IUHistory:
         """Handle history event."""
         # pylint: disable=unused-argument
         self._refresh_remove = None
-        if self._fixed_clock:
-            self._schedule_refresh(False)
+        self._schedule_refresh(False)  # Perpetual worker
         await self._async_update_history(self._stime)
 
     def _initialise(self) -> bool:
@@ -252,6 +253,8 @@ class IUHistory:
             self._enabled = hist_conf.get(CONF_ENABLED, self._enabled)
             span_days = hist_conf.get(CONF_SPAN, span_days)
             refresh_seconds = hist_conf.get(CONF_REFRESH_INTERVAL, refresh_seconds)
+            if (read_delay := hist_conf.get(CONF_READ_DELAY)) is not None:
+                self._read_delay = timedelta(seconds=read_delay)
 
         if span_days is not None:
             self._history_span = timedelta(days=span_days)
