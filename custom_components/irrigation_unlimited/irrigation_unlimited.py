@@ -336,6 +336,7 @@ def render_positive_float(data: dict, key: str) -> None:
     if isinstance(template, Template):
         data[key] = cv.positive_float(template.async_render())
 
+
 def check_item(index: int, items: list[int] | None) -> bool:
     """If items is None or contains only a 0 (match all) then
     return True. Otherwise check if index + 1 is in the list"""
@@ -2386,10 +2387,16 @@ class IUZone(IUBase):
         """Flag the sensor needs an update"""
         self._sensor_update_required = True
 
+    def schedule_update(self, stime: datetime) -> None:
+        """Schedule a HA update of the sensor"""
+        self._zone_sensor.schedule_update_ha_state()
+        self._sensor_update_required = False
+        self._sensor_last_update = stime
+
     def update_sensor(self, stime: datetime, do_on: bool) -> bool:
         """Lazy sensor updater"""
-        updated: bool = False
-        do_update: bool = False
+        updated = False
+        do_update = False
 
         if self._zone_sensor is not None:
             if do_on is False:
@@ -2413,14 +2420,10 @@ class IUZone(IUBase):
                             >= self._coordinator.refresh_interval
                         )
                     do_update |= self._sensor_update_required
-        else:
-            do_update = False
 
         if do_update:
-            self._zone_sensor.schedule_update_ha_state()
-            self._sensor_update_required = False
-            self._sensor_last_update = stime
-            updated = True
+            self.schedule_update(stime)
+            return True
 
         return updated
 
@@ -6692,13 +6695,11 @@ class IUCoordinator:
     def service_history(self, entity_ids: set[str]) -> None:
         """History service call entry point. The history has changed
         and the sensors require an update"""
+        stime = self.service_time()
         for controller in self._controllers:
-            if controller.entity_id in entity_ids:
-                controller.request_update(False)
             for zone in controller.zones:
                 if zone.entity_id in entity_ids:
-                    zone.request_update()
-        self.update_sensor(self.service_time())
+                    zone.schedule_update(stime)
 
     def start_test(self, test_no: int) -> datetime:
         """Main entry to start a test"""
