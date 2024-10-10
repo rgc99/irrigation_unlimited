@@ -74,8 +74,9 @@
 - [11. Troubleshooting](#11-troubleshooting)
   - [11.1. Requirements](#111-requirements)
   - [11.2. HA Configuration](#112-ha-configuration)
-  - [11.3. Logging](#113-logging)
-  - [11.4. Last but not least](#114-last-but-not-least)
+  - [11.3. Community Forum](#113-community-forum)
+  - [11.4. Logging](#114-logging)
+  - [11.5. Last but not least](#115-last-but-not-least)
 - [12. Notes](#12-notes)
 - [13. Snake case](#13-snake-case)
 - [14. Parameter Types](#14-parameter-types)
@@ -197,14 +198,14 @@ custom_components/irrigation_unlimited/services.yaml
 
 ## 5. Configuration
 
-Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#76-service-reload) for details and limitations.
+Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#78-service-reload) for details and limitations.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
 | `controllers` | list | _[Controller Objects](#51-controller-objects)_ | Controller details (Must have at least one) |
 | `granularity` | number | 60 | System time boundaries in seconds |
-| `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more responsive display. Increase this number to conserve resources.
-| `rename_entities` | bool | false | DANGER ZONE. Allow the sensor entity_id's to be altered. The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) will be combined to form the new entity_id. Note: Automations, sensors, scripts, front end cards etc. may need to be updated to reflect the new entity_id's of the controllers and zones.
+| `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more responsive display. Increase this number to conserve resources |
+| `rename_entities` | bool | false | DANGER ZONE. Allow the sensor entity_id's to be altered. The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) will be combined to form the new entity_id. Note: Automations, sensors, scripts, front end cards etc. may need to be updated to reflect the new entity_id's of the controllers and zones |
 | `history_span` | number | 7 | Deprecated. See [history](#58-history-object) `span` |
 | `history_refresh` | number | 120 | Deprecated. See [history](#58-history-object) `refresh_interval` |
 | `history` | object | _[History Object](#58-history-object)_ | History data gathering options |
@@ -277,7 +278,7 @@ These are various options to reveal attributes on the zone entity (only one for 
 
 Schedules are future events, _not_ dates for example Mondays at sunrise.
 
-The schedule can have the commencement or completion fixed to a time or event with the `anchor` parameter. Any adjustments to the duration will alter the start time if `finish` is specified or the completion time if `start` is specified. Note: If anchoring to `finish` and the schedule can not complete before the specified time then the run will defer to the following day. This is an important consideration if adjusting run times dynamically as it may lead to a 'skipping' situation. Ensure there is sufficient time to complete the run when making adjustments. See _[here](#74-service-adjust_time)_ for more information on adjusting runs times.
+The schedule can have the commencement or completion fixed to a time or event with the `anchor` parameter. Any adjustments to the duration will alter the start time if `finish` is specified or the completion time if `start` is specified. Note: If anchoring to `finish` and the schedule can not complete before the specified time then the run will defer to the following day. This is an important consideration if adjusting run times dynamically as it may lead to a 'skipping' situation. Ensure there is sufficient time to complete the run when making adjustments. See _[here](#76-service-adjust_time)_ for more information on adjusting runs times.
 
 The parameters `weekday`, `day`, `month` and `from/until` are date filters. If not specified then all dates qualify.
 
@@ -353,6 +354,7 @@ Sequences directly descend from a controller and are loosely connected to a zone
 | `duration` | [duration](#142-duration-time-period) | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
 | `name` | string | Run _N_ | Friendly name for the sequence |
+| `sequence_id` | string | _N_ | Sequence reference. This must be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
 | `enabled` | bool | true | Enable/disable the sequence |
 
 ### 5.7. Sequence Zone Objects
@@ -378,6 +380,7 @@ The `timeline` and `total_today` attributes use history information. This inform
 | `enabled` | bool | true | Enable/disable history |
 | `span` | number | 7 | Number of days of history data to fetch |
 | `refresh_interval` | number | 120 | History refresh interval in seconds |
+| `read_delay` | number | 0 | Delay before reading history data in seconds |
 
 #### 5.8.1. Long term statistics (LTS)
 
@@ -793,7 +796,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | `time` | [duration](#142-duration-time-period) | no | Total time to run. Supports [templating](#144-templating). If not provided or is "0:00:00" then adjusted defaults will be applied |
 | `delay` | [duration](#142-duration-time-period) | no | Delay between runs when queued |
 | `queue` | boolean | no | Queue or run immediately. |
-| `sequence_id` | [number/list](#145-sequences) | no | Sequences to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. Entity must be a controller. |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. Entity must be a controller. |
 
 ### 7.6. Service `adjust_time`
 
@@ -820,7 +823,7 @@ Tip: Use forecast and observation data collected by weather integrations in auto
 
 ### 7.7. Service `load_schedule`
 
-Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched.
+Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched. This service does NOT save the new schedule in the event of a reload or HA restart, it will revert to the original configuration.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
@@ -924,7 +927,7 @@ irrigation_unlimited:
 
 Notes:
 
-1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplicity however all methods are available as described _[above](#74-service-adjust_time)_.
+1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplicity however all methods are available as described _[above](#76-service-adjust_time)_.
 2. The `enable` service call can also be `disable` or `toggle`.
 
 ```yaml
@@ -1246,7 +1249,7 @@ This card will enable or disable a zone from a dropdown list, see [requirements]
 
 ### 8.6. Pause-resume button
 
-The following yaml script can be attached to a front end button to [`pause` and `resume`](#72-services-pause-and-resume) all zones of all sequences of all UI controllers. 
+The following yaml script can be attached to a front end button to [`pause` and `resume`](#72-services-pause-and-resume) all zones of all sequences of all UI controllers.
 
 ![pause_resume_button](./examples/pause-resume-button.png)
 
@@ -1274,10 +1277,10 @@ script:
             - conditions:
                 - condition: template
                   value_template: >-
-                    {% set paused_sensors = states.binary_sensor 
-                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$') 
-                        | selectattr('attributes.status', 'equalto', 'paused') 
-                        | map(attribute='entity_id') 
+                    {% set paused_sensors = states.binary_sensor
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$')
+                        | selectattr('attributes.status', 'equalto', 'paused')
+                        | map(attribute='entity_id')
                         | list %}
                     {{ paused_sensors | length > 0 }}
               sequence:
@@ -1288,10 +1291,10 @@ script:
             - conditions:
                 - condition: template
                   value_template: >-
-                    {% set paused_sensors = states.binary_sensor 
-                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$') 
-                        | selectattr('attributes.status', 'equalto', 'paused') 
-                        | map(attribute='entity_id') 
+                    {% set paused_sensors = states.binary_sensor
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$')
+                        | selectattr('attributes.status', 'equalto', 'paused')
+                        | map(attribute='entity_id')
                         | list %}
                     {{ paused_sensors | length == 0 and states('group.irrigation_controllers') == 'on' }}
               sequence:
@@ -1302,7 +1305,7 @@ script:
       icon: mdi:play-pause
 ```
 
-[Issue 142] (https://github.com/rgc99/irrigation_unlimited/issues/142) has a detailed discussion relating the [`pause` and `resume` service call](#72-services-pause-and-resume) and its various use cases. 
+[Issue 142](https://github.com/rgc99/irrigation_unlimited/issues/142) has a detailed discussion relating the [`pause` and `resume` service call](#72-services-pause-and-resume) and its various use cases.
 
 ## 9. Automation
 
@@ -1447,11 +1450,15 @@ These events are fired when a sequence starts and finishes. The `trigger.event.d
 
 | Field | Description |
 | ----- | ----------- |
+| `entity_id` | The sequence entity i.e. `binary_sensor.irrigation_unlimted_c1_s1`. |
 | `controller.index` | The sequential index of the controller. |
+| `controller.controller_id` | The unique id of the controller. |
 | `controller.name` | The friendly name of the controller. |
 | `sequence.index` | The sequential index of the sequence. |
+| `sequence.sequence_id` | The unique id of the sequence. |
 | `sequence.name` | The friendly name of the sequence. |
 | `schedule.index` | The sequential index of the schedule. Note: This maybe blank/empty(None) if it was a manual run - useful as a test. |
+| `schedule.schedule_id` | The unique id of the schedule. Note: This maybe blank/empty(None) if it was a manual run. |
 | `schedule.name` | The friendly name of the schedule. |
 | `run.duration` | The run time of the sequence. |
 
@@ -1549,7 +1556,13 @@ There must be a `irrigation_unlimited:` section in the configuration. If the sec
 
 The above shows that Irrigation Unlimited loaded successfully. Note: The lines will most likely not be together so do a search. If it failed then use the minimal configuration shown _[here](#61-minimal-configuration)_. This is a good starting point to get acquainted with this integration.
 
-### 11.3. Logging
+### 11.3 Community Forum
+
+Have a question then head over to the Irrigation Unlimited [community forum](https://community.home-assistant.io/t/irrigation-unlimited-integration/325468/401). If discussing a problem it is best to post the configuration along with the [log](#114-logging).
+
+### 11.4. Logging
+
+These messages are very important in helping to determine any problem. Go into Settings -> System -> Logs. In the search box put in `irrigation_unlimited` (Note the underscore between the two words) and press the **LOAD FULL LOGS** button. The log should always accompany the configuration when seeking help on the [community forum](#113-community-forum) or opening an [issue](#115-last-but-not-least).
 
 For more detailed information set your logging for the component to debug:
 
@@ -1560,15 +1573,15 @@ logger:
     custom_components.irrigation_unlimited: debug
 ```
 
-### 11.4. Last but not least
+### 11.5. Last but not least
 
-If all else fails please open an [issue](https://github.com/rgc99/irrigation_unlimited/issues).
+If all else fails please open an [issue](https://github.com/rgc99/irrigation_unlimited/issues). Please be sure to post the configuration _AND_ the log.
 
 ## 12. Notes
 
 1. All feature requests, issues and questions are welcome.
 
-<a href="https://www.buymeacoffee.com/rgc99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height=40px width=144px></a><!---->
+<a href="https://www.buymeacoffee.com/rgc99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height=40px width=144px></a><!-- markdownlint-disable-line MD033 -->
 
 ## 13. Snake case
 
