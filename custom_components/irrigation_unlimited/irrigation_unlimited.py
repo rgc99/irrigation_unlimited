@@ -2983,7 +2983,6 @@ class IUSequenceRun(IUBase):
         self, sequence_zone_run: IUSequenceZoneRun
     ) -> IUSequenceZoneRun:
         """Return the next sequence zone run in the run queue"""
-        result: IUSequenceZoneRun = None
         found = False
         for szr in self.runs.values():
             if szr is None:
@@ -2991,9 +2990,23 @@ class IUSequenceRun(IUBase):
             if not found and szr == sequence_zone_run:
                 found = True
             if found and szr.sequence_zone != sequence_zone_run.sequence_zone:
-                result = szr
-                break
-        return result
+                return szr
+        return None
+
+    def next_sequence_run(
+        self, sequence_zone_run: IUSequenceZoneRun
+    ) -> IUSequenceZoneRun:
+        """Return the next sequence run in the queue"""
+        found = False
+        for szr in self.runs.values():
+            if szr is None:
+                continue
+            if not found and szr == sequence_zone_run:
+                found = True
+                continue
+            if found:
+                return szr
+        return None
 
     def sequence_zone_runs(self, sequence_zone_run: IUSequenceZoneRun) -> list[IURun]:
         """Return all the run associated with the sequence zone"""
@@ -3311,7 +3324,7 @@ class IUSequenceRun(IUBase):
                         self,
                     )
                 else:
-                    self._current_zone = self.next_sequence_zone(szr)
+                    self._current_zone = self.next_sequence_run(szr)
                 result |= True
 
         return result
