@@ -4728,12 +4728,9 @@ class IUController(IUBase):
                 for schedule in sequence.schedules:
                     if not schedule.enabled:
                         continue
-                    next_time = stime
-                    while True:
-                        if self.muster_sequence(
-                            stime, next_time, sequence, schedule, None
-                        ).is_empty():
-                            break
+                    while not self.muster_sequence(
+                        stime, stime, sequence, schedule, None
+                    ).is_empty():
                         zone_status |= IURQStatus.EXTENDED
 
         # Process zone schedules
