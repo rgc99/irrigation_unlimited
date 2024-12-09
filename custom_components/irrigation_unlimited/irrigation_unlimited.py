@@ -5945,6 +5945,7 @@ class IUClock:
         self._fixed_clock = False
         self._show_log = False
         self._finalised = False
+        self.schedule_immediately = False
 
     @property
     def is_fixed(self) -> bool:
@@ -5993,6 +5994,10 @@ class IUClock:
             return atime + timedelta(seconds=5)
         if self._fixed_clock:
             return atime + self.track_interval()
+
+        if self.schedule_immediately:
+            self.schedule_immediately = False
+            return atime
 
         # Handle testing
         if self._coordinator.tester.is_testing:
@@ -6142,6 +6147,7 @@ class IUCoordinator:
         self._history = IUHistory(self._hass, self.service_history)
         self._restored_from_configuration: bool = False
         self._finalised = False
+        self._muster_status: IURQStatus = IURQStatus.NONE
 
     @property
     def hass(self) -> HomeAssistant:
@@ -6222,6 +6228,11 @@ class IUCoordinator:
     def rename_entities(self) -> bool:
         """Indicate if entity renaming is allowed"""
         return self._rename_entities
+
+    @property
+    def muster_required(self) -> bool:
+        """Return status that muster is pending"""
+        return self._muster_required
 
     def _is_setup(self) -> bool:
         """Wait for sensors to be setup"""
@@ -6387,9 +6398,11 @@ class IUCoordinator:
         it is the actual time"""
         wtime: datetime = wash_dt(vtime)
         if (wtime != self._last_muster) or self._muster_required or force:
-            if not self.muster(wtime, force).is_empty():
-                self.check_run(wtime)
             self._muster_required = False
+            self._muster_status |= self.muster(wtime, force)
+            if not self._muster_status.is_empty() and not self._muster_required:
+                self.check_run(wtime)
+                self._muster_status = IURQStatus.NONE
             self._last_muster = wtime
         self.update_sensor(vtime)
 
@@ -6456,6 +6469,13 @@ class IUCoordinator:
             return
         self.timer(tick)
         self._clock.rearm(atime)
+
+    def remuster(self) -> None:
+        """Schedule a muster immediately. This is used during a muster to flag
+        another pass is required. This occurs when schedules or other parameters
+        are modified within a muster"""
+        self._muster_required = True
+        self._clock.schedule_immediately = True
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""

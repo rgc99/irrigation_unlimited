@@ -259,7 +259,10 @@ class IUExam:
         while self._coordinator.tester.is_testing and self._current_time <= astop_at:
             # Get next scheduled clock tick
             next_awakening = self._coordinator.clock.next_awakening(self._current_time)
-            assert next_awakening != self._current_time, "Infinite loop detected"
+            assert (
+                self._coordinator.muster_required
+                or next_awakening != self._current_time
+            ), "Infinite loop detected"
             self._coordinator.clock.test_ticker_update(next_awakening)
             await self._hass.async_block_till_done()
             self._coordinator.tester.ticker = min(next_awakening, astop_at)
