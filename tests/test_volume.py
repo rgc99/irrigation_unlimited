@@ -180,7 +180,7 @@ async def test_volume_class(hass: ha.HomeAssistant, skip_dependencies, skip_hist
 
                     def state_change(event: ha.Event) -> ha.Event:
                         nonlocal event_time
-                        event.time_fired = event_time
+                        event.time_fired_timestamp = event_time.timestamp()
                         return event
 
                     mock.side_effect = state_change
@@ -249,7 +249,7 @@ async def test_volume_extensive(
 
             def state_change(event: ha.Event) -> ha.Event:
                 nonlocal event_time, trackers_processed
-                event.time_fired = event_time
+                event.time_fired_timestamp = event_time.timestamp()
                 trackers_processed += 1
                 return event
 
