@@ -4,10 +4,12 @@ Custom integration to integrate irrigation_unlimited with Home Assistant.
 For more details about this integration, please refer to
 https://github.com/rgc99/irrigation_unlimited
 """
+
 import logging
 import voluptuous as vol
 from homeassistant.helpers.entity_component import EntityComponent
-from homeassistant.core import Config, HomeAssistant
+from homeassistant.core import HomeAssistant
+from homeassistant.core_config import Config
 from homeassistant.helpers.discovery import async_load_platform
 
 from .irrigation_unlimited import IUCoordinator

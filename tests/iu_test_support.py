@@ -7,10 +7,10 @@ from typing import Any
 from datetime import datetime, timedelta, timezone
 from homeassistant.const import SERVICE_RELOAD
 import homeassistant.core as ha
-from homeassistant.config import (
-    load_yaml_config_file,
+from homeassistant.core_config import (
     async_process_ha_core_config,
 )
+from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
 from homeassistant.helpers.recorder import (
     async_initialize_recorder,
