@@ -1,9 +1,17 @@
 # Filename: irrigation_unlimited_smart_irrigation.yaml
 #
-# Verion: 1.0.3
+# Verion: 1.0.4
 #
 # Description: Example automation for HAsmartirrigation integration
 # (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
+#
+# This automation tracks a Smart Irrigation sensor and transfers the
+# the calculation to a Irrigation Unlimited sequence. When the sequence
+# completes the Smart Irrigation bucket is reset.
+#
+# Change the relevant Smart Irrigation and Irrigation Unlimited entities.
+# DO NOT simply copy this file as it will NOT WORK, it must be configured
+# to suit your setup as indicated below.
 #
 # This file is a package and should be located in the config/packages
 # folder. If you do not have a packages folder then create it and add
@@ -15,44 +23,35 @@
 # More information on packages can be found at https://www.home-assistant.io/docs/configuration/packages
 #
 automation:
-  - id: 'IU1653097957047'
-    alias: Smart Irrigation adjustment
+  - alias: Smart Irrigation adjustment
+    id: "IU1653097957047"
     description: Adjust watering times based on smart irrigation calculations
-    trigger:
-      - platform: time
-        at: "23:30"
-    condition:
-      condition: and
-      conditions:
-        - "{{ states('sensor.smart_irrigation_daily_adjusted_run_time') | float(-1) >= 0 }}"
-    action:
-      - service: irrigation_unlimited.adjust_time
-        data:
-          actual: "{{ timedelta(seconds=states('sensor.smart_irrigation_daily_adjusted_run_time') | int(0)) }}"
-          # -------------------------------------------------------------------
-          # Please see documentation regarding the adjust_time service call.
-          # Choose an option below. Comment out/delete as needed. This will NOT work as is.
-          # 1. Adjust a single zone. Change the zone as required
-          # entity_id: binary_sensor.irrigation_unlimited_c1_z1
-          # 2. Adjust a sequence. Change the sequence_id as required
-          # entity_id: binary_sensor.irrigation_unlimited_c1_m
-          # sequence_id: 1
-          # -------------------------------------------------------------------
     mode: single
+    triggers:
+      - trigger: state
+        # Change the Smart Irrigation entity_id as required
+        entity_id: sensor.smart_irrigation_[zone_name]
+        to: null
+    actions:
+      - action: irrigation_unlimited.adjust_time
+        data:
+          actual: "{{ timedelta(seconds=trigger.to_state.state | int(0)) }}"
+          # Change the Irrigation Unlimited sequence entity_id as required
+          entity_id: binary_sensor.irrigation_unlimited_c1_s1
 
-  - id: 'IU1653098247170'
-    alias: Smart Irrigation reset bucket
+  - alias: Smart Irrigation reset bucket
+    id: "IU1653098247170"
     description: Resets the Smart Irrigation bucket after watering
-    trigger:
-      - platform: state
-        entity_id:
-          # Add Irrigation Unlimited sensors here
-          - binary_sensor.irrigation_unlimited_c1_m
-        from: "on"
-        to: "off"
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: irrigation_unlimited_finish
     condition:
-      - condition: numeric_state
-        above: '0'
-        entity_id: sensor.smart_irrigation_daily_adjusted_run_time
-    action:
-      - service: smart_irrigation.smart_irrigation_reset_bucket
+      - "{{ trigger.event.data.schedule.index }}" # Not a manual run
+      # Match the following to the Irrigation Unlimited entity_id as above
+      - "{{ trigger.event.data.entity_id == 'binary_sensor.irrigation_unlimited_c1_s1' }}"
+    actions:
+      - action: smart_irrigation.reset_bucket
+        # Match the following to the Smart Irrigation entity_id as above
+        entity_id: sensor.smart_irrigation_[zone_name]
+        data: {}
