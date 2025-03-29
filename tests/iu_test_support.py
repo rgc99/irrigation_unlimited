@@ -14,7 +14,7 @@ from homeassistant.config import load_yaml_config_file
 from homeassistant.setup import async_setup_component
 from homeassistant.helpers.recorder import (
     async_initialize_recorder,
-    async_wait_recorder,
+    DATA_RECORDER,
 )
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util.dt import parse_datetime, as_utc, as_local, UTC
@@ -54,6 +54,10 @@ def quiet_mode() -> None:
 
 
 logging.getLogger("custom_components.irrigation_unlimited").setLevel(logging.DEBUG)
+
+async def async_wait_recorder(hass: ha.HomeAssistant) -> bool:
+    """Wait for recorder to initialize and return connection status."""
+    return await hass.data[DATA_RECORDER].db_connected
 
 
 async def reset_hass_config(hass: ha.HomeAssistant) -> None:
