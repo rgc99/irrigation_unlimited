@@ -17,26 +17,26 @@ automation:
   - id: 'IU1655789912900'
     alias: IU Overnight
     description: Run irrigation from sunset to sunrise
-    trigger:
-      - platform: sun
+    triggers:
+      - trigger: sun
         event: sunset
         offset: -00:60:00
     condition: []
-    action:
-      service: irrigation_unlimited.adjust_time
-      data:
-        # -------------------------------------------------------------------
-        # Please see documentation regarding the adjust_time service call.
-        # Choose an option below. Comment out/delete/change as needed.
-        # *** This will NOT work as is. ***
-        # 1. Adjust a single zone. Change the zone as required
-        # entity_id: binary_sensor.irrigation_unlimited_c1_z1
-        # 2. Adjust a sequence. Change the sequence_id as required
-        # entity_id: binary_sensor.irrigation_unlimited_c1_m
-        # sequence_id: 1
-        # -------------------------------------------------------------------
-        actual: >
-          {% set t1 = as_datetime(state_attr("sun.sun", "next_setting")).replace(microsecond=0) %}
-          {% set t2 = as_datetime(state_attr("sun.sun", "next_rising")).replace(microsecond=0) %}
-          {{ t2 - t1 }}
+    actions:
+      - action: irrigation_unlimited.adjust_time
+        data:
+          # -------------------------------------------------------------------
+          # Please see documentation regarding the adjust_time service call.
+          # Choose an option below. Comment out/delete/change as needed.
+          # *** This will NOT work as is. ***
+          # 1. Adjust a single zone. Change the zone as required
+          # entity_id: binary_sensor.irrigation_unlimited_c1_z1
+          # 2. Adjust a sequence. Change the sequence_id as required
+          # entity_id: binary_sensor.irrigation_unlimited_c1_m
+          # sequence_id: 1
+          # -------------------------------------------------------------------
+          actual: >
+            {% set t1 = as_datetime(state_attr("sun.sun", "next_setting")).replace(microsecond=0) %}
+            {% set t2 = as_datetime(state_attr("sun.sun", "next_rising")).replace(microsecond=0) %}
+            {{ t2 - t1 }}
     mode: single

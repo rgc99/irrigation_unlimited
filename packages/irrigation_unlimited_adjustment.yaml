@@ -150,21 +150,21 @@ sensor:
 automation:
   - id: 'IU1653340123453'
     alias: Irrigation Unlimited Adjustment
-    trigger:
+    triggers:
       # -------------------------------------------------------------------
       # Choose how you want to trigger this automation.
       # Comment out/delete/change as required.
       # -------------------------------------------------------------------
       # Run at a fixed time
-      - platform: time
+      - trigger: time
         at: "02:00"
       # Run when Home Assistant starts
-      - platform: homeassistant
+      - trigger: homeassistant
         event: start
       # Run when the sensors update. Don't use this option if any of your
       # schedules use the 'anchor: finish'. It will most likely cause the
       # system to skip. Use a fixed time.
-      - platform: state
+      - trigger: state
         entity_id:
           - sensor.irrigation_unlimited_rain_weighted_total
           - sensor.irrigation_unlimited_temperature_5_day_moving_average
@@ -175,41 +175,41 @@ automation:
         - "{{ states('sensor.irrigation_unlimited_rain_weighted_total') | float(-1) != -1 }}"
         - "{{ states('sensor.wupws_preciprate') | float(-1) != -1 }}"
         - "{{ states('sensor.irrigation_unlimited_temperature_5_day_moving_average') | float(-273) != -273 }}"
-    action:
-      service: irrigation_unlimited.adjust_time
-      data:
-        # -------------------------------------------------------------------
-        # Please see documentation regarding the adjust_time service call.
-        # Choose an option below. Comment out/delete/change as needed.
-        # *** This will NOT work as is. ***
-        # 1. Adjust a single zone. Change the zone as required
-        # entity_id: binary_sensor.irrigation_unlimited_c1_z1
-        # 2. Adjust a sequence. Change the sequence_id as required
-        # entity_id: binary_sensor.irrigation_unlimited_c1_m
-        # sequence_id: 1
-        # -------------------------------------------------------------------
-        percentage: >
-          {# Threshold variables #}
-          {% set rain_total_threshold = 3.5 %}
-          {% set rain_rate_threshold = 1.0 %}
-          {% set temperature_threshold = 20.0 %}
+    actions:
+      - action: irrigation_unlimited.adjust_time
+        data:
+          # -------------------------------------------------------------------
+          # Please see documentation regarding the adjust_time service call.
+          # Choose an option below. Comment out/delete/change as needed.
+          # *** This will NOT work as is. ***
+          # 1. Adjust a single zone. Change the zone as required
+          # entity_id: binary_sensor.irrigation_unlimited_c1_z1
+          # 2. Adjust a sequence. Change the sequence_id as required
+          # entity_id: binary_sensor.irrigation_unlimited_c1_m
+          # sequence_id: 1
+          # -------------------------------------------------------------------
+          percentage: >
+            {# Threshold variables #}
+            {% set rain_total_threshold = 3.5 %}
+            {% set rain_rate_threshold = 1.0 %}
+            {% set temperature_threshold = 20.0 %}
 
-          {# Sensor data #}
-          {% set rain_total = states('sensor.irrigation_unlimited_rain_weighted_total') | float(-1) %}
-          {% set rain_rate = states('sensor.wupws_preciprate') | float(-1) %}
-          {% set temperature_average = states('sensor.irrigation_unlimited_temperature_5_day_moving_average') | float(-273) %}
+            {# Sensor data #}
+            {% set rain_total = states('sensor.irrigation_unlimited_rain_weighted_total') | float(-1) %}
+            {% set rain_rate = states('sensor.wupws_preciprate') | float(-1) %}
+            {% set temperature_average = states('sensor.irrigation_unlimited_temperature_5_day_moving_average') | float(-273) %}
 
-          {# Threshold variables #}
-          {% set rain_multiplier = (1 - (rain_total / rain_total_threshold)) %}
-          {% set temperature_multiplier = temperature_average / temperature_threshold %}
+            {# Threshold variables #}
+            {% set rain_multiplier = (1 - (rain_total / rain_total_threshold)) %}
+            {% set temperature_multiplier = temperature_average / temperature_threshold %}
 
-          {% set multiplier = 1.0 %}
-          {% if rain_rate < rain_rate_threshold and rain_multiplier > 0 and rain_total < rain_total_threshold %}
-            {% set multiplier = multiplier * temperature_multiplier %}
-            {% set multiplier = multiplier * rain_multiplier %}
-          {% else %}
-            {% set multiplier = 0.0 %} {# It's raining or enough already #}
-          {% endif %}
+            {% set multiplier = 1.0 %}
+            {% if rain_rate < rain_rate_threshold and rain_multiplier > 0 and rain_total < rain_total_threshold %}
+              {% set multiplier = multiplier * temperature_multiplier %}
+              {% set multiplier = multiplier * rain_multiplier %}
+            {% else %}
+              {% set multiplier = 0.0 %} {# It's raining or enough already #}
+            {% endif %}
 
-          {# Return multiplier as a percentage #}
-          {{ (multiplier * 100) | round(0) }}
+            {# Return multiplier as a percentage #}
+            {{ (multiplier * 100) | round(0) }}
