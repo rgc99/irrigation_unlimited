@@ -1352,54 +1352,41 @@ automation:
 
 ### 9.2. HAsmartirrigation
 
-[HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 23:30 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
+[HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs when HASmartIrrigation calculates the run times and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
 
-The example below offers two methods for a single zone or a sequence.
-
+PLEASE NOTE: You must change the `entity_id` lines to match your specific situation. There are four (4) places that need to be updated. The automation WILL NOT RUN as is.
 ```yaml
 # Example automation for HAsmartirrigation integration (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
 automation:
-  - id: 'IU1653097957047'
-    alias: Smart Irrigation adjustment
+  - alias: Smart Irrigation adjustment
+    id: "IU1653097957047"
     description: Adjust watering times based on smart irrigation calculations
-    trigger:
-      - platform: time
-        at: "23:30"
-    condition:
-      condition: and
-      conditions:
-        - "{{ states('sensor.smart_irrigation_daily_adjusted_run_time') | float(-1) >= 0 }}"
-    action:
-      - service: irrigation_unlimited.adjust_time
-        data:
-          actual: "{{ timedelta(seconds=states('sensor.smart_irrigation_daily_adjusted_run_time') | int(0)) }}"
-          # -------------------------------------------------------------------
-          # Please see documentation regarding the adjust_time service call.
-          # Choose an option below. Comment out/delete as needed. This will NOT work as is.
-          # 1. Adjust a single zone. Change the zone as required
-          # entity_id: binary_sensor.irrigation_unlimited_c1_z1
-          # 2. Adjust a sequence. Change the sequence_id as required
-          # entity_id: binary_sensor.irrigation_unlimited_c1_m
-          # sequence_id: 1
-          # -------------------------------------------------------------------
     mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.smart_irrigation_[zone_name] # <== Change the Smart Irrigation entity_id as required
+        to: null
+    actions:
+      - action: irrigation_unlimited.adjust_time
+        data:
+          actual: "{{ timedelta(seconds=trigger.to_state.state | int(0)) }}"
+          entity_id: binary_sensor.irrigation_unlimited_c1_s1 # <== Change the Irrigation Unlimited sequence entity_id as required
 
-  - id: 'IU1653098247170'
-    alias: Smart Irrigation reset bucket
+  - alias: Smart Irrigation reset bucket
+    id: "IU1653098247170"
     description: Resets the Smart Irrigation bucket after watering
-    trigger:
-      - platform: state
-        entity_id:
-          # Add Irrigation Unlimited sensors here
-          - binary_sensor.irrigation_unlimited_c1_m
-        from: "on"
-        to: "off"
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: irrigation_unlimited_finish
     condition:
-      - condition: numeric_state
-        above: '0'
-        entity_id: sensor.smart_irrigation_daily_adjusted_run_time
-    action:
-      - service: smart_irrigation.smart_irrigation_reset_bucket
+      - "{{ trigger.event.data.schedule.index }}" # Not a manual run
+      - "{{ trigger.event.data.entity_id == 'binary_sensor.irrigation_unlimited_c1_s1' }}" # <== Match to the Irrigation Unlimited entity_id as above
+    actions:
+      - action: smart_irrigation.reset_bucket
+        entity_id: sensor.smart_irrigation_[zone_name] # <== Match to the Smart Irrigation entity_id as above
+        data: {}
+    mode: single
 ```
 
 ### 9.3. Overnight watering
