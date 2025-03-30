@@ -108,7 +108,7 @@ def _parse_dd_mmm(value: str) -> date | None:
     """Convert a date string in dd mmm format to a date object."""
     if isinstance(value, date):
         return value
-    return datetime.strptime(value, "%d %b").date()
+    return datetime.strptime(f"{value} {datetime.today().year}", "%d %b %Y").date()
 
 
 USER_SCHEMA = vol.Schema(
