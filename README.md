@@ -46,16 +46,16 @@
   - [6.6. Seasonal watering](#66-seasonal-watering)
   - [6.7. Finish at sunrise](#67-finish-at-sunrise)
   - [6.8. Tips](#68-tips)
-- [7. Services](#7-services)
-  - [7.1. Services `enable`, `disable` and `toggle`](#71-services-enable-disable-and-toggle)
-  - [7.2. Services `pause` and `resume`](#72-services-pause-and-resume)
-  - [7.3. Service `suspend`](#73-service-suspend)
-  - [7.4. Service `cancel`](#74-service-cancel)
-  - [7.5. Service `manual_run`](#75-service-manual_run)
-  - [7.6. Service `adjust_time`](#76-service-adjust_time)
-  - [7.7. Service `load_schedule`](#77-service-load_schedule)
-  - [7.8. Service `reload`](#78-service-reload)
-  - [7.9. Service call access roadmap](#79-service-call-access-roadmap)
+- [7. Actions](#7-actions)
+  - [7.1. Actions `enable`, `disable` and `toggle`](#71-actions-enable-disable-and-toggle)
+  - [7.2. Actions `pause` and `resume`](#72-actions-pause-and-resume)
+  - [7.3. Action `suspend`](#73-action-suspend)
+  - [7.4. Action `cancel`](#74-action-cancel)
+  - [7.5. Action `manual_run`](#75-action-manual_run)
+  - [7.6. Action `adjust_time`](#76-action-adjust_time)
+  - [7.7. Action `load_schedule`](#77-action-load_schedule)
+  - [7.8. Action `reload`](#78-action-reload)
+  - [7.9. Action call access roadmap](#79-action-call-access-roadmap)
 - [8. Frontend](#8-frontend)
   - [8.1. Generic Cards](#81-generic-cards)
   - [8.2. Timeline](#82-timeline)
@@ -725,7 +725,7 @@ For a more comprehensive example refer to [here](./examples/all_the_bells_and_wh
 
 4. After setting up configuration.yaml, the operation can be controlled via service calls as shown _[below](#7-services)_. Perform manual runs, adjust watering times, cancel running schedules and enable/disable zones from a _[frontend](#8-frontend)_
 
-## 7. Services
+## 7. Actions
 
 The binary sensor associated with each controller and zone provide several services. These sensors offer the following services:
 
@@ -740,7 +740,7 @@ The binary sensor associated with each controller and zone provide several servi
 
 If a controller sensor is targetted then it will effect all its children zones.
 
-### 7.1. Services `enable`, `disable` and `toggle`
+### 7.1. Actions `enable`, `disable` and `toggle`
 
 Enables/disables/toggles the controller, zone, sequence or sequence zone respectively.
 
@@ -750,7 +750,7 @@ Enables/disables/toggles the controller, zone, sequence or sequence zone respect
 | `sequence_id` | [number/list](#145-sequence) | no | Sequences to enable/disable/toggle. Entity must be a controller. |
 | `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
 
-### 7.2. Services `pause` and `resume`
+### 7.2. Actions `pause` and `resume`
 
 Pauses/resumes a sequence. This service call "stops the clock" when `paused` so to speak and "continues to run it" upon `resume`.
 
@@ -763,7 +763,7 @@ This is particularly helpful in a use case scenario where a main water supply is
 
 There is an example for a [pause-resume button](#86-pause-resume-button) that targets all sequences within all controllers creating a globla `pause` and `resume` button.
 
-### 7.3. Service `suspend`
+### 7.3. Action `suspend`
 
 Suspend operation of a controller, zone, sequence or sequence zone for a period of time. This is like a temporary `disable` that will automatically reset.
 
@@ -778,7 +778,7 @@ Suspend operation of a controller, zone, sequence or sequence zone for a period 
 
 \* Must have one and only one of `for`, `until` or `reset`.
 
-### 7.4. Service `cancel`
+### 7.4. Action `cancel`
 
 Cancels the current running schedule.
 
@@ -786,7 +786,7 @@ Cancels the current running schedule.
 | ---------------------- | ---- | -------- | ----------- |
 | `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to cancel. |
 
-### 7.5. Service `manual_run`
+### 7.5. Action `manual_run`
 
 Turn on the controller or zone for a period of time. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence. Zone times are calculated and rounded to the nearest time boundary. This means the total run time may vary from the specified time.
 
@@ -798,7 +798,7 @@ Turn on the controller or zone for a period of time. When a sequence is specifie
 | `queue` | boolean | no | Queue or run immediately. |
 | `sequence_id` | [number/list](#145-sequence) | no | Sequences to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. Entity must be a controller. |
 
-### 7.6. Service `adjust_time`
+### 7.6. Action `adjust_time`
 
 Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
@@ -821,7 +821,7 @@ Tip: Use forecast and observation data collected by weather integrations in auto
 
 \* Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`.
 
-### 7.7. Service `load_schedule`
+### 7.7. Action `load_schedule`
 
 Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched. This service does NOT save the new schedule in the event of a reload or HA restart, it will revert to the original configuration.
 
@@ -837,11 +837,11 @@ Reload a schedule. This will allow an edit to an existing schedule. All fields a
 | `month` | list | | Months of year to run [jan, feb...dec] |
 | `enabled` | bool | | Enable/disable the schedule |
 
-### 7.8. Service `reload`
+### 7.8. Action `reload`
 
 Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading. Note: since version 2021.10.0 all settings can be changed including new controllers and zones.
 
-### 7.9. Service call access roadmap
+### 7.9. Action call access roadmap
 
 A reminder that sequences directly descend from a controller. Therefore service calls that manipulate a sequence should address the parent controller. An entity_id of a zone when trying to adjust a sequence will most likely not have the desired effect.
 
@@ -1556,7 +1556,7 @@ There must be a `irrigation_unlimited:` section in the configuration. If the sec
 
 The above shows that Irrigation Unlimited loaded successfully. Note: The lines will most likely not be together so do a search. If it failed then use the minimal configuration shown _[here](#61-minimal-configuration)_. This is a good starting point to get acquainted with this integration.
 
-### 11.3 Community Forum
+### 11.3. Community Forum
 
 Have a question then head over to the Irrigation Unlimited [community forum](https://community.home-assistant.io/t/irrigation-unlimited-integration/325468/401). If discussing a problem it is best to post the configuration along with the [log](#114-logging).
 
