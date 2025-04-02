@@ -122,6 +122,7 @@ CONF_QUEUE_MANUAL = "queue_manual"
 CONF_USER = "user"
 CONF_TOGGLE = "toggle"
 CONF_EXTENDED_CONFIG = "extended_config"
+CONF_RESTORE_FROM_ENTITY = "restore_from_entity"
 CONF_READ_DELAY = "read_delay"
 
 # Defaults

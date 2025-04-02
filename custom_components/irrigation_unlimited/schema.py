@@ -92,6 +92,7 @@ from .const import (
     CONF_USER,
     CONF_TOGGLE,
     CONF_EXTENDED_CONFIG,
+    CONF_RESTORE_FROM_ENTITY,
     CONF_READ_DELAY,
 )
 
@@ -374,6 +375,7 @@ IRRIGATION_SCHEMA = vol.Schema(
         vol.Optional(CONF_HISTORY): HISTORY_SCHEMA,
         vol.Optional(CONF_CLOCK): CLOCK_SCHEMA,
         vol.Optional(CONF_EXTENDED_CONFIG): cv.boolean,
+        vol.Optional(CONF_RESTORE_FROM_ENTITY): cv.boolean,
     }
 )
 

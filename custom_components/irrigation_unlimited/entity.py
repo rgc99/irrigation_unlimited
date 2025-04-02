@@ -32,6 +32,7 @@ from .const import (
     ATTR_NEXT_TICK,
     ATTR_TICK_LOG,
     ATTR_SUSPENDED,
+    ATTR_ZONES,
     CONF_CONTROLLER,
     CONF_CONTROLLERS,
     CONF_ENABLED,
@@ -269,24 +270,69 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         else:
             self.entity_id = self._controller.entity_id
 
+    def _call_iu(self, service: str, data: dict) -> None:
+        self._coordinator.service_call(
+            service, self._controller, self._zone, self._sequence, data
+        )
+
+    async def _restore_entity(self) -> None:
+        """Restore various attributes from last saved state"""
+
+        def _append_zone(data: dict, zone: int) -> None:
+            if zone is not None:
+                data[CONF_ZONES] = [zone]
+
+        def _restore_enabled(attr: dict, zone: int = None) -> None:
+            svc = SERVICE_ENABLE if attr.get(ATTR_ENABLED, True) else SERVICE_DISABLE
+            svd = {}
+            _append_zone(svd, zone)
+            self._call_iu(svc, svd)
+
+        def _restore_suspend(attr: dict, zone: int = None) -> None:
+            svd = {}
+            if (adate := attr.get(ATTR_SUSPENDED)) is not None:
+                svd[CONF_UNTIL] = adate
+            else:
+                svd[CONF_RESET] = None
+            _append_zone(svd, zone)
+            self._call_iu(SERVICE_SUSPEND, svd)
+
+        def _restore_adjustment(attr: dict, zone: int = None) -> None:
+            if (svd := IUAdjustment(attr.get(ATTR_ADJUSTMENT)).to_dict()) == {}:
+                svd[CONF_RESET] = None
+            _append_zone(svd, zone)
+            self._call_iu(SERVICE_TIME_ADJUST, svd)
+
+        def _check_is_on(state: str) -> None:
+            if state == "on":
+                self._coordinator.logger.log_incomplete_cycle(
+                    self._controller, self._zone, self._sequence, None
+                )
+
+        if (state := await self.async_get_last_state()) is None:
+            return
+
+        _check_is_on(state.state)
+        _restore_enabled(state.attributes)
+        _restore_suspend(state.attributes)
+        _restore_adjustment(state.attributes)
+        if self._sequence is not None and state.attributes.get(ATTR_ZONES) is not None:
+            for index, zone in enumerate(state.attributes[ATTR_ZONES]):
+                _restore_enabled(zone, index + 1)
+                _restore_suspend(zone, index + 1)
+                _restore_adjustment(zone, index + 1)
+
     async def async_added_to_hass(self):
+        if self._coordinator.restore_from_entity:
+            try:
+                await self._restore_entity()
+            # pylint: disable=broad-except
+            except Exception as exc:
+                self._coordinator.logger.log_invalid_restore_data(repr(exc), None)
+
         self._coordinator.register_entity(
             self._controller, self._zone, self._sequence, self
         )
-
-        # This code should be removed in future update. Moved to coordinator JSON configuration.
-        if not self._coordinator.restored_from_configuration:
-            state = await self.async_get_last_state()
-            if state is None:
-                return
-            service = (
-                SERVICE_ENABLE
-                if state.attributes.get(ATTR_ENABLED, True)
-                else SERVICE_DISABLE
-            )
-            self._coordinator.service_call(
-                service, self._controller, self._zone, None, {}
-            )
         return
 
     async def async_will_remove_from_hass(self):
@@ -297,9 +343,7 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
 
     def dispatch(self, service: str, call: ServiceCall) -> None:
         """Dispatcher for service calls"""
-        self._coordinator.service_call(
-            service, self._controller, self._zone, self._sequence, call.data
-        )
+        self._call_iu(service, call.data)
 
 
 class IUComponent(RestoreEntity):
@@ -314,24 +358,24 @@ class IUComponent(RestoreEntity):
         state = await self.async_get_last_state()
         if state is None or ATTR_CONFIGURATION not in state.attributes:
             return
-        json_data = state.attributes.get(ATTR_CONFIGURATION, {})
-        try:
-            data = json.loads(json_data)
-            for item in IURestore(data, self._coordinator).is_on:
-                controller: IUController = item[CONF_CONTROLLER]
-                zone: IUZone = item[CONF_ZONE]
-                sequence: IUSequence = item[CONF_SEQUENCE]
-                sequence_zone: IUSequenceZone = item[CONF_SEQUENCE_ZONE]
-                self._coordinator.logger.log_incomplete_cycle(
-                    controller,
-                    zone,
-                    sequence,
-                    sequence_zone,
-                )
-            self._coordinator.restored_from_configuration = True
-        # pylint: disable=broad-except
-        except Exception as exc:
-            self._coordinator.logger.log_invalid_restore_data(repr(exc), json_data)
+        if not self._coordinator.restore_from_entity:
+            json_data = state.attributes.get(ATTR_CONFIGURATION, {})
+            try:
+                data = json.loads(json_data)
+                for item in IURestore(data, self._coordinator).is_on:
+                    controller: IUController = item[CONF_CONTROLLER]
+                    zone: IUZone = item[CONF_ZONE]
+                    sequence: IUSequence = item[CONF_SEQUENCE]
+                    sequence_zone: IUSequenceZone = item[CONF_SEQUENCE_ZONE]
+                    self._coordinator.logger.log_incomplete_cycle(
+                        controller,
+                        zone,
+                        sequence,
+                        sequence_zone,
+                    )
+            # pylint: disable=broad-except
+            except Exception as exc:
+                self._coordinator.logger.log_invalid_restore_data(repr(exc), json_data)
         return
 
     async def async_will_remove_from_hass(self):

@@ -1,11 +1,15 @@
 """Test irrigation_unlimited history."""
+
 from unittest.mock import patch
 import pytest
 import homeassistant.core as ha
-
+from homeassistant.helpers.restore_state import RestoreEntity
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
     EVENT_INCOMPLETE,
+)
+from custom_components.irrigation_unlimited.irrigation_unlimited import (
+    IULogger,
 )
 from custom_components.irrigation_unlimited.entity import IURestore
 from tests.iu_test_support import IUExam, mk_utc, mk_local
@@ -13,8 +17,8 @@ from tests.iu_test_support import IUExam, mk_utc, mk_local
 IUExam.quiet_mode()
 
 
-@pytest.fixture(name="mock_state_z1_none")
-def mock_state_z1_none():
+@pytest.fixture(name="mock_state_none")
+def mock_state_none():
     """Patch HA with no entity history"""
     with patch(
         "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
@@ -23,35 +27,99 @@ def mock_state_z1_none():
         yield
 
 
-@pytest.fixture(name="mock_state_z1_enabled")
-def mock_state_z1_enabled():
-    """Patch HA history with entity in enabled state"""
-    with patch(
-        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
-    ) as mock:
-        idx = "binary_sensor.irrigation_unlimited_c1_z1"
-        mock.return_value = ha.State(
-            idx,
+@pytest.fixture(name="mock_state_empty")
+def mock_state_empty():
+    """Patch HA with empty history"""
+
+    def func(self):
+        entity: RestoreEntity = self
+        return ha.State(
+            entity.entity_id,
             "on",
-            {"enabled": True},
+            {},
             mk_utc("2021-01-04 04:30:00"),
         )
+
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state",
+        autospec=True,
+    ) as mock:
+        mock.side_effect = func
         yield
 
 
-@pytest.fixture(name="mock_state_z1_disabled")
-def mock_state_z1_disabled():
-    """Patch HA history with entity in disabled state"""
+@pytest.fixture(name="mock_state_invalid")
+def mock_state_invalid():
+    """Patch HA with invalid history"""
+
+    def func(self):
+        entity: RestoreEntity = self
+        if entity.entity_id == "binary_sensor.irrigation_unlimited_c1_z1":
+            return ha.State(
+                entity.entity_id,
+                "off",
+                {"suspended": "123456"},
+                mk_utc("2021-01-04 04:30:00"),
+            )
+        if entity.entity_id == "binary_sensor.irrigation_unlimited_c1_s1":
+            return ha.State(
+                entity.entity_id,
+                "off",
+                {"zones": "abcdef"},
+                mk_utc("2021-01-04 04:30:00"),
+            )
+        return None
+
     with patch(
-        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state"
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state",
+        autospec=True,
     ) as mock:
-        idx = "binary_sensor.irrigation_unlimited_c1_z1"
-        mock.return_value = ha.State(
-            idx,
-            "on",
-            {"enabled": False},
-            mk_utc("2021-01-04 04:30:00"),
-        )
+        mock.side_effect = func
+        yield
+
+
+@pytest.fixture(name="mock_state_test")
+def mock_state_test():
+    """Patch HA history"""
+
+    def func(self):
+        entity: RestoreEntity = self
+        if entity.entity_id == "binary_sensor.irrigation_unlimited_c1_z1":
+            return ha.State(
+                entity.entity_id,
+                "on",
+                {
+                    "enabled": False,
+                    "adjustment": "%50.0",
+                    "suspended": mk_utc("2021-01-06 04:30:00"),
+                },
+                mk_utc("2021-01-04 04:30:00"),
+            )
+        if entity.entity_id == "binary_sensor.irrigation_unlimited_c1_s1":
+            return ha.State(
+                entity.entity_id,
+                "on",
+                {
+                    "enabled": False,
+                    "adjustment": "%75.0",
+                    "suspended": mk_utc("2021-01-07 04:30:00"),
+                    "zones": [
+                        {
+                            "enabled": False,
+                            "adjustment": "%25.0",
+                            "suspended": mk_utc("2021-01-08 04:30:00"),
+                        },
+                    ],
+                },
+                mk_utc("2021-01-04 04:30:00"),
+            )
+        return None
+
+    with patch(
+        "homeassistant.helpers.restore_state.RestoreEntity.async_get_last_state",
+        autospec=True,
+    ) as mock:
+        mock.side_effect = func
         yield
 
 
@@ -130,33 +198,247 @@ def mock_state_coordinator_invalid():
 # pylint: disable=unused-argument
 # pylint: disable=redefined-outer-name
 async def test_restore_none(
-    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_z1_none
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_none
 ):
     """Test restoring entity with no history"""
+    async with IUExam(hass, "test_restore_entity.yaml") as exam:
+        exam.check_iu_entity(
+            "c1_m",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+            },
+        )
+        exam.check_iu_entity(
+            "c1_z1",
+            "off",
+            {
+                "enabled": True,
+                "adjustment": "",
+                "suspended": None,
+            },
+        )
+        exam.check_iu_entity(
+            "c1_z2",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+                "adjustment": "",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s1",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+                "adjustment": "",
+                "zones": [
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                ],
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+                "adjustment": "",
+                "zones": [
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                ],
+            },
+        )
 
-    async with IUExam(hass, "test_restore_entity.yaml"):
-        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-        assert sta.attributes["enabled"] is True
 
-
-async def test_restore_enabled(
-    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_z1_enabled
+async def test_restore_empty(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_empty
 ):
-    """Test restoring entity in enabled state"""
+    """Test restoring entity with empty history"""
+    async with IUExam(hass, "test_restore_entity.yaml") as exam:
+        exam.check_iu_entity(
+            "c1_m",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+            },
+        )
+        exam.check_iu_entity(
+            "c1_z1",
+            "off",
+            {
+                "enabled": True,
+                "adjustment": "",
+                "suspended": None,
+            },
+        )
+        exam.check_iu_entity(
+            "c1_z2",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+                "adjustment": "",
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s1",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+                "adjustment": "",
+                "zones": [
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                ],
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            "off",
+            {
+                "enabled": True,
+                "suspended": None,
+                "adjustment": "",
+                "zones": [
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                    {
+                        "enabled": True,
+                        "suspended": None,
+                        "adjustment": "",
+                    },
+                ],
+            },
+        )
 
-    async with IUExam(hass, "test_restore_entity.yaml"):
-        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-        assert sta.attributes["enabled"] is True
 
-
-async def test_restore_disabled(
-    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_z1_disabled
+async def test_restore_invalid(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_invalid
 ):
-    """Test restoring entity in disabled state"""
+    """Test restoring entity with invalid history"""
+    with patch.object(IULogger, "log_invalid_restore_data") as mock_invalid:
+        async with IUExam(hass, "test_restore_entity.yaml") as exam:
+            exam.check_iu_entity(
+                "c1_m",
+                "off",
+                {
+                    "enabled": True,
+                    "suspended": None,
+                },
+            )
+        assert mock_invalid.call_count == 2
 
-    async with IUExam(hass, "test_restore_entity.yaml"):
-        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
-        assert sta.attributes["enabled"] is False
+
+async def test_restore_all(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history, mock_state_test
+):
+    """Test restoring entity"""
+    with patch.object(IULogger, "log_incomplete_cycle") as mock_incomplete:
+        async with IUExam(hass, "test_restore_entity.yaml") as exam:
+            exam.check_iu_entity(
+                "c1_m",
+                "off",
+                {
+                    "enabled": True,
+                    "suspended": None,
+                },
+            )
+            exam.check_iu_entity(
+                "c1_z1",
+                "off",
+                {
+                    "enabled": False,
+                    "adjustment": "%50.0",
+                    "suspended": mk_local("2021-01-06 04:30:00"),
+                },
+            )
+            exam.check_iu_entity(
+                "c1_z2",
+                "off",
+                {
+                    "enabled": True,
+                    "suspended": None,
+                    "adjustment": "",
+                },
+            )
+            exam.check_iu_entity(
+                "c1_s1",
+                "off",
+                {
+                    "enabled": False,
+                    "suspended": mk_local("2021-01-07 04:30:00"),
+                    "adjustment": "%75.0",
+                    "zones": [
+                        {
+                            "enabled": False,
+                            "suspended": mk_utc("2021-01-08 04:30:00"),
+                            "adjustment": "%25.0",
+                        },
+                        {
+                            "enabled": True,
+                            "suspended": None,
+                            "adjustment": "",
+                        },
+                    ],
+                },
+            )
+            exam.check_iu_entity(
+                "c1_s2",
+                "off",
+                {
+                    "enabled": True,
+                    "suspended": None,
+                    "adjustment": "",
+                    "zones": [
+                        {
+                            "enabled": True,
+                            "suspended": None,
+                            "adjustment": "",
+                        },
+                        {
+                            "enabled": True,
+                            "suspended": None,
+                            "adjustment": "",
+                        },
+                    ],
+                },
+            )
+        assert mock_incomplete.call_count == 2
 
 
 async def test_restore_coordinator(
