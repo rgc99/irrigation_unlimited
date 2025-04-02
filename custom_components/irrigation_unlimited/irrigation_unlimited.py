@@ -220,7 +220,6 @@ from .const import (
     CONF_TOGGLE,
     CONF_EXTENDED_CONFIG,
     CONF_RESTORE_FROM_ENTITY,
-    CONF_CHAINS,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -2497,33 +2496,6 @@ class IUZoneQueue(IURunQueue):
         return status
 
 
-class IUSequenceChain(IUBase):
-    """Irrigation Unlimited sequence Chain class"""
-
-    def __init__(self, chain_index: int) -> None:
-        super().__init__(chain_index)
-        # Passed Parameters
-        # Config parameters
-        self._sequence_ids: list[str] = []
-        self._delay: timedelta = None
-
-    @property
-    def sequence_ids(self) -> list[str]:
-        """Return a list of sequence_id's"""
-        return self._sequence_ids
-
-    @property
-    def delay(self) -> timedelta:
-        """Return the delay before starting the next sequence"""
-        return self._delay
-
-    def load(self, config: dict) -> "IUSequenceChain":
-        """Load the sequence chain data from the configuration"""
-        self._sequence_ids = config[CONF_SEQUENCE_ID]
-        self._delay = wash_td(config.get(CONF_DELAY))
-        return self
-
-
 class IUSequenceZone(IUBase):
     """Irrigation Unlimited Sequence Zone class"""
 
@@ -3651,7 +3623,6 @@ class IUSequence(IUBase):
         self._run_queue = IUSequenceQueue(self)
         self._schedules: list[IUSchedule] = []
         self._zones: list[IUSequenceZone] = []
-        self._chains: list[IUSequenceChain] = []
         self._adjustment = IUAdjustment()
         self._suspend_until: datetime = None
         self._sensor_update_required: bool = False
@@ -3833,11 +3804,6 @@ class IUSequence(IUBase):
             return STATUS_DISABLED
         return STATUS_BLOCKED
 
-    @property
-    def chains(self) -> list[IUSequenceChain]:
-        """Return the chains"""
-        return self._chains
-
     def has_adjustment(self, deep: bool) -> bool:
         """Indicates if this sequence has an active adjustment"""
         if self._adjustment.has_adjustment:
@@ -3987,7 +3953,6 @@ class IUSequence(IUBase):
     def clear(self) -> None:
         """Reset this sequence"""
         self._schedules.clear()
-        self._chains.clear()
 
     def add_schedule(self, schedule: IUSchedule) -> IUSchedule:
         """Add a new schedule to the sequence"""
@@ -3999,17 +3964,6 @@ class IUSequence(IUBase):
         if index >= len(self._schedules):
             return self.add_schedule(IUSchedule(self._hass, self._coordinator, index))
         return self._schedules[index]
-
-    def add_chain(self, chain: IUSequenceChain) -> IUSequenceChain:
-        """Add a new chain to the sequence"""
-        self._chains.append(chain)
-        return chain
-
-    def find_add_chain(self, index: int) -> IUSequenceChain:
-        """Look for and create if required a sequence chain"""
-        if index >= len(self._chains):
-            return self.add_chain(IUSequenceChain(index))
-        return self._chains[index]
 
     def add_zone(self, zone: IUSequenceZone) -> IUSequenceZone:
         """Add a new zone to the sequence"""
@@ -4054,9 +4008,6 @@ class IUSequence(IUBase):
         if CONF_SCHEDULES in config:
             for sidx, schedule_config in enumerate(config[CONF_SCHEDULES]):
                 self.find_add_schedule(sidx).load(schedule_config)
-        if CONF_CHAINS in config:
-            for cidx, chain_config in enumerate(config[CONF_CHAINS]):
-                self.find_add_chain(cidx).load(chain_config)
         self._dirty = True
         return self
 
@@ -4767,55 +4718,7 @@ class IUController(IUBase):
                 sequence_run.allocate_runs(stime, start_time)
                 sequence.runs.add(sequence_run)
                 status |= IURQStatus.EXTENDED
-                if schedule and len(sequence.chains) > 0:  # Do not chain manual run
-                    links: set[str] = set()
-                    self.chain_walk(
-                        stime, sequence, schedule, start_time + total_time, links
-                    )
         return status
-
-    def chain_walk(
-        self,
-        stime: datetime,
-        sequence: IUSequence,
-        schedule: IUSchedule,
-        start: datetime,
-        links: set[str],
-    ) -> None:
-        """Walk down the chain of sequences"""
-        for chain in sequence.chains:
-            for sqid in chain.sequence_ids:
-                if chained := self.find_sequence_by_id(sqid):
-                    if chained.sequence_id in links:
-                        continue  # Ignore if circular reference detected
-                    links.add(chained.sequence_id)
-                    chain_start = start
-                    if chain.delay:
-                        chain_start += chain.delay
-                    chain_next = self.chain_sequence(
-                        stime, chained, schedule, chain_start
-                    )
-                    if len(chained.chains) > 0:
-                        self.chain_walk(stime, chained, schedule, chain_next, links)
-
-    def chain_sequence(
-        self,
-        stime: datetime,
-        sequence: IUSequence,
-        schedule: IUSchedule,
-        start: datetime,
-    ) -> datetime:
-        """Process a link in the sequence chain. Return the finish time"""
-        end_time: datetime = start
-        sequence_run = IUSequenceRun(self._coordinator, self, sequence, schedule)
-        total_time = sequence_run.calc_total_time(None)
-        duration_factor = sequence.duration_factor(total_time, sequence_run)
-
-        if (total_time := sequence_run.build(duration_factor)) > timedelta(0):
-            sequence_run.allocate_runs(stime, start)
-            sequence.runs.add(sequence_run)
-            end_time = max(end_time, start + total_time)
-        return end_time
 
     def muster(self, stime: datetime, force: bool) -> IURQStatus:
         """Calculate run times for this controller. This is where most of the hard yakka
@@ -4970,15 +4873,6 @@ class IUController(IUBase):
                     if zone_id not in zone_ids:
                         self._coordinator.logger.log_orphan_id(
                             self, sequence, sequence_zone, zone_id
-                        )
-                        result = False
-
-        for sequence in self._sequences:
-            for chain in sequence.chains:
-                for sequence_id in chain.sequence_ids:
-                    if sequence_id not in sequence_ids:
-                        self._coordinator.logger.log_orphan_id(
-                            self, sequence, None, None
                         )
                         result = False
 
