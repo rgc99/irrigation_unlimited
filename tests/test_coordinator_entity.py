@@ -132,6 +132,18 @@ async def test_coordinator_config_essential(
         exam.check_summary()
 
 
+async def test_coordinator_config_none(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test coordinator configuration attribute is missing."""
+
+    async with IUExam(hass, "test_coordinator_entity_no_config.yaml") as exam:
+        await exam.begin_test(1)
+        assert hass.states.get("irrigation_unlimited.coordinator").attributes.get("configuration") is None
+        await exam.finish_test()
+
+        exam.check_summary()
+
 async def test_coordinator_config_extended(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
 ):
@@ -139,6 +151,35 @@ async def test_coordinator_config_extended(
 
     async with IUExam(hass, "test_coordinator_extended.yaml") as exam:
         await exam.begin_test(1)
+        # Check essential keys are in configuration
+        config = json.loads(
+            hass.states.get("irrigation_unlimited.coordinator").attributes[
+                "configuration"
+            ]
+        )
+
+        controller_keys = ("controller_id", "entity_base", "icon", "status")
+        zone_keys = ("zone_id", "entity_base", "icon", "status", "current_duration", "switch_entity_id")
+        sequence_keys = ("icon", "status", "default_duration", "default_delay", "duration_factor", "total_delay", "total_delay", "adjusted_duration", "current_duration")
+        schedule_keys = ("time", "anchor", "duration", "name", "enabled")
+        sqz_keys = ("icon", "status", "delay", "base_duration", "adjusted_duration", "final_duration", "zones", "current_duration")
+        assert len(config["controllers"]) > 0
+        for controller in config["controllers"]:
+            assert all(key in controller for key in controller_keys)
+            assert len(controller["zones"]) > 0
+            for zone in controller["zones"]:
+                assert all(key in zone for key in zone_keys)
+                for sch in zone["schedules"]:
+                    assert all(key in sch for key in schedule_keys)
+            assert len(controller["sequences"]) > 0
+            for sequence in controller["sequences"]:
+                assert all(key in sequence for key in sequence_keys)
+                assert len(sequence["sequence_zones"]) > 0
+                for sqz in sequence["sequence_zones"]:
+                    assert all(key in sqz for key in sqz_keys)
+                for sch in sequence["schedules"]:
+                    assert all(key in sch for key in schedule_keys)
+
         await exam.finish_test()
 
         exam.check_summary()

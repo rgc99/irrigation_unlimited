@@ -121,9 +121,11 @@ CONF_QUEUE = "queue"
 CONF_QUEUE_MANUAL = "queue_manual"
 CONF_USER = "user"
 CONF_TOGGLE = "toggle"
+CONF_SHOW_CONFIG = "show_config"
 CONF_EXTENDED_CONFIG = "extended_config"
 CONF_RESTORE_FROM_ENTITY = "restore_from_entity"
 CONF_READ_DELAY = "read_delay"
+CONF_SHOW_SEQUENCE_STATUS = "show_sequence_status"
 
 # Defaults
 DEFAULT_NAME = DOMAIN

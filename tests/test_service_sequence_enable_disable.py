@@ -192,10 +192,13 @@ async def test_service_sequence_enable_disable_by_controller(
                 "sequence_id": 0,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["enabled"] is False
-        assert data["controllers"][0]["sequences"][1]["enabled"] is False
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["enabled"] is False
+            assert data["controllers"][0]["sequences"][1]["enabled"] is False
+        exam.check_iu_entity('c1_s1', "off", {"enabled": False})
+        exam.check_iu_entity('c1_s2', "off", {"enabled": False})
         await exam.finish_test()
 
         # Enable all sequences
@@ -207,10 +210,13 @@ async def test_service_sequence_enable_disable_by_controller(
                 "sequence_id": 0,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["enabled"] is True
-        assert data["controllers"][0]["sequences"][1]["enabled"] is True
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["enabled"] is True
+            assert data["controllers"][0]["sequences"][1]["enabled"] is True
+        exam.check_iu_entity('c1_s1', "off", {"enabled": True})
+        exam.check_iu_entity('c1_s2', "off", {"enabled": True})
         await exam.finish_test()
 
         # Disable non existant sequence
@@ -393,10 +399,13 @@ async def test_service_sequence_enable_disable_by_sequence(
                 "sequence_id": 0,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["enabled"] is False
-        assert data["controllers"][0]["sequences"][1]["enabled"] is False
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["enabled"] is False
+            assert data["controllers"][0]["sequences"][1]["enabled"] is False
+        exam.check_iu_entity('c1_s1', "off", {"enabled": False})
+        exam.check_iu_entity('c1_s2', "off", {"enabled": False})
         await exam.finish_test()
 
         # Enable all sequences
@@ -408,10 +417,13 @@ async def test_service_sequence_enable_disable_by_sequence(
                 "sequence_id": 0,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["enabled"] is True
-        assert data["controllers"][0]["sequences"][1]["enabled"] is True
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["enabled"] is True
+            assert data["controllers"][0]["sequences"][1]["enabled"] is True
+        exam.check_iu_entity('c1_s1', "off", {"enabled": True})
+        exam.check_iu_entity('c1_s2', "off", {"enabled": True})
         await exam.finish_test()
 
         # Disable non existant sequence

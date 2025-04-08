@@ -418,7 +418,8 @@ class IUComponent(RestoreEntity):
         """Return the state attributes."""
         attr = {}
         attr[ATTR_CONTROLLER_COUNT] = len(self._coordinator.controllers)
-        attr[ATTR_CONFIGURATION] = self._coordinator.configuration
+        if self._coordinator.show_config:
+            attr[ATTR_CONFIGURATION] = self._coordinator.configuration
         if self._coordinator.clock.show_log:
             next_tick = self._coordinator.clock.next_tick
             attr[ATTR_NEXT_TICK] = (

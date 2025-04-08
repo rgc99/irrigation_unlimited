@@ -11,7 +11,7 @@ homeassistant:
 irrigation_unlimited:
   granularity: 30
   refresh_interval: 30
-  show_config: true
+  show_config: false
   clock:
     mode: seer
     max_log_entries: 100

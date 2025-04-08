@@ -21,8 +21,8 @@ from custom_components.irrigation_unlimited.const import (
 IUExam.quiet_mode()
 
 
-async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_history):
-    """Test IUSequenceRun class."""
+async def test_sequence_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test IUSequence class."""
     # pylint: disable=unused-argument
     # pylint: disable=too-many-statements
     async with IUExam(hass, "test_sequence_entity.yaml") as exam:
@@ -1468,6 +1468,53 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
         )
         await exam.run_until("2023-11-16 06:52")
         exam.check_iu_entity(
+            "c1_s1",
+            STATE_OFF,
+            {
+                "status": "off",
+                "next_start": mk_local("2023-11-16 17:05:00"),
+                "next_duration": "0:38:00",
+                "zones": [
+                    {
+                        "status": "off",
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:18:00",
+                    },
+                ],
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            STATE_OFF,
+            {
+                "status": "off",
+                "next_start": mk_local("2023-11-17 06:10:00"),
+                "next_duration": "0:27:00",
+                "zones": [
+                    {
+                        "status": "off",
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:13:00",
+                    },
+                ],
+            },
+        )
+        # Old style sequence status via controller
+        exam.check_iu_entity(
             "c1_m",
             STATE_OFF,
             {
@@ -1773,6 +1820,53 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             },
         )
         await exam.run_until("2023-11-16 06:45")
+        exam.check_iu_entity(
+            "c1_s1",
+            STATE_OFF,
+            {
+                "status": "off",
+                "next_start": mk_local("2023-11-16 17:05:00"),
+                "next_duration": "0:38:00",
+                "zones": [
+                    {
+                        "status": "off",
+                        "duration": "0:06:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:12:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:18:00",
+                    },
+                ],
+            },
+        )
+        exam.check_iu_entity(
+            "c1_s2",
+            STATE_OFF,
+            {
+                "status": "off",
+                "next_start": mk_local("2023-11-17 06:10:00"),
+                "next_duration": "0:27:00",
+                "zones": [
+                    {
+                        "status": "off",
+                        "duration": "0:05:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:08:00",
+                    },
+                    {
+                        "status": "off",
+                        "duration": "0:13:00",
+                    },
+                ],
+            },
+        )
+        # Old style sequence status via controller
         exam.check_iu_entity(
             "c1_m",
             STATE_OFF,

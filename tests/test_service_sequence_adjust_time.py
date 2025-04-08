@@ -330,10 +330,13 @@ async def test_service_sequence_adjust_time_by_controller(
                 "percentage": 50,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["adjustment"] == "%50.0"
-        assert data["controllers"][0]["sequences"][1]["adjustment"] == "%50.0"
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["adjustment"] == "%50.0"
+            assert data["controllers"][0]["sequences"][1]["adjustment"] == "%50.0"
+        exam.check_iu_entity('c1_s1', "off", {"adjustment": "%50.0"})
+        exam.check_iu_entity('c1_s2', "off", {"adjustment": "%50.0"})
         await exam.finish_test()
 
         # Reset zone adjustments. Test 'all' sequence_id (0) reset
@@ -355,10 +358,13 @@ async def test_service_sequence_adjust_time_by_controller(
                 "reset": None,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["adjustment"] == ""
-        assert data["controllers"][0]["sequences"][1]["adjustment"] == ""
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["adjustment"] == ""
+            assert data["controllers"][0]["sequences"][1]["adjustment"] == ""
+        exam.check_iu_entity('c1_s1', "off", {"adjustment": ""})
+        exam.check_iu_entity('c1_s2', "off", {"adjustment": ""})
         await exam.finish_test()
 
         exam.check_summary()
@@ -838,10 +844,13 @@ async def test_service_sequence_adjust_time_by_sequence(
                 "percentage": 50,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["adjustment"] == "%50.0"
-        assert data["controllers"][0]["sequences"][1]["adjustment"] == "%50.0"
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["adjustment"] == "%50.0"
+            assert data["controllers"][0]["sequences"][1]["adjustment"] == "%50.0"
+        exam.check_iu_entity('c1_s1', "off", {"adjustment": "%50.0"})
+        exam.check_iu_entity('c1_s2', "off", {"adjustment": "%50.0"})
         await exam.finish_test()
 
         # Reset zone adjustments. Test 'all' sequence_id (0) reset
@@ -862,10 +871,13 @@ async def test_service_sequence_adjust_time_by_sequence(
                 "reset": None,
             },
         )
-        sta = hass.states.get("irrigation_unlimited.coordinator")
-        data = json.loads(sta.attributes["configuration"])
-        assert data["controllers"][0]["sequences"][0]["adjustment"] == ""
-        assert data["controllers"][0]["sequences"][1]["adjustment"] == ""
+        if exam.coordinator.show_config:
+            sta = hass.states.get("irrigation_unlimited.coordinator")
+            data = json.loads(sta.attributes["configuration"])
+            assert data["controllers"][0]["sequences"][0]["adjustment"] == ""
+            assert data["controllers"][0]["sequences"][1]["adjustment"] == ""
+        exam.check_iu_entity('c1_s1', "off", {"adjustment": ""})
+        exam.check_iu_entity('c1_s2', "off", {"adjustment": ""})
         await exam.finish_test()
 
         exam.check_summary()

@@ -164,7 +164,8 @@ class IUMasterEntity(IUEntity):
         attr[ATTR_ZONE_COUNT] = len(self._controller.zones)
         attr[ATTR_SEQUENCE_COUNT] = len(self._controller.sequences)
         attr[ATTR_ZONES] = ""
-        attr[ATTR_SEQUENCE_STATUS] = self._controller.sequence_status()
+        if self._controller.show_sequence_status:
+            attr[ATTR_SEQUENCE_STATUS] = self._controller.sequence_status()
         current = self._controller.runs.current_run
         if current is not None:
             attr[ATTR_CURRENT_ZONE] = current.zone.index + 1

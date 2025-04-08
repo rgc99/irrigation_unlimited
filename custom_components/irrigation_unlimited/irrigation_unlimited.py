@@ -218,8 +218,10 @@ from .const import (
     CONF_QUEUE_MANUAL,
     CONF_USER,
     CONF_TOGGLE,
+    CONF_SHOW_CONFIG,
     CONF_EXTENDED_CONFIG,
     CONF_RESTORE_FROM_ENTITY,
+    CONF_SHOW_SEQUENCE_STATUS,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -4297,6 +4299,7 @@ class IUController(IUBase):
         self._preamble: timedelta = None
         self._postamble: timedelta = None
         self._queue_manual: bool = False
+        self._show_sequence_status: bool = True
         # Private variables
         self._initialised: bool = False
         self._finalised: bool = False
@@ -4419,6 +4422,11 @@ class IUController(IUBase):
     def queue_manual(self) -> bool:
         """Return if manual runs should be queue"""
         return self._queue_manual
+
+    @property
+    def show_sequence_status(self) -> bool:
+        """Return is sequence_status attribute should be shown"""
+        return self._show_sequence_status
 
     @property
     def status(self) -> str:
@@ -4571,6 +4579,7 @@ class IUController(IUBase):
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
         self._queue_manual = config.get(CONF_QUEUE_MANUAL, self._queue_manual)
+        self._show_sequence_status = config.get(CONF_SHOW_SEQUENCE_STATUS, self._show_sequence_status)
         all_zones = config.get(CONF_ALL_ZONES_CONFIG)
         zidx: int = 0
         for zidx, zone_config in enumerate(config[CONF_ZONES]):
@@ -6160,6 +6169,8 @@ class IUCoordinator:
         self._sync_switches: bool = True
         self._rename_entities = False
         self._extended_config = False
+        self._restore_from_entity: bool = True
+        self._show_config = True
         # Private variables
         self._controllers: list[IUController] = []
         self._is_on: bool = False
@@ -6176,7 +6187,6 @@ class IUCoordinator:
         self._tester = IUTester(self)
         self._clock = IUClock(self._hass, self, self._async_timer)
         self._history = IUHistory(self._hass, self.service_history)
-        self._restore_from_entity: bool = True
         self._finalised = False
         self._muster_status: IURQStatus = IURQStatus.NONE
 
@@ -6246,6 +6256,11 @@ class IUCoordinator:
         return json.dumps(self.as_dict(self._extended_config), cls=IUJSONEncoder)
 
     @property
+    def show_config(self) -> bool:
+        """Return if we should show the system configuration"""
+        return self._show_config
+
+    @property
     def restore_from_entity(self) -> bool:
         """Return if the system has should be restored from coordinator data"""
         return self._restore_from_entity
@@ -6312,7 +6327,7 @@ class IUCoordinator:
         self._restore_from_entity = config.get(
             CONF_RESTORE_FROM_ENTITY, self._restore_from_entity
         )
-
+        self._show_config = config.get(CONF_SHOW_CONFIG, self._show_config)
         cidx: int = 0
         for cidx, controller_config in enumerate(config[CONF_CONTROLLERS]):
             self.find_add(self, cidx).load(controller_config)
