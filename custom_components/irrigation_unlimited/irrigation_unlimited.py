@@ -4969,8 +4969,9 @@ class IUController(IUBase):
             sequence_list.extend(sequence.index for sequence in self._sequences)
         else:
             for sequence_id in sequences:
-                if self.get_sequence(sequence_id - 1) is not None:
-                    sequence_list.append(sequence_id - 1)
+                id = int(sequence_id) - 1
+                if self.get_sequence(id) is not None:
+                    sequence_list.append(id)
                 else:
                     self._coordinator.logger.log_invalid_sequence(
                         stime, self, sequence_id

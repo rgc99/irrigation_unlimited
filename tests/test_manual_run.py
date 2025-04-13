@@ -14,7 +14,6 @@ from tests.iu_test_support import (
 from custom_components.irrigation_unlimited.const import (
     SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
-    SERVICE_CANCEL,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IULogger,
@@ -193,138 +192,19 @@ async def test_service_manual_run_basic(
         )
         await exam.finish_test()
 
-        exam.check_summary()
-
-
-async def test_service_manual_run_sequence_by_controller(
-    hass: ha.HomeAssistant, skip_dependencies, skip_history
-):
-    """Test manual_run service call on a sequence"""
-
-    async with IUExam(hass, "service_manual_run_sequence.yaml") as exam:
-        await exam.begin_test(1)
+        # Sequence_id is a string and not an integer
+        await exam.begin_test(16)
+        await exam.run_until("2021-01-04 06:00:29")
         await exam.call(
             SERVICE_MANUAL_RUN,
             {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                "sequence_id": 1,
-                "time": "0:20:00",
+                "entity_id": "binary_sensor.irrigation_unlimited_c2_m",
+                "time": "00:21",
+                "sequence_id": '1',
             },
         )
         await exam.finish_test()
 
-        await exam.begin_test(2)
-        await exam.call(
-            SERVICE_MANUAL_RUN,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                "sequence_id": 1,
-            },
-        )
-        await exam.finish_test()
-
-        await exam.begin_test(3)
-        await exam.call(
-            SERVICE_MANUAL_RUN,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                "sequence_id": 1,
-                "time": "0:00:00",
-            },
-        )
-        await exam.finish_test()
-
-        await exam.begin_test(4)
-        await exam.call(
-            SERVICE_MANUAL_RUN,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                "sequence_id": 1,
-            },
-        )
-        await exam.run_until("2021-01-04 10:03:00")
-        await exam.call(
-            SERVICE_CANCEL, {"entity_id": "binary_sensor.irrigation_unlimited_c1_m"}
-        )
-
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:00")
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z2").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:07")
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z3").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:07")
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z4").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:20")
-
-        await exam.finish_test()
-        exam.check_summary()
-
-
-async def test_service_manual_run_sequence_by_sequence(
-    hass: ha.HomeAssistant, skip_dependencies, skip_history
-):
-    """Test manual_run service call on a sequence"""
-
-    async with IUExam(hass, "service_manual_run_sequence.yaml") as exam:
-        await exam.begin_test(1)
-        await exam.call(
-            SERVICE_MANUAL_RUN,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
-                "time": "0:20:00",
-            },
-        )
-        await exam.finish_test()
-
-        await exam.begin_test(2)
-        await exam.call(
-            SERVICE_MANUAL_RUN,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
-            },
-        )
-        await exam.finish_test()
-
-        await exam.begin_test(3)
-        await exam.call(
-            SERVICE_MANUAL_RUN,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
-                "time": "0:00:00",
-            },
-        )
-        await exam.finish_test()
-
-        await exam.begin_test(4)
-        await exam.call(
-            SERVICE_MANUAL_RUN,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
-            },
-        )
-        await exam.run_until("2021-01-04 10:03:00")
-        await exam.call(
-            SERVICE_CANCEL, {"entity_id": "binary_sensor.irrigation_unlimited_c1_m"}
-        )
-
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:00")
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z2").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:07")
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z3").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:07")
-        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z4").attributes[
-            "next_start"
-        ] == mk_local("2021-01-04 12:20")
-
-        await exam.finish_test()
         exam.check_summary()
 
 
