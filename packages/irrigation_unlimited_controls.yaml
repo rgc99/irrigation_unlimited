@@ -22,6 +22,11 @@ input_select:
     options:
       - <none>
 
+  irrigation_unlimited_sequence_zones:
+    name: Irrigation Unlimited Sequence Zones
+    options:
+      - <none>
+
 input_datetime:
   irrigation_unlimited_run_time:
     name: Run Time
@@ -44,3 +49,51 @@ automation:
           entity_id: input_select.irrigation_unlimited_sequences
           section: sequences
           first: <none>
+
+  - alias: Irrigation Unlimited Entities Change
+    triggers:
+      - trigger: state
+        entity_id:
+          - input_select.irrigation_unlimited_entities
+        from: <none>
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id:
+            - input_select.irrigation_unlimited_sequences
+        data:
+          option: <none>
+      - action: input_select.set_options
+        target:
+          entity_id:
+            - input_select.irrigation_unlimited_sequence_zones
+        data:
+          options:
+            - <none>
+
+  - alias: Irrigation Unlimited Sequences Change
+    triggers:
+      - trigger: state
+        entity_id:
+          - input_select.irrigation_unlimited_sequences
+        from: <none>
+    actions:
+      # Set entities to <none>
+      - action: input_select.select_option
+        target:
+          entity_id:
+            - input_select.irrigation_unlimited_entities
+        data:
+          option: <none>
+
+  - alias: Irrigation Unlimited Sequences Select
+    triggers:
+      - trigger: template
+        value_template: '{{ is_state("input_select.irrigation_unlimited_sequences", "<none>") == False }}'
+    actions:
+      - action: irrigation_unlimited.list_config
+        data:
+          entity_id: input_select.irrigation_unlimited_sequence_zones
+          section: sequence_zones
+          first: <none>
+          controller_sequence_entity: input_select.irrigation_unlimited_sequences
