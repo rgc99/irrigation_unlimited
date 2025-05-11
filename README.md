@@ -1386,7 +1386,6 @@ automation:
       - action: smart_irrigation.reset_bucket
         entity_id: sensor.smart_irrigation_[zone_name] # <== Match to the Smart Irrigation entity_id as above
         data: {}
-    mode: single
 ```
 
 ### 9.3. Overnight watering
