@@ -1380,7 +1380,7 @@ automation:
       - trigger: event
         event_type: irrigation_unlimited_finish
     condition:
-      - "{{ trigger.event.data.schedule.index }}" # Not a manual run
+      - "{{ trigger.event.data.schedule.index is not none }}" # Not a manual run
       - "{{ trigger.event.data.entity_id == 'binary_sensor.irrigation_unlimited_c1_s1' }}" # <== Match to the Irrigation Unlimited entity_id as above
     actions:
       - action: smart_irrigation.reset_bucket
