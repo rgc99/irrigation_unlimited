@@ -1,8 +1,12 @@
 """irrigation_unlimited service adjust_time tester"""
+from unittest.mock import patch
 import json
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
     SERVICE_TIME_ADJUST,
+)
+from custom_components.irrigation_unlimited.irrigation_unlimited import (
+    IULogger,
 )
 from tests.iu_test_support import IUExam
 
@@ -367,6 +371,17 @@ async def test_service_sequence_adjust_time_by_controller(
         exam.check_iu_entity('c1_s2', "off", {"adjustment": ""})
         await exam.finish_test()
 
+        await exam.begin_test(14)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": "seq_1",
+                "percentage": 50,
+            },
+        )
+        await exam.finish_test()
+
         exam.check_summary()
 
 
@@ -524,15 +539,38 @@ async def test_service_sequence_adjust_time_bad_by_controller(
 
         # Service call for sequence with a bad sequence_id
         await exam.begin_test(1)
-        await exam.call(
-            SERVICE_TIME_ADJUST,
-            {
-                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                "sequence_id": 999,
-                "reset": None,
-            },
-        )
+        with patch.object(IULogger, "_format") as mock:
+            await exam.call(
+                SERVICE_TIME_ADJUST,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "sequence_id": 999,
+                    "reset": None,
+                },
+            )
         await exam.finish_test()
+        assert (
+            sum([1 for call in mock.call_args_list if call.args[1] == "SEQUENCE_ID"])
+            == 1
+        )
+
+        # Service call for sequence with a bad sequence_id (reference)
+        await exam.begin_test(1)
+        with patch.object(IULogger, "_format") as mock:
+            await exam.call(
+                SERVICE_TIME_ADJUST,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "sequence_id": [1, 'no_exist'],
+                    "reset": None,
+                },
+            )
+        await exam.finish_test()
+        assert (
+            sum([1 for call in mock.call_args_list if call.args[1] == "SEQUENCE_ID"])
+            == 1
+        )
+
 
 
 async def test_service_sequence_adjust_time_by_sequence(
@@ -878,6 +916,16 @@ async def test_service_sequence_adjust_time_by_sequence(
             assert data["controllers"][0]["sequences"][1]["adjustment"] == ""
         exam.check_iu_entity('c1_s1', "off", {"adjustment": ""})
         exam.check_iu_entity('c1_s2', "off", {"adjustment": ""})
+        await exam.finish_test()
+
+        await exam.begin_test(14)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                "percentage": 50,
+            },
+        )
         await exam.finish_test()
 
         exam.check_summary()

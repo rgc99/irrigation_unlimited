@@ -262,6 +262,35 @@ async def test_service_adjust_time_basic(
         assert sta.attributes["adjustment"] == "%100.0"
         await exam.finish_test()
 
+        await exam.begin_test(19)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "percentage": 50,
+                "zones": ['zone_1', 'zone_2']
+            },
+        )
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        assert sta.attributes["adjustment"] == "%50.0"
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+        assert sta.attributes["adjustment"] == "%50.0"
+        await exam.finish_test()
+
+        await exam.begin_test(20)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "percentage": 25,
+                "zones": 0
+            },
+        )
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
+        assert sta.attributes["adjustment"] == "%25.0"
+        sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
+        assert sta.attributes["adjustment"] == "%25.0"
+        await exam.finish_test()
         exam.check_summary()
 
 
@@ -1024,6 +1053,42 @@ async def test_service_suspend_controller_and_zone(
         exam.check_summary()
 
 
+async def test_service_bad(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test bad service calls in general"""
+    async with IUExam(hass, "service_bad.yaml") as exam:
+        await exam.begin_test(1)
+        with patch.object(IULogger, "_format") as mock:
+            await exam.call(
+                SERVICE_TIME_ADJUST,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "zones": 999,
+                    "reset": None,
+                },
+            )
+        await exam.finish_test()
+        assert (
+            sum([1 for call in mock.call_args_list if call.args[1] == "ZONE_ID"])
+            == 1
+        )
+
+        await exam.begin_test(2)
+        with patch.object(IULogger, "_format") as mock:
+            await exam.call(
+                SERVICE_TIME_ADJUST,
+                {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                    "zones": 'zone_x',
+                    "reset": None,
+                },
+            )
+        await exam.finish_test()
+        assert (
+            sum([1 for call in mock.call_args_list if call.args[1] == "ZONE_ID"])
+            == 1
+        )
+        exam.check_summary()
+
 async def test_service_suspend_sequence_bad(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
 ):
@@ -1120,4 +1185,14 @@ async def test_service_sequence_id_list(
         )
         await exam.finish_test()
 
+        await exam.begin_test(4)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": ['seq_1'],
+                "percentage": 200,
+            },
+        )
+        await exam.finish_test()
         exam.check_summary()

@@ -4964,19 +4964,42 @@ class IUController(IUBase):
         indexes and validate"""
         if sequences is None:
             return None
-        sequence_list: list[int] = []
+        result: list[int] = []
         if sequences == [0]:
-            sequence_list.extend(sequence.index for sequence in self._sequences)
+            result.extend(s.index for s in self._sequences)
         else:
-            for sequence_id in sequences:
-                id = int(sequence_id) - 1
-                if self.get_sequence(id) is not None:
-                    sequence_list.append(id)
+            for id in sequences:
+                if isinstance(id, int):
+                    sequence = self.get_sequence(id - 1)
+                else:
+                    sequence = self.find_sequence_by_id(id)
+                if sequence is not None:
+                    result.append(sequence.index)
                 else:
                     self._coordinator.logger.log_invalid_sequence(
-                        stime, self, sequence_id
+                        stime, self, id
                     )
-        return sequence_list
+        return result
+
+    def decode_zone_id(self, stime: datetime, zones: list | None) -> list[int] | None:
+        """Covert supplied 1's based id or zone_id into a list of indexes
+        and validate"""
+        if zones is None:
+            return None
+        result: list[int] = []
+        if zones == [0]:
+            result.extend(z.index for z in self._zones)
+        else:
+            for id in zones:
+                if isinstance(id, int):
+                    zone = self.get_zone(id - 1)
+                else:
+                    zone = self.find_zone_by_zone_id(id)
+                if zone is not None:
+                    result.append(zone.index)
+                else:
+                    self._coordinator.logger.log_invalid_zone(stime, self, id)
+        return result
 
     def manual_run_start(
         self, stime: datetime, delay: timedelta, queue: bool
@@ -5039,11 +5062,11 @@ class IUController(IUBase):
         """Handler for the adjust_time service call"""
         # pylint: disable=too-many-nested-blocks
         changed = False
-        zone_list: list[int] = data.get(CONF_ZONES)
         sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
         if sequence_list is None:
+            zone_list = self.decode_zone_id(stime, data.get(CONF_ZONES))
             for zone in self._zones:
-                if check_item(zone.index, zone_list):
+                if zone_list is None or zone.index in zone_list:
                     if zone.service_adjust_time(data, stime):
                         self.clear_zone_runs(zone)
                         changed = True
@@ -5058,9 +5081,9 @@ class IUController(IUBase):
         """Handler for the manual_run service call"""
         sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
         if sequence_list is None:
-            zone_list: list[int] = data.get(CONF_ZONES, None)
+            zone_list = self.decode_zone_id(stime, data.get(CONF_ZONES, None))
             for zone in self._zones:
-                if zone_list is None or zone.index + 1 in zone_list:
+                if zone_list is None or zone.index in zone_list:
                     zone.service_manual_run(data, stime)
         else:
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
@@ -5764,6 +5787,19 @@ class IULogger:
         """Warn that a service call involved a sequence but was not directed
         at the controller"""
         self._format(level, "ENTITY", vtime, "Sequence specified but entity_id is zone")
+
+    def log_invalid_zone(
+        self, vtime: datetime, controller: IUController, zone_id: int, level=WARNING
+    ) -> None:
+        """Warn that a service call with a zone is invalid"""
+        self._format(
+            level,
+            "ZONE_ID",
+            vtime,
+            f"Invalid zone id: "
+            f"controller: {IUBase.ids(controller, '0', 1)}, "
+            f"zone: {zone_id}",
+        )
 
     def log_invalid_sequence(
         self, vtime: datetime, controller: IUController, sequence_id: int, level=WARNING
