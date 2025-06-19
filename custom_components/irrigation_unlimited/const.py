@@ -126,6 +126,7 @@ CONF_EXTENDED_CONFIG = "extended_config"
 CONF_RESTORE_FROM_ENTITY = "restore_from_entity"
 CONF_READ_DELAY = "read_delay"
 CONF_SHOW_SEQUENCE_STATUS = "show_sequence_status"
+CONF_ZONE_IDS = "zone_ids"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
