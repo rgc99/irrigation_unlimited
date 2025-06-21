@@ -6595,7 +6595,7 @@ class IUCoordinator:
                 CONF_NAME: sequence.name,
             },
             CONF_RUN: {CONF_DURATION: round(sequence_run.total_time.total_seconds())},
-            CONF_ZONE_IDS: [z.zone_id for z in sequence.zone_list()]
+            CONF_ZONE_IDS: sorted(z.zone_id for z in sequence.zone_list())
         }
         if schedule is not None:
             data[CONF_SCHEDULE] = {
