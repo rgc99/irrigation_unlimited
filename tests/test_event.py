@@ -54,6 +54,7 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
                     },
                     "sequence": {"index": 0, "sequence_id": "seq_1", "name": "Seq 1"},
                     "run": {"duration": 5460},
+                    "zone_ids": ["zone_1", "zone_2", "zone_3", "zone_4"],
                     "schedule": {
                         "index": 0,
                         "schedule_id": "sched_1",
@@ -73,6 +74,7 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
                     },
                     "sequence": {"index": 0, "sequence_id": "seq_1", "name": "Seq 1"},
                     "run": {"duration": 5460},
+                    "zone_ids": ["zone_1", "zone_2", "zone_3", "zone_4"],
                     "schedule": {
                         "index": 0,
                         "schedule_id": "sched_1",
@@ -91,6 +93,7 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
                         "name": "Test controller 1",
                     },
                     "sequence": {"index": 1, "sequence_id": "seq_2", "name": "Seq 2"},
+                    "zone_ids": ["zone_1", "zone_2", "zone_3", "zone_4"],
                     "run": {"duration": 2280},
                     "schedule": {
                         "index": 0,
@@ -111,6 +114,7 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
                     },
                     "sequence": {"index": 1, "sequence_id": "seq_2", "name": "Seq 2"},
                     "run": {"duration": 2280},
+                    "zone_ids": ["zone_1", "zone_2", "zone_3", "zone_4"],
                     "schedule": {
                         "index": 0,
                         "schedule_id": "sched_2",
