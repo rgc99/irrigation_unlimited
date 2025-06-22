@@ -139,6 +139,7 @@ from .const import (
     CONF_ZONES,
     CONF_MINIMUM,
     CONF_MAXIMUM,
+    CONF_THRESHOLD,
     CONF_MONTH,
     EVENT_START,
     EVENT_FINISH,
@@ -1828,6 +1829,7 @@ class IUScheduleQueue(IURunQueue):
         # Config variables
         self._minimum: timedelta = None
         self._maximum: timedelta = None
+        self._threshold: timedelta = None
 
     def constrain(self, duration: timedelta) -> timedelta:
         """Impose constraints on the duration"""
@@ -1835,6 +1837,8 @@ class IUScheduleQueue(IURunQueue):
             duration = max(duration, self._minimum)
         if self._maximum is not None:
             duration = min(duration, self._maximum)
+        if self._threshold is not None and duration < self._threshold:
+            duration = timedelta(0)
         return duration
 
     def clear_runs(self) -> bool:
@@ -1946,8 +1950,10 @@ class IUScheduleQueue(IURunQueue):
         if all_zones is not None:
             self._minimum = wash_td(all_zones.get(CONF_MINIMUM, self._minimum))
             self._maximum = wash_td(all_zones.get(CONF_MAXIMUM, self._maximum))
+            self._threshold = wash_td(all_zones.get(CONF_THRESHOLD, self._threshold))
         self._minimum = wash_td(config.get(CONF_MINIMUM, self._minimum))
         self._maximum = wash_td(config.get(CONF_MAXIMUM, self._maximum))
+        self._threshold = wash_td(config.get(CONF_THRESHOLD, self._threshold))
         return self
 
 
