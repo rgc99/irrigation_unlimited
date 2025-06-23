@@ -63,7 +63,7 @@ irrigation_unlimited:
             - zone_id: 4
   testing:
     enabled: true
-    output_events: true
+    output_events: false
     show_log: false
     autoplay: false
     times:

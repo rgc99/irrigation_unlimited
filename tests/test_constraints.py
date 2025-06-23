@@ -1,9 +1,6 @@
 """irrigation_unlimited model test template"""
 # pylint: disable=unused-import
 import homeassistant.core as ha
-from custom_components.irrigation_unlimited.const import (
-    SERVICE_TIME_ADJUST,
-)
 from tests.iu_test_support import IUExam
 
 IUExam.quiet_mode()
