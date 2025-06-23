@@ -6588,6 +6588,14 @@ class IUCoordinator:
     ) -> None:
         """Send out a notification for start/finish to a sequence"""
         # pylint: disable=too-many-arguments
+
+        def zone_ids(sqr: IUSequenceRun) -> list[str]:
+            result: set[str] = set()
+            for run in sqr.runs:
+                if run.duration > timedelta(0):
+                    result.add(run.zone.zone_id)
+            return sorted(result)
+
         data = {
             CONF_ENTITY_ID: sequence.entity_id,
             CONF_CONTROLLER: {
@@ -6601,7 +6609,7 @@ class IUCoordinator:
                 CONF_NAME: sequence.name,
             },
             CONF_RUN: {CONF_DURATION: round(sequence_run.total_time.total_seconds())},
-            CONF_ZONE_IDS: sorted(z.zone_id for z in sequence.zone_list())
+            CONF_ZONE_IDS: zone_ids(sequence_run)
         }
         if schedule is not None:
             data[CONF_SCHEDULE] = {
