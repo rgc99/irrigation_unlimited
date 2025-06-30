@@ -37,7 +37,17 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         hass.bus.async_listen(f"{DOMAIN}_{EVENT_START}", handle_event)
         hass.bus.async_listen(f"{DOMAIN}_{EVENT_FINISH}", handle_event)
 
-        await exam.run_all()
+        await exam.run_test(1)
+        await exam.run_test(2)
+        await exam.begin_test(3)
+        await exam.call(
+            SERVICE_TIME_ADJUST,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_z4",
+                "actual": "0:00:00",
+            },
+        )
+        await exam.finish_test()
 
         exam.check_summary()
 
@@ -93,8 +103,8 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
                         "name": "Test controller 1",
                     },
                     "sequence": {"index": 1, "sequence_id": "seq_2", "name": "Seq 2"},
-                    "zone_ids": ["zone_1", "zone_2", "zone_3", "zone_4"],
                     "run": {"duration": 2280},
+                    "zone_ids": ["zone_1", "zone_2", "zone_3", "zone_4"],
                     "schedule": {
                         "index": 0,
                         "schedule_id": "sched_2",
@@ -118,6 +128,46 @@ async def test_events(hass: ha.HomeAssistant, skip_dependencies, skip_history):
                     "schedule": {
                         "index": 0,
                         "schedule_id": "sched_2",
+                        "name": "Schedule 1",
+                    },
+                },
+            },
+            {
+                "event_type": "irrigation_unlimited_start",
+                "event_time": mk_local("2021-01-04 06:05:00"),
+                "data": {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "ctrl_1",
+                        "name": "Test controller 1",
+                    },
+                    "sequence": {"index": 0, "sequence_id": "seq_1", "name": "Seq 1"},
+                    "run": {"duration": 3180},
+                    "zone_ids": ["zone_1", "zone_2", "zone_3"],
+                    "schedule": {
+                        "index": 0,
+                        "schedule_id": "sched_1",
+                        "name": "Schedule 1",
+                    },
+                },
+            },
+            {
+                "event_type": "irrigation_unlimited_finish",
+                "event_time": mk_local("2021-01-04 06:58:00"),
+                "data": {
+                    "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "ctrl_1",
+                        "name": "Test controller 1",
+                    },
+                    "sequence": {"index": 0, "sequence_id": "seq_1", "name": "Seq 1"},
+                    "run": {"duration": 3180},
+                    "zone_ids": ["zone_1", "zone_2", "zone_3"],
+                    "schedule": {
+                        "index": 0,
+                        "schedule_id": "sched_1",
                         "name": "Schedule 1",
                     },
                 },

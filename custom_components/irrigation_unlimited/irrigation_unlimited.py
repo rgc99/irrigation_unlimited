@@ -2922,6 +2922,8 @@ class IUSequenceRun(IUBase):
                             duration_adjusted = zone.runs.constrain(duration_adjusted)
                         else:
                             duration_adjusted = duration
+                        if duration_adjusted == timedelta(0):
+                            continue
 
                         zone_run_time = next_run
                         for zone_repeat in range(sequence_zone.repeat):

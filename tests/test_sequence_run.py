@@ -1,4 +1,5 @@
 """irrigation_unlimited test unit for IUSequenceRun object"""
+
 # pylint: disable=too-many-lines
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
@@ -864,14 +865,14 @@ async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 "enabled": True,
                 "suspended": None,
                 "name": "Seq 2",
-                "start": mk_local("2021-01-04 06:10"),
+                "start": None,
                 "duration": 0,
                 "status": "off",
                 "icon": "mdi:stop-circle-outline",
                 "adjustment": "%0.0",
                 "schedule": {
-                    "index": 0,
-                    "name": "Schedule 1",
+                    "index": None,
+                    "name": None,
                 },
                 "zones": [
                     {
