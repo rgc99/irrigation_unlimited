@@ -4586,7 +4586,9 @@ class IUController(IUBase):
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
         self._queue_manual = config.get(CONF_QUEUE_MANUAL, self._queue_manual)
-        self._show_sequence_status = config.get(CONF_SHOW_SEQUENCE_STATUS, self._show_sequence_status)
+        self._show_sequence_status = config.get(
+            CONF_SHOW_SEQUENCE_STATUS, self._show_sequence_status
+        )
         all_zones = config.get(CONF_ALL_ZONES_CONFIG)
         zidx: int = 0
         for zidx, zone_config in enumerate(config[CONF_ZONES]):
@@ -4983,9 +4985,7 @@ class IUController(IUBase):
                 if sequence is not None:
                     result.append(sequence.index)
                 else:
-                    self._coordinator.logger.log_invalid_sequence(
-                        stime, self, id
-                    )
+                    self._coordinator.logger.log_invalid_sequence(stime, self, id)
         return result
 
     def decode_zone_id(self, stime: datetime, zones: list | None) -> list[int] | None:
@@ -5796,7 +5796,11 @@ class IULogger:
         self._format(level, "ENTITY", vtime, "Sequence specified but entity_id is zone")
 
     def log_invalid_zone(
-        self, vtime: datetime, controller: IUController, zone_id: int, level=WARNING
+        self,
+        vtime: datetime,
+        controller: IUController,
+        zone_id: int | str,
+        level=WARNING,
     ) -> None:
         """Warn that a service call with a zone is invalid"""
         self._format(
@@ -5809,7 +5813,11 @@ class IULogger:
         )
 
     def log_invalid_sequence(
-        self, vtime: datetime, controller: IUController, sequence_id: int, level=WARNING
+        self,
+        vtime: datetime,
+        controller: IUController | None,
+        sequence_id: int | str,
+        level=WARNING,
     ) -> None:
         """Warn that a service call with a sequence_id is invalid"""
         self._format(
@@ -6609,7 +6617,7 @@ class IUCoordinator:
                 CONF_NAME: sequence.name,
             },
             CONF_RUN: {CONF_DURATION: round(sequence_run.total_time.total_seconds())},
-            CONF_ZONE_IDS: zone_ids(sequence_run)
+            CONF_ZONE_IDS: zone_ids(sequence_run),
         }
         if schedule is not None:
             data[CONF_SCHEDULE] = {
