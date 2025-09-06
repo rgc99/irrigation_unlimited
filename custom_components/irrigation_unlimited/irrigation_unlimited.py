@@ -1699,14 +1699,14 @@ class IURunQueue(list[IURun]):
         while i >= 0:
             run = self[i]
             if not run.is_sequence:
-                if run.expired and stime > run.end_time + postamble:
+                if run.expired and stime >= run.end_time + postamble:
                     self.pop_run(i)
                     modified = True
             else:
                 if (
                     run.sequence_run.expired
                     and run.expired
-                    and stime > run.end_time + postamble
+                    and stime >= run.end_time + postamble
                 ):
                     self.pop_run(i)
                     modified = True
@@ -3501,12 +3501,11 @@ class IUSequenceQueue(list[IUSequenceRun]):
         super().clear()
 
     def clear_runs(self) -> bool:
-        """Clear out the queue except for manual and running schedules."""
+        """Clear out future schedules."""
         modified = False
         i = len(self) - 1
         while i >= 0:
-            sqr = self[i]
-            if not (sqr.is_manual() or sqr.running):
+            if (sqr := self[i]).future:
                 for run in sqr.runs:
                     run.zone.runs.remove_run(run)
                     run.zone.request_update()
@@ -3543,9 +3542,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
         i = len(self) - 1
         while i >= 0:
             sqr = self[i]
-            if sqr.expired and stime > sqr.end_time + postamble:
-                self._current_run = None
-                self._next_run = None
+            if sqr.expired and stime >= sqr.end_time + postamble:
                 self.pop(i)
                 modified = True
             i -= 1
@@ -3554,6 +3551,13 @@ class IUSequenceQueue(list[IUSequenceRun]):
     def update_queue(self, stime: datetime) -> IURQStatus:
         """Update the run queue"""
         # pylint: disable=too-many-branches
+
+        def valid_current(run: IUSequenceRun) -> bool:
+            return (run.running or run.paused) and run.on_time() != timedelta(0)
+
+        def valid_next(run: IUSequenceRun) -> bool:
+            return run.future and run.on_time() != timedelta(0)
+
         status = IURQStatus(0)
 
         if self.sort():
@@ -3561,21 +3565,25 @@ class IUSequenceQueue(list[IUSequenceRun]):
 
         for run in self:
             if run.update(stime):
-                self._current_run = None
-                self._next_run = None
                 status |= IURQStatus.CHANGED
 
+        if self._current_run is not None and not valid_current(self._current_run):
+            self._current_run = None
+            status |= IURQStatus.UPDATED
         if self._current_run is None:
             for run in self:
-                if (run.running or run.paused) and run.on_time() != timedelta(0):
+                if valid_current(run):
                     self._current_run = run
                     self._next_run = None
                     status |= IURQStatus.UPDATED
                     break
 
+        if self._next_run is not None and not valid_next(self._next_run):
+            self._next_run = None
+            status |= IURQStatus.UPDATED
         if self._next_run is None:
             for run in self:
-                if not (run.running or run.paused) and run.on_time() != timedelta(0):
+                if valid_next(run):
                     self._next_run = run
                     status |= IURQStatus.UPDATED
                     break
