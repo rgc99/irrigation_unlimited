@@ -257,6 +257,7 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `enabled` | bool | true | Enable/disable the zone |
 | `minimum` | [duration](#142-duration-time-period) | '00:01' | The minimum run time |
 | `maximum` | [duration](#142-duration-time-period) | | The maximum run time |
+| `threshold` | [duration](#142-duration-time-period) | | The zone will not run until the duration meets the threshold |
 | `duration` | [duration](#142-duration-time-period) | | The default run time. Used when no `time` is provided for a manual run |
 | `future_span` | number | 3 | Number of days to look ahead |
 | `allow_manual` | bool | false | Allow manual run even when disabled |
@@ -1437,6 +1438,7 @@ These events are fired when a sequence starts and finishes. The `trigger.event.d
 | Field | Description |
 | ----- | ----------- |
 | `entity_id` | The sequence entity i.e. `binary_sensor.irrigation_unlimted_c1_s1`. |
+| `zone_ids` | The zones scheduled to run. |
 | `controller.index` | The sequential index of the controller. |
 | `controller.controller_id` | The unique id of the controller. |
 | `controller.name` | The friendly name of the controller. |
