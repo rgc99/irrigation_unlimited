@@ -1703,14 +1703,11 @@ class IURunQueue(list[IURun]):
                 start = run.start_time
             return start.replace(tzinfo=None).isoformat(timespec="seconds")
 
-        modified: bool = False
-        if not self._sorted:
-            super().sort(key=sorter)
-            self._current_run = None
-            self._next_run = None
-            self._sorted = True
-            modified = True
-        return modified
+        if self._sorted:
+            return False
+        super().sort(key=sorter)
+        self._sorted = True
+        return True
 
     def remove_expired(self, stime: datetime, postamble: timedelta) -> bool:
         """Remove any expired runs from the queue"""
@@ -1743,8 +1740,6 @@ class IURunQueue(list[IURun]):
         ):
             if len(self) > 0:
                 self.pop_run(0)
-            self._current_run = None
-            self._next_run = None
             modified = True
         return modified
 
@@ -1781,6 +1776,8 @@ class IURunQueue(list[IURun]):
         status = IURQStatus(0)
 
         if self.sort():
+            self._current_run = None
+            self._next_run = None
             status |= IURQStatus.SORTED
 
         if self._cancel_request is not None:
@@ -1906,8 +1903,6 @@ class IUScheduleQueue(IURunQueue):
         elif self._current_run is not None and not self._current_run.is_manual():
             self.pop_run(0)
 
-        self._current_run = None
-        self._next_run = None
         duration = max(duration, granularity_time())
         return self.add(stime, start_time, duration, zone, None, None)
 
