@@ -6,7 +6,7 @@ from datetime import datetime, time, timedelta, timezone, date
 from collections import deque
 from collections.abc import Iterator
 from types import MappingProxyType
-from typing import OrderedDict, NamedTuple, Callable, Awaitable
+from typing import OrderedDict, NamedTuple, Callable, Awaitable, Iterable
 from logging import WARNING, Logger, getLogger, INFO, DEBUG, ERROR
 import uuid
 import time as tm
@@ -324,11 +324,6 @@ def str_to_td(atime: str) -> timedelta:
     return timedelta(hours=dur.hour, minutes=dur.minute, seconds=dur.second)
 
 
-def utc_eot() -> datetime:
-    """Return the end of time in UTC format"""
-    return datetime.max.replace(tzinfo=timezone.utc)
-
-
 def render_positive_time_period(data: dict, key: str) -> None:
     """Resolve a template that specifies a timedelta"""
     if key in data:
@@ -369,6 +364,35 @@ def suspend_until_date(
     else:
         suspend_time = None
     return wash_dt(suspend_time)
+
+
+class IUDTMin:
+    """Class to record a minimum datetime value. The default value is
+    the end of time"""
+
+    eot = datetime.max.replace(tzinfo=timezone.utc)
+
+    def __init__(self, *args: datetime | Iterable[datetime]):
+        self.min = self.eot
+        for arg in args:
+            self.record(arg)
+
+    def record(self, dates: datetime | Iterable[datetime] | None) -> "IUDTMin":
+        """Take note of the value(s) passed and record the new minimum. None
+        values are ignored"""
+
+        def check_item(d: datetime):
+            if d < self.min:
+                self.min = d
+            return
+
+        if isinstance(dates, datetime):
+            check_item(dates)
+        elif isinstance(dates, Iterable):
+            for item in dates:
+                if item is not None:
+                    check_item(item)
+        return self
 
 
 class IUJSONEncoder(json.JSONEncoder):
@@ -931,9 +955,7 @@ class IUSwitch:
 
     def next_event(self) -> datetime:
         """Return the next time of interest"""
-        if self._check_back_time is not None:
-            return self._check_back_time
-        return utc_eot()
+        return IUDTMin(self._check_back_time).min
 
     def clear(self) -> None:
         """Reset this object"""
@@ -1790,14 +1812,11 @@ class IURunQueue(list[IURun]):
                     break
 
         # Figure out the next state change
-        dates: list[datetime] = [utc_eot()]
+        dmin = IUDTMin()
         for run in self:
             if not (run.expired or run.paused):
-                if run.running:
-                    dates.append(run.end_time)
-                else:
-                    dates.append(run.start_time)
-        self._next_event = min(dates)
+                dmin.record(run.end_time if run.running else run.start_time)
+        self._next_event = dmin.min
 
         return status
 
@@ -1809,9 +1828,7 @@ class IURunQueue(list[IURun]):
 
     def next_event(self) -> datetime:
         """Return the time of the next state change"""
-        dates: list[datetime] = [self._next_event]
-        dates.append(self._cancel_request)
-        return min(d for d in dates if d is not None)
+        return IUDTMin(self._next_event, self._cancel_request).min
 
     def as_list(self) -> list:
         """Return a list of runs"""
@@ -2439,14 +2456,12 @@ class IUZone(IUBase):
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""
-        dates: list[datetime] = [
-            self._run_queue.next_event(),
-            self._switch.next_event(),
-        ]
+        dmin = IUDTMin(
+            self._suspend_until, self._run_queue.next_event(), self._switch.next_event()
+        )
         if self._is_on and self._sensor_last_update is not None:
-            dates.append(self._sensor_last_update + self._coordinator.refresh_interval)
-        dates.append(self._suspend_until)
-        return min(d for d in dates if d is not None)
+            dmin.record(self._sensor_last_update + self._coordinator.refresh_interval)
+        return dmin.min
 
     def check_switch(self, resync: bool, stime: datetime) -> list[str]:
         """Check the linked entity is in sync"""
@@ -2729,10 +2744,7 @@ class IUSequenceZone(IUBase):
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""
-        result = utc_eot()
-        if self._suspend_until is not None:
-            result = min(self._suspend_until, result)
-        return result
+        return IUDTMin(self._suspend_until).min
 
 
 class IUSequenceZoneRun(NamedTuple):
@@ -3588,13 +3600,10 @@ class IUSequenceQueue(list[IUSequenceRun]):
                     status |= IURQStatus.UPDATED
                     break
 
-        dates: list[datetime] = [utc_eot()]
+        dmin = IUDTMin()
         for run in self:
-            if run.running:
-                dates.append(run.end_time)
-            else:
-                dates.append(run.start_time)
-        self._next_event = min(dates)
+            dmin.record(run.end_time if run.running else run.start_time)
+        self._next_event = dmin.min
 
         return status
 
@@ -4147,10 +4156,9 @@ class IUSequence(IUBase):
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""
-        dates: list[datetime] = [utc_eot()]
-        dates.append(self._suspend_until)
-        dates.extend(sqz.next_awakening() for sqz in self._zones)
-        return min(d for d in dates if d is not None)
+        return IUDTMin(
+            self._suspend_until, (sqz.next_awakening() for sqz in self._zones)
+        ).min
 
     def finalise(self) -> None:
         """Shutdown the sequence"""
@@ -4952,16 +4960,16 @@ class IUController(IUBase):
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""
-        dates: list[datetime] = [
+        dmin = IUDTMin(
+            self._suspend_until,
             self._run_queue.next_event(),
             self._switch.next_event(),
-            self._suspend_until,
-        ]
-        dates.extend(zone.next_awakening() for zone in self._zones)
-        dates.extend(seq.next_awakening() for seq in self._sequences)
+            (zone.next_awakening() for zone in self._zones),
+            (seq.next_awakening() for seq in self._sequences),
+        )
         if self._is_on and self._sensor_last_update is not None:
-            dates.append(self._sensor_last_update + self._coordinator.refresh_interval)
-        return min(d for d in dates if d is not None)
+            dmin.record(self._sensor_last_update + self._coordinator.refresh_interval)
+        return dmin.min
 
     def check_switch(self, resync: bool, stime: datetime) -> list[str]:
         """Check the linked entity is in sync"""
@@ -6091,7 +6099,7 @@ class IUClock:
     def next_awakening(self, atime: datetime) -> datetime:
         """Return the time for the next event"""
         if self._finalised:
-            return utc_eot()
+            return IUDTMin.eot
         if not self._coordinator.initialised:
             return atime + timedelta(seconds=5)
         if self._fixed_clock:
@@ -6110,7 +6118,7 @@ class IUClock:
             result = self._coordinator.next_awakening()
 
         # Midnight rollover
-        if result == utc_eot() or (
+        if result == IUDTMin.eot or (
             dt.as_local(self._coordinator.tester.virtual_time(atime)).toordinal()
             != dt.as_local(self._coordinator.tester.virtual_time(result)).toordinal()
         ):
@@ -6585,9 +6593,7 @@ class IUCoordinator:
 
     def next_awakening(self) -> datetime:
         """Return the next event time"""
-        dates: list[datetime] = [utc_eot()]
-        dates.extend(ctr.next_awakening() for ctr in self._controllers)
-        return min(d for d in dates if d is not None)
+        return IUDTMin(ctr.next_awakening() for ctr in self._controllers).min
 
     def check_switches(self, resync: bool, stime: datetime) -> list[str]:
         """Check if entities match current status"""
