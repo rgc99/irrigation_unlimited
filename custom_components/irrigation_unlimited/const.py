@@ -128,6 +128,7 @@ CONF_RESTORE_FROM_ENTITY = "restore_from_entity"
 CONF_READ_DELAY = "read_delay"
 CONF_SHOW_SEQUENCE_STATUS = "show_sequence_status"
 CONF_ZONE_IDS = "zone_ids"
+CONF_ENTITY_STATES = "entity_states"
 
 # Defaults
 DEFAULT_NAME = DOMAIN
@@ -155,6 +156,8 @@ EVENT_FINISH = "finish"
 EVENT_INCOMPLETE = "incomplete"
 EVENT_SYNC_ERROR = "sync_error"
 EVENT_SWITCH_ERROR = "switch_error"
+EVENT_VALVE_ON = "valve_on"
+EVENT_VALVE_OFF = "valve_off"
 
 # Status
 STATUS_DISABLED = "disabled"

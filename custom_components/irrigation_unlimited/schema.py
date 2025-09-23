@@ -97,6 +97,7 @@ from .const import (
     CONF_READ_DELAY,
     CONF_SHOW_CONFIG,
     CONF_SHOW_SEQUENCE_STATUS,
+    CONF_ENTITY_STATES,
 )
 
 IU_ID = r"^[a-z0-9]+(_[a-z0-9]+)*$"
@@ -238,6 +239,7 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_ZONE_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
+        vol.Optional(CONF_ENTITY_STATES): vol.Any("none", "all", "on", "off"),
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_ALLOW_MANUAL): cv.boolean,
         vol.Optional(CONF_MINIMUM): cv.positive_time_period,
@@ -264,6 +266,7 @@ ALL_ZONES_SCHEMA = vol.Schema(
         vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_DURATION): cv.positive_time_period_template,
         vol.Optional(CONF_USER): vol.All(USER_SCHEMA),
+        vol.Optional(CONF_ENTITY_STATES): vol.Any("none", "all", "on", "off"),
     }
 )
 
@@ -306,6 +309,7 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Optional(CONF_NAME): cv.string,
         vol.Optional(CONF_CONTROLLER_ID): cv.matches_regex(IU_ID),
         vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
+        vol.Optional(CONF_ENTITY_STATES): vol.Any("none", "all", "on", "off"),
         vol.Optional(CONF_PREAMBLE): cv.time_period,
         vol.Optional(CONF_POSTAMBLE): cv.time_period,
         vol.Optional(CONF_ENABLED): cv.boolean,

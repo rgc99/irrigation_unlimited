@@ -143,6 +143,8 @@ from .const import (
     CONF_MONTH,
     EVENT_START,
     EVENT_FINISH,
+    EVENT_VALVE_ON,
+    EVENT_VALVE_OFF,
     ICON_BLOCKED,
     ICON_CONTROLLER_OFF,
     ICON_CONTROLLER_ON,
@@ -224,6 +226,7 @@ from .const import (
     CONF_RESTORE_FROM_ENTITY,
     CONF_SHOW_SEQUENCE_STATUS,
     CONF_ZONE_IDS,
+    CONF_ENTITY_STATES,
 )
 
 _LOGGER: Logger = getLogger(__package__)
@@ -872,6 +875,7 @@ class IUSwitch:
         self._zone = zone
         # Config parameters
         self._switch_entity_id: list[str]
+        self._switch_entity_states = "all"
         self._check_back_states = "all"
         self._check_back_delay = timedelta(seconds=30)
         self._check_back_retries: int = 3
@@ -895,6 +899,13 @@ class IUSwitch:
                 return STATE_OPEN if state else STATE_CLOSED
             case _:
                 return STATE_ON if state else STATE_OFF
+
+    def _allow_set(self, state: bool) -> bool:
+        return (
+            self._switch_entity_states == "all"
+            or (self._switch_entity_states == "on" and state)
+            or (self._switch_entity_states == "off" and not state)
+        )
 
     def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
         """Make the HA call to physically turn the switch on/off"""
@@ -922,6 +933,15 @@ class IUSwitch:
                 make_call(ent)
         else:
             make_call(entity_id)
+
+    def _notify_valve(
+        self, reason: int, stime: datetime, entity_id: str | list[str]
+    ) -> None:
+        """Send out a valve notification"""
+
+        self._coordinator.notify_valve(
+            reason, stime, self._state, entity_id, self._controller, self._zone
+        )
 
     def _check_back(self, atime: datetime) -> None:
         """Recheck the switch in HA to see if state concurs"""
@@ -965,6 +985,11 @@ class IUSwitch:
         """Load switch data from the configuration"""
 
         def load_params(config: OrderedDict) -> None:
+            self._switch_entity_states = config.get(
+                CONF_ENTITY_STATES, self._switch_entity_states
+            )
+
+        def load_check_back_params(config: OrderedDict) -> None:
             if config is None:
                 return
             self._check_back_states = config.get(CONF_STATES, self._check_back_states)
@@ -980,10 +1005,12 @@ class IUSwitch:
             self._check_back_toggle = config.get(CONF_TOGGLE, self._check_back_toggle)
 
         self.clear()
-        self._switch_entity_id = config.get(CONF_ENTITY_ID)
         if all_zones is not None:
-            load_params(all_zones.get(CONF_CHECK_BACK))
-        load_params(config.get(CONF_CHECK_BACK))
+            load_params(all_zones)
+            load_check_back_params(all_zones.get(CONF_CHECK_BACK))
+        self._switch_entity_id = config.get(CONF_ENTITY_ID)
+        load_params(config)
+        load_check_back_params(config.get(CONF_CHECK_BACK))
         return self
 
     def muster(self, stime: datetime) -> int:
@@ -1018,10 +1045,12 @@ class IUSwitch:
 
             return is_valid
 
-        def do_resync(entity_id: str) -> None:
-            if self._check_back_toggle:
-                self._set_switch(entity_id, not self._state)
-            self._set_switch(entity_id, self._state)
+        def do_resync(stime: datetime, entity_id: str) -> None:
+            if self._allow_set(self._state):
+                if self._check_back_toggle:
+                    self._set_switch(entity_id, not self._state)
+                self._set_switch(entity_id, self._state)
+            self._notify_valve(2, stime, entity_id)
 
         if self._switch_entity_id is not None:
             if self._check_back_entity_id is None:
@@ -1029,12 +1058,12 @@ class IUSwitch:
                     expected = self._state_name(entity_id, self._state)
                     if not _check_entity(entity_id, expected):
                         if resync:
-                            do_resync(entity_id)
+                            do_resync(stime, entity_id)
             else:
                 expected = self._state_name(self._check_back_entity_id, self._state)
                 if not _check_entity(self._check_back_entity_id, expected):
                     if resync and len(self._switch_entity_id) == 1:
-                        do_resync(self._switch_entity_id)
+                        do_resync(stime, self._switch_entity_id)
         return result
 
     def call_switch(self, state: bool, stime: datetime = None) -> None:
@@ -1046,7 +1075,8 @@ class IUSwitch:
                 self.check_switch(stime, False, True)
                 self._check_back_time = None
             self._state = state
-            self._set_switch(self._switch_entity_id, state)
+            if self._allow_set(state):
+                self._set_switch(self._switch_entity_id, state)
             if stime is not None and (
                 self._check_back_states == "all"
                 or (self._check_back_states == "on" and state)
@@ -1054,6 +1084,9 @@ class IUSwitch:
             ):
                 self._check_back_resync_count = 0
                 self._check_back_time = stime + self._check_back_delay
+        else:
+            self._state = state
+        self._notify_valve(1, stime, self._switch_entity_id)
 
 
 class IUVolumeSensorError(Exception):
@@ -1598,6 +1631,7 @@ class IURunQueue(list[IURun]):
         self._sorted: bool = False
         self._cancel_request: datetime = None
         self._next_event: datetime = None
+        self._last_check_run: IURun = None
 
     @property
     def current_run(self) -> IURun:
@@ -1764,6 +1798,16 @@ class IURunQueue(list[IURun]):
         """Update the status of the runs"""
         for run in self:
             run.update_status(stime)
+
+    def check_last_run(self) -> bool:
+        """When on see if the run has changed"""
+        result = (
+            self._current_run is not None
+            and self._last_check_run is not None
+            and self._current_run != self._last_check_run
+        )
+        self._last_check_run = self._current_run
+        return result
 
     def update_queue(self) -> IURQStatus:
         """Update the run queue. Sort the queue, remove expired runs
@@ -2162,6 +2206,11 @@ class IUZone(IUBase):
     def user(self) -> dict:
         """Return the arbitrary user information"""
         return self._user
+
+    @property
+    def switch(self) -> IUSwitch:
+        """Return the switch"""
+        return self._switch
 
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
@@ -4872,12 +4921,20 @@ class IUController(IUBase):
                 self._volume.start_record(stime)
             else:
                 self._volume.end_record(stime)
+        if self._run_queue.check_last_run():
+            self._coordinator.notify_valve(
+                3, stime, True, self._switch.switch_entity_id, self, None
+            )
 
         # Handle on zones after master
         for zone in (self._zones[i] for i in zones_changed):
             if zone.is_on:
                 zone.call_switch(zone.is_on, stime)
                 zone.volume.start_record(stime)
+            if zone.runs.check_last_run():
+                self._coordinator.notify_valve(
+                    3, stime, True, zone.switch.switch_entity_id, self, zone
+                )
 
         return state_changed
 
@@ -6643,6 +6700,57 @@ class IUCoordinator:
                 CONF_NAME: RES_MANUAL,
             }
         self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
+
+    def notify_valve(
+        self,
+        reason: int,
+        stime: datetime,
+        state: bool,
+        entity_id: str | list[str],
+        controller: IUController,
+        zone: IUZone,
+    ) -> None:
+        """Send out notification about valve event. Reason 1=on/off, 2=sync
+        3=run change"""
+
+        def notify(event_type: str, entity: str, data: dict) -> None:
+            data[CONF_ENTITY_ID] = entity
+            self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
+
+        event_type = EVENT_VALVE_ON if state else EVENT_VALVE_OFF
+
+        duration = timedelta(0)
+        if stime is not None:
+            if zone is None:
+                if controller.runs.current_run is not None:
+                    duration = controller.runs.current_run.end_time - stime
+            else:
+                if zone.runs.current_run is not None:
+                    duration = zone.runs.current_run.end_time - stime
+
+        data = {
+            "type": reason,
+            CONF_DURATION: round(duration.total_seconds()),
+            CONF_CONTROLLER: {
+                CONF_INDEX: controller.index,
+                CONF_CONTROLLER_ID: controller.controller_id,
+                CONF_NAME: controller.name,
+            },
+        }
+        if zone is not None:
+            data[CONF_ZONE] = {
+                CONF_INDEX: zone.index,
+                CONF_ZONE_ID: zone.zone_id,
+                CONF_NAME: zone.name,
+            }
+        else:
+            data[CONF_ZONE] = {CONF_INDEX: None, CONF_ZONE_ID: None, CONF_NAME: None}
+
+        if isinstance(entity_id, list):
+            for ent in entity_id:
+                notify(event_type, ent, data)
+        else:
+            notify(event_type, entity_id, data)
 
     def notify_switch(
         self,
