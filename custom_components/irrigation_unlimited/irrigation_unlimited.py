@@ -6723,37 +6723,50 @@ class IUCoordinator:
         3=run change"""
 
         def notify(event_type: str, entity: str, data: dict) -> None:
-            data[CONF_ENTITY_ID] = entity
+            data[ATTR_ENTITY_ID] = entity
             self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
 
         event_type = EVENT_VALVE_ON if state else EVENT_VALVE_OFF
 
         duration = timedelta(0)
-        if stime is not None:
-            if zone is None:
-                if controller.runs.current_run is not None:
-                    duration = controller.runs.current_run.end_time - stime
-            else:
-                if zone.runs.current_run is not None:
-                    duration = zone.runs.current_run.end_time - stime
-
+        volume: float
+        flow_rate: float
+        iu_id: str
+        uid = controller.controller_id
+        if zone is None:
+            if stime is not None and controller.runs.current_run is not None:
+                duration = controller.runs.current_run.end_time - stime
+            volume = controller.volume.total
+            flow_rate = controller.volume.flow_rate
+            iu_id = controller.unique_id
+        else:
+            if stime is not None and zone.runs.current_run is not None:
+                duration = zone.runs.current_run.end_time - stime
+            volume = zone.volume.total
+            flow_rate = zone.volume.flow_rate
+            iu_id = zone.unique_id
+            uid += "_" + zone.zone_id
         data = {
-            "type": reason,
-            CONF_DURATION: round(duration.total_seconds()),
-            CONF_CONTROLLER: {
-                CONF_INDEX: controller.index,
-                CONF_CONTROLLER_ID: controller.controller_id,
-                CONF_NAME: controller.name,
+            ATTR_IU_ID: iu_id,
+            ATTR_ID: uid,
+            ATTR_TYPE: reason,
+            ATTR_DURATION: round(duration.total_seconds()),
+            ATTR_VOLUME: volume,
+            ATTR_FLOW_RATE: flow_rate,
+            ATTR_CONTROLLER: {
+                ATTR_INDEX: controller.index,
+                ATTR_CONTROLLER_ID: controller.controller_id,
+                ATTR_NAME: controller.name,
             },
         }
         if zone is not None:
-            data[CONF_ZONE] = {
-                CONF_INDEX: zone.index,
-                CONF_ZONE_ID: zone.zone_id,
-                CONF_NAME: zone.name,
+            data[ATTR_ZONE] = {
+                ATTR_INDEX: zone.index,
+                ATTR_ZONE_ID: zone.zone_id,
+                ATTR_NAME: zone.name,
             }
         else:
-            data[CONF_ZONE] = {CONF_INDEX: None, CONF_ZONE_ID: None, CONF_NAME: None}
+            data[ATTR_ZONE] = {ATTR_INDEX: None, ATTR_ZONE_ID: None, ATTR_NAME: None}
 
         if isinstance(entity_id, list):
             for ent in entity_id:
