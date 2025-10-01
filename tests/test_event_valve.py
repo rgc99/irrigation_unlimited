@@ -62,7 +62,11 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:05:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 1,
+                    "volume": None,
+                    "flow_rate": None,
                     "duration": 360,
                     "controller": {
                         "index": 0,
@@ -77,8 +81,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:05:00"),
                 "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
                     "type": 1,
                     "duration": 360,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -92,8 +100,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 3,
                     "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -107,8 +119,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -122,8 +138,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_z2",
+                    "id": "1_2",
                     "type": 1,
                     "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -137,8 +157,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 1,
                     "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -152,8 +176,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 3,
                     "duration": 1080,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -167,8 +195,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_z2",
+                    "id": "1_2",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -182,8 +214,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -197,8 +233,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
                     "type": 1,
                     "duration": 1080,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -212,23 +252,31 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:41:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
+                    "type": 3,
+                    "duration": 600,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "controller_id": "1",
                         "index": 0,
                         "name": "Test controller 1",
                     },
-                    "duration": 600,
-                    "entity_id": None,
-                    "type": 3,
                     "zone": {"index": None, "name": None, "zone_id": None},
+                    "entity_id": None,
                 },
             },
             {
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:51:00"),
                 "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -242,8 +290,12 @@ async def test_event_valve_basic(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:51:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -305,8 +357,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:05:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 1,
                     "duration": 360,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -320,8 +376,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:05:00"),
                 "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
                     "type": 1,
                     "duration": 360,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -335,8 +395,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 3,
                     "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -350,8 +414,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -365,8 +433,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_z2",
+                    "id": "1_2",
                     "type": 1,
                     "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -380,8 +452,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:11:00"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 1,
                     "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -395,8 +471,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:11:30"),
                 "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -410,8 +490,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:11:30"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 2,
                     "duration": 690,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -425,8 +509,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:12:00"),
                 "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -440,8 +528,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:12:00"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 2,
                     "duration": 660,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -455,8 +547,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:12:30"),
                 "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -470,8 +566,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:12:30"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 2,
                     "duration": 630,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -485,8 +585,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 3,
                     "duration": 1080,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -500,8 +604,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_z2",
+                    "id": "1_2",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -515,8 +623,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -530,8 +642,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:23:00"),
                 "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
                     "type": 1,
                     "duration": 1080,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -545,8 +661,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:23:30"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -560,8 +680,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:24:00"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -575,8 +699,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:24:30"),
                 "data": {
+                    "iu_id": "c1_z3",
+                    "id": "1_3",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -590,8 +718,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_on",
                 "event_time": mk_local("2025-09-21 06:41:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 3,
                     "duration": 600,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -605,8 +737,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:51:00"),
                 "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -620,8 +756,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:51:00"),
                 "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
                     "type": 1,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -635,8 +775,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:51:30"),
                 "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -650,8 +794,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:52:00"),
                 "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
@@ -665,8 +813,12 @@ async def test_event_valve_extended(
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:52:30"),
                 "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
                     "type": 2,
                     "duration": 0,
+                    "volume": None,
+                    "flow_rate": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
