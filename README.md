@@ -37,6 +37,7 @@
   - [5.9. Clock Object](#59-clock-object)
   - [5.10. Check Back Object](#510-check-back-object)
   - [5.11. User Object](#511-user-object)
+  - [5.12. Volume Object](#512-volume-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
   - [6.2. Sun event example](#62-sun-event-example)
@@ -64,13 +65,16 @@
   - [8.5. Enable-disable card](#85-enable-disable-card)
   - [8.6. Pause-resume button](#86-pause-resume-button)
 - [9. Automation](#9-automation)
-  - [9.1. ESPHome](#91-esphome)
+  - [9.1. ESPHome soil moisture adjustment](#91-esphome-soil-moisture-adjustment)
   - [9.2. HAsmartirrigation](#92-hasmartirrigation)
   - [9.3. Overnight watering](#93-overnight-watering)
+  - [9.4. Sonoff Smart Water Valve auto shutoff switch](#94-sonoff-smart-water-valve-auto-shutoff-switch)
+  - [9.5. ESPHome auto shutoff switch](#95-esphome-auto-shutoff-switch)
 - [10. Notifications](#10-notifications)
   - [10.1. Events](#101-events)
     - [10.1.1. irrigation\_unlimited\_start, irrigation\_unlimited\_finish](#1011-irrigation_unlimited_start-irrigation_unlimited_finish)
     - [10.1.2. irrigation\_unlimited\_switch\_error, irrigation\_unlimited\_sync\_error](#1012-irrigation_unlimited_switch_error-irrigation_unlimited_sync_error)
+    - [10.1.3. irrigation\_unlimited\_valve\_on, irrigation\_unlimited\_valve\_off](#1013-irrigation_unlimited_valve_on-irrigation_unlimited_valve_off)
 - [11. Troubleshooting](#11-troubleshooting)
   - [11.1. Requirements](#111-requirements)
   - [11.2. HA Configuration](#112-ha-configuration)
@@ -225,10 +229,12 @@ This is the controller or master object and manages a collection of zones. There
 | `preamble` | [duration](#142-duration-time-period) | '00:00' | The time master turns on before any zone turns on. This is in effect a delay-start timer, controller will turn on before the zones. Can be negative to make the controller turn on _after_ the zone |
 | `postamble` | [duration](#142-duration-time-period) | '00:00' | The time master remains on after all zones are off. This is in effect a run-on timer, controller will turn off after the specified delay. Can be negative to make the controller turn off _before_ the zone - this can reduce water hammering |
 | `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_master_valve_1` |
+| `entity_states` | string | all | Actions to perform on `entity_id`. Possible values: all, on, off, none |
 | `all_zones_config` | object | _[All Zones Object](#52-all-zone-objects)_ | Shorthand default for all zones |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 | `queue_manual` | bool | false | Manual runs should be queued or run immediately |
 | `user` | object | | See _[User Object](#511-user-object)_ |
+| `volume` | object | | See _[Volume Object](#512-volume-object)_ |
 
 ### 5.2. All Zone Objects
 
@@ -244,6 +250,8 @@ This object is useful when the same settings are required for each zone. It is s
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 | `user` | object | | See _[User Object](#511-user-object)_ |
+| `entity_states` | string | all | Actions to perform on `entity_id`. Possible values: all, on, off, none |
+| `volume` | object | | See _[Volume Object](#512-volume-object)_ |
 
 ### 5.3. Zone Objects
 
@@ -262,9 +270,11 @@ The zone object manages a collection of schedules. There must be at least one zo
 | `future_span` | number | 3 | Number of days to look ahead |
 | `allow_manual` | bool | false | Allow manual run even when disabled |
 | `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_zone_valve_1` |
+| `entity_states` | string | all | Actions to perform on `entity_id`. Possible values: all, on, off, none |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
 | `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
 | `user` | object | | See _[User Object](#511-user-object)_ |
+| `volume` | object | | See _[Volume Object](#512-volume-object)_ |
 
 ### 5.4. Zone Show Object
 
@@ -366,7 +376,8 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | ---- | ---- | ------- | ----------- |
 | `zone_id` | string/list | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#53-zone-objects)_ |
 | `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#56-sequence-objects)_ |
-| `duration` | [duration](#142-duration-time-period) | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_. Can be negative to make the next zone on _before_ the current zone has finished. |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_. Can be negative to make the next zone on _before_ the current zone has finished |
+| `volume` | number | None | Volume limit. End this sequence zone when the volume has been reached. Requires the _[volume object](#512-volume-object)_ to be configured |
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
 
@@ -465,6 +476,28 @@ binary_sensor.irrigation_unlimited_c1_z2.user_actuator = 'KNX 6.1' #this is inhe
 ```
 
 The user defined static data available as attribute may help to customize cards or to present additional data on cards, in particular via the functionality within [entity-multiple-row](type: custom:multiple-entity-row). This [feature](https://github.com/rgc99/irrigation_unlimited/issues/143) maybe further developed and extended to the ```sequence: object``` over time.
+
+### 5.12. Volume Object
+
+The volume object accepts a volume meter and calculates the total volume and flow rate. One volume sensor, perhaps in the main line or feed, can be shared among the zones. In this case use the same entity_id for each zone or setup the volume object in the [all_zones_config](#52-all-zone-objects)
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `entity_id` | str | | The volume sensor. The sensor should be a utility type meter where the reading increments forever |
+| `volume_scale` | number | 1 | Use this to convert to other unit i.e. to or from gallons and litres |
+| `volume_precision` | number | 3 | The number of decimal places to display |
+| `flow_rate_scale` | number | 3600 | Use this to convert to another time unit i.e. hours, minutes, seconds |
+| `flow_rate_precision` | number | 3 | The number of decimal places to display |
+
+If you only have a flow meter and not a volume counter then use the [Integral](https://www.home-assistant.io/integrations/integration/) platform to create one. Here is an example using a Sonoff Smart Water Valve.
+
+```yaml
+integration:
+  - source: sensor.sonoff_swv_volume_flow_rate
+    name: total_volume
+    round: 3
+    method: left
+```
 
 ## 6. Configuration examples
 
@@ -739,7 +772,7 @@ The binary sensor associated with each controller and zone provide several servi
 - `adjust_time`
 - `load_schedule`
 
-If a controller sensor is targetted then it will effect all its children zones.
+If a controller sensor is targetted then it will effect all its children zones and/or sequences. The `sequence_id` may contain a list of sequences. If an element in the list is a number then it refers to the position of the sequence under the controller i.e. 1st, 2nd etc. If the element contains a string this then refers to the `sequence_id`. Similarly the `zones` may contain a list of zones. If the element in the list contains a number then it refers to the position of the zone under the controller. If the element is a string then it refers to the `zone_id`. For example `sequence_id: [1, 'lawn']` the 1 is a number because it is not enclosed in quotation marks.
 
 ### 7.1. Actions `enable`, `disable` and `toggle`
 
@@ -1316,7 +1349,7 @@ On a personal note, I use the national weather service [BOM](http://www.bom.gov.
 
 You will find my adjustment automation [here](./packages/irrigation_unlimited_adjustment.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./lovelace/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
-### 9.1. ESPHome
+### 9.1. ESPHome soil moisture adjustment
 
 This example uses the data from a soil moisture probe created in [ESPHome](https://esphome.io/) to adjust the run times.
 
@@ -1423,6 +1456,130 @@ automation:
     mode: single
 ```
 
+### 9.4. Sonoff Smart Water Valve auto shutoff switch
+
+This example controls a [Sonoff Smart Water Valve](https://sonoff.tech/products/sonoff-zigbee-smart-water-valve) and will turn off after the specified time. Note Sonoff firmware 1.0.4 is required and Irrigation Unlimited version 2025.10.0. Learn about switch entities[here](#143-switch-entities) and valve events[here](#1013-irrigation_unlimited_valve_on-irrigation_unlimited_valve_off)
+
+```yaml
+  # configuration.yaml
+  ...
+  entity_id: switch.sonoff_swv
+  entity_states: 'off' # Only send off actions to the entity_id
+  ...
+
+  # Automation to handle the on action via a custom Zigbee command. This
+  # automation sends an on time which will act as a deadman switch. Use
+  # only one the actions below ZHA or zigbee2mqtt
+  alias: SWV
+  description: Set the on time for the Sonoff Smart Water Valve
+  triggers:
+    - trigger: event
+      event_type: irrigation_unlimited_valve_on
+  conditions:
+    - condition: template
+      value_template: "{{trigger.event.data.entity_id in entity_to_device}}"
+  actions:
+    # Action using ZHA
+    - action: zha.issue_zigbee_cluster_command
+      data:
+        ieee: "{{entity_to_device[trigger.event.data.entity_id]}}"
+        cluster_type: in
+        endpoint_id: 1
+        cluster_id: 6
+        command: 66
+        params:
+          on_off_control: []
+          on_time: "{{trigger.event.data.duration}}"
+          off_wait_time: 0
+        command_type: server
+
+    # Action using zigbee2mqtt. The device name must match the entity name
+    - action: mqtt.publish
+      metadata: {}
+      data:
+        evaluate_payload: true
+        qos: 0
+        retain: false
+        topic: zigbee2mqtt/{{entity_to_device[trigger.event.data.entity_id]}}/set
+        payload: |-
+          {
+            "state": "ON",
+            "on_time": "{{trigger.event.data.duration}}"
+          }
+
+  variables:
+    # Add your Zigbee devices to this table.
+    # For ZHA you will need to find the ieee address of the device.
+    # For MQTT you will need the device name
+    entity_to_device: |
+      {{ dict([
+        ('your_entity', 'your_ieee ZHA or device name MQTT'),
+        ('switch.sonoff_swv_zha', 'c4:d8:c8:ff:fe:1f:bf:6c'),
+        ('switch.sonoff_swv_mmqt', 'mmqt_device_name'),
+      ]) }}
+  mode: queued
+```
+
+### 9.5. ESPHome auto shutoff switch
+
+Here we use [ESPHome](https://esphome.io) to create a one shot timer. The valve will automatically turn off after the specified duration
+
+```yaml
+#ESPHome configuration YAML
+api:
+  ...
+  actions:
+    - action: start_irrigation
+      variables:
+        duration: int # Time in seconds
+      then:
+        - lambda: id(one_shot_timer)->execute(duration * 1000);
+script:
+  id: one_shot_timer
+  parameters:
+    on_time: int
+  mode: restart
+  then:
+    - switch.turn_on: valve
+    - delay: !lambda 'return on_time;'
+    - switch.turn_off: valve
+
+switch:
+  - platform: gpio
+    name: Valve
+    id: valve
+    pin: GPIO19
+```
+
+The above will create a `esphome.start_irrigation` action in Home Assistant. Use this to create an automation. You will need to adjust `my_entity_id` to suit your situation
+
+```yaml
+  # Automation to handle the on action via a esphome action
+  alias: ESPHome valve
+  description: Turn on a ESPHome valve with a duration
+  triggers:
+    - trigger: event
+      event_type: irrigation_unlimited_valve_on
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.event.data.entity_id == my_entity_id }}"
+  actions:
+    - action: esphome.start_irrigation
+      data:
+        duration: "{{ trigger.event.data.duration }}"
+  mode: queued
+```
+
+Add a `entity_states:` parameter to the Irrigation Unlimited configuration to prevent the turn_on command
+
+```yaml
+  # configuration.yaml
+  ...
+  entity_id: switch.sonoff_swv
+  entity_states: 'off' # Only send off actions to the entity_id
+  ...
+```
+
 ## 10. Notifications
 
 This section shows how to send a notification when a sequence starts or finishes. Messages can be sent for example via email (SMTP), push notification to mobile phones, twitter and many [others](https://www.home-assistant.io/integrations/#notifications). See [here](https://www.home-assistant.io/integrations/notify/) for more information on notifications in Home Assistant. Note that it is not limited to sending notifications but many other [actions](https://www.home-assistant.io/docs/automation/action/) are available. There is quite a lot of information on using notifications in Home Assistant on the web. Try Google, YouTube etc. for some great information and tips.
@@ -1512,6 +1669,65 @@ automation:
               Zone: {{ trigger.event.data.zone.index + 1 }} {{ trigger.event.data.zone.name }}
             {% endif %}
             Entity: {{ trigger.event.data.entity_id }}
+```
+
+#### 10.1.3. irrigation_unlimited_valve_on, irrigation_unlimited_valve_off
+
+These events are fired when the valve changes state. Listen for these events to create automations and custom actions. More information is available on using these events [here](#143-switch-entities). Additional data is available that can be used in automation scripts.
+
+| Field | Description |
+| ----- | ----------- |
+| `iu_id` | Irrigation Unlimited unique id i.e. `c1_m`, `c1_z1`. |
+| `id` | User defined id values. A combination of the `controller_id` and `zone_id` values. |
+| `type` | 1 = Normal, 2 = Resync attempt via a [check back](#510-check-back-object) operation, 3 = Current run change. |
+| `entity_id` | The target entity. |
+| `duration` | Time in seconds. |
+| `volume` | Total volume. |
+| `flow_rate` | Caclulated flow rate. |
+| `controller.index` | The sequential index of the controller. |
+| `controller.controller_id ` | The unique id of the controller. |
+| `controller.name` | The friendly name of the controller. |
+| `zone.index` | The sequential index of the zone. |
+| `zone.zone_id` | The unique id of the zone within the controller. |
+| `zone.name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
+
+Example to send an email on too little (blockage) or too much (burst pipe) water.
+1. Setup an email notification. See [here](https://www.home-assistant.io/integrations/smtp/#google-mail) for a google mail notification example.
+2. Setup volume monitoring as described in [Volume Object](#512-volume-object).
+3. Create the following automation.
+
+```yaml
+alias: Irrigation volume checker
+description: Irrigation Unlimited Volume Checker
+triggers:
+  - trigger: event
+    event_type:
+      - irrigation_unlimited_valve_off
+conditions:
+  - condition: template
+    value_template: >-
+      {{ id in volumes and (vol < volumes[id]['min'] or vol >
+      volumes[id]['max']) }}
+actions:
+  - action: notify.NOTIFIER_NAME # Make sure this matches the "NOTIFIER_NAME" in the smtp setup
+    data:
+      title: Irrigation Volume Error
+      message: >
+        Time: {{ as_local(trigger.event.time_fired).strftime('%c') }}
+        Controller: {{ trigger.event.data.controller.index + 1 }} {{ trigger.event.data.controller.name }}
+        Zone: {{ trigger.event.data.zone.index + 1 }} {{ trigger.event.data.zone.name }}
+        Volume: {{ vol }}
+mode: queued
+variables:
+  id: "{{ trigger.event.data.iu_id }}"
+  vol: "{{ trigger.event.data.volume | float(0) }}"
+  # Fill in this table of zones and their minimum and maximum volumes
+  volumes: |
+    {{ dict([
+      ('c1_z1', {'min': 5, 'max': 25}),
+      ('c1_z3', {'min': 10, 'max': 80}),
+      ('c1_z4', {'min': 10, 'max': 100}),
+    ]) }}
 ```
 
 ## 11. Troubleshooting
@@ -1611,7 +1827,9 @@ The time period (duration) type is a string in the format HH:MM, HH:MM:SS, the n
 
 ### 14.3 Switch entities
 
-These can be any entity from the `switch`, `light`, `valve` or `cover` platforms or anything that supports the `turn_on` and `turn_off` actions. Multiple entities can be a CSV string or a list. Here is a code snippet to show different ways to specify the entity_ids.
+These can be any entity from the `switch`, `light`, `valve` or `cover` platforms or anything that supports the `turn_on` and `turn_off` actions. Multiple entities can be a CSV string or a list.
+
+Here is a code snippet to show different ways to specify the entity_ids.
 
 ```yaml
   ...
@@ -1620,6 +1838,15 @@ These can be any entity from the `switch`, `light`, `valve` or `cover` platforms
   entity_id:
     - switch.valve_1
     - light.valve_2
+  ...
+```
+
+The `entity_states` setting control which actions are performed on the entities. Possible values are `all` the default, `on` where only `turn_on` actions are performed, `off` where only `turn_off` actions are performed or `none` where no actions are performed on the `entity_id`. This setting is useful in situations where you would like to handle one or both state changes via an automation. Use the [event](https://www.home-assistant.io/docs/automation/trigger/#event-trigger) trigger or the [state](https://www.home-assistant.io/docs/automation/trigger/#state-trigger) trigger in an automation
+
+```yaml
+  ...
+  entity_id: switch.sonoff_swv
+  entity_states: 'off' # Only send 'off' actions to the entity
   ...
 ```
 
