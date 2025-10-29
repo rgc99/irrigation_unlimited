@@ -1458,7 +1458,7 @@ automation:
 
 ### 9.4. Sonoff Smart Water Valve auto shutoff switch
 
-This example controls a [Sonoff Smart Water Valve](https://sonoff.tech/products/sonoff-zigbee-smart-water-valve) and will turn off after the specified time. Note Sonoff firmware 1.0.4 is required and Irrigation Unlimited version 2025.10.0. Learn about switch entities[here](#143-switch-entities) and valve events[here](#1013-irrigation_unlimited_valve_on-irrigation_unlimited_valve_off)
+This example controls a [Sonoff Smart Water Valve](https://sonoff.tech/products/sonoff-zigbee-smart-water-valve) and will turn off after the specified time. Note Sonoff firmware 1.0.4 is required and Irrigation Unlimited version 2025.10.0. Learn about switch entities [here](#143-switch-entities) and valve events [here](#1013-irrigation_unlimited_valve_on-irrigation_unlimited_valve_off)
 
 ```yaml
   # configuration.yaml
@@ -1469,7 +1469,7 @@ This example controls a [Sonoff Smart Water Valve](https://sonoff.tech/products/
 
   # Automation to handle the on action via a custom Zigbee command. This
   # automation sends an on time which will act as a deadman switch. Use
-  # only one the actions below ZHA or zigbee2mqtt
+  # only one of the actions below ZHA or zigbee2mqtt
   alias: SWV
   description: Set the on time for the Sonoff Smart Water Valve
   triggers:
