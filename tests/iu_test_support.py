@@ -1,6 +1,7 @@
 """Irrigation Unlimited test support routines"""
 
 import os
+import sys
 from unittest.mock import patch
 import logging
 from typing import Any
@@ -54,6 +55,7 @@ def quiet_mode() -> None:
 
 
 logging.getLogger("custom_components.irrigation_unlimited").setLevel(logging.DEBUG)
+
 
 async def async_wait_recorder(hass: ha.HomeAssistant) -> bool:
     """Wait for recorder to initialize and return connection status."""
@@ -548,3 +550,18 @@ def parse_utc(adate: str) -> datetime:
 def fmt_local(adate: datetime) -> str:
     """Format the datetime into local format"""
     return as_local(adate).strftime("%Y-%m-%d %H:%M:%S")
+
+
+class IURedirectOutput:
+    """Redirect sdtout to a debug file"""
+
+    def __init__(self, file: str = "iu_debug.txt") -> None:
+        self._file = file
+        self.original_stdout = sys.stdout
+
+    def __enter__(self):
+        sys.stdout = open(self._file, "w")
+        return self
+
+    def __exit__(self, *args):
+        sys.stdout = self.original_stdout
