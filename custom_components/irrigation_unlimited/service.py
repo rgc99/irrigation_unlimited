@@ -5,55 +5,62 @@ from homeassistant.util import dt
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.service import async_register_admin_service
+
 from homeassistant.const import (
-    SERVICE_RELOAD,
     ATTR_ENTITY_ID,
+    SERVICE_RELOAD,
 )
 
 from .irrigation_unlimited import IUCoordinator
+from .util import convert_data
 from .entity import IUEntity
 from .schema import (
-    ENTITY_SCHEMA,
-    ENABLE_DISABLE_SCHEMA,
-    TIME_ADJUST_SCHEMA,
-    MANUAL_RUN_SCHEMA,
-    RELOAD_SERVICE_SCHEMA,
-    LOAD_SCHEDULE_SCHEMA,
-    SUSPEND_SCHEMA,
     CANCEL_SCHEMA,
+    ENABLE_DISABLE_SCHEMA,
+    ENTITY_SCHEMA,
+    GET_STATUS_SCHEMA,
+    LOAD_SCHEDULE_SCHEMA,
+    MANUAL_RUN_SCHEMA,
     PAUSE_RESUME_SCHEMA,
+    RELOAD_SERVICE_SCHEMA,
+    SUSPEND_SCHEMA,
+    TIME_ADJUST_SCHEMA,
 )
 
 from .const import (
+    ATTR_CONTROLLERS,
+    ATTR_CONTROLLER_ID,
+    ATTR_INDEX,
+    ATTR_NAME,
+    ATTR_SEQUENCES,
+    ATTR_VERSION,
+    ATTR_ZONES,
+    ATTR_ZONE_ID,
+    ATTR_ZONE_IDS,
+    CONF_EXTENDED,
     DOMAIN,
     SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
-    SERVICE_MANUAL_RUN,
-    SERVICE_TIME_ADJUST,
-    SERVICE_TOGGLE,
+    SERVICE_GET_INFO,
+    SERVICE_GET_STATUS,
     SERVICE_LOAD_SCHEDULE,
-    SERVICE_SUSPEND,
-    SERVICE_SKIP,
+    SERVICE_MANUAL_RUN,
     SERVICE_PAUSE,
     SERVICE_RESUME,
-    SERVICE_GET_INFO,
-    ATTR_VERSION,
-    ATTR_CONTROLLERS,
-    ATTR_CONTROLLER_ID,
-    ATTR_ZONES,
-    ATTR_ZONE_ID,
-    ATTR_SEQUENCES,
-    ATTR_INDEX,
-    ATTR_NAME,
-    ATTR_ZONE_IDS,
+    SERVICE_SKIP,
+    SERVICE_SUSPEND,
+    SERVICE_TIME_ADJUST,
+    SERVICE_TOGGLE,
 )
 
 
 @callback
-async def async_entity_service_handler(entity: IUEntity, call: ServiceCall) -> None:
+async def async_entity_service_handler(
+    entity: IUEntity, call: ServiceCall
+) -> ServiceResponse:
     """Dispatch the service call"""
-    entity.dispatch(call.service, call)
+    return entity.dispatch(call.service, call)
 
 
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
@@ -92,8 +99,6 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
     )
 
 
-
-
 def register_component_services(
     component: EntityComponent, coordinator: IUCoordinator
 ) -> None:
@@ -123,9 +128,16 @@ def register_component_services(
     )
 
     @callback
-    async def load_schedule_service_handler(call: ServiceCall) -> None:
+    async def coordinator_service_handler(call: ServiceCall) -> ServiceResponse:
         """Reload schedule."""
-        coordinator.service_call(call.service, None, None, None, call.data)
+        return coordinator.service_call(call.service, None, None, None, call.data)
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_LOAD_SCHEDULE,
+        coordinator_service_handler,
+        LOAD_SCHEDULE_SCHEMA,
+    )
 
     @callback
     async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
@@ -167,15 +179,25 @@ def register_component_services(
 
     component.hass.services.async_register(
         DOMAIN,
-        SERVICE_LOAD_SCHEDULE,
-        load_schedule_service_handler,
-        LOAD_SCHEDULE_SCHEMA,
-    )
-
-    component.hass.services.async_register(
-        DOMAIN,
         SERVICE_GET_INFO,
         get_info_service_handler,
         {},
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    @callback
+    async def get_status_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Return configuration"""
+        # pylint: disable=unused-argument
+
+        return convert_data(
+            coordinator.as_dict(extended=call.data.get(CONF_EXTENDED, False))
+        )
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_GET_STATUS,
+        get_status_service_handler,
+        GET_STATUS_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )

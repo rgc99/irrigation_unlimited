@@ -401,6 +401,18 @@ get_info:
   name: Get Info
   description: Get configuration information
 
+get_status:
+  name: Get status
+  description: Get status information
+  fields:
+    extended:
+      name: extended
+      description: Return extended information
+      example: false
+      required: false
+      selector:
+        boolean:
+
 load_schedule:
   name: Load schedule
   description: Load a schedule.

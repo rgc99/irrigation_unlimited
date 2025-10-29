@@ -3,7 +3,7 @@
 import json
 from collections.abc import Iterator
 from homeassistant.components.binary_sensor import BinarySensorEntity
-from homeassistant.core import ServiceCall
+from homeassistant.core import ServiceCall, ServiceResponse
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util import dt
 
@@ -270,8 +270,8 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         else:
             self.entity_id = self._controller.entity_id
 
-    def _call_iu(self, service: str, data: dict) -> None:
-        self._coordinator.service_call(
+    def _call_iu(self, service: str, data: dict) -> ServiceResponse:
+        return self._coordinator.service_call(
             service, self._controller, self._zone, self._sequence, data
         )
 
@@ -341,9 +341,9 @@ class IUEntity(BinarySensorEntity, RestoreEntity):
         )
         return
 
-    def dispatch(self, service: str, call: ServiceCall) -> None:
+    def dispatch(self, service: str, call: ServiceCall) -> ServiceResponse:
         """Dispatcher for service calls"""
-        self._call_iu(service, call.data)
+        return self._call_iu(service, call.data)
 
 
 class IUComponent(RestoreEntity):

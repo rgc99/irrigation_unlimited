@@ -21,6 +21,7 @@ from homeassistant.core import (
     DOMAIN as HADOMAIN,
     Event as HAEvent,
     split_entity_id,
+    ServiceResponse,
 )
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.template import Template, render_complex
@@ -6880,7 +6881,7 @@ class IUCoordinator:
         zone: IUZone,
         sequence: IUSequence,
         data: MappingProxyType,
-    ) -> None:
+    ) -> ServiceResponse:
         """Entry point for all service calls."""
         # pylint: disable=too-many-branches,too-many-arguments,too-many-statements
         changed = True
@@ -6955,7 +6956,7 @@ class IUCoordinator:
             render_positive_time_period(data1, CONF_DURATION)
             self.service_load_schedule(data1)
         else:
-            return
+            return None
 
         if changed:
             self._last_tick = stime
@@ -6967,6 +6968,7 @@ class IUCoordinator:
             self._logger.log_service_call(
                 service, stime, controller, zone, sequence, data1, DEBUG
             )
+        return None
 
     def service_history(self, entity_ids: set[str]) -> None:
         """History service call entry point. The history has changed
