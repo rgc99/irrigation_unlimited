@@ -62,8 +62,8 @@ from homeassistant.const import (
     Platform,
 )
 
+from .util import is_none
 from .history import IUHistory
-
 from .const import (
     ATTR_ADJUSTED_DURATION,
     ATTR_ADJUSTMENT,
@@ -82,7 +82,11 @@ from .const import (
     ATTR_INDEX,
     ATTR_IU_ID,
     ATTR_NAME,
+    ATTR_RUN,
     ATTR_SCHEDULE,
+    ATTR_SCHEDULE_ID,
+    ATTR_SEQUENCE,
+    ATTR_SEQUENCE_ID,
     ATTR_START,
     ATTR_STATUS,
     ATTR_SUSPENDED,
@@ -151,11 +155,8 @@ from .const import (
     CONF_RESULTS,
     CONF_RESYNC,
     CONF_RETRIES,
-    CONF_RUN,
-    CONF_SCHEDULE,
     CONF_SCHEDULES,
     CONF_SCHEDULE_ID,
-    CONF_SEQUENCE,
     CONF_SEQUENCES,
     CONF_SEQUENCE_ID,
     CONF_SEQUENCE_ZONES,
@@ -183,7 +184,6 @@ from .const import (
     CONF_ZONE,
     CONF_ZONES,
     CONF_ZONE_ID,
-    CONF_ZONE_IDS,
     COORDINATOR,
     DEFAULT_GRANULARITY,
     DEFAULT_MAX_LOG_ENTRIES,
@@ -6709,39 +6709,60 @@ class IUCoordinator:
         """Send out a notification for start/finish to a sequence"""
         # pylint: disable=too-many-arguments
 
-        def zone_ids(sqr: IUSequenceRun) -> list[str]:
-            result: set[str] = set()
-            for run in sqr.runs:
-                if run.duration > timedelta(0):
-                    result.add(run.zone.zone_id)
-            return sorted(result)
+        zone_summary: dict[IUZone, dict] = {}
+        for run in sequence_run.runs:
+            if not (z := run.zone) in zone_summary:
+                zone_summary[z] = {ATTR_DURATION: 0, ATTR_VOLUME: None}
+            zone_summary[z][ATTR_DURATION] += run.duration.total_seconds()
+        for sqz in sequence_run._volume_stats.values():
+            for z, v in sqz.items():
+                zone_summary[z][ATTR_VOLUME] = is_none(
+                    zone_summary[z][ATTR_VOLUME], 0
+                ) + float(v)
+
+        zone_ids = sorted(
+            [z.zone_id for z, d in zone_summary.items() if d[ATTR_DURATION] > 0]
+        )
 
         data = {
-            CONF_ENTITY_ID: sequence.entity_id,
-            CONF_CONTROLLER: {
-                CONF_INDEX: controller.index,
-                CONF_CONTROLLER_ID: controller.controller_id,
-                CONF_NAME: controller.name,
+            ATTR_IU_ID: sequence.unique_id,
+            ATTR_ID: controller.controller_id + "_" + sequence.sequence_id,
+            ATTR_ENTITY_ID: sequence.entity_id,
+            ATTR_VOLUME: sequence.volume,
+            ATTR_CONTROLLER: {
+                ATTR_INDEX: controller.index,
+                ATTR_CONTROLLER_ID: controller.controller_id,
+                ATTR_NAME: controller.name,
             },
-            CONF_SEQUENCE: {
-                CONF_INDEX: sequence.index,
-                CONF_SEQUENCE_ID: sequence.sequence_id,
-                CONF_NAME: sequence.name,
+            ATTR_SEQUENCE: {
+                ATTR_INDEX: sequence.index,
+                ATTR_SEQUENCE_ID: sequence.sequence_id,
+                ATTR_NAME: sequence.name,
             },
-            CONF_RUN: {CONF_DURATION: round(sequence_run.total_time.total_seconds())},
-            CONF_ZONE_IDS: zone_ids(sequence_run),
+            ATTR_ZONES: [
+                {
+                    ATTR_INDEX: zone.index,
+                    ATTR_ZONE_ID: zone.zone_id,
+                    ATTR_NAME: zone.name,
+                    ATTR_DURATION: round(data[ATTR_DURATION]),
+                    ATTR_VOLUME: data[ATTR_VOLUME],
+                }
+                for zone, data in zone_summary.items()
+            ],
+            ATTR_RUN: {ATTR_DURATION: round(sequence_run.total_time.total_seconds())},
+            ATTR_ZONE_IDS: zone_ids,
         }
         if schedule is not None:
-            data[CONF_SCHEDULE] = {
-                CONF_INDEX: schedule.index,
-                CONF_SCHEDULE_ID: schedule.schedule_id,
-                CONF_NAME: schedule.name,
+            data[ATTR_SCHEDULE] = {
+                ATTR_INDEX: schedule.index,
+                ATTR_SCHEDULE_ID: schedule.schedule_id,
+                ATTR_NAME: schedule.name,
             }
         else:
-            data[CONF_SCHEDULE] = {
-                CONF_INDEX: None,
-                CONF_SCHEDULE_ID: None,
-                CONF_NAME: RES_MANUAL,
+            data[ATTR_SCHEDULE] = {
+                ATTR_INDEX: None,
+                ATTR_SCHEDULE_ID: None,
+                ATTR_NAME: RES_MANUAL,
             }
         self._hass.bus.fire(f"{DOMAIN}_{event_type}", data)
 

@@ -28,3 +28,9 @@ def convert_data(data: Any) -> Any:
         return [convert_data(item) for item in data]
     else:
         return convert_item(data)
+
+
+def is_none(value: Any | None, default: Any) -> Any:
+    """Return the supplied value if not None otherwise
+    return the default"""
+    return value if value is not None else default

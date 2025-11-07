@@ -120,11 +120,30 @@ async def test_service_sequence_pause_resume_notify(
                 "event_time": mk_local("2024-08-14 06:05"),
                 "data": {
                     "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                    "id": "1_1",
+                    "iu_id": "c1_s1",
+                    "volume": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
                         "name": "Test Controller",
                     },
+                    "zones": [
+                        {
+                            "duration": 240,
+                            "index": 0,
+                            "name": "Zone 1",
+                            "volume": None,
+                            "zone_id": "1",
+                        },
+                        {
+                            "duration": 240,
+                            "index": 1,
+                            "name": "Zone 2",
+                            "volume": None,
+                            "zone_id": "2",
+                        },
+                    ],
                     "sequence": {"index": 0, "sequence_id": "1", "name": "Seq 1"},
                     "run": {"duration": 600},
                     "zone_ids": ["1", "2"],
@@ -136,11 +155,30 @@ async def test_service_sequence_pause_resume_notify(
                 "event_time": mk_local("2024-08-14 06:20"),
                 "data": {
                     "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+                    "id": "1_1",
+                    "iu_id": "c1_s1",
+                    "volume": None,
                     "controller": {
                         "index": 0,
                         "controller_id": "1",
                         "name": "Test Controller",
                     },
+                    "zones": [
+                        {
+                            "duration": 120,
+                            "index": 0,
+                            "name": "Zone 1",
+                            "volume": None,
+                            "zone_id": "1",
+                        },
+                        {
+                            "duration": 240,
+                            "index": 1,
+                            "name": "Zone 2",
+                            "volume": None,
+                            "zone_id": "2",
+                        },
+                    ],
                     "sequence": {"index": 0, "sequence_id": "1", "name": "Seq 1"},
                     "run": {"duration": 900},
                     "zone_ids": ["1", "2"],
