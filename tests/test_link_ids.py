@@ -31,3 +31,18 @@ async def test_link_ids(hass: ha.HomeAssistant, skip_dependencies, skip_history)
                 sum(1 for call in mock.call_args_list if call.args[1] == "ORPHAN_ID")
                 == 1
             )
+
+async def test_global_link_ids(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test duplicate ids across controllers."""
+    # pylint: disable=unused-argument
+
+    with patch.object(IULogger, "log_duplicate_id") as mock_duplicate:
+        async with IUExam(hass, "test_global_ids.yaml"):
+            assert mock_duplicate.call_count == 2
+
+    with patch.object(IULogger, "_format") as mock:
+        async with IUExam(hass, "test_global_ids.yaml"):
+            assert (
+                sum(1 for call in mock.call_args_list if call.args[1] == "DUPLICATE_ID")
+                == 2
+            )

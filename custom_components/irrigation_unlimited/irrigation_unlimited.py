@@ -126,6 +126,8 @@ from .const import (
     CONF_FOUND,
     CONF_FROM,
     CONF_FUTURE_SPAN,
+    CONF_GLOBAL_SEQUENCE_IDS,
+    CONF_GLOBAL_ZONE_IDS,
     CONF_GRANULARITY,
     CONF_INCREASE,
     CONF_INDEX,
@@ -6302,7 +6304,8 @@ class IUCoordinator:
         self._rename_entities = False
         self._extended_config = False
         self._restore_from_entity: bool = True
-        self._show_config = True
+        self._global_zone_ids = False
+        self._global_sequence_ids = False
         # Private variables
         self._controllers: list[IUController] = []
         self._is_on: bool = False
@@ -6474,7 +6477,10 @@ class IUCoordinator:
         self.request_update(False)
         self._logger.log_load(config)
         self._history.load(config, self._clock.is_fixed)
-
+        self._global_sequence_ids = config.get(
+            CONF_GLOBAL_SEQUENCE_IDS, self._global_sequence_ids
+        )
+        self._global_zone_ids = config.get(CONF_GLOBAL_ZONE_IDS, self._global_zone_ids)
         self.check_links()
 
         return self
@@ -6524,8 +6530,17 @@ class IUCoordinator:
                 result = False
 
         schedule_ids = set()
+        zone_ids = set()
+        sequence_ids = set()
         for controller in self._controllers:
             for zone in controller.zones:
+                if self._global_zone_ids:
+                    if zone.zone_id in zone_ids:
+                        self.logger.log_duplicate_id(controller, zone, None, None)
+                        result = False
+                    else:
+                        zone_ids.add(zone.zone_id)
+
                 for schedule in zone.schedules:
                     if schedule.schedule_id is not None:
                         if schedule.schedule_id in schedule_ids:
@@ -6535,7 +6550,15 @@ class IUCoordinator:
                             result = False
                         else:
                             schedule_ids.add(schedule.schedule_id)
+
             for sequence in controller.sequences:
+                if self._global_sequence_ids:
+                    if sequence.sequence_id in sequence_ids:
+                        self.logger.log_duplicate_id(controller, None, sequence, None)
+                        result = False
+                    else:
+                        sequence_ids.add(sequence.sequence_id)
+
                 for schedule in sequence.schedules:
                     if schedule.schedule_id is not None:
                         if schedule.schedule_id in schedule_ids:

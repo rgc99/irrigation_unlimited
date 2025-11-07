@@ -391,6 +391,8 @@ IRRIGATION_SCHEMA = vol.Schema(
         vol.Optional(CONF_EXTENDED_CONFIG): cv.boolean,
         vol.Optional(CONF_RESTORE_FROM_ENTITY): cv.boolean,
         vol.Optional(CONF_SHOW_CONFIG): cv.boolean,
+        vol.Optional(CONF_GLOBAL_ZONE_IDS): cv.boolean,
+        vol.Optional(CONF_GLOBAL_SEQUENCE_IDS): cv.boolean,
     }
 )
 
