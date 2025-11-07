@@ -24,6 +24,7 @@ from custom_components.irrigation_unlimited.irrigation_unlimited import (
     IUCoordinator,
     IUController,
     IURun,
+    round_dt,
 )
 from custom_components.irrigation_unlimited.const import (
     DOMAIN,
@@ -123,7 +124,9 @@ class IUExam:
     @property
     def virtual_time(self) -> datetime:
         """Return the current virtual time"""
-        return self._coordinator.tester.current_test.virtual_time(self._current_time)
+        return round_dt(
+            self._coordinator.tester.current_test.virtual_time(self._current_time)
+        )
 
     @property
     def last_stop(self) -> datetime:
@@ -278,6 +281,7 @@ class IUExam:
                 self._coordinator.clock.test_ticker_fired(next_awakening)
                 await self._hass.async_block_till_done()
             else:
+                self._current_time = astop_at
                 break
 
     async def run_for(self, duration: timedelta | str) -> None:
