@@ -2240,11 +2240,6 @@ class IUZone(IUBase):
         """Return the arbitrary user information"""
         return self._user
 
-    @property
-    def switch(self) -> IUSwitch:
-        """Return the switch"""
-        return self._switch
-
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
         self._initialised = self._zone_sensor is not None
@@ -2650,11 +2645,6 @@ class IUSequenceZone(IUBase):
     def repeat(self) -> int:
         """Returns the number of repeats for this sequence zone"""
         return self._repeat
-
-    @repeat.setter
-    def repeat(self, value: int) -> None:
-        """Set the number of repeats for this sequence zone"""
-        self._repeat = value
 
     @property
     def volume(self) -> float:
