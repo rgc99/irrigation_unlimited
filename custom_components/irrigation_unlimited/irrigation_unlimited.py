@@ -1137,19 +1137,20 @@ class IUVolume:
         self._flow_rate_scale: float = None
         # Private variables
         self._callback_remove: CALLBACK_TYPE = None
-        self._start_volume: Decimal = None
         self._total_volume: Decimal = None
+        self._total_readings: int = 0
         self._start_time: datetime = None
         self._end_time: datetime = None
-        self._listeners: dict[
-            str, Callable[[datetime, "IUZone", Decimal, Decimal], None]
-        ] = {}
+        self._listeners: dict[str, Callable[[datetime, "IUZone", Decimal], None]] = {}
         self._flow_rates: list[Decimal] = []
         self._flow_rate_sum: Decimal = None
         self._flow_rate_sma: Decimal = None
+        self._flow_rate_avg: Decimal = None
         self._sensor_readings: list[IUVolumeSensorReading] = []
-        self.reset_config()
-        self.reset_readings()
+        self._first_reading: IUVolumeSensorReading = None
+        self._last_reading: IUVolumeSensorReading = None
+        self._reset_config()
+        self._reset_readings()
 
     @property
     def total(self) -> float | None:
@@ -1161,11 +1162,11 @@ class IUVolume:
     @property
     def flow_rate(self) -> float | None:
         """Return the flow rate"""
-        if self._flow_rate_sma is not None:
-            return float(self._flow_rate_sma)
+        if self._flow_rate_avg is not None:
+            return float(self._flow_rate_avg)
         return None
 
-    def reset_config(self) -> None:
+    def _reset_config(self) -> None:
         """Reset this object"""
         self.end_record(None)
         self._sensor_id = None
@@ -1174,15 +1175,18 @@ class IUVolume:
         self._flow_rate_precision = 3
         self._flow_rate_scale = 3600
 
-    def reset_readings(self) -> None:
+    def _reset_readings(self) -> None:
         """Reset reading parameters"""
-        self._start_volume = None
         self._total_volume = None
+        self._total_readings = 0
         self._start_time = None
+        self._first_reading = None
+        self._last_reading = None
         self._sensor_readings.clear()
         self._flow_rates.clear()
         self._flow_rate_sum = 0
         self._flow_rate_sma = None
+        self._flow_rate_avg = None
 
     def load(self, config: OrderedDict, all_zones: OrderedDict) -> "IUSwitch":
         """Load volume data from the configuration"""
@@ -1202,13 +1206,13 @@ class IUVolume:
                 CONF_FLOW_RATE_SCALE, self._flow_rate_scale
             )
 
-        self.reset_config()
-        self.reset_readings()
+        self._reset_config()
+        self._reset_readings()
         if all_zones is not None:
             load_params(all_zones.get(CONF_VOLUME))
         load_params(config.get(CONF_VOLUME))
 
-    def read_sensor(self, stime: datetime) -> Decimal:
+    def _read_sensor(self, stime: datetime) -> None:
         """Read the sensor data"""
         sensor = self._hass.states.get(self._sensor_id)
         if sensor is None:
@@ -1217,13 +1221,15 @@ class IUVolume:
         if value < 0:
             raise ValueError(f"Negative sensor value: {sensor.state}")
 
-        volume = Decimal(f"{value * self._volume_scale:.{self._volume_precision}f}")
+        current_reading = IUVolumeSensorReading(
+            stime, Decimal(f"{value * self._volume_scale:.{self._volume_precision}f}")
+        )
 
         if len(self._sensor_readings) > 0:
-            last_reading = self._sensor_readings[-1]
-            volume_delta = volume - last_reading.value
+            self._last_reading = self._sensor_readings[-1]
+            volume_delta = current_reading.value - self._last_reading.value
             time_delta = Decimal(
-                f"{(stime - last_reading.timestamp).total_seconds():.6f}"
+                f"{(stime - self._last_reading.timestamp).total_seconds():.6f}"
             )
 
             if time_delta == 0:
@@ -1231,34 +1237,49 @@ class IUVolume:
             if time_delta < 0:
                 raise ValueError(
                     "Sensor time has gone backwards: "
-                    f"previous: {last_reading.timestamp}, "
+                    f"previous: {self._last_reading.timestamp}, "
                     f"current: {stime}"
                 )
             if volume_delta < 0:
                 raise ValueError(
                     "Sensor value has gone backwards: "
-                    f"previous: {last_reading.value}, "
-                    f"current: {volume}"
+                    f"previous: {self._last_reading.value}, "
+                    f"current: {current_reading.value}"
                 )
 
-            # Update moving average of the rate. Ignore initial reading.
-            if len(self._sensor_readings) > 1:
-                rate = volume_delta * Decimal(self._flow_rate_scale) / time_delta
-                self._flow_rate_sum += rate
-                self._flow_rates.append(rate)
-                if len(self._flow_rates) > IUVolume.SMA_WINDOW:
-                    self._flow_rate_sum -= self._flow_rates.pop(0)
-                # pylint: disable=invalid-unary-operand-type
-                self._flow_rate_sma = (
-                    self._flow_rate_sum / len(self._flow_rates)
+            # Total
+            self._total_volume = current_reading.value - self._first_reading.value
+            total_time = current_reading.timestamp - self._first_reading.timestamp
+
+            # SMA
+            rate = volume_delta * Decimal(self._flow_rate_scale) / time_delta
+            self._flow_rate_sum += rate
+            self._flow_rates.append(rate)
+            if len(self._flow_rates) > IUVolume.SMA_WINDOW:
+                self._flow_rate_sum -= self._flow_rates.pop(0)
+            # pylint: disable=invalid-unary-operand-type
+            self._flow_rate_sma = (
+                self._flow_rate_sum / len(self._flow_rates)
+            ).quantize(Decimal(10) ** -self._flow_rate_precision)
+
+            # AVG
+            if (secs := total_time.total_seconds()) > 0:
+                self._flow_rate_avg = (
+                    self._total_volume * Decimal(self._flow_rate_scale) / Decimal(secs)
                 ).quantize(Decimal(10) ** -self._flow_rate_precision)
+        else:
+            self._first_reading = current_reading
+            self._total_volume = 0
+            self._flow_rate_sma = 0
+            self._flow_rate_avg = 0
 
         # Update bookkeeping
-        self._sensor_readings.append(IUVolumeSensorReading(stime, volume))
+        self._total_readings += 1
+        self._sensor_readings.append(current_reading)
         if len(self._sensor_readings) > IUVolume.MAX_READINGS:
             self._sensor_readings.pop(0)
 
-        return volume
+        return
 
     def event_hook(self, event: HAEvent) -> HAEvent:
         """A pass through place for testing to patch and update
@@ -1270,51 +1291,51 @@ class IUVolume:
         event = self.event_hook(event)
         stime = event.time_fired
         try:
-            value = self.read_sensor(stime)
+            self._read_sensor(stime)
         except ValueError as e:
             self._coordinator.logger.log_invalid_meter_value(stime, e)
         except IUVolumeSensorError:
             self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
         else:
-            self._total_volume = value - self._start_volume
-
             # Notifiy our trackers
             for listener in list(self._listeners.values()):
                 await listener(
                     stime,
                     self._zone,
                     self._total_volume,
-                    self._flow_rate_sma,
                 )
 
     def start_record(self, stime: datetime) -> None:
         """Start recording volume information"""
-        self.reset_readings()
+        self._reset_readings()
         if self._sensor_id is None:
             return
 
-        try:
-            self._start_volume = self.read_sensor(stime)
-        except ValueError as e:
-            self._coordinator.logger.log_invalid_meter_value(stime, e)
-        except IUVolumeSensorError:
-            self._coordinator.logger.log_invalid_meter_id(stime, self._sensor_id)
-        else:
-            self._callback_remove = async_track_state_change_event(
-                self._hass, self._sensor_id, self.sensor_state_change
-            )
-            IUVolume.trackers += 1
+        self._start_time = stime
+        self._callback_remove = async_track_state_change_event(
+            self._hass, self._sensor_id, self.sensor_state_change
+        )
+        IUVolume.trackers += 1
 
-    def end_record(self, stime: datetime) -> None:
+    def end_record(self, stime: datetime | None) -> None:
         """Finish recording volume information"""
         self._end_time = stime
+        if (
+            self._start_time is not None
+            and self._end_time is not None
+            and self._total_volume is not None
+        ):
+            if (secs := (self._end_time - self._start_time).total_seconds()) > 0:
+                self._flow_rate_avg = (
+                    self._total_volume * Decimal(self._flow_rate_scale) / Decimal(secs)
+                ).quantize(Decimal(10) ** -self._flow_rate_precision)
         if self._callback_remove is not None:
             self._callback_remove()
             self._callback_remove = None
             IUVolume.trackers -= 1
 
     def track_volume_change(
-        self, uid: int, action: Callable[[datetime, "IUZone", float, float], None]
+        self, uid: int, action: Callable[[datetime, "IUZone", float], None]
     ) -> CALLBACK_TYPE:
         """Track the volume"""
 
@@ -3311,7 +3332,7 @@ class IUSequenceRun(IUBase):
         self.advance(stime, -(self._end_time - stime))
 
     async def update_volume(
-        self, stime: datetime, zone: IUZone, volume: Decimal, rate: Decimal
+        self, stime: datetime, zone: IUZone, volume: Decimal
     ) -> None:
         """Notification for when the volume has changed"""
         # pylint: disable=unused-argument
@@ -4921,8 +4942,8 @@ class IUController(IUBase):
         # Handle off zones before master
         for zone in (self._zones[i] for i in zones_changed):
             if not zone.is_on:
-                zone.call_switch(zone.is_on, stime)
                 zone.volume.end_record(stime)
+                zone.call_switch(zone.is_on, stime)
 
         # Check if master has changed and update
         if state_changed:
