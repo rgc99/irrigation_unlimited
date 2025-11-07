@@ -6315,6 +6315,7 @@ class IUCoordinator:
         self._rename_entities = False
         self._extended_config = False
         self._restore_from_entity: bool = True
+        self._show_config = False
         self._global_zone_ids = False
         self._global_sequence_ids = False
         # Private variables
