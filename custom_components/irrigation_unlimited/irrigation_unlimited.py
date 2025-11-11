@@ -493,13 +493,16 @@ class IUAdjustment:
             elif method == "-":
                 self._method = CONF_DECREASE
                 self._time_adjustment = wash_td(str_to_td(adj))
+            elif adjustment[-1] == '%':
+                self._method = CONF_PERCENTAGE
+                self._time_adjustment = float(adjustment[:-1])
 
     def __str__(self) -> str:
         """Return the adjustment as a string notation"""
         if self._method == CONF_ACTUAL:
             return f"={self._time_adjustment}"
         if self._method == CONF_PERCENTAGE:
-            return f"%{self._time_adjustment}"
+            return f"{self._time_adjustment}%"
         if self._method == CONF_INCREASE:
             return f"+{self._time_adjustment}"
         if self._method == CONF_DECREASE:
