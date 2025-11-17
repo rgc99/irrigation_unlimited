@@ -2,7 +2,7 @@
 and caching history data"""
 
 from datetime import datetime, timedelta
-from typing import Callable, OrderedDict, Any
+from typing import Callable, OrderedDict, NamedTuple, TypedDict
 from homeassistant.core import HomeAssistant, State, CALLBACK_TYPE
 from homeassistant.util import dt
 
@@ -17,10 +17,14 @@ from homeassistant.helpers.event import (
 from homeassistant.components.recorder import history
 from homeassistant.const import STATE_ON
 
+from .util import is_none
 from .const import (
     ATTR_CURRENT_ADJUSTMENT,
     ATTR_CURRENT_NAME,
     ATTR_CURRENT_SCHEDULE,
+    ATTR_FLOW_RATE,
+    ATTR_VOLUME,
+    BINARY_SENSOR,
     CONF_ENABLED,
     CONF_HISTORY,
     CONF_HISTORY_REFRESH,
@@ -28,17 +32,39 @@ from .const import (
     CONF_READ_DELAY,
     CONF_REFRESH_INTERVAL,
     CONF_SPAN,
+    DOMAIN,
     TIMELINE_ADJUSTMENT,
+    TIMELINE_END,
+    TIMELINE_FLOW_RATE,
     TIMELINE_SCHEDULE,
     TIMELINE_SCHEDULE_NAME,
     TIMELINE_START,
-    TIMELINE_END,
-    DOMAIN,
-    BINARY_SENSOR,
+    TIMELINE_VOLUME,
 )
 
-TIMELINE = "timeline"
+
+class IUTodayTotal(NamedTuple):
+    duration: timedelta
+    volume: float
+
+
+class IUZoneTimeline(TypedDict):
+    start: datetime
+    end: datetime
+    schedule: str
+    schedule_name: str
+    adjustment: str
+    volume: float
+    flow_rate: float
+
+
 TODAY_ON = "today_on"
+TIMELINE = "timeline"
+
+
+class IUZoneHistory(TypedDict):
+    today_on: IUTodayTotal
+    timeline: IUZoneTimeline
 
 
 def midnight(utc: datetime) -> datetime:
@@ -73,7 +99,7 @@ class IUHistory:
         self._read_delay = timedelta(0)
         # Private variables
         self._history_last: datetime = None
-        self._cache: dict[str, Any] = {}
+        self._cache: dict[str, IUZoneHistory] = {}
         self._entity_ids: list[str] = []
         self._refresh_remove: CALLBACK_TYPE = None
         self._stime: datetime = None
@@ -135,9 +161,10 @@ class IUHistory:
     def _clear_cache(self) -> None:
         self._cache = {}
 
-    def _today_duration(self, stime: datetime, data: list[State]) -> timedelta:
-        """Return the total on time"""
+    def _today_total(self, stime: datetime, data: list[State]) -> IUTodayTotal:
+        """Return the total on time and volume"""
         elapsed = timedelta(0)
+        volume: float = None
         front_marker: State = None
         start = midnight(stime)
 
@@ -157,29 +184,32 @@ class IUHistory:
             # Now look for an off state
             if item.state != STATE_ON:
                 elapsed += item.last_changed - front_marker.last_changed
+                if (v := item.attributes.get(ATTR_VOLUME, None)) is not None:
+                    volume = is_none(volume, 0) + v
                 front_marker = None
 
         if front_marker is not None:
             elapsed += stime - front_marker.last_changed
 
-        return timedelta(seconds=round(elapsed.total_seconds()))
+        return IUTodayTotal(timedelta(seconds=round(elapsed.total_seconds())), volume)
 
-    def _run_history(self, stime: datetime, data: list[State]) -> list:
+    def _run_history(self, stime: datetime, data: list[State]) -> list[IUZoneTimeline]:
         """Return the on/off series"""
         # pylint: disable=unused-argument
 
-        def create_record(item: State, end: datetime) -> dict:
-            result = OrderedDict()
-            result[TIMELINE_START] = round_seconds_dt(item.last_changed)
-            result[TIMELINE_END] = round_seconds_dt(end)
-            result[TIMELINE_SCHEDULE] = item.attributes.get(ATTR_CURRENT_SCHEDULE)
-            result[TIMELINE_SCHEDULE_NAME] = item.attributes.get(ATTR_CURRENT_NAME)
-            result[TIMELINE_ADJUSTMENT] = item.attributes.get(
-                ATTR_CURRENT_ADJUSTMENT, ""
-            )
+        def create_record(head: State, tail: State) -> IUZoneTimeline:
+            result: IUZoneTimeline = {
+                TIMELINE_START: round_seconds_dt(head.last_changed),
+                TIMELINE_END: round_seconds_dt(tail.last_changed),
+                TIMELINE_SCHEDULE: head.attributes.get(ATTR_CURRENT_SCHEDULE),
+                TIMELINE_SCHEDULE_NAME: head.attributes.get(ATTR_CURRENT_NAME),
+                TIMELINE_ADJUSTMENT: head.attributes.get(ATTR_CURRENT_ADJUSTMENT, ""),
+                TIMELINE_VOLUME: tail.attributes.get(ATTR_VOLUME),
+                TIMELINE_FLOW_RATE: tail.attributes.get(ATTR_FLOW_RATE),
+            }
             return result
 
-        run_history = []
+        run_history: list[IUZoneTimeline] = []
         front_marker: State = None
 
         for item in data:
@@ -191,7 +221,7 @@ class IUHistory:
 
             # Now look for an off state
             if item.state != STATE_ON:
-                run_history.append(create_record(front_marker, item.last_changed))
+                run_history.append(create_record(front_marker, item))
                 front_marker = None
 
         return run_history
@@ -221,7 +251,7 @@ class IUHistory:
         entity_ids: set[str] = set()
         for entity_id in data:
             new_run_history = self._run_history(stime, data[entity_id])
-            new_today_on = self._today_duration(stime, data[entity_id])
+            new_today_on = self._today_total(stime, data[entity_id])
             if entity_id not in self._cache:
                 self._cache[entity_id] = {}
             elif (
@@ -283,11 +313,17 @@ class IUHistory:
 
         self._stime = stime
 
-    def today_total(self, entity_id: str) -> timedelta:
+    def today_total_duration(self, entity_id: str) -> timedelta:
         """Return the total on time for today"""
         if entity_id in self._cache:
-            return self._cache[entity_id][TODAY_ON]
+            return self._cache[entity_id][TODAY_ON].duration
         return timedelta(0)
+
+    def today_total_volume(self, entity_id: str) -> float:
+        """Return the total on time for today"""
+        if entity_id in self._cache:
+            return self._cache[entity_id][TODAY_ON].volume
+        return None
 
     def timeline(self, entity_id: str) -> list[dict]:
         """Return the timeline history"""

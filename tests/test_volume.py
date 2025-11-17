@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 from datetime import datetime
+import copy
 import asyncio
 from collections.abc import Iterator
 import homeassistant.core as ha
@@ -1940,3 +1941,159 @@ async def test_volume_limit(hass: ha.HomeAssistant, skip_dependencies, skip_hist
                 },
             },
         ]
+
+
+async def test_volume_live_history(hass: ha.HomeAssistant, allow_memory_db):
+    """Test volume with live history"""
+
+    def read_data(
+        file: str,
+    ) -> Iterator[tuple[int, datetime, str, str]]:
+        """Read data from the log file"""
+        with open(file, encoding="utf-8") as fhd:
+            for line in fhd:
+                if line.startswith("#"):
+                    continue
+                data = line.strip().split(";")
+                data = [s.strip() for s in data]
+                if len(data) >= 6:
+                    op = int(data[0])
+                    dts = dt.as_local(datetime.fromisoformat(data[1]))
+                    adjustment = data[4]
+                    volume = data[5]
+                    yield (op, dts, adjustment, volume)
+
+    async with IUExam(hass, "test_volume_live_history.yaml") as exam:
+        await exam.load_dependencies()
+        await exam.load_component("input_text")
+
+        await exam.begin_test(1)
+        with patch.object(IUVolume, "event_hook") as mock:
+            event_time: datetime = None
+            trackers_processed: int = 0
+
+            def state_change(event: ha.Event) -> ha.Event:
+                nonlocal event_time, trackers_processed
+                event.time_fired_timestamp = event_time.timestamp()
+                trackers_processed += 1
+                return event
+
+            mock.side_effect = state_change
+
+            for op, event_time, adjustment, volume in read_data(
+                "tests/logs/volume_live_history_sensor.log"
+            ):
+                await exam.run_until(event_time)
+
+                if op == 0:
+                    await set_sensor(hass, "input_text.dummy_sensor", volume)
+                    await exam.call(
+                        SERVICE_TIME_ADJUST,
+                        {
+                            "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                            "sequence_id": [1],
+                            "percentage": adjustment,
+                        },
+                    )
+                    continue
+                elif op == 2:
+                    await set_sensor(hass, "input_text.dummy_sensor", volume)
+                    while trackers_processed < IUVolume.trackers:
+                        await asyncio.sleep(0)
+                    trackers_processed = 0
+                else:
+                    continue
+
+        await exam.run_until("2025-11-16 20:05:00")
+        d = dt.utcnow()
+        exam.coordinator.history.muster(d, True)
+        await exam.coordinator.history._async_update_history(d)
+
+        # Strip dates and duration from history
+        hist = copy.deepcopy(exam.coordinator.history._cache)
+        for entity, history in hist.items():
+            for id, timeline in enumerate(history["timeline"]):
+                del hist[entity]["timeline"][id]["start"]
+                del hist[entity]["timeline"][id]["end"]
+            history["today_on"] = history["today_on"].volume
+        assert hist == {
+            "binary_sensor.irrigation_unlimited_c1_m": {
+                "timeline": [
+                    {
+                        "schedule": None,
+                        "schedule_name": "Pot Plants",
+                        "adjustment": "",
+                        "volume": 1.133,
+                        "flow_rate": 50.985,
+                    },
+                    {
+                        "schedule": None,
+                        "schedule_name": "Pot Plants",
+                        "adjustment": "",
+                        "volume": 1.21,
+                        "flow_rate": 55.139,
+                    },
+                ],
+                "today_on": 2.343,
+            },
+            "binary_sensor.irrigation_unlimited_c1_z1": {
+                "timeline": [
+                    {
+                        "schedule": 1,
+                        "schedule_name": "Dawn",
+                        "adjustment": "%100.0",
+                        "volume": 1.133,
+                        "flow_rate": 1.133,
+                    },
+                    {
+                        "schedule": 2,
+                        "schedule_name": "Dusk",
+                        "adjustment": "%99.0",
+                        "volume": 1.21,
+                        "flow_rate": 1.231,
+                    },
+                ],
+                "today_on": 2.343,
+            },
+            "binary_sensor.irrigation_unlimited_c1_s1": {
+                "timeline": [
+                    {
+                        "schedule": 1,
+                        "schedule_name": "Dawn",
+                        "adjustment": "",
+                        "volume": 1.133,
+                        "flow_rate": None,
+                    },
+                    {
+                        "schedule": 2,
+                        "schedule_name": "Dusk",
+                        "adjustment": "",
+                        "volume": 1.21,
+                        "flow_rate": None,
+                    },
+                ],
+                "today_on": 2.343,
+            },
+        }
+        assert (
+            exam.coordinator.history.today_total_volume(
+                "binary_sensor.irrigation_unlimited_c1_m"
+            )
+            == 2.343
+        )
+        assert (
+            exam.coordinator.history.today_total_volume(
+                "binary_sensor.irrigation_unlimited_c1_z1"
+            )
+            == 2.343
+        )
+        assert (
+            exam.coordinator.history.today_total_volume(
+                "binary_sensor.irrigation_unlimited_c1_s1"
+            )
+            == 2.343
+        )
+
+        await exam.finish_test()
+
+        exam.check_summary()

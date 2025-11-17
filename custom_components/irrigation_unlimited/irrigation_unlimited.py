@@ -2213,9 +2213,14 @@ class IUZone(IUBase):
         return self._show_timeline
 
     @property
-    def today_total(self) -> timedelta:
+    def today_total_duration(self) -> timedelta:
         """Return the total on time for today"""
-        return self._coordinator.history.today_total(self.entity_id)
+        return self._coordinator.history.today_total_duration(self.entity_id)
+
+    @property
+    def today_total_volume(self) -> float:
+        """Return the total volume time for today"""
+        return self._coordinator.history.today_total_volume(self.entity_id)
 
     @property
     def icon(self) -> str:

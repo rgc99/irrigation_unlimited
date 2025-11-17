@@ -33,6 +33,7 @@ from .const import (
     ATTR_PERCENT_COMPLETE,
     ATTR_ZONE_COUNT,
     ATTR_CURRENT_ZONE,
+    ATTR_TODAY_VOLUME,
     ATTR_TOTAL_TODAY,
     ATTR_SCHEDULE_COUNT,
     ATTR_ADJUSTMENT,
@@ -267,9 +268,10 @@ class IUZoneEntity(IUEntity):
         else:
             attr[ATTR_NEXT_SCHEDULE] = None
         attr[ATTR_TOTAL_TODAY] = round(
-            self._zone.today_total.total_seconds() / 60,
+            self._zone.today_total_duration.total_seconds() / 60,
             1,
         )
+        attr[ATTR_TODAY_VOLUME] = self._zone.today_total_volume
         if self._zone.show_config:
             attr[ATTR_CONFIGURATION] = self._zone.configuration
         if self._zone.show_timeline:

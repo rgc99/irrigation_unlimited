@@ -3,7 +3,7 @@
 from unittest.mock import patch
 from datetime import datetime, timedelta
 from collections import Counter
-from typing import OrderedDict, List, Any, NamedTuple
+from typing import List, Any, NamedTuple
 from homeassistant.const import (
     STATE_OFF,
     STATE_ON,
@@ -170,56 +170,50 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 4.0
             timeline = [
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-06 06:05")),
-                        ("end", mk_utc("2021-01-06 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-05 06:05")),
-                        ("end", mk_utc("2021-01-05 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 06:05")),
-                        ("end", mk_utc("2021-01-04 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "next"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:30")),
-                        ("end", mk_utc("2021-01-04 05:32")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 04:30")),
-                        ("end", mk_utc("2021-01-04 04:32")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
+                {
+                    "start": mk_utc("2021-01-06 06:05"),
+                    "end": mk_utc("2021-01-06 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-05 06:05"),
+                    "end": mk_utc("2021-01-05 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-04 06:05"),
+                    "end": mk_utc("2021-01-04 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "next",
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:30"),
+                    "end": mk_utc("2021-01-04 05:32"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 04:30"),
+                    "end": mk_utc("2021-01-04 04:32"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
             ]
             assert state.attributes["timeline"] == timeline
 
@@ -227,66 +221,60 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             assert state.attributes["today_total"] == 11.0
 
             timeline = [
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-06 06:10")),
-                        ("end", mk_utc("2021-01-06 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-05 06:10")),
-                        ("end", mk_utc("2021-01-05 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 06:10")),
-                        ("end", mk_utc("2021-01-04 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "next"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:40")),
-                        ("end", mk_utc("2021-01-04 05:45")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:35")),
-                        ("end", mk_utc("2021-01-04 05:38")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 04:35")),
-                        ("end", mk_utc("2021-01-04 04:38")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
+                {
+                    "start": mk_utc("2021-01-06 06:10"),
+                    "end": mk_utc("2021-01-06 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-05 06:10"),
+                    "end": mk_utc("2021-01-05 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-04 06:10"),
+                    "end": mk_utc("2021-01-04 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "next",
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:40"),
+                    "end": mk_utc("2021-01-04 05:45"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:35"),
+                    "end": mk_utc("2021-01-04 05:38"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 04:35"),
+                    "end": mk_utc("2021-01-04 04:38"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
             ]
             assert state.attributes["timeline"] == timeline
 
@@ -300,56 +288,50 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             assert state.attributes["today_total"] == 4.0
 
             timeline = [
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-07 06:05")),
-                        ("end", mk_utc("2021-01-07 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-06 06:05")),
-                        ("end", mk_utc("2021-01-06 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-05 06:05")),
-                        ("end", mk_utc("2021-01-05 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "next"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:30")),
-                        ("end", mk_utc("2021-01-04 05:32")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 04:30")),
-                        ("end", mk_utc("2021-01-04 04:32")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
+                {
+                    "start": mk_utc("2021-01-07 06:05"),
+                    "end": mk_utc("2021-01-07 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-06 06:05"),
+                    "end": mk_utc("2021-01-06 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-05 06:05"),
+                    "end": mk_utc("2021-01-05 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "next",
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:30"),
+                    "end": mk_utc("2021-01-04 05:32"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 04:30"),
+                    "end": mk_utc("2021-01-04 04:32"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
             ]
             assert state.attributes["timeline"] == timeline
 
@@ -357,66 +339,60 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             assert state.attributes["today_total"] == 11.0
 
             timeline = [
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-07 06:10")),
-                        ("end", mk_utc("2021-01-07 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-06 06:10")),
-                        ("end", mk_utc("2021-01-06 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-05 06:10")),
-                        ("end", mk_utc("2021-01-05 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "next"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:40")),
-                        ("end", mk_utc("2021-01-04 05:45")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:35")),
-                        ("end", mk_utc("2021-01-04 05:38")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 04:35")),
-                        ("end", mk_utc("2021-01-04 04:38")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
+                {
+                    "start": mk_utc("2021-01-07 06:10"),
+                    "end": mk_utc("2021-01-07 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-06 06:10"),
+                    "end": mk_utc("2021-01-06 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-05 06:10"),
+                    "end": mk_utc("2021-01-05 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "next",
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:40"),
+                    "end": mk_utc("2021-01-04 05:45"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:35"),
+                    "end": mk_utc("2021-01-04 05:38"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 04:35"),
+                    "end": mk_utc("2021-01-04 04:38"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
             ]
             assert state.attributes["timeline"] == timeline
 
@@ -425,56 +401,50 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             assert state.attributes["today_total"] == 0.0
 
             timeline = [
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-07 06:05")),
-                        ("end", mk_utc("2021-01-07 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-06 06:05")),
-                        ("end", mk_utc("2021-01-06 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-05 06:05")),
-                        ("end", mk_utc("2021-01-05 06:15")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "next"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:30")),
-                        ("end", mk_utc("2021-01-04 05:32")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 04:30")),
-                        ("end", mk_utc("2021-01-04 04:32")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
+                {
+                    "start": mk_utc("2021-01-07 06:05"),
+                    "end": mk_utc("2021-01-07 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-06 06:05"),
+                    "end": mk_utc("2021-01-06 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-05 06:05"),
+                    "end": mk_utc("2021-01-05 06:15"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "next",
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:30"),
+                    "end": mk_utc("2021-01-04 05:32"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 04:30"),
+                    "end": mk_utc("2021-01-04 04:32"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
             ]
             assert state.attributes["timeline"] == timeline
 
@@ -482,66 +452,60 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             assert state.attributes["today_total"] == 0.0
 
             timeline = [
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-07 06:10")),
-                        ("end", mk_utc("2021-01-07 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-06 06:10")),
-                        ("end", mk_utc("2021-01-06 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "scheduled"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-05 06:10")),
-                        ("end", mk_utc("2021-01-05 06:20")),
-                        ("schedule", 1),
-                        ("schedule_name", "Schedule 1"),
-                        ("adjustment", ""),
-                        ("status", "next"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:40")),
-                        ("end", mk_utc("2021-01-04 05:45")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 05:35")),
-                        ("end", mk_utc("2021-01-04 05:38")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
-                OrderedDict(
-                    [
-                        ("start", mk_utc("2021-01-04 04:35")),
-                        ("end", mk_utc("2021-01-04 04:38")),
-                        ("schedule", None),
-                        ("schedule_name", None),
-                        ("adjustment", ""),
-                        ("status", "history"),
-                    ]
-                ),
+                {
+                    "start": mk_utc("2021-01-07 06:10"),
+                    "end": mk_utc("2021-01-07 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-06 06:10"),
+                    "end": mk_utc("2021-01-06 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "scheduled",
+                },
+                {
+                    "start": mk_utc("2021-01-05 06:10"),
+                    "end": mk_utc("2021-01-05 06:20"),
+                    "schedule": 1,
+                    "schedule_name": "Schedule 1",
+                    "adjustment": "",
+                    "status": "next",
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:40"),
+                    "end": mk_utc("2021-01-04 05:45"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 05:35"),
+                    "end": mk_utc("2021-01-04 05:38"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
+                {
+                    "start": mk_utc("2021-01-04 04:35"),
+                    "end": mk_utc("2021-01-04 04:38"),
+                    "schedule": None,
+                    "schedule_name": None,
+                    "adjustment": "",
+                    "status": "history",
+                    "volume": None,
+                    "flow_rate": None,
+                },
             ]
             assert state.attributes["timeline"] == timeline
 
@@ -579,6 +543,7 @@ async def test_history_disabled(hass: ha.HomeAssistant, allow_memory_db):
             assert mock.call_count == 0
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 0.0
+            assert state.attributes["today_volume"] is None
             assert state.attributes["timeline"] == []
 
             await exam.finish_test()
@@ -639,103 +604,103 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
                 assert exam.coordinator.history._cache == {
                     "binary_sensor.irrigation_unlimited_c1_m": {
                         "timeline": [
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-03 04:09")),
-                                    ("end", mk_utc("2021-06-03 04:16")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-03 04:19")),
-                                    ("end", mk_utc("2021-06-03 04:26")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-03 04:29")),
-                                    ("end", mk_utc("2021-06-03 04:36")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-04 04:09")),
-                                    ("end", mk_utc("2021-06-04 04:16")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-04 04:19")),
-                                    ("end", mk_utc("2021-06-04 04:26")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
+                            {
+                                "start": mk_utc("2021-06-03 04:09"),
+                                "end": mk_utc("2021-06-03 04:16"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-03 04:19"),
+                                "end": mk_utc("2021-06-03 04:26"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-03 04:29"),
+                                "end": mk_utc("2021-06-03 04:36"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-04 04:09"),
+                                "end": mk_utc("2021-06-04 04:16"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-04 04:19"),
+                                "end": mk_utc("2021-06-04 04:26"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
                         ],
-                        "today_on": timedelta(seconds=1020),
+                        "today_on": (timedelta(seconds=1020), None),
                     },
                     "binary_sensor.irrigation_unlimited_c1_z1": {
                         "timeline": [
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-03 04:10")),
-                                    ("end", mk_utc("2021-06-03 04:15")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-03 04:20")),
-                                    ("end", mk_utc("2021-06-03 04:25")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-03 04:30")),
-                                    ("end", mk_utc("2021-06-03 04:35")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-04 04:10")),
-                                    ("end", mk_utc("2021-06-04 04:15")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
-                            OrderedDict(
-                                [
-                                    ("start", mk_utc("2021-06-04 04:20")),
-                                    ("end", mk_utc("2021-06-04 04:25")),
-                                    ("schedule", None),
-                                    ("schedule_name", None),
-                                    ("adjustment", ""),
-                                ]
-                            ),
+                            {
+                                "start": mk_utc("2021-06-03 04:10"),
+                                "end": mk_utc("2021-06-03 04:15"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-03 04:20"),
+                                "end": mk_utc("2021-06-03 04:25"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-03 04:30"),
+                                "end": mk_utc("2021-06-03 04:35"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-04 04:10"),
+                                "end": mk_utc("2021-06-04 04:15"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
+                            {
+                                "start": mk_utc("2021-06-04 04:20"),
+                                "end": mk_utc("2021-06-04 04:25"),
+                                "schedule": None,
+                                "schedule_name": None,
+                                "adjustment": "",
+                                "volume": None,
+                                "flow_rate": None,
+                            },
                         ],
-                        "today_on": timedelta(seconds=720),
+                        "today_on": (timedelta(seconds=720), None),
                     },
                 }
             finally:
