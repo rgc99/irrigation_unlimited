@@ -2107,7 +2107,10 @@ class IUZone(IUBase):
 
     @property
     def entity_id(self) -> str:
-        """Return the HA entity_id for the zone"""
+        """Return the HA entity_id for the zone. During the registion
+        HA may rename the entity"""
+        if self._zone_sensor is not None:
+            return self._zone_sensor.entity_id
         return f"{BINARY_SENSOR}.{DOMAIN}_{self.entity_base}"
 
     @property
@@ -3746,7 +3749,10 @@ class IUSequence(IUBase):
 
     @property
     def entity_id(self) -> str:
-        """Return the HA entity_id for the sequence"""
+        """Return the HA entity_id for the sequence. During the registion
+        HA may rename the entity"""
+        if self._sequence_sensor is not None:
+            return self._sequence_sensor.entity_id
         return f"{BINARY_SENSOR}.{DOMAIN}_{self.entity_base}"
 
     @property
@@ -4432,7 +4438,10 @@ class IUController(IUBase):
 
     @property
     def entity_id(self) -> str:
-        """Return the HA entity_id for the controller entity"""
+        """Return the HA entity_id for the controller. During the registion
+        HA may rename the entity"""
+        if self._master_sensor is not None:
+            return self._master_sensor.entity_id
         return f"{BINARY_SENSOR}.{DOMAIN}_{self.entity_base}"
 
     @property
@@ -6349,7 +6358,10 @@ class IUCoordinator:
 
     @property
     def entity_id(self) -> str:
-        """Return the entity_id for the coordinator"""
+        """Return the HA entity_id for the coorinator. During the registion
+        HA may rename the entity"""
+        if self._component is not None:
+            return self._component.entity_id
         return f"{DOMAIN}.{COORDINATOR}"
 
     @property
