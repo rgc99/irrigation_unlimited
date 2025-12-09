@@ -117,31 +117,30 @@ sensor:
     end: "{{ now() }}"
     scan_interval: 600
 
+template:
   # Five day weighted rain total sensor.
   # Adjust the weight values (0.7, 0.3, 0.15, 0.05) to suit your needs (0.0 = ignore that day).
-  - platform: template
-    sensors:
-      irrigation_unlimited_rain_weighted_total:
-        friendly_name: "Irrigation Unlimited Rain Weighted Total"
-        unit_of_measurement: "mm"
-        icon_template: "mdi:umbrella"
-        value_template: >
-          {% set r0 = state_attr('sensor.irrigation_unlimited_rain_0','max_value') | float(-1) %}
-          {% set r1 = state_attr('sensor.irrigation_unlimited_rain_1','max_value') | float(-1) %}
-          {% set r2 = state_attr('sensor.irrigation_unlimited_rain_2','max_value') | float(-1) %}
-          {% set r3 = state_attr('sensor.irrigation_unlimited_rain_3','max_value') | float(-1) %}
-          {% set r4 = state_attr('sensor.irrigation_unlimited_rain_4','max_value') | float(-1) %}
-          {% if r0 != -1 and r1 != -1 and r2 != -1 and r3 != - 1 and r4 != -1 %}
-            {% set rain_total = r0 %}
-            {% set rain_total = rain_total + r1 * 0.7 %}
-            {% set rain_total = rain_total + r2 * 0.3 %}
-            {% set rain_total = rain_total + r3 * 0.15 %}
-            {% set rain_total = rain_total + r4 * 0.05 %}
-            {{ rain_total | round(1) }}
-          {% else %}
-            {{ -1 }}
-          {% endif %}
-    scan_interval: 600
+  - sensors:
+    - name: Irrigation Unlimited Rain Weighted Total
+      unit_of_measurement: mm
+      default_entity_id: sensor.irrigation_unlimited_rain_weighted_total
+      icon: mdi:umbrella
+      state: >
+        {% set r0 = state_attr('sensor.irrigation_unlimited_rain_0','max_value') | float(-1) %}
+        {% set r1 = state_attr('sensor.irrigation_unlimited_rain_1','max_value') | float(-1) %}
+        {% set r2 = state_attr('sensor.irrigation_unlimited_rain_2','max_value') | float(-1) %}
+        {% set r3 = state_attr('sensor.irrigation_unlimited_rain_3','max_value') | float(-1) %}
+        {% set r4 = state_attr('sensor.irrigation_unlimited_rain_4','max_value') | float(-1) %}
+        {% if r0 != -1 and r1 != -1 and r2 != -1 and r3 != - 1 and r4 != -1 %}
+          {% set rain_total = r0 %}
+          {% set rain_total = rain_total + r1 * 0.7 %}
+          {% set rain_total = rain_total + r2 * 0.3 %}
+          {% set rain_total = rain_total + r3 * 0.15 %}
+          {% set rain_total = rain_total + r4 * 0.05 %}
+          {{ rain_total | round(1) }}
+        {% else %}
+          {{ -1 }}
+        {% endif %}"
 
 # Automation to adjust the run times for Irrigation Unlimited.
 # It uses the 5 day weighted rain total and the moving 5 day average temperature sensors
