@@ -120,7 +120,7 @@ sensor:
 template:
   # Five day weighted rain total sensor.
   # Adjust the weight values (0.7, 0.3, 0.15, 0.05) to suit your needs (0.0 = ignore that day).
-  - sensors:
+  - sensor:
     - name: Irrigation Unlimited Rain Weighted Total
       unit_of_measurement: mm
       default_entity_id: sensor.irrigation_unlimited_rain_weighted_total
