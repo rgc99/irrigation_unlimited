@@ -97,6 +97,10 @@ async def test_service_manual_run_sequence_by_sequence(
                 "time": "0:20:00",
             },
         )
+        assert (
+            str(exam.coordinator.controllers[0].sequences[0].runs[0])
+            == "status: FUTURE, start: 2021-01-04 14:01:01, end: 2021-01-04 14:21:01, schedule: Manual"
+        )
         await exam.finish_test()
 
         await exam.begin_test(2)
@@ -145,5 +149,3 @@ async def test_service_manual_run_sequence_by_sequence(
 
         await exam.finish_test()
         exam.check_summary()
-
-
