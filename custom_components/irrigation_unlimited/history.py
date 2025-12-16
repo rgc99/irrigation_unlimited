@@ -17,7 +17,7 @@ from homeassistant.helpers.event import (
 from homeassistant.components.recorder import history
 from homeassistant.const import STATE_ON
 
-from .util import is_none
+from .util import is_none, TD_ZERO
 from .const import (
     ATTR_CURRENT_ADJUSTMENT,
     ATTR_CURRENT_NAME,
@@ -96,7 +96,7 @@ class IUHistory:
         self._history_span = timedelta(days=7)
         self._refresh_interval = timedelta(seconds=120)
         self._enabled = True
-        self._read_delay = timedelta(0)
+        self._read_delay = TD_ZERO
         # Private variables
         self._history_last: datetime = None
         self._cache: dict[str, IUZoneHistory] = {}
@@ -163,7 +163,7 @@ class IUHistory:
 
     def _today_total(self, stime: datetime, data: list[State]) -> IUTodayTotal:
         """Return the total on time and volume"""
-        elapsed = timedelta(0)
+        elapsed = TD_ZERO
         volume: float = None
         front_marker: State = None
         start = midnight(stime)
@@ -317,7 +317,7 @@ class IUHistory:
         """Return the total on time for today"""
         if entity_id in self._cache:
             return self._cache[entity_id][TODAY_ON].duration
-        return timedelta(0)
+        return TD_ZERO
 
     def today_total_volume(self, entity_id: str) -> float:
         """Return the total on time for today"""

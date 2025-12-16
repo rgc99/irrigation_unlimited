@@ -4,6 +4,9 @@ from typing import Any
 from datetime import timedelta, date, datetime, time
 from homeassistant.util import dt
 
+# We use this a lot so make a constant
+TD_ZERO = timedelta(0)
+
 
 def convert_data(data: Any) -> Any:
     """Convert the data to a JSON serializable format"""

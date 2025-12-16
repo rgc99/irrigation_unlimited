@@ -62,7 +62,7 @@ from homeassistant.const import (
     Platform,
 )
 
-from .util import is_none
+from .util import is_none, TD_ZERO
 from .history import IUHistory
 from .const import (
     ATTR_ADJUSTED_DURATION,
@@ -1594,7 +1594,7 @@ class IURun(IUBase):
             duration: timedelta = self._end_time - self._start_time
             elapsed: timedelta = stime - self._start_time
             self._percent_complete = (
-                int((elapsed / duration) * 100) if duration > timedelta(0) else 0
+                int((elapsed / duration) * 100) if duration > TD_ZERO else 0
             )
             return True
         return False
@@ -1630,7 +1630,7 @@ class IURun(IUBase):
 def calc_on_time(runs: list[IURun]) -> timedelta:
     """Return the total time this list of runs is on. Accounts for
     overlapping time periods"""
-    result = timedelta(0)
+    result = TD_ZERO
     period_start: datetime = None
     period_end: datetime = None
 
@@ -1780,7 +1780,7 @@ class IURunQueue(list[IURun]):
         """Remove any expired runs from the queue"""
         modified: bool = False
         if postamble is None:
-            postamble = timedelta(0)
+            postamble = TD_ZERO
         i = len(self) - 1
         while i >= 0:
             run = self[i]
@@ -1868,7 +1868,7 @@ class IURunQueue(list[IURun]):
             status |= IURQStatus.UPDATED
         if self._current_run is None:
             for run in self:
-                if run.running and run.duration != timedelta(0):
+                if run.running and run.duration != TD_ZERO:
                     self._current_run = run
                     self._next_run = None
                     status |= IURQStatus.UPDATED
@@ -1880,7 +1880,7 @@ class IURunQueue(list[IURun]):
             status |= IURQStatus.UPDATED
         if self._next_run is None:
             for run in self:
-                if run.future and run.duration != timedelta(0):
+                if run.future and run.duration != TD_ZERO:
                     self._next_run = run
                     status |= IURQStatus.UPDATED
                     break
@@ -1929,7 +1929,7 @@ class IUScheduleQueue(IURunQueue):
         if self._maximum is not None:
             duration = min(duration, self._maximum)
         if self._threshold is not None and duration < self._threshold:
-            duration = timedelta(0)
+            duration = TD_ZERO
         return duration
 
     def clear_runs(self) -> bool:
@@ -2316,9 +2316,9 @@ class IUZone(IUBase):
         """Add a manual run."""
         if self._allow_manual or (self.is_enabled and self._controller.is_enabled):
             duration = wash_td(data.get(CONF_TIME))
-            delay = wash_td(data.get(CONF_DELAY, timedelta(0)))
+            delay = wash_td(data.get(CONF_DELAY, TD_ZERO))
             queue = data.get(CONF_QUEUE, self._controller.queue_manual)
-            if duration is None or duration == timedelta(0):
+            if duration is None or duration == TD_ZERO:
                 duration = self._duration
                 if duration is None:
                     return
@@ -2406,7 +2406,7 @@ class IUZone(IUBase):
             if self.runs.current_run is not None:
                 current_duration = self.runs.current_run.duration
             else:
-                current_duration = timedelta(0)
+                current_duration = TD_ZERO
             result[CONF_ICON] = self.icon
             result[CONF_ZONE_ID] = self._zone_id
             result[CONF_ENTITY_BASE] = self.entity_base
@@ -2424,7 +2424,7 @@ class IUZone(IUBase):
             run[TIMELINE_STATUS] = RES_TIMELINE_HISTORY
 
         for run in self._run_queue:
-            if run.duration == timedelta(0):
+            if run.duration == TD_ZERO:
                 continue
             dct = run.as_dict()
             if run.running:
@@ -2871,14 +2871,14 @@ class IUSequenceRun(IUBase):
         self._current_zone: IUSequenceZoneRun = None
         self._start_time: datetime = None
         self._end_time: datetime = None
-        self._accumulated_duration = timedelta(0)
+        self._accumulated_duration = TD_ZERO
         self._first_zone: IUZone = None
         self._status = IURunStatus.UNKNOWN
         self._paused: datetime = None
         self._last_pause: datetime = None
         self._volume_trackers: list[CALLBACK_TYPE] = []
         self._volume_stats: dict[IUSequenceZoneRun, dict[IUZone, Decimal]] = {}
-        self._remaining_time = timedelta(0)
+        self._remaining_time = TD_ZERO
         self._percent_complete: int = 0
 
     def __str__(self) -> str:
@@ -2997,7 +2997,7 @@ class IUSequenceRun(IUBase):
                 duration = self._sequence.zone_duration_final(
                     sequence_zone, duration_factor, self
                 )
-                duration_max = timedelta(0)
+                duration_max = TD_ZERO
                 delay = self._sequence.zone_delay(sequence_zone, self)
                 for zone in sequence_zone.zones:
                     if self.zone_enabled(zone):
@@ -3011,7 +3011,7 @@ class IUSequenceRun(IUBase):
                             duration_adjusted = zone.runs.constrain(duration_adjusted)
                         else:
                             duration_adjusted = duration
-                        if duration_adjusted == timedelta(0):
+                        if duration_adjusted == TD_ZERO:
                             continue
 
                         zone_run_time = next_run
@@ -3139,7 +3139,7 @@ class IUSequenceRun(IUBase):
         def update_run(stime: datetime, duration: timedelta, run: IURun) -> None:
             if run.expired:
                 return
-            if duration > timedelta(0):
+            if duration > TD_ZERO:
                 if run.running:
                     if shift_start:
                         run.start_time += duration
@@ -3197,12 +3197,12 @@ class IUSequenceRun(IUBase):
                     next_end = run.end_time
             duration = next_start - stime
             if self._active_zone is not None:
-                delay = max(next_start - current_end, timedelta(0))
+                delay = max(next_start - current_end, TD_ZERO)
             else:
-                delay = max(current_start - stime, timedelta(0))
+                delay = max(current_start - stime, TD_ZERO)
         else:
             duration = current_end - stime
-            delay = timedelta(0)
+            delay = TD_ZERO
 
         # Next zone is overlapped with current
         if next_start is not None and next_start < current_end:
@@ -3247,7 +3247,7 @@ class IUSequenceRun(IUBase):
             return 0
 
         def split_run(
-            run: IURun, szr: IUSequenceZoneRun, start: datetime, duration=timedelta(0)
+            run: IURun, szr: IUSequenceZoneRun, start: datetime, duration=TD_ZERO
         ) -> None:
             split = run.zone.runs.add(
                 stime,
@@ -3263,7 +3263,7 @@ class IUSequenceRun(IUBase):
             return
         runs = self._runs.copy()
         pause_list = self._runs.copy()
-        over_run = timedelta(0)
+        over_run = TD_ZERO
         for run, szr in runs.items():
             state = run_state(run)
             if state == 2:
@@ -3272,7 +3272,7 @@ class IUSequenceRun(IUBase):
                 # Create a master postamble run out
                 if (
                     self._controller.postamble is not None
-                    and self._controller.postamble < timedelta(0)
+                    and self._controller.postamble < TD_ZERO
                 ):
                     over_run = -self._controller.postamble
                     run.master_run.start_time = stime + over_run
@@ -3288,7 +3288,7 @@ class IUSequenceRun(IUBase):
                 split_run(
                     run, szr, run.master_run.end_time - self._controller.postamble
                 )
-        if over_run != timedelta(0):
+        if over_run != TD_ZERO:
             self.advance(stime, -over_run, runs)
         pause_run(stime, pause_list)
         self._paused = stime
@@ -3318,7 +3318,7 @@ class IUSequenceRun(IUBase):
             offset = stime - next_start
             if (
                 self._controller.preamble is not None
-                and self._controller.preamble > timedelta(0)
+                and self._controller.preamble > TD_ZERO
             ):
                 offset += self._controller.preamble
             self.advance(stime, offset, self._runs, shift_start=True)
@@ -3439,7 +3439,7 @@ class IUSequenceRun(IUBase):
         elapsed = stime - self._start_time
         duration = self._end_time - self._start_time
         self._percent_complete = (
-            int((elapsed / duration) * 100) if duration > timedelta(0) else 0
+            int((elapsed / duration) * 100) if duration > TD_ZERO else 0
         )
         return True
 
@@ -3558,7 +3558,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
         """Return the current active duration"""
         if self._current_run is not None:
             return self._current_run.total_time
-        return timedelta(0)
+        return TD_ZERO
 
     @property
     def active_zone(self) -> IUSequenceZoneRun | None:
@@ -3572,7 +3572,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
         if self._current_run is not None:
             for run in self._current_run.zone_runs(sequence_zone):
                 return run.duration
-        return timedelta(0)
+        return TD_ZERO
 
     def add(self, run: IUSequenceRun) -> IUSequenceRun:
         """Add a sequence run to the queue"""
@@ -3622,7 +3622,7 @@ class IUSequenceQueue(list[IUSequenceRun]):
     def remove_expired(self, stime: datetime, postamble: timedelta) -> bool:
         """Remove any expired sequence runs from the queue"""
         if postamble is None:
-            postamble = timedelta(0)
+            postamble = TD_ZERO
         modified: bool = False
         i = len(self) - 1
         while i >= 0:
@@ -3638,10 +3638,10 @@ class IUSequenceQueue(list[IUSequenceRun]):
         # pylint: disable=too-many-branches
 
         def valid_current(run: IUSequenceRun) -> bool:
-            return (run.running or run.paused) and run.on_time() != timedelta(0)
+            return (run.running or run.paused) and run.on_time() != TD_ZERO
 
         def valid_next(run: IUSequenceRun) -> bool:
-            return run.future and run.on_time() != timedelta(0)
+            return run.future and run.on_time() != TD_ZERO
 
         status = IURQStatus(0)
 
@@ -3948,7 +3948,7 @@ class IUSequence(IUBase):
         else:
             delay = self._delay
         if delay is None:
-            delay = timedelta(0)
+            delay = TD_ZERO
         return delay
 
     def zone_delay(
@@ -3957,11 +3957,11 @@ class IUSequence(IUBase):
         """Return the delay for the specified zone"""
         if self.zone_enabled(sequence_zone, sqr):
             return self.zone_delay_config(sequence_zone)
-        return timedelta(0)
+        return TD_ZERO
 
     def total_delay(self, sqr: IUSequenceRun) -> timedelta:
         """Return the total delay for all the zones"""
-        delay = timedelta(0)
+        delay = TD_ZERO
         last_zone: IUSequenceZone = None
         if len(self._zones) > 0:
             for zone in self._zones:
@@ -3989,7 +3989,7 @@ class IUSequence(IUBase):
         """Return the base duration for the specified zone"""
         if self.zone_enabled(sequence_zone, sqr):
             return self.zone_duration_config(sequence_zone)
-        return timedelta(0)
+        return TD_ZERO
 
     def zone_duration(
         self, sequence_zone: IUSequenceZone, sqr: IUSequenceRun
@@ -4000,7 +4000,7 @@ class IUSequence(IUBase):
             duration = self.zone_duration_base(sequence_zone, sqr)
             duration = sequence_zone.adjustment.adjust(duration)
             return self.constrain(sequence_zone, duration)
-        return timedelta(0)
+        return TD_ZERO
 
     def zone_duration_final(
         self,
@@ -4015,7 +4015,7 @@ class IUSequence(IUBase):
 
     def total_duration(self, sqr: IUSequenceRun) -> timedelta:
         """Return the total duration for all the zones"""
-        duration = timedelta(0)
+        duration = TD_ZERO
         for zone in self._zones:
             duration += self.zone_duration(zone, sqr) * zone.repeat
         duration *= self._repeat
@@ -4027,7 +4027,7 @@ class IUSequence(IUBase):
             total_duration = self.total_duration(sqr)
         if self.has_adjustment(False):
             total_duration = self.adjustment.adjust(total_duration)
-            total_duration = max(total_duration, timedelta(0))
+            total_duration = max(total_duration, TD_ZERO)
         return total_duration
 
     def total_time_final(self, total_time: timedelta, sqr: IUSequenceRun) -> timedelta:
@@ -4047,7 +4047,7 @@ class IUSequence(IUBase):
         zone duration. Final time will be approximate as the new durations must
         be rounded to internal boundaries"""
         total_duration = self.total_duration(sqr)
-        if total_time is not None and total_duration != timedelta(0):
+        if total_time is not None and total_duration != TD_ZERO:
             total_delay = self.total_delay(sqr)
             if total_time > total_delay:
                 return (total_time - total_delay) / total_duration
@@ -4301,9 +4301,9 @@ class IUSequence(IUBase):
     def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
         """Service handler for manual_run"""
         duration = wash_td(data.get(CONF_TIME))
-        delay = wash_td(data.get(CONF_DELAY, timedelta(0)))
+        delay = wash_td(data.get(CONF_DELAY, TD_ZERO))
         queue = data.get(CONF_QUEUE, self._controller.queue_manual)
-        if duration is not None and duration == timedelta(0):
+        if duration is not None and duration == TD_ZERO:
             duration = None
         self._controller.muster_sequence(
             stime,
@@ -4825,7 +4825,7 @@ class IUController(IUBase):
         duration_factor = sequence.duration_factor(total_time, sequence_run)
 
         total_time = sequence_run.build(duration_factor)
-        if total_time > timedelta(0):
+        if total_time > TD_ZERO:
             start_time = init_run_time(
                 earliest, sequence, schedule, sequence_run.first_zone(), total_time
             )
@@ -5123,7 +5123,7 @@ class IUController(IUBase):
             nst += granularity_time()
         if (
             self.preamble is not None
-            and self.preamble > timedelta(0)
+            and self.preamble > TD_ZERO
             and not self.is_on
         ):
             nst += self.preamble
@@ -5554,7 +5554,7 @@ class IUTester:
     @property
     def total_virtual_duration(self) -> timedelta:
         """Returns the real time duration of the tests"""
-        result = timedelta(0)
+        result = TD_ZERO
         for test in self._tests:
             result += test.virtual_duration
         return result
@@ -6801,7 +6801,7 @@ class IUCoordinator:
 
         event_type = EVENT_VALVE_ON if state else EVENT_VALVE_OFF
 
-        duration = timedelta(0)
+        duration = TD_ZERO
         volume: float
         flow_rate: float
         iu_id: str
