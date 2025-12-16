@@ -11,8 +11,10 @@ def convert_data(data: Any) -> Any:
     def convert_item(value: Any) -> Any:
         if isinstance(value, timedelta):
             return round(value.total_seconds())
-        if isinstance(value, (date, datetime)):
+        if isinstance(value, datetime):
             return dt.as_local(value).isoformat()
+        if isinstance(value, date):
+            return value.isoformat()
         if isinstance(value, time):
             return value.isoformat()
         return value
