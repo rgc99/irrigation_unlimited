@@ -2134,6 +2134,11 @@ class IUZone(IUBase):
         return self._volume
 
     @property
+    def switch(self) -> IUSwitch:
+        """Return the switch for this zone"""
+        return self._switch
+
+    @property
     def zone_id(self) -> str:
         """Return the zone_id. Should match the zone_id used in sequences"""
         return self._zone_id
@@ -4968,6 +4973,7 @@ class IUController(IUBase):
             if zone.is_on:
                 zone.call_switch(zone.is_on, stime)
                 zone.volume.start_record(stime)
+        for zone in self._zones:
             if zone.runs.check_last_run():
                 self._coordinator.notify_valve(
                     3, stime, True, zone.switch.switch_entity_id, self, zone

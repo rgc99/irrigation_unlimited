@@ -268,6 +268,25 @@ async def test_event_valve_basic(
                 },
             },
             {
+                "event_type": "irrigation_unlimited_valve_on",
+                "event_time": mk_local("2025-09-21 06:41:00"),
+                "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
+                    "type": 3,
+                    "duration": 600,
+                    "volume": None,
+                    "flow_rate": None,
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test controller 1",
+                    },
+                    "zone": {"index": 3, "zone_id": "4", "name": "Zone 4"},
+                    "entity_id": None,
+                },
+            },
+            {
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:51:00"),
                 "data": {
@@ -734,6 +753,25 @@ async def test_event_valve_extended(
                 },
             },
             {
+                "event_type": "irrigation_unlimited_valve_on",
+                "event_time": mk_local("2025-09-21 06:41:00"),
+                "data": {
+                    "iu_id": "c1_z4",
+                    "id": "1_4",
+                    "type": 3,
+                    "duration": 600,
+                    "volume": None,
+                    "flow_rate": None,
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test controller 1",
+                    },
+                    "zone": {"index": 3, "zone_id": "4", "name": "Zone 4"},
+                    "entity_id": "input_boolean.dummy_switch_c1_z4",
+                },
+            },
+            {
                 "event_type": "irrigation_unlimited_valve_off",
                 "event_time": mk_local("2025-09-21 06:51:00"),
                 "data": {
@@ -826,6 +864,112 @@ async def test_event_valve_extended(
                     },
                     "zone": {"index": 3, "zone_id": "4", "name": "Zone 4"},
                     "entity_id": "input_boolean.dummy_switch_c1_z4",
+                },
+            },
+        ]
+
+
+async def test_event_valve_run_on(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test valve run_on events."""
+    # pylint: disable=unused-argument
+
+    async with IUExam(hass, "test_event_valve_run_on.yaml") as exam:
+
+        event_data: list[dict] = []
+
+        def handle_event(event: ha.Event):
+            nonlocal event_data
+            event_data.append(
+                {
+                    "event_type": event.event_type,
+                    "event_time": exam.virtual_time,
+                    "data": event.data,
+                }
+            )
+
+        hass.bus.async_listen(f"{DOMAIN}_{EVENT_VALVE_ON}", handle_event)
+
+        await exam.run_test(1)
+        exam.check_summary()
+
+        event_data.sort(key=event_sorter)
+        xxx = [
+            {
+                "event_type": "irrigation_unlimited_valve_on",
+                "event_time": mk_local("2025-09-21 06:05:00"),
+                "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
+                    "type": 1,
+                    "duration": 360,
+                    "volume": None,
+                    "flow_rate": None,
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test controller 1",
+                    },
+                    "zone": {"index": None, "zone_id": None, "name": None},
+                    "entity_id": None,
+                },
+            },
+            {
+                "event_type": "irrigation_unlimited_valve_on",
+                "event_time": mk_local("2025-09-21 06:05:00"),
+                "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
+                    "type": 1,
+                    "duration": 360,
+                    "volume": None,
+                    "flow_rate": None,
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test controller 1",
+                    },
+                    "zone": {"index": 0, "zone_id": "1", "name": "Zone 1"},
+                    "entity_id": None,
+                },
+            },
+            {
+                "event_type": "irrigation_unlimited_valve_on",
+                "event_time": mk_local("2025-09-21 06:11:00"),
+                "data": {
+                    "iu_id": "c1_m",
+                    "id": "1",
+                    "type": 3,
+                    "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test controller 1",
+                    },
+                    "zone": {"index": None, "zone_id": None, "name": None},
+                    "entity_id": None,
+                },
+            },
+            {
+                "event_type": "irrigation_unlimited_valve_on",
+                "event_time": mk_local("2025-09-21 06:11:00"),
+                "data": {
+                    "iu_id": "c1_z1",
+                    "id": "1_1",
+                    "type": 3,
+                    "duration": 720,
+                    "volume": None,
+                    "flow_rate": None,
+                    "controller": {
+                        "index": 0,
+                        "controller_id": "1",
+                        "name": "Test controller 1",
+                    },
+                    "zone": {"index": 0, "zone_id": "1", "name": "Zone 1"},
+                    "entity_id": None,
                 },
             },
         ]
