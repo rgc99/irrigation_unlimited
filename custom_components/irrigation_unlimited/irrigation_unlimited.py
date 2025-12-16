@@ -2983,9 +2983,6 @@ class IUSequenceRun(IUBase):
             if self._schedule is not None and self._schedule.duration is not None:
                 return self._sequence.total_time_final(self._schedule.duration, self)
             return self.sequence.total_time_final(None, self)
-
-        if self._schedule is not None:
-            return self._sequence.total_time_final(total_time, self)
         return total_time
 
     def build(self, duration_factor: float) -> timedelta:
