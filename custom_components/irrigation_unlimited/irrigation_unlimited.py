@@ -3091,8 +3091,6 @@ class IUSequenceRun(IUBase):
         """Return the next sequence zone run in the run queue"""
         found = False
         for szr in self.runs.values():
-            if szr is None:
-                continue
             if not found and szr == sequence_zone_run:
                 found = True
             if found and szr.sequence_zone != sequence_zone_run.sequence_zone:
@@ -3105,8 +3103,6 @@ class IUSequenceRun(IUBase):
         """Return the next sequence run in the queue"""
         found = False
         for szr in self.runs.values():
-            if szr is None:
-                continue
             if not found and szr == sequence_zone_run:
                 found = True
                 continue
