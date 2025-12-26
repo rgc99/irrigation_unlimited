@@ -1595,6 +1595,9 @@ These events are fired when a sequence starts and finishes. The `trigger.event.d
 | Field | Description |
 | ----- | ----------- |
 | `entity_id` | The sequence entity i.e. `binary_sensor.irrigation_unlimted_c1_s1`. |
+| `iu_id` | Irrigation Unlimited unique id i.e. `c1_s1`. |
+| `id` | User defined id values. A combination of the `controller_id` and `zone_id` values. |
+| `volume` | Total volume. |
 | `zone_ids` | The zones scheduled to run. |
 | `controller.index` | The sequential index of the controller. |
 | `controller.controller_id` | The unique id of the controller. |
@@ -1606,6 +1609,12 @@ These events are fired when a sequence starts and finishes. The `trigger.event.d
 | `schedule.schedule_id` | The unique id of the schedule. Note: This maybe blank/empty(None) if it was a manual run. |
 | `schedule.name` | The friendly name of the schedule. |
 | `run.duration` | The run time of the sequence. |
+| `zones` | Summary list of zone run information. |
+| `zones[N].index` | The sequential index of the zone. |
+| `zones[N].name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
+| `zones[N].zone_id` | The unique id of the zone within the controller. |
+| `zones[N].duration` | The run time of the zone. |
+| `zones[N].volume` | The volume of the zone. |
 
 This example displays a [persistent notification](https://www.home-assistant.io/integrations/persistent_notification/) on the front end when a sequence completes. Note the use of [templating](https://www.home-assistant.io/docs/configuration/templating/) to construct a specific message. Although not used here, this platform also supports markdown.
 
@@ -1679,7 +1688,7 @@ These events are fired when the valve changes state. Listen for these events to 
 | ----- | ----------- |
 | `iu_id` | Irrigation Unlimited unique id i.e. `c1_m`, `c1_z1`. |
 | `id` | User defined id values. A combination of the `controller_id` and `zone_id` values. |
-| `type` | 1 = Normal, 2 = Resync attempt via a [check back](#510-check-back-object) operation, 3 = Current run change. |
+| `type` | 1 = Normal, 2 = Resync attempt via a [check back](#510-check-back-object) operation, 3 = Run on/Run change. The current duration has been extended. |
 | `entity_id` | The target entity. |
 | `duration` | Time in seconds. |
 | `volume` | Total volume. |
