@@ -1119,11 +1119,16 @@ class IUVolume:
     trackers: int = 0
 
     def __init__(
-        self, hass: HomeAssistant, coordinator: "IUCoordinator", zone: "IUZone"
+        self,
+        hass: HomeAssistant,
+        coordinator: "IUCoordinator",
+        controller: "IUController",
+        zone: "IUZone",
     ) -> None:
         # Passed parameters
         self._hass = hass
         self._coordinator = coordinator
+        self._controller = controller
         self._zone = zone
         # Config parameters
         self._sensor_id: str = None
@@ -1298,6 +1303,15 @@ class IUVolume:
                     self._zone,
                     self._total_volume,
                 )
+            self._coordinator.logger.log_volume_reading(
+                stime,
+                self._controller,
+                self._zone,
+                self._sensor_id,
+                self._sensor_readings[-1].value,
+                self._total_volume,
+                self._flow_rate_avg,
+            )
 
     def start_record(self, stime: datetime) -> None:
         """Start recording volume information"""
@@ -2079,7 +2093,7 @@ class IUZone(IUBase):
         self._suspend_until: datetime = None
         self._dirty: bool = True
         self._switch = IUSwitch(hass, coordinator, controller, self)
-        self._volume = IUVolume(hass, coordinator, self)
+        self._volume = IUVolume(hass, coordinator, controller, self)
         self._user = IUUser()
 
     @property
@@ -4414,7 +4428,7 @@ class IUController(IUBase):
         self._sensor_update_required: bool = False
         self._sensor_last_update: datetime = None
         self._suspend_until: datetime = None
-        self._volume = IUVolume(hass, coordinator, None)
+        self._volume = IUVolume(hass, coordinator, self, None)
         self._user = IUUser()
         self._dirty: bool = True
 
@@ -6119,6 +6133,32 @@ class IULogger:
     def log_invalid_meter_value(self, stime: datetime, value: str, level=ERROR) -> None:
         """Warn the volume meter value is invalid"""
         self._format(level, "VOLUME_VALUE", stime, f"{value}")
+
+    def log_volume_reading(
+        self,
+        stime: datetime,
+        controller: IUController,
+        zone: IUZone,
+        sensor_id: str,
+        value: Decimal,
+        total: Decimal,
+        flow_avg: Decimal,
+        level=DEBUG,
+    ) -> None:
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        """Log a reading from the volume sensor"""
+        idl = IUBase.idl([controller, zone], "-", 1)
+        self._format(
+            level,
+            "VOLUME_READING",
+            stime,
+            f"controller: {idl[0]}, "
+            f"zone: {idl[1]}, "
+            f"entity_id: {sensor_id}, "
+            f"value: {value}, "
+            f"total: {total}, "
+            f"flow_avg: {flow_avg} ",
+        )
 
 
 class IUClock:
