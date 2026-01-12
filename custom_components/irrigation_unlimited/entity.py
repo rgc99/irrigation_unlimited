@@ -112,8 +112,8 @@ class IURestore:
         sequence: IUSequence,
         sequence_zone: IUSequenceZone,
     ) -> None:
-        # pylint: disable=too-many-arguments
-        if not CONF_STATE in data:
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        if CONF_STATE not in data:
             return
         if data.get(CONF_STATE) == STATE_ON:
             if sequence_zone is not None:
@@ -141,8 +141,8 @@ class IURestore:
         sequence: IUSequence,
         sequence_zone: IUSequenceZone,
     ) -> None:
-        # pylint: disable=too-many-arguments
-        if not CONF_ENABLED in data:
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        if CONF_ENABLED not in data:
             return
         svc = SERVICE_ENABLE if data.get(CONF_ENABLED) else SERVICE_DISABLE
         svd = {}
@@ -160,8 +160,8 @@ class IURestore:
         sequence: IUSequence,
         sequence_zone: IUSequenceZone,
     ) -> None:
-        # pylint: disable=too-many-arguments
-        if not ATTR_SUSPENDED in data:
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        if ATTR_SUSPENDED not in data:
             return
         svd = {}
         if data.get(ATTR_SUSPENDED) is not None:
@@ -182,8 +182,8 @@ class IURestore:
         sequence: IUSequence,
         sequence_zone: IUSequenceZone,
     ) -> None:
-        # pylint: disable=too-many-arguments
-        if not ATTR_ADJUSTMENT in data:
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        if ATTR_ADJUSTMENT not in data:
             return
         if (svd := IUAdjustment(data.get(ATTR_ADJUSTMENT)).to_dict()) == {}:
             svd[CONF_RESET] = None

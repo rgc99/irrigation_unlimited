@@ -29,10 +29,9 @@ def convert_data(data: Any) -> Any:
             else:
                 data[key] = convert_item(value)
         return data
-    elif isinstance(data, list):
+    if isinstance(data, list):
         return [convert_data(item) for item in data]
-    else:
-        return convert_item(data)
+    return convert_item(data)
 
 
 def is_none(value: Any | None, default: Any) -> Any:

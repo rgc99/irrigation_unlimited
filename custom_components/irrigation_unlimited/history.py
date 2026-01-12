@@ -44,11 +44,13 @@ from .const import (
 
 
 class IUTodayTotal(NamedTuple):
+    """Class to hold totals for today"""
     duration: timedelta
     volume: float
 
 
 class IUZoneTimeline(TypedDict):
+    """Class to hold a timeline item"""
     start: datetime
     end: datetime
     schedule: str
@@ -63,6 +65,7 @@ TIMELINE = "timeline"
 
 
 class IUZoneHistory(TypedDict):
+    """History cache"""
     today_on: IUTodayTotal
     timeline: IUZoneTimeline
 

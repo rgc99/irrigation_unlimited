@@ -382,6 +382,7 @@ def suspend_until_date(
 
 
 class IUDTMin:
+    # pylint: disable=too-few-public-methods
     """Class to record a minimum datetime value. The default value is
     the end of time"""
 
@@ -396,17 +397,12 @@ class IUDTMin:
         """Take note of the value(s) passed and record the new minimum. None
         values are ignored"""
 
-        def check_item(d: datetime):
-            if d < self.min:
-                self.min = d
-            return
-
         if isinstance(dates, datetime):
-            check_item(dates)
+            self.min = min(self.min, dates)
         elif isinstance(dates, Iterable):
             for item in dates:
                 if item is not None:
-                    check_item(item)
+                    self.min = min(self.min, item)
         return self
 
 
@@ -1279,8 +1275,6 @@ class IUVolume:
         if len(self._sensor_readings) > IUVolume.MAX_READINGS:
             self._sensor_readings.pop(0)
 
-        return
-
     def event_hook(self, event: HAEvent) -> HAEvent:
         """A pass through place for testing to patch and update
         parameters in the event message"""
@@ -1391,7 +1385,7 @@ class IURun(IUBase):
         sequence_run: "IUSequenceRun",
         zone_run: "IURun",
     ) -> None:
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         super().__init__(None)
         # Passed parameters
         self._start_time: datetime = start_time
@@ -1694,7 +1688,7 @@ class IURunQueue(list[IURun]):
         sequence_run: "IUSequenceRun",
         zone_run: IURun,
     ) -> IURun:
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Add a run to the queue"""
         run = IURun(stime, start_time, duration, zone, schedule, sequence_run, zone_run)
         self.append(run)
@@ -1948,7 +1942,7 @@ class IUScheduleQueue(IURunQueue):
     ) -> IURun:
         """Add a new run to the queue"""
         # pylint: disable=arguments-differ
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         return super().add(
             stime,
             start_time,
@@ -1969,7 +1963,7 @@ class IUScheduleQueue(IURunQueue):
     ) -> IURun:
         """Add a manual run to the queue. Cancel any existing
         manual or running schedule"""
-
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         # Remove any existing manual schedules
         if not queue:
             if self._current_run is not None:
@@ -2967,6 +2961,11 @@ class IUSequenceRun(IUBase):
         """Return the percentage completed"""
         return self._percent_complete
 
+    @property
+    def volume_stats(self) -> dict[IUSequenceZoneRun, dict[IUZone, Decimal]]:
+        """Return the volume statisics"""
+        return self._volume_stats
+
     def is_manual(self) -> bool:
         """Check if this is a manual run"""
         return self._schedule is None
@@ -3028,8 +3027,9 @@ class IUSequenceRun(IUBase):
                             )
                             if self._first_zone is None:
                                 self._first_zone = zone
-                            if zone_run_time + duration_adjusted > self._end_time:
-                                self._end_time = zone_run_time + duration_adjusted
+                            self._end_time = max(
+                                self._end_time, zone_run_time + duration_adjusted
+                            )
                             zone_run_time += duration_adjusted + delay
                         duration_max = max(duration_max, zone_run_time - next_run)
                 next_run += duration_max
@@ -3877,6 +3877,7 @@ class IUSequence(IUBase):
     @property
     def icon(self) -> str:
         """Return the icon to use in the frontend."""
+        # pylint: disable=too-many-return-statements
         if self._controller.is_enabled:
             if self.enabled:
                 if self.suspended is None:
@@ -3894,6 +3895,7 @@ class IUSequence(IUBase):
     @property
     def status(self) -> str:
         """Return status of the sequence"""
+        # pylint: disable=too-many-return-statements
         if self._controller.is_enabled:
             if self.enabled:
                 if self.suspended is None:
@@ -4076,7 +4078,7 @@ class IUSequence(IUBase):
 
     def get_zone(self, index: int) -> IUSequenceZone:
         """Return the specified zone object"""
-        if index is not None and index >= 0 and index < len(self._zones):
+        if index is not None and 0 <= index < len(self._zones):
             return self._zones[index]
         return None
 
@@ -4092,8 +4094,7 @@ class IUSequence(IUBase):
         result: set[IUZone] = set()
         for sequence_zone in self._zones:
             result.update(sequence_zone.zones)
-        for zone in result:
-            yield zone
+        yield from result
 
     def load(self, config: OrderedDict) -> "IUSequence":
         """Load sequence data from the configuration"""
@@ -4597,7 +4598,7 @@ class IUController(IUBase):
 
     def get_zone(self, index: int) -> IUZone:
         """Return the zone by index"""
-        if index is not None and index >= 0 and index < len(self._zones):
+        if index is not None and 0 <= index < len(self._zones):
             return self._zones[index]
         return None
 
@@ -4616,7 +4617,7 @@ class IUController(IUBase):
 
     def get_sequence(self, index: int) -> IUSequence:
         """Locate the sequence by index"""
-        if index is not None and index >= 0 and index < len(self._sequences):
+        if index is not None and 0 <= index < len(self._sequences):
             return self._sequences[index]
         return None
 
@@ -4775,7 +4776,8 @@ class IUController(IUBase):
         schedule: IUSchedule,
         total_time: timedelta = None,
     ) -> IURQStatus:
-        # pylint: disable=too-many-locals, too-many-statements, too-many-arguments
+        # pylint: disable=too-many-locals, too-many-statements
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Muster the sequences for the controller"""
 
         def init_run_time(
@@ -4925,7 +4927,7 @@ class IUController(IUBase):
     def check_run(self, stime: datetime) -> bool:
         """Check the run status and update sensors. Return flag
         if anything has changed."""
-
+        # pylint: disable=too-many-branches
         for sequence in self._sequences:
             sequence.check_run(stime, self.is_enabled)
 
@@ -4976,6 +4978,7 @@ class IUController(IUBase):
 
     def check_links(self) -> bool:
         """Check inter object links"""
+        # pylint: disable=too-many-branches
         result = True
         zone_ids = set()
         sequence_ids = set()
@@ -5083,15 +5086,15 @@ class IUController(IUBase):
         if sequences == [0]:
             result.extend(s.index for s in self._sequences)
         else:
-            for id in sequences:
-                if isinstance(id, int):
-                    sequence = self.get_sequence(id - 1)
+            for idx in sequences:
+                if isinstance(idx, int):
+                    sequence = self.get_sequence(idx - 1)
                 else:
-                    sequence = self.find_sequence_by_id(id)
+                    sequence = self.find_sequence_by_id(idx)
                 if sequence is not None:
                     result.append(sequence.index)
                 else:
-                    self._coordinator.logger.log_invalid_sequence(stime, self, id)
+                    self._coordinator.logger.log_invalid_sequence(stime, self, idx)
         return result
 
     def decode_zone_id(self, stime: datetime, zones: list | None) -> list[int] | None:
@@ -5103,15 +5106,15 @@ class IUController(IUBase):
         if zones == [0]:
             result.extend(z.index for z in self._zones)
         else:
-            for id in zones:
-                if isinstance(id, int):
-                    zone = self.get_zone(id - 1)
+            for idx in zones:
+                if isinstance(idx, int):
+                    zone = self.get_zone(idx - 1)
                 else:
-                    zone = self.find_zone_by_zone_id(id)
+                    zone = self.find_zone_by_zone_id(idx)
                 if zone is not None:
                     result.append(zone.index)
                 else:
-                    self._coordinator.logger.log_invalid_zone(stime, self, id)
+                    self._coordinator.logger.log_invalid_zone(stime, self, idx)
         return result
 
     def manual_run_start(
@@ -5121,11 +5124,7 @@ class IUController(IUBase):
         nst = wash_dt(stime)
         if not self._is_on:
             nst += granularity_time()
-        if (
-            self.preamble is not None
-            and self.preamble > TD_ZERO
-            and not self.is_on
-        ):
+        if self.preamble is not None and self.preamble > TD_ZERO and not self.is_on:
             nst += self.preamble
         if queue:
             end_times: list[datetime] = []
@@ -5302,7 +5301,7 @@ class IUEvent:
         self, stime: datetime, controller: int, zone: int, state: bool, crumbs: str
     ) -> "IUEvent":
         """Initialise from individual components"""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         self._time = stime
         self._controller = controller
         self._zone = zone
@@ -5804,7 +5803,7 @@ class IULogger:
         level=INFO,
     ) -> None:
         """Message that we have received a service call"""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         idl = IUBase.idl([controller, zone, sequence], "0", 1)
         self._format(
             level,
@@ -5818,7 +5817,6 @@ class IULogger:
         )
 
     def log_register_entity(
-        # pylint: disable=too-many-arguments
         self,
         stime: datetime,
         controller: IUController,
@@ -5827,6 +5825,7 @@ class IULogger:
         entity: Entity,
     ) -> None:
         """Message that HA has registered an entity"""
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         idl = IUBase.idl([controller, zone, sequence], "0", 1)
         self._format(
             DEBUG,
@@ -5839,7 +5838,6 @@ class IULogger:
         )
 
     def log_deregister_entity(
-        # pylint: disable=too-many-arguments
         self,
         stime: datetime,
         controller: IUController,
@@ -5848,6 +5846,7 @@ class IULogger:
         entity: Entity,
     ) -> None:
         """Message that HA is removing an entity"""
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         idl = IUBase.idl([controller, zone, sequence], "0", 1)
         self._format(
             DEBUG,
@@ -5948,7 +5947,7 @@ class IULogger:
         level=WARNING,
     ) -> None:
         """Warn that a cycle did not complete"""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         idl = IUBase.idl([controller, zone, sequence, sequence_zone], "-", 1)
         self._format(
             level,
@@ -5970,6 +5969,7 @@ class IULogger:
         level=WARNING,
     ) -> None:
         """Warn that switch and entity are out of sync"""
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         self._format(
             level,
             "SYNCHRONISATION",
@@ -5989,6 +5989,7 @@ class IULogger:
         level=ERROR,
     ) -> None:
         """Warn that switch(s) was unable to be set"""
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         self._format(
             level,
             "SWITCH_ERROR",
@@ -6008,7 +6009,7 @@ class IULogger:
         level=WARNING,
     ) -> None:
         """Warn a controller/zone/schedule has a duplicate id"""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         idl = IUBase.idl([controller, zone, sequence, schedule], "0", 1)
         if not zone and not sequence and not schedule:
             self._format(
@@ -6076,8 +6077,8 @@ class IULogger:
         zone_id: str,
         level=WARNING,
     ) -> None:
-        # pylint: disable=too-many-arguments
         """Warn a zone_id reference is orphaned"""
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         idl = IUBase.idl([controller, sequence, sequence_zone], "0", 1)
         self._format(
             level,
@@ -6098,7 +6099,7 @@ class IULogger:
         msg: str,
         level=ERROR,
     ) -> None:
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Warn that a crontab expression in the schedule is invalid"""
         self._format(
             level,
@@ -6457,7 +6458,7 @@ class IUCoordinator:
 
     def get(self, index: int) -> IUController:
         """Return the controller by index"""
-        if index is not None and index >= 0 and index < len(self._controllers):
+        if index is not None and 0 <= index < len(self._controllers):
             return self._controllers[index]
         return None
 
@@ -6724,14 +6725,14 @@ class IUCoordinator:
         sequence_run: IUSequenceRun,
     ) -> None:
         """Send out a notification for start/finish to a sequence"""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         zone_summary: dict[IUZone, dict] = {}
         for run in sequence_run.runs:
             if not (z := run.zone) in zone_summary:
                 zone_summary[z] = {ATTR_DURATION: 0, ATTR_VOLUME: None}
             zone_summary[z][ATTR_DURATION] += run.duration.total_seconds()
-        for sqz in sequence_run._volume_stats.values():
+        for sqz in sequence_run.volume_stats.values():
             for z, v in sqz.items():
                 zone_summary[z][ATTR_VOLUME] = is_none(
                     zone_summary[z][ATTR_VOLUME], 0
@@ -6794,6 +6795,8 @@ class IUCoordinator:
     ) -> None:
         """Send out notification about valve event. Reason 1=on/off, 2=sync
         3=run change"""
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
+        # pylint: disable=too-many-locals
 
         def notify(event_type: str, entity: str, data: dict) -> None:
             data[ATTR_ENTITY_ID] = entity
@@ -6857,7 +6860,7 @@ class IUCoordinator:
         zone: IUZone,
     ) -> None:
         """Send out notification about switch resync event"""
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         data = {
             CONF_EXPECTED: expected,
             CONF_FOUND: found,
@@ -6955,7 +6958,8 @@ class IUCoordinator:
         data: MappingProxyType,
     ) -> ServiceResponse:
         """Entry point for all service calls."""
-        # pylint: disable=too-many-branches,too-many-arguments,too-many-statements
+        # pylint: disable=too-many-branches, too-many-statements
+        # pylint: disable=too-many-arguments, too-many-positional-arguments
         changed = True
         stime = self.service_time()
 
