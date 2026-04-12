@@ -25,6 +25,7 @@
             "init": {
                 "title": "Edit Irrigation Unlimited",
                 "menu_options": {
+                    "master_valve": "Master valve",
                     "add_zone": "Add a zone",
                     "edit_zone": "Edit a zone",
                     "remove_zone": "Remove a zone",
@@ -38,6 +39,11 @@
                     "view_schedules": "View schedules",
                     "finish": "Done"
                 }
+            },
+            "master_valve": {
+                "title": "Master valve",
+                "description": "Select the switch or valve entity that acts as the master valve for the controller. Leave blank to remove.",
+                "data": {"entity_id": "Master valve entity"}
             },
             "add_zone": {
                 "title": "Add zone {zone_number}",

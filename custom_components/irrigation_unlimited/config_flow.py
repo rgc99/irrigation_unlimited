@@ -418,6 +418,8 @@ class IUOptionsFlow(config_entries.OptionsFlow):
         config = {CONF_NAME: self._controller_name, CONF_ZONES: self._zones}
         if self._sequences:
             config[CONF_SEQUENCES] = self._sequences
+        if self._master_entity:
+            config[CONF_ENTITY_ID] = [self._master_entity]
         return {CONF_CONTROLLERS: [config]}
 
     def _decode_schedule_ref(self, ref: str) -> tuple[str, int, int]:
@@ -439,7 +441,7 @@ class IUOptionsFlow(config_entries.OptionsFlow):
         has_schedules = _has_schedules(self._zones, self._sequences)
         has_targets = has_zones or has_sequences
 
-        menu_options = ["add_zone"]
+        menu_options = ["master_valve", "add_zone"]
         if has_zones:
             menu_options += ["edit_zone", "remove_zone"]
         menu_options += ["add_sequence"]
@@ -451,6 +453,20 @@ class IUOptionsFlow(config_entries.OptionsFlow):
             menu_options += ["edit_schedule", "remove_schedule", "view_schedules"]
         menu_options.append("finish")
         return self.async_show_menu(step_id="init", menu_options=menu_options)
+
+    # ── Master valve ───────────────────────────────────────────────────────────
+
+    async def async_step_master_valve(self, user_input: dict | None = None) -> config_entries.FlowResult:
+        """Set or clear the controller master valve entity."""
+        if user_input is not None:
+            self._master_entity = user_input.get(CONF_ENTITY_ID) or None
+            return await self.async_step_init()
+        schema: dict = {}
+        if self._master_entity:
+            schema[vol.Optional(CONF_ENTITY_ID, default=self._master_entity)] = _ENTITY_SELECTOR
+        else:
+            schema[vol.Optional(CONF_ENTITY_ID)] = _ENTITY_SELECTOR
+        return self.async_show_form(step_id="master_valve", data_schema=vol.Schema(schema))
 
     # ── Zones ──────────────────────────────────────────────────────────────────
 
