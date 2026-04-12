@@ -2766,8 +2766,14 @@ class IUSequenceZone(IUBase):
                     self._zones.append(zone)
 
         self._zone_ids = config[CONF_ZONE_ID]
-        self._delay = wash_td(config.get(CONF_DELAY))
-        self._duration = wash_td(config.get(CONF_DURATION))
+        raw_delay = config.get(CONF_DELAY)
+        if isinstance(raw_delay, str):
+            raw_delay = cv.positive_time_period(raw_delay)
+        self._delay = wash_td(raw_delay)
+        raw_duration = config.get(CONF_DURATION)
+        if isinstance(raw_duration, str):
+            raw_duration = cv.positive_time_period(raw_duration)
+        self._duration = wash_td(raw_duration)
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
         self._volume = config.get(CONF_VOLUME, self._volume)
@@ -4128,8 +4134,14 @@ class IUSequence(IUBase):
         self.clear()
         self._sequence_id = config.get(CONF_SEQUENCE_ID, str(self.index + 1))
         self._name = config.get(CONF_NAME, f"Run {self.index + 1}")
-        self._delay = wash_td(config.get(CONF_DELAY))
-        self._duration = wash_td(config.get(CONF_DURATION))
+        raw_delay = config.get(CONF_DELAY)
+        if isinstance(raw_delay, str):
+            raw_delay = cv.positive_time_period(raw_delay)
+        self._delay = wash_td(raw_delay)
+        raw_duration = config.get(CONF_DURATION)
+        if isinstance(raw_duration, str):
+            raw_duration = cv.positive_time_period(raw_duration)
+        self._duration = wash_td(raw_duration)
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
         zidx: int = 0

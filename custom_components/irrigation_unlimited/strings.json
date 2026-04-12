@@ -4,33 +4,21 @@
             "user": {
                 "title": "Set up Irrigation Unlimited",
                 "description": "Give your irrigation controller a name.",
-                "data": {
-                    "name": "Controller name"
-                }
+                "data": {"name": "Controller name"}
             },
             "add_zone": {
                 "title": "Add zone {zone_number}",
                 "description": "Configure the zone and optionally select the switch or valve entity that controls it.",
-                "data": {
-                    "name": "Zone name",
-                    "entity_id": "Switch / valve entity"
-                }
+                "data": {"name": "Zone name", "entity_id": "Switch / valve entity"}
             },
             "zone_menu": {
                 "title": "Zone added",
                 "description": "Would you like to add another zone?",
-                "menu_options": {
-                    "add_zone": "Add another zone",
-                    "finish": "Finish"
-                }
+                "menu_options": {"add_zone": "Add another zone", "finish": "Finish"}
             },
-            "finish": {
-                "title": "Finish"
-            }
+            "finish": {"title": "Finish"}
         },
-        "abort": {
-            "already_configured": "Irrigation Unlimited is already configured."
-        }
+        "abort": {"already_configured": "Irrigation Unlimited is already configured."}
     },
     "options": {
         "step": {
@@ -40,6 +28,10 @@
                     "add_zone": "Add a zone",
                     "edit_zone": "Edit a zone",
                     "remove_zone": "Remove a zone",
+                    "add_sequence": "Add a sequence",
+                    "view_sequences": "View / edit sequences",
+                    "edit_sequence": "Edit a sequence",
+                    "remove_sequence": "Remove a sequence",
                     "add_schedule": "Add a schedule",
                     "edit_schedule": "Edit a schedule",
                     "remove_schedule": "Remove a schedule",
@@ -50,37 +42,90 @@
             "add_zone": {
                 "title": "Add zone {zone_number}",
                 "description": "Configure the zone and optionally select the switch or valve entity that controls it.",
-                "data": {
-                    "name": "Zone name",
-                    "entity_id": "Switch / valve entity"
-                }
+                "data": {"name": "Zone name", "entity_id": "Switch / valve entity"}
             },
             "edit_zone": {
                 "title": "Edit zone",
                 "description": "Select the zone to edit.",
-                "data": {
-                    "zone_index": "Zone"
-                }
+                "data": {"zone_index": "Zone"}
             },
             "edit_zone_details": {
                 "title": "Edit zone: {zone_name}",
-                "data": {
-                    "name": "Zone name",
-                    "entity_id": "Switch / valve entity"
-                }
+                "data": {"name": "Zone name", "entity_id": "Switch / valve entity"}
             },
             "remove_zone": {
                 "title": "Remove zone",
                 "description": "Select the zone to remove.",
+                "data": {"zone_index": "Zone"}
+            },
+            "add_sequence": {
+                "title": "Add a sequence",
                 "data": {
-                    "zone_index": "Zone"
+                    "name": "Sequence name",
+                    "delay": "Delay between zones (HH:MM, optional)",
+                    "duration": "Zone duration (HH:MM)"
                 }
+            },
+            "edit_sequence": {
+                "title": "Edit a sequence",
+                "description": "Select the sequence to edit.",
+                "data": {"sequence_index": "Sequence"}
+            },
+            "edit_sequence_details": {
+                "title": "Edit sequence",
+                "data": {
+                    "name": "Sequence name",
+                    "delay": "Delay between zones (HH:MM, optional)",
+                    "duration": "Zone duration (HH:MM)"
+                }
+            },
+            "remove_sequence": {
+                "title": "Remove a sequence",
+                "description": "Select the sequence to remove.",
+                "data": {"sequence_index": "Sequence"}
+            },
+            "view_sequences": {
+                "title": "Sequences",
+                "description": "{sequences}",
+                "data": {"sequence_index": "Select sequence to edit"}
+            },
+            "sequence_menu": {
+                "title": "Sequence",
+                "description": "{zones_list}",
+                "menu_options": {
+                    "add_sequence_zone": "Add a zone",
+                    "edit_sequence_zone": "Edit a zone",
+                    "remove_sequence_zone": "Remove a zone",
+                    "finish_sequence": "Save sequence"
+                }
+            },
+            "add_sequence_zone": {
+                "title": "Add zone to sequence",
+                "data": {"zone_id": "Zone"}
+            },
+            "edit_sequence_zone": {
+                "title": "Edit sequence zone",
+                "description": "Select the zone to edit.",
+                "data": {"zone_position": "Zone"}
+            },
+            "edit_sequence_zone_details": {
+                "title": "Edit sequence zone",
+                "data": {"zone_id": "Zone"}
+            },
+            "remove_sequence_zone": {
+                "title": "Remove zone from sequence",
+                "description": "Select the zone to remove.",
+                "data": {"zone_position": "Zone"}
             },
             "add_schedule": {
                 "title": "Add a schedule",
-                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.",
+                "description": "Select the zone or sequence to schedule.",
+                "data": {"target_ref": "Zone or sequence"}
+            },
+            "add_schedule_details": {
+                "title": "Schedule details",
+                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.\n{duration_info}",
                 "data": {
-                    "zone_index": "Zone",
                     "name": "Schedule name (optional)",
                     "time": "Start time (HH:MM)",
                     "duration": "Duration (HH:MM:SS)",
@@ -92,15 +137,12 @@
             "edit_schedule": {
                 "title": "Edit a schedule",
                 "description": "Select the schedule to edit.",
-                "data": {
-                    "schedule_ref": "Schedule"
-                }
+                "data": {"schedule_ref": "Schedule"}
             },
             "edit_schedule_details": {
                 "title": "Edit schedule",
-                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.",
+                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.\n{duration_info}",
                 "data": {
-                    "zone_index": "Zone",
                     "name": "Schedule name (optional)",
                     "time": "Start time (HH:MM)",
                     "duration": "Duration (HH:MM:SS)",
@@ -112,17 +154,13 @@
             "remove_schedule": {
                 "title": "Remove a schedule",
                 "description": "Select the schedule to remove.",
-                "data": {
-                    "schedule_ref": "Schedule"
-                }
+                "data": {"schedule_ref": "Schedule"}
             },
             "view_schedules": {
                 "title": "Current schedules",
                 "description": "{schedules}"
             },
-            "finish": {
-                "title": "Finish"
-            }
+            "finish": {"title": "Finish"}
         }
     }
 }
