@@ -65,13 +65,10 @@ def find_platform(hass: HomeAssistant, name: str) -> EntityPlatform:
     return None
 
 
-async def async_setup_platform(
-    hass, config, async_add_entities, discovery_info=None
-) -> None:
-    """Setup binary_sensor platform."""
-    # pylint: disable=unused-argument
-
-    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+def _build_entities(
+    coordinator: IUCoordinator,
+) -> list:
+    """Build the list of entities for all controllers/zones/sequences."""
     entities = []
     for controller in coordinator.controllers:
         entities.append(IUMasterEntity(coordinator, controller, None, None))
@@ -79,12 +76,31 @@ async def async_setup_platform(
             entities.append(IUZoneEntity(coordinator, controller, zone, None))
         for sequence in controller.sequences:
             entities.append(IUSequenceEntity(coordinator, controller, None, sequence))
-    async_add_entities(entities)
+    return entities
+
+
+async def async_setup_platform(
+    hass, config, async_add_entities, discovery_info=None
+) -> None:
+    """Setup binary_sensor platform (YAML path)."""
+    # pylint: disable=unused-argument
+
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+    async_add_entities(_build_entities(coordinator))
 
     platform = current_platform.get()
     register_platform_services(platform)
 
     return
+
+
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> None:
+    """Setup binary_sensor platform (config entry / UI path)."""
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+    async_add_entities(_build_entities(coordinator))
+
+    platform = current_platform.get()
+    register_platform_services(platform)
 
 
 async def async_reload_platform(
