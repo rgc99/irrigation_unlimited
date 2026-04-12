@@ -117,7 +117,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     component: EntityComponent = hass.data[DOMAIN].get(COMPONENT)
     if component is not None:
-        await component.async_reset()
+        for entity in list(component.entities):
+            await entity.async_remove()
 
     hass.data.pop(DOMAIN, None)
     return unload_ok

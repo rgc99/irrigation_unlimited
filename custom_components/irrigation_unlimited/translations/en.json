@@ -78,12 +78,15 @@
             },
             "add_schedule": {
                 "title": "Add a schedule",
+                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.",
                 "data": {
                     "zone_index": "Zone",
                     "name": "Schedule name (optional)",
                     "time": "Start time (HH:MM)",
                     "duration": "Duration (HH:MM:SS)",
-                    "weekday": "Days of week (leave blank for every day)"
+                    "every_n_days": "Every N days (leave blank for daily or day-of-week)",
+                    "start_n_days": "Every-N-days start date",
+                    "weekday": "Days of the week (ignored if Every N days is set)"
                 }
             },
             "edit_schedule": {
@@ -95,12 +98,15 @@
             },
             "edit_schedule_details": {
                 "title": "Edit schedule",
+                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.",
                 "data": {
                     "zone_index": "Zone",
                     "name": "Schedule name (optional)",
                     "time": "Start time (HH:MM)",
                     "duration": "Duration (HH:MM:SS)",
-                    "weekday": "Days of week (leave blank for every day)"
+                    "every_n_days": "Every N days (leave blank for daily or day-of-week)",
+                    "start_n_days": "Every-N-days start date",
+                    "weekday": "Days of the week (ignored if Every N days is set)"
                 }
             },
             "remove_schedule": {

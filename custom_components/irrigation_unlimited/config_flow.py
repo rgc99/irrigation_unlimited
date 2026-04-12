@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from datetime import date as date_type
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_ENTITY_ID, CONF_NAME, CONF_WEEKDAY
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -16,7 +20,17 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .const import CONF_CONTROLLERS, CONF_DURATION, CONF_SCHEDULES, CONF_TIME, CONF_ZONES, DOMAIN
+from .const import (
+    CONF_CONTROLLERS,
+    CONF_DAY,
+    CONF_DURATION,
+    CONF_EVERY_N_DAYS,
+    CONF_SCHEDULES,
+    CONF_START_N_DAYS,
+    CONF_TIME,
+    CONF_ZONES,
+    DOMAIN,
+)
 
 _ENTITY_SELECTOR = EntitySelector(EntitySelectorConfig(domain=["switch", "valve"]))
 _TEXT_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT))
@@ -36,7 +50,6 @@ _WEEKDAY_SELECTOR = SelectSelector(
     )
 )
 
-# Separator used to encode zone_index:schedule_index in a single selector value
 _REF_SEP = ":"
 
 
@@ -73,8 +86,14 @@ def _schedule_form_schema(
     default_name: str = "",
     default_time: str = "06:00",
     default_duration: str = "00:20:00",
+    default_every_n_days: int | None = None,
+    default_start_date: str = "",
     default_weekday: list[str] | None = None,
 ) -> vol.Schema:
+    """Single form: zone, name, time, duration, every-N-days, weekdays.
+
+    Priority when saving: every_n_days (>1) > weekdays > every day.
+    """
     schema: dict = {
         vol.Required("zone_index", default=str(default_zone_index)): SelectSelector(
             SelectSelectorConfig(
@@ -89,24 +108,34 @@ def _schedule_form_schema(
         vol.Required(CONF_TIME, default=default_time): _TEXT_SELECTOR,
         vol.Required(CONF_DURATION, default=default_duration): _TEXT_SELECTOR,
     }
+
+    # Every-N-days fields (above weekdays per user request)
+    if default_every_n_days is not None:
+        schema[vol.Optional(CONF_EVERY_N_DAYS, default=default_every_n_days)] = (
+            NumberSelector(
+                NumberSelectorConfig(min=1, max=365, step=1, mode=NumberSelectorMode.BOX)
+            )
+        )
+    else:
+        schema[vol.Optional(CONF_EVERY_N_DAYS)] = NumberSelector(
+            NumberSelectorConfig(min=1, max=365, step=1, mode=NumberSelectorMode.BOX)
+        )
+
+    schema[vol.Optional(CONF_START_N_DAYS, default=default_start_date)] = TextSelector(
+        TextSelectorConfig(type=TextSelectorType.DATE)
+    )
+
+    # Days of week (below every-N-days per user request)
     if default_weekday is not None:
         schema[vol.Optional(CONF_WEEKDAY, default=default_weekday)] = _WEEKDAY_SELECTOR
     else:
         schema[vol.Optional(CONF_WEEKDAY)] = _WEEKDAY_SELECTOR
+
     return vol.Schema(schema)
 
 
-def _flat_schedules(zones: list[dict]) -> list[tuple[int, int, dict]]:
-    """Return all schedules as (zone_index, schedule_index, schedule_dict) tuples."""
-    result = []
-    for zi, zone in enumerate(zones):
-        for si, sched in enumerate(zone.get(CONF_SCHEDULES, [])):
-            result.append((zi, si, sched))
-    return result
-
-
 def _schedule_select_schema(zones: list[dict]) -> vol.Schema:
-    """Selector showing all schedules across all zones."""
+    """Selector listing all schedules across all zones."""
     options = []
     for zi, zone in enumerate(zones):
         for si, sched in enumerate(zone.get(CONF_SCHEDULES, [])):
@@ -124,8 +153,43 @@ def _schedule_select_schema(zones: list[dict]) -> vol.Schema:
     )
 
 
+def _build_schedule(user_input: dict) -> dict:
+    """Build a schedule dict from form input.
+
+    Priority: every_n_days (>1) > weekdays > every day.
+    """
+    schedule: dict = {
+        CONF_TIME: user_input[CONF_TIME],
+        CONF_DURATION: user_input[CONF_DURATION],
+    }
+    if name := user_input.get(CONF_NAME, "").strip():
+        schedule[CONF_NAME] = name
+
+    every_n = user_input.get(CONF_EVERY_N_DAYS)
+    if every_n is not None and int(every_n) > 1:
+        start = user_input.get(CONF_START_N_DAYS) or str(date_type.today())
+        schedule[CONF_DAY] = {
+            CONF_EVERY_N_DAYS: int(every_n),
+            CONF_START_N_DAYS: start,  # ISO string; coordinator parses it back to date
+        }
+    elif weekday := user_input.get(CONF_WEEKDAY):
+        schedule[CONF_WEEKDAY] = weekday
+
+    return schedule
+
+
+def _describe_recurrence(schedule: dict) -> str:
+    if CONF_WEEKDAY in schedule:
+        return ", ".join(schedule[CONF_WEEKDAY])
+    day = schedule.get(CONF_DAY)
+    if isinstance(day, dict) and CONF_EVERY_N_DAYS in day:
+        n = day[CONF_EVERY_N_DAYS]
+        start = day.get(CONF_START_N_DAYS, "")
+        return f"every {n} days from {start}"
+    return "every day"
+
+
 def _format_schedules_list(zones: list[dict]) -> str:
-    """Build a human-readable schedule summary for display."""
     lines = []
     for zone in zones:
         schedules = zone.get(CONF_SCHEDULES, [])
@@ -136,25 +200,12 @@ def _format_schedules_list(zones: list[dict]) -> str:
             name = s.get(CONF_NAME, "")
             time = s.get(CONF_TIME, "?")
             duration = s.get(CONF_DURATION, "?")
-            days = ", ".join(s[CONF_WEEKDAY]) if s.get(CONF_WEEKDAY) else "every day"
-            entry = f"  {time} for {duration} - {days}"
+            recurrence = _describe_recurrence(s)
+            entry = f"  {time} for {duration} - {recurrence}"
             if name:
-                entry = f"  {name}: {time} for {duration} - {days}"
+                entry = f"  {name}: {time} for {duration} - {recurrence}"
             lines.append(entry)
     return "\n".join(lines) if lines else "No schedules configured."
-
-
-def _build_schedule(user_input: dict) -> dict:
-    """Build a schedule dict from form input, omitting empty optional fields."""
-    schedule: dict = {
-        CONF_TIME: user_input[CONF_TIME],
-        CONF_DURATION: user_input[CONF_DURATION],
-    }
-    if name := user_input.get(CONF_NAME, "").strip():
-        schedule[CONF_NAME] = name
-    if weekday := user_input.get(CONF_WEEKDAY):
-        schedule[CONF_WEEKDAY] = weekday
-    return schedule
 
 
 class IUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -170,17 +221,14 @@ class IUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> IUOptionsFlow:
-        """Return the options flow."""
         return IUOptionsFlow(config_entry)
 
     async def async_step_user(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Handle the initial step — name the controller."""
         if user_input is not None:
             self._controller_name = user_input[CONF_NAME]
             return await self.async_step_add_zone()
-
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -195,15 +243,12 @@ class IUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_add_zone(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Handle adding a zone."""
         if user_input is not None:
             zone: dict = {CONF_NAME: user_input[CONF_NAME]}
-            entity_id = user_input.get(CONF_ENTITY_ID)
-            if entity_id:
+            if entity_id := user_input.get(CONF_ENTITY_ID):
                 zone[CONF_ENTITY_ID] = [entity_id]
             self._zones.append(zone)
             return await self.async_step_zone_menu()
-
         zone_number = len(self._zones) + 1
         return self.async_show_form(
             step_id="add_zone",
@@ -214,7 +259,6 @@ class IUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_zone_menu(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Menu: add another zone or finish."""
         return self.async_show_menu(
             step_id="zone_menu",
             menu_options=["add_zone", "finish"],
@@ -223,15 +267,11 @@ class IUConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_finish(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Create the config entry."""
         return self.async_create_entry(
             title=self._controller_name,
             data={
                 CONF_CONTROLLERS: [
-                    {
-                        CONF_NAME: self._controller_name,
-                        CONF_ZONES: self._zones,
-                    }
+                    {CONF_NAME: self._controller_name, CONF_ZONES: self._zones}
                 ]
             },
         )
@@ -252,7 +292,7 @@ class IUOptionsFlow(config_entries.OptionsFlow):
         self._controller_name: str = controller[CONF_NAME]
         self._zones: list[dict] = list(controller.get(CONF_ZONES, []))
         self._edit_zone_index: int | None = None
-        self._edit_schedule_ref: str | None = None  # "zone_index:schedule_index"
+        self._edit_schedule_ref: str | None = None  # "zi:si"
 
     def _current_config(self) -> dict:
         return {
@@ -268,10 +308,8 @@ class IUOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Show the options menu."""
         has_zones = bool(self._zones)
         has_schedules = any(z.get(CONF_SCHEDULES) for z in self._zones)
-
         menu_options = ["add_zone"]
         if has_zones:
             menu_options += ["edit_zone", "remove_zone", "add_schedule"]
@@ -280,20 +318,17 @@ class IUOptionsFlow(config_entries.OptionsFlow):
         menu_options.append("finish")
         return self.async_show_menu(step_id="init", menu_options=menu_options)
 
-    # ── Add zone ──────────────────────────────────────────────────────────────
+    # ── Zones ─────────────────────────────────────────────────────────────────
 
     async def async_step_add_zone(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Add a new zone."""
         if user_input is not None:
             zone: dict = {CONF_NAME: user_input[CONF_NAME]}
-            entity_id = user_input.get(CONF_ENTITY_ID)
-            if entity_id:
+            if entity_id := user_input.get(CONF_ENTITY_ID):
                 zone[CONF_ENTITY_ID] = [entity_id]
             self._zones.append(zone)
             return await self.async_step_init()
-
         zone_number = len(self._zones) + 1
         return self.async_show_form(
             step_id="add_zone",
@@ -301,16 +336,12 @@ class IUOptionsFlow(config_entries.OptionsFlow):
             description_placeholders={"zone_number": str(zone_number)},
         )
 
-    # ── Edit zone ─────────────────────────────────────────────────────────────
-
     async def async_step_edit_zone(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Select which zone to edit."""
         if user_input is not None:
             self._edit_zone_index = int(user_input["zone_index"])
             return await self.async_step_edit_zone_details()
-
         return self.async_show_form(
             step_id="edit_zone",
             data_schema=_zone_select_schema(self._zones),
@@ -319,19 +350,16 @@ class IUOptionsFlow(config_entries.OptionsFlow):
     async def async_step_edit_zone_details(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Edit the selected zone."""
         if user_input is not None:
-            zone = dict(self._zones[self._edit_zone_index])  # preserve schedules
+            zone = dict(self._zones[self._edit_zone_index])
             zone[CONF_NAME] = user_input[CONF_NAME]
-            entity_id = user_input.get(CONF_ENTITY_ID)
-            if entity_id:
+            if entity_id := user_input.get(CONF_ENTITY_ID):
                 zone[CONF_ENTITY_ID] = [entity_id]
             else:
                 zone.pop(CONF_ENTITY_ID, None)
             self._zones[self._edit_zone_index] = zone
             self._edit_zone_index = None
             return await self.async_step_init()
-
         zone = self._zones[self._edit_zone_index]
         current_entity = (zone.get(CONF_ENTITY_ID) or [None])[0]
         return self.async_show_form(
@@ -340,48 +368,39 @@ class IUOptionsFlow(config_entries.OptionsFlow):
             description_placeholders={"zone_name": zone[CONF_NAME]},
         )
 
-    # ── Remove zone ───────────────────────────────────────────────────────────
-
     async def async_step_remove_zone(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Select a zone to remove."""
         if user_input is not None:
             self._zones.pop(int(user_input["zone_index"]))
             return await self.async_step_init()
-
         return self.async_show_form(
             step_id="remove_zone",
             data_schema=_zone_select_schema(self._zones),
         )
 
-    # ── Add schedule ──────────────────────────────────────────────────────────
+    # ── Schedules ─────────────────────────────────────────────────────────────
 
     async def async_step_add_schedule(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Add a new schedule, specifying which zone it belongs to."""
         if user_input is not None:
             zi = int(user_input["zone_index"])
-            schedule = _build_schedule(user_input)
-            self._zones[zi].setdefault(CONF_SCHEDULES, []).append(schedule)
+            self._zones[zi].setdefault(CONF_SCHEDULES, []).append(
+                _build_schedule(user_input)
+            )
             return await self.async_step_init()
-
         return self.async_show_form(
             step_id="add_schedule",
             data_schema=_schedule_form_schema(self._zones),
         )
 
-    # ── Edit schedule ─────────────────────────────────────────────────────────
-
     async def async_step_edit_schedule(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Select which schedule to edit."""
         if user_input is not None:
             self._edit_schedule_ref = user_input["schedule_ref"]
             return await self.async_step_edit_schedule_details()
-
         return self.async_show_form(
             step_id="edit_schedule",
             data_schema=_schedule_select_schema(self._zones),
@@ -390,62 +409,62 @@ class IUOptionsFlow(config_entries.OptionsFlow):
     async def async_step_edit_schedule_details(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Edit the selected schedule."""
         zi, si = self._decode_ref(self._edit_schedule_ref)
 
         if user_input is not None:
             new_zi = int(user_input["zone_index"])
-            # Remove from old zone
+            # Remove from old location
             self._zones[zi][CONF_SCHEDULES].pop(si)
             if not self._zones[zi][CONF_SCHEDULES]:
                 del self._zones[zi][CONF_SCHEDULES]
-            # Add to new zone (possibly different)
+            # Insert at new zone
             self._zones[new_zi].setdefault(CONF_SCHEDULES, []).append(
                 _build_schedule(user_input)
             )
             self._edit_schedule_ref = None
             return await self.async_step_init()
 
-        schedule = self._zones[zi][CONF_SCHEDULES][si]
+        sched = self._zones[zi][CONF_SCHEDULES][si]
+        day = sched.get(CONF_DAY)
+        default_every_n = (
+            day.get(CONF_EVERY_N_DAYS) if isinstance(day, dict) else None
+        )
+        default_start = (
+            str(day.get(CONF_START_N_DAYS, "")) if isinstance(day, dict) else ""
+        )
         return self.async_show_form(
             step_id="edit_schedule_details",
             data_schema=_schedule_form_schema(
                 zones=self._zones,
                 default_zone_index=zi,
-                default_name=schedule.get(CONF_NAME, ""),
-                default_time=schedule.get(CONF_TIME, "06:00"),
-                default_duration=schedule.get(CONF_DURATION, "00:20:00"),
-                default_weekday=schedule.get(CONF_WEEKDAY),
+                default_name=sched.get(CONF_NAME, ""),
+                default_time=sched.get(CONF_TIME, "06:00"),
+                default_duration=sched.get(CONF_DURATION, "00:20:00"),
+                default_every_n_days=default_every_n,
+                default_start_date=default_start,
+                default_weekday=sched.get(CONF_WEEKDAY),
             ),
         )
-
-    # ── Remove schedule ───────────────────────────────────────────────────────
 
     async def async_step_remove_schedule(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Select a schedule to remove."""
         if user_input is not None:
             zi, si = self._decode_ref(user_input["schedule_ref"])
             self._zones[zi][CONF_SCHEDULES].pop(si)
             if not self._zones[zi][CONF_SCHEDULES]:
                 del self._zones[zi][CONF_SCHEDULES]
             return await self.async_step_init()
-
         return self.async_show_form(
             step_id="remove_schedule",
             data_schema=_schedule_select_schema(self._zones),
         )
 
-    # ── View schedules ────────────────────────────────────────────────────────
-
     async def async_step_view_schedules(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Show all configured schedules and return to the menu."""
         if user_input is not None:
             return await self.async_step_init()
-
         return self.async_show_form(
             step_id="view_schedules",
             data_schema=vol.Schema({}),
@@ -459,5 +478,4 @@ class IUOptionsFlow(config_entries.OptionsFlow):
     async def async_step_finish(
         self, user_input: dict | None = None
     ) -> config_entries.FlowResult:
-        """Save options and trigger a reload."""
         return self.async_create_entry(title="", data=self._current_config())

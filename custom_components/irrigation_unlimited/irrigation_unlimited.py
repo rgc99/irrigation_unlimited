@@ -699,9 +699,17 @@ class IUSchedule(IUBase):
             self._until = None
 
         self._schedule_id = config.get(CONF_SCHEDULE_ID, self.schedule_id)
-        self._time = config.get(CONF_TIME, self._time)
+        raw_time = config.get(CONF_TIME, self._time)
+        # Config entry data is JSON so time arrives as a string; parse it to a time object
+        if isinstance(raw_time, str):
+            raw_time = cv.time(raw_time)
+        self._time = raw_time
         self._anchor = config.get(CONF_ANCHOR, self._anchor)
-        self._duration = wash_td(config.get(CONF_DURATION, self._duration))
+        raw_duration = config.get(CONF_DURATION, self._duration)
+        # Config entry data is JSON so duration arrives as a string; parse it to a timedelta
+        if isinstance(raw_duration, str):
+            raw_duration = cv.positive_time_period(raw_duration)
+        self._duration = wash_td(raw_duration)
         self._name = config.get(CONF_NAME, self._name)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
 
@@ -716,6 +724,11 @@ class IUSchedule(IUBase):
                 self._months.append(MONTHS.index(i) + 1)
 
         self._days = config.get(CONF_DAY, self._days)
+        # Config entry data is JSON-serialised so dates arrive as ISO strings
+        if isinstance(self._days, dict) and CONF_START_N_DAYS in self._days:
+            start = self._days[CONF_START_N_DAYS]
+            if isinstance(start, str):
+                self._days = {**self._days, CONF_START_N_DAYS: date.fromisoformat(start)}
         self._from = config.get(CONF_FROM, self._from)
         self._until = config.get(CONF_UNTIL, self._until)
 
