@@ -684,6 +684,11 @@ class IUSchedule(IUBase):
         """Return enabled status"""
         return self._enabled
 
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Set the enabled state"""
+        self._enabled = value
+
     def load(self, config: OrderedDict, update: bool = False) -> "IUSchedule":
         """Load schedule data from config"""
         if not update:

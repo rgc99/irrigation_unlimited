@@ -30,7 +30,9 @@ ICON_ZONE_ON = "mdi:valve-open"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
-PLATFORMS = [BINARY_SENSOR]
+BUTTON = "button"
+SWITCH = "switch"
+PLATFORMS = [BINARY_SENSOR, BUTTON, SWITCH]
 
 # Configuration and options
 CONF_ACTUAL = "actual"
