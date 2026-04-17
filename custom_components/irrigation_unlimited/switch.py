@@ -85,6 +85,14 @@ class IUControllerManualSwitch(SwitchEntity):
         return False
 
     @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._controller.unique_id)},
+            "name": self._controller.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
+
+    @property
     def is_on(self) -> bool:
         return self._controller.is_on
 
@@ -131,6 +139,14 @@ class IUZoneEnableSwitch(SwitchEntity):
         return False
 
     @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._zone.unique_id)},
+            "name": self._zone.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
+
+    @property
     def is_on(self) -> bool:
         return self._zone.enabled
 
@@ -175,6 +191,14 @@ class IUSequenceEnableSwitch(SwitchEntity):
     @property
     def should_poll(self) -> bool:
         return False
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._sequence.unique_id)},
+            "name": self._sequence.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
 
     @property
     def is_on(self) -> bool:

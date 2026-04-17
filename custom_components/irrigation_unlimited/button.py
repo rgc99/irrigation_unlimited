@@ -68,6 +68,14 @@ class IUZoneRunButton(ButtonEntity):
     def should_poll(self) -> bool:
         return False
 
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._zone.unique_id)},
+            "name": self._zone.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
+
     async def async_press(self) -> None:
         """Run the zone now using the configured run duration."""
         data = {}
@@ -112,6 +120,14 @@ class IUSequenceRunButton(ButtonEntity):
     @property
     def should_poll(self) -> bool:
         return False
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._sequence.unique_id)},
+            "name": self._sequence.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
 
     async def async_press(self) -> None:
         """Run the sequence now using the configured run duration."""

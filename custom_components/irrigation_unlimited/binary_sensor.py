@@ -156,6 +156,14 @@ class IUMasterEntity(IUEntity):
         return self._controller.name
 
     @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._controller.unique_id)},
+            "name": self._controller.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
+
+    @property
     def is_on(self):
         """Return true if the binary_sensor is on."""
         return self._controller.is_on
@@ -223,6 +231,14 @@ class IUZoneEntity(IUEntity):
     def name(self):
         """Return the friendly name of the binary_sensor."""
         return self._zone.name
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._zone.unique_id)},
+            "name": self._zone.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
 
     @property
     def is_on(self):
@@ -310,6 +326,14 @@ class IUSequenceEntity(IUEntity):
     def name(self):
         """Return the friendly name of the binary_sensor."""
         return self._sequence.name
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._sequence.unique_id)},
+            "name": self._sequence.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
 
     @property
     def is_on(self):
