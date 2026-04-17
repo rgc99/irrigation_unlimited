@@ -13,8 +13,10 @@ from .irrigation_unlimited import (
 from .const import (
     COORDINATOR,
     DOMAIN,
+    SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
+    SERVICE_MANUAL_RUN,
 )
 
 
@@ -22,6 +24,8 @@ def _build_entities(coordinator: IUCoordinator) -> list:
     """Build enable/disable switch entities for zones, sequences, and schedules."""
     entities = []
     for controller in coordinator.controllers:
+        if controller.master_sensor is not None:
+            entities.append(IUControllerManualSwitch(coordinator, controller))
         for zone in controller.zones:
             entities.append(IUZoneEnableSwitch(coordinator, controller, zone))
             for schedule in zone.schedules:
@@ -51,6 +55,50 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> N
     """Setup switch platform (config entry / UI path)."""
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
     async_add_entities(_build_entities(coordinator))
+
+
+class IUControllerManualSwitch(SwitchEntity):
+    """Switch to manually turn the master valve on (run all zones) or off (cancel)."""
+
+    def __init__(
+        self,
+        coordinator: IUCoordinator,
+        controller: IUController,
+    ):
+        self._coordinator = coordinator
+        self._controller = controller
+
+    @property
+    def unique_id(self) -> str:
+        return f"{self._controller.unique_id}_manual"
+
+    @property
+    def name(self) -> str:
+        return f"{self._controller.name} Manual"
+
+    @property
+    def icon(self) -> str:
+        return "mdi:valve"
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    @property
+    def is_on(self) -> bool:
+        return self._controller.is_on
+
+    async def async_turn_on(self, **kwargs) -> None:
+        self._coordinator.service_call(
+            SERVICE_MANUAL_RUN, self._controller, None, None, {}
+        )
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        self._coordinator.service_call(
+            SERVICE_CANCEL, self._controller, None, None, {}
+        )
+        self.async_write_ha_state()
 
 
 class IUZoneEnableSwitch(SwitchEntity):

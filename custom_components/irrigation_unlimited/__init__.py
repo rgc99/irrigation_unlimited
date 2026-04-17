@@ -25,6 +25,7 @@ from .schema import (
 from .const import (
     BINARY_SENSOR,
     BUTTON,
+    NUMBER,
     SWITCH,
     DOMAIN,
     COORDINATOR,
@@ -60,6 +61,9 @@ async def async_setup(hass: HomeAssistant, config: Config):
     )
     await hass.async_create_task(
         async_load_platform(hass, BUTTON, DOMAIN, {}, config)
+    )
+    await hass.async_create_task(
+        async_load_platform(hass, NUMBER, DOMAIN, {}, config)
     )
     await hass.async_create_task(
         async_load_platform(hass, SWITCH, DOMAIN, {}, config)
@@ -103,7 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             coordinator_entry.entity_id, config_entry_id=entry.entry_id
         )
 
-    await hass.config_entries.async_forward_entry_setups(entry, [BINARY_SENSOR, BUTTON, SWITCH])
+    await hass.config_entries.async_forward_entry_setups(entry, [BINARY_SENSOR, BUTTON, NUMBER, SWITCH])
 
     register_component_services(component, coordinator)
 
@@ -117,7 +121,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, [BINARY_SENSOR, BUTTON, SWITCH])
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, [BINARY_SENSOR, BUTTON, NUMBER, SWITCH])
 
     coordinator: IUCoordinator = hass.data[DOMAIN].get(COORDINATOR)
     if coordinator is not None:

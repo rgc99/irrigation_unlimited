@@ -1,5 +1,7 @@
 """Button platform for irrigation_unlimited."""
 
+from datetime import timedelta
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 
@@ -9,6 +11,7 @@ from .const import (
     CONF_TIME,
     COORDINATOR,
     DOMAIN,
+    NUMBER_ENTITIES,
     SERVICE_MANUAL_RUN,
 )
 
@@ -66,13 +69,18 @@ class IUZoneRunButton(ButtonEntity):
         return False
 
     async def async_press(self) -> None:
-        """Run the zone now using its default duration."""
+        """Run the zone now using the configured run duration."""
+        data = {}
+        num_uid = f"{self._zone.unique_id}_run_duration"
+        num_entity = self.hass.data[DOMAIN].get(NUMBER_ENTITIES, {}).get(num_uid)
+        if num_entity is not None and num_entity.native_value:
+            data = {CONF_TIME: timedelta(minutes=num_entity.native_value)}
         self._coordinator.service_call(
             SERVICE_MANUAL_RUN,
             self._controller,
             self._zone,
             None,
-            {},
+            data,
         )
 
 
@@ -106,11 +114,16 @@ class IUSequenceRunButton(ButtonEntity):
         return False
 
     async def async_press(self) -> None:
-        """Run the sequence now."""
+        """Run the sequence now using the configured run duration."""
+        data = {}
+        num_uid = f"{self._sequence.unique_id}_run_duration"
+        num_entity = self.hass.data[DOMAIN].get(NUMBER_ENTITIES, {}).get(num_uid)
+        if num_entity is not None and num_entity.native_value:
+            data = {CONF_TIME: timedelta(minutes=num_entity.native_value)}
         self._coordinator.service_call(
             SERVICE_MANUAL_RUN,
             self._controller,
             None,
             self._sequence,
-            {},
+            data,
         )
