@@ -39,3 +39,29 @@ Sequences and controllers get equivalent groupings.
 ## Reloading
 
 After making changes through the UI the integration reloads automatically — no HA restart is needed.
+
+## Exporting to YAML
+
+If you outgrow the UI and want to move to a full YAML configuration, you can export your current setup using the `export_config` action.
+
+In **Developer Tools → Actions**:
+
+```yaml
+action: irrigation_unlimited.export_config
+data: {}
+```
+
+The response contains your complete configuration in `configuration.yaml`-compatible format, including all controllers, zones, sequences, and schedules. To use it:
+
+1. Copy the response and paste it into `configuration.yaml` under an `irrigation_unlimited:` key:
+   ```yaml
+   irrigation_unlimited:
+     controllers:
+       - name: ...
+         zones: ...
+         sequences: ...
+   ```
+2. Restart Home Assistant (or reload the integration).
+3. Remove the integration from **Settings → Devices & Services** to avoid the UI config conflicting with the YAML.
+
+> **Note:** YAML takes precedence over UI settings — if both exist, the YAML config will be used and UI changes will have no effect.

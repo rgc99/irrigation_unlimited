@@ -6591,6 +6591,85 @@ class IUCoordinator:
         result[CONF_CONTROLLERS] = [ctr.as_dict(extended) for ctr in self._controllers]
         return result
 
+    def export_config(self) -> dict:
+        """Serialise the current config into configuration.yaml-compatible format."""
+
+        def _fmt_td(td: timedelta | None) -> str | None:
+            if td is None:
+                return None
+            total = int(td.total_seconds())
+            h, rem = divmod(total, 3600)
+            m, s = divmod(rem, 60)
+            return f"{h}:{m:02d}:{s:02d}"
+
+        def _schedule(sch: IUSchedule) -> dict:
+            s = {}
+            if sch.name:
+                s[CONF_NAME] = sch.name
+            if sch._time is not None:
+                s[CONF_TIME] = sch._time.strftime("%H:%M") if hasattr(sch._time, "strftime") else str(sch._time)
+            if sch._duration is not None:
+                s[CONF_DURATION] = _fmt_td(sch._duration)
+            if sch._weekdays is not None:
+                s[CONF_WEEKDAY] = [WEEKDAYS[d] for d in sch._weekdays]
+            if sch._months is not None:
+                s[CONF_MONTH] = [MONTHS[m - 1] for m in sch._months]
+            if sch._days is not None:
+                s[CONF_DAY] = sch._days
+            if not sch._enabled:
+                s[CONF_ENABLED] = False
+            return s
+
+        def _zone(zone: IUZone) -> dict:
+            z = {}
+            z[CONF_NAME] = zone.name
+            z[CONF_ZONE_ID] = zone._zone_id
+            switch_ids = zone._switch.switch_entity_id
+            if switch_ids:
+                z[CONF_ENTITY_ID] = switch_ids[0] if len(switch_ids) == 1 else switch_ids
+            if zone._duration is not None:
+                z[CONF_DURATION] = _fmt_td(zone._duration)
+            if zone._schedules:
+                z[CONF_SCHEDULES] = [_schedule(s) for s in zone._schedules]
+            return z
+
+        def _sequence_zone(szn: IUSequenceZone) -> dict:
+            z = {}
+            if szn._zone_ids:
+                z[CONF_ZONE_ID] = szn._zone_ids[0] if len(szn._zone_ids) == 1 else szn._zone_ids
+            if szn._duration is not None:
+                z[CONF_DURATION] = _fmt_td(szn._duration)
+            if szn._delay is not None:
+                z[CONF_DELAY] = _fmt_td(szn._delay)
+            if not szn._enabled:
+                z[CONF_ENABLED] = False
+            return z
+
+        def _sequence(seq: IUSequence) -> dict:
+            s = {}
+            s[CONF_NAME] = seq.name
+            if seq._duration is not None:
+                s[CONF_DURATION] = _fmt_td(seq._duration)
+            if seq._delay is not None:
+                s[CONF_DELAY] = _fmt_td(seq._delay)
+            s[CONF_ZONES] = [_sequence_zone(z) for z in seq._zones]
+            if seq._schedules:
+                s[CONF_SCHEDULES] = [_schedule(sch) for sch in seq._schedules]
+            return s
+
+        def _controller(ctl: IUController) -> dict:
+            c = {}
+            c[CONF_NAME] = ctl.name
+            switch_ids = ctl._switch.switch_entity_id
+            if switch_ids:
+                c[CONF_ENTITY_ID] = switch_ids[0] if len(switch_ids) == 1 else switch_ids
+            c[CONF_ZONES] = [_zone(z) for z in ctl._zones]
+            if ctl._sequences:
+                c[CONF_SEQUENCES] = [_sequence(s) for s in ctl._sequences]
+            return c
+
+        return {CONF_CONTROLLERS: [_controller(c) for c in self._controllers]}
+
     def muster(self, stime: datetime, force: bool) -> IURQStatus:
         """Calculate run times for system"""
         status = IURQStatus(0)

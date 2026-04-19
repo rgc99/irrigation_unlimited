@@ -150,6 +150,7 @@ DEFAULT_TEST_SPEED = 1.0
 SERVICE_CANCEL = "cancel"
 SERVICE_DISABLE = "disable"
 SERVICE_ENABLE = "enable"
+SERVICE_EXPORT_CONFIG = "export_config"
 SERVICE_GET_INFO = "get_info"
 SERVICE_GET_STATUS = "get_status"
 SERVICE_LOAD_SCHEDULE = "load_schedule"
