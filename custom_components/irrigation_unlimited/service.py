@@ -113,7 +113,7 @@ def register_component_services(
         from .binary_sensor import async_reload_platform
 
         conf = await component.async_prepare_reload(skip_reset=True)
-        if conf is None or conf == {}:
+        if conf is None or DOMAIN not in conf:
             conf = {DOMAIN: {}}
         coordinator.load(conf[DOMAIN])
         await async_reload_platform(component, coordinator)
