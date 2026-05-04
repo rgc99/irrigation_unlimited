@@ -42,6 +42,7 @@ from .const import (
     SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
+    SERVICE_EXPORT_CONFIG,
     SERVICE_GET_INFO,
     SERVICE_GET_STATUS,
     SERVICE_LOAD_SCHEDULE,
@@ -112,7 +113,7 @@ def register_component_services(
         from .binary_sensor import async_reload_platform
 
         conf = await component.async_prepare_reload(skip_reset=True)
-        if conf is None or conf == {}:
+        if conf is None or DOMAIN not in conf:
             conf = {DOMAIN: {}}
         coordinator.load(conf[DOMAIN])
         await async_reload_platform(component, coordinator)
@@ -199,5 +200,19 @@ def register_component_services(
         SERVICE_GET_STATUS,
         get_status_service_handler,
         GET_STATUS_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    @callback
+    async def export_config_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Return the current config in configuration.yaml-compatible format"""
+        # pylint: disable=unused-argument
+        return convert_data(coordinator.export_config())
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_EXPORT_CONFIG,
+        export_config_service_handler,
+        {},
         supports_response=SupportsResponse.ONLY,
     )

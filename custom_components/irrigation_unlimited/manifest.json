@@ -4,7 +4,7 @@
   "codeowners": [
     "@rgc99"
   ],
-  "config_flow": false,
+  "config_flow": true,
   "dependencies": [
     "recorder",
     "history"

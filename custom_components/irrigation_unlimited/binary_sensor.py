@@ -65,13 +65,10 @@ def find_platform(hass: HomeAssistant, name: str) -> EntityPlatform:
     return None
 
 
-async def async_setup_platform(
-    hass, config, async_add_entities, discovery_info=None
-) -> None:
-    """Setup binary_sensor platform."""
-    # pylint: disable=unused-argument
-
-    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+def _build_entities(
+    coordinator: IUCoordinator,
+) -> list:
+    """Build the list of entities for all controllers/zones/sequences."""
     entities = []
     for controller in coordinator.controllers:
         entities.append(IUMasterEntity(coordinator, controller, None, None))
@@ -79,12 +76,31 @@ async def async_setup_platform(
             entities.append(IUZoneEntity(coordinator, controller, zone, None))
         for sequence in controller.sequences:
             entities.append(IUSequenceEntity(coordinator, controller, None, sequence))
-    async_add_entities(entities)
+    return entities
+
+
+async def async_setup_platform(
+    hass, config, async_add_entities, discovery_info=None
+) -> None:
+    """Setup binary_sensor platform (YAML path)."""
+    # pylint: disable=unused-argument
+
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+    async_add_entities(_build_entities(coordinator))
 
     platform = current_platform.get()
     register_platform_services(platform)
 
     return
+
+
+async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> None:
+    """Setup binary_sensor platform (config entry / UI path)."""
+    coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
+    async_add_entities(_build_entities(coordinator))
+
+    platform = current_platform.get()
+    register_platform_services(platform)
 
 
 async def async_reload_platform(
@@ -138,6 +154,14 @@ class IUMasterEntity(IUEntity):
     def name(self):
         """Return the friendly name of the binary_sensor."""
         return self._controller.name
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._controller.unique_id)},
+            "name": self._controller.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
 
     @property
     def is_on(self):
@@ -207,6 +231,14 @@ class IUZoneEntity(IUEntity):
     def name(self):
         """Return the friendly name of the binary_sensor."""
         return self._zone.name
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._zone.unique_id)},
+            "name": self._zone.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
 
     @property
     def is_on(self):
@@ -294,6 +326,14 @@ class IUSequenceEntity(IUEntity):
     def name(self):
         """Return the friendly name of the binary_sensor."""
         return self._sequence.name
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._sequence.unique_id)},
+            "name": self._sequence.name,
+            "manufacturer": "Irrigation Unlimited",
+        }
 
     @property
     def is_on(self):

@@ -93,6 +93,7 @@
   - [14.7 Time (Time of Day)](#147-time-time-of-day)
 - [15. Contributions are welcome](#15-contributions-are-welcome)
 - [16. Credits](#16-credits)
+- [17. UI Configuration](#17-ui-configuration)
 <!-- /TOC -->
 
 ## 1. Introduction
@@ -203,6 +204,8 @@ custom_components/irrigation_unlimited/services.yaml
 ## 5. Configuration
 
 Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#78-service-reload) for details and limitations.
+
+> **UI configuration is optional.** Irrigation Unlimited also supports configuration via the Home Assistant UI — see [UI Configuration](ui.md) for details. If a `yaml` configuration is present it will take precedence over any settings made through the UI.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
@@ -1921,6 +1924,12 @@ If you want to contribute to this please read the [Contribution guidelines](CONT
 Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [integration_blueprint][integration_blueprint] template.
 
 Some inspiration was taken from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
+
+## 17. UI Configuration
+
+Irrigation Unlimited can be configured through the Home Assistant UI without any YAML. See [UI Configuration](ui.md) for full details.
+
+> **Note:** If a `yaml` configuration exists it will always take precedence over the UI settings.
 
 ---
 

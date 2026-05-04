@@ -30,7 +30,13 @@ ICON_ZONE_ON = "mdi:valve-open"
 
 # Platforms
 BINARY_SENSOR = "binary_sensor"
-PLATFORMS = [BINARY_SENSOR]
+BUTTON = "button"
+NUMBER = "number"
+SWITCH = "switch"
+PLATFORMS = [BINARY_SENSOR, BUTTON, NUMBER, SWITCH]
+
+# hass.data keys
+NUMBER_ENTITIES = "number_entities"
 
 # Configuration and options
 CONF_ACTUAL = "actual"
@@ -144,6 +150,7 @@ DEFAULT_TEST_SPEED = 1.0
 SERVICE_CANCEL = "cancel"
 SERVICE_DISABLE = "disable"
 SERVICE_ENABLE = "enable"
+SERVICE_EXPORT_CONFIG = "export_config"
 SERVICE_GET_INFO = "get_info"
 SERVICE_GET_STATUS = "get_status"
 SERVICE_LOAD_SCHEDULE = "load_schedule"

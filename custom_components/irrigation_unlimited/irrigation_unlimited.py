@@ -684,6 +684,11 @@ class IUSchedule(IUBase):
         """Return enabled status"""
         return self._enabled
 
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Set the enabled state"""
+        self._enabled = value
+
     def load(self, config: OrderedDict, update: bool = False) -> "IUSchedule":
         """Load schedule data from config"""
         if not update:
@@ -699,9 +704,17 @@ class IUSchedule(IUBase):
             self._until = None
 
         self._schedule_id = config.get(CONF_SCHEDULE_ID, self.schedule_id)
-        self._time = config.get(CONF_TIME, self._time)
+        raw_time = config.get(CONF_TIME, self._time)
+        # Config entry data is JSON so time arrives as a string; parse it to a time object
+        if isinstance(raw_time, str):
+            raw_time = cv.time(raw_time)
+        self._time = raw_time
         self._anchor = config.get(CONF_ANCHOR, self._anchor)
-        self._duration = wash_td(config.get(CONF_DURATION, self._duration))
+        raw_duration = config.get(CONF_DURATION, self._duration)
+        # Config entry data is JSON so duration arrives as a string; parse it to a timedelta
+        if isinstance(raw_duration, str):
+            raw_duration = cv.positive_time_period(raw_duration)
+        self._duration = wash_td(raw_duration)
         self._name = config.get(CONF_NAME, self._name)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
 
@@ -716,6 +729,11 @@ class IUSchedule(IUBase):
                 self._months.append(MONTHS.index(i) + 1)
 
         self._days = config.get(CONF_DAY, self._days)
+        # Config entry data is JSON-serialised so dates arrive as ISO strings
+        if isinstance(self._days, dict) and CONF_START_N_DAYS in self._days:
+            start = self._days[CONF_START_N_DAYS]
+            if isinstance(start, str):
+                self._days = {**self._days, CONF_START_N_DAYS: date.fromisoformat(start)}
         self._from = config.get(CONF_FROM, self._from)
         self._until = config.get(CONF_UNTIL, self._until)
 
@@ -2753,8 +2771,14 @@ class IUSequenceZone(IUBase):
                     self._zones.append(zone)
 
         self._zone_ids = config[CONF_ZONE_ID]
-        self._delay = wash_td(config.get(CONF_DELAY))
-        self._duration = wash_td(config.get(CONF_DURATION))
+        raw_delay = config.get(CONF_DELAY)
+        if isinstance(raw_delay, str):
+            raw_delay = cv.positive_time_period(raw_delay)
+        self._delay = wash_td(raw_delay)
+        raw_duration = config.get(CONF_DURATION)
+        if isinstance(raw_duration, str):
+            raw_duration = cv.positive_time_period(raw_duration)
+        self._duration = wash_td(raw_duration)
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
         self._volume = config.get(CONF_VOLUME, self._volume)
@@ -4115,8 +4139,14 @@ class IUSequence(IUBase):
         self.clear()
         self._sequence_id = config.get(CONF_SEQUENCE_ID, str(self.index + 1))
         self._name = config.get(CONF_NAME, f"Run {self.index + 1}")
-        self._delay = wash_td(config.get(CONF_DELAY))
-        self._duration = wash_td(config.get(CONF_DURATION))
+        raw_delay = config.get(CONF_DELAY)
+        if isinstance(raw_delay, str):
+            raw_delay = cv.positive_time_period(raw_delay)
+        self._delay = wash_td(raw_delay)
+        raw_duration = config.get(CONF_DURATION)
+        if isinstance(raw_duration, str):
+            raw_duration = cv.positive_time_period(raw_duration)
+        self._duration = wash_td(raw_duration)
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
         zidx: int = 0
@@ -6560,6 +6590,85 @@ class IUCoordinator:
         result[CONF_VERSION] = "1.0.1"
         result[CONF_CONTROLLERS] = [ctr.as_dict(extended) for ctr in self._controllers]
         return result
+
+    def export_config(self) -> dict:
+        """Serialise the current config into configuration.yaml-compatible format."""
+
+        def _fmt_td(td: timedelta | None) -> str | None:
+            if td is None:
+                return None
+            total = int(td.total_seconds())
+            h, rem = divmod(total, 3600)
+            m, s = divmod(rem, 60)
+            return f"{h}:{m:02d}:{s:02d}"
+
+        def _schedule(sch: IUSchedule) -> dict:
+            s = {}
+            if sch.name:
+                s[CONF_NAME] = sch.name
+            if sch._time is not None:
+                s[CONF_TIME] = sch._time.strftime("%H:%M") if hasattr(sch._time, "strftime") else str(sch._time)
+            if sch._duration is not None:
+                s[CONF_DURATION] = _fmt_td(sch._duration)
+            if sch._weekdays is not None:
+                s[CONF_WEEKDAY] = [WEEKDAYS[d] for d in sch._weekdays]
+            if sch._months is not None:
+                s[CONF_MONTH] = [MONTHS[m - 1] for m in sch._months]
+            if sch._days is not None:
+                s[CONF_DAY] = sch._days
+            if not sch._enabled:
+                s[CONF_ENABLED] = False
+            return s
+
+        def _zone(zone: IUZone) -> dict:
+            z = {}
+            z[CONF_NAME] = zone.name
+            z[CONF_ZONE_ID] = zone._zone_id
+            switch_ids = zone._switch.switch_entity_id
+            if switch_ids:
+                z[CONF_ENTITY_ID] = switch_ids[0] if len(switch_ids) == 1 else switch_ids
+            if zone._duration is not None:
+                z[CONF_DURATION] = _fmt_td(zone._duration)
+            if zone._schedules:
+                z[CONF_SCHEDULES] = [_schedule(s) for s in zone._schedules]
+            return z
+
+        def _sequence_zone(szn: IUSequenceZone) -> dict:
+            z = {}
+            if szn._zone_ids:
+                z[CONF_ZONE_ID] = szn._zone_ids[0] if len(szn._zone_ids) == 1 else szn._zone_ids
+            if szn._duration is not None:
+                z[CONF_DURATION] = _fmt_td(szn._duration)
+            if szn._delay is not None:
+                z[CONF_DELAY] = _fmt_td(szn._delay)
+            if not szn._enabled:
+                z[CONF_ENABLED] = False
+            return z
+
+        def _sequence(seq: IUSequence) -> dict:
+            s = {}
+            s[CONF_NAME] = seq.name
+            if seq._duration is not None:
+                s[CONF_DURATION] = _fmt_td(seq._duration)
+            if seq._delay is not None:
+                s[CONF_DELAY] = _fmt_td(seq._delay)
+            s[CONF_ZONES] = [_sequence_zone(z) for z in seq._zones]
+            if seq._schedules:
+                s[CONF_SCHEDULES] = [_schedule(sch) for sch in seq._schedules]
+            return s
+
+        def _controller(ctl: IUController) -> dict:
+            c = {}
+            c[CONF_NAME] = ctl.name
+            switch_ids = ctl._switch.switch_entity_id
+            if switch_ids:
+                c[CONF_ENTITY_ID] = switch_ids[0] if len(switch_ids) == 1 else switch_ids
+            c[CONF_ZONES] = [_zone(z) for z in ctl._zones]
+            if ctl._sequences:
+                c[CONF_SEQUENCES] = [_sequence(s) for s in ctl._sequences]
+            return c
+
+        return {CONF_CONTROLLERS: [_controller(c) for c in self._controllers]}
 
     def muster(self, stime: datetime, force: bool) -> IURQStatus:
         """Calculate run times for system"""
