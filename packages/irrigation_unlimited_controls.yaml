@@ -36,8 +36,11 @@ input_datetime:
 automation:
   - alias: Irrigation Unlimited Load UI Controls
     triggers:
-      - trigger: homeassistant
-        event: start
+      - platform: event
+        event_type: service_registered
+        event_data:
+          domain: irrigation_unlimited
+          service: list_config
     actions:
       - action: irrigation_unlimited.list_config
         data:
