@@ -133,6 +133,8 @@ def hist_data(
             result[event.entity_id].append(
                 ha.State(event.entity_id, state.state, state.attributes, event.atime)
             )
+
+    print(f"return mock hist_data: {result}")
     return result
 
 
