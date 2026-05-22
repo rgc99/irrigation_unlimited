@@ -52,6 +52,7 @@ automation:
           section: entities
           first: <none>
       - action: irrigation_unlimited.list_config
+        continue_on_error: true
         data:
           entity_id: input_select.irrigation_unlimited_sequences
           section: sequences
