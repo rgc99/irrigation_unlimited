@@ -165,8 +165,8 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             mock.side_effect = hist_data
 
             await exam.begin_test(1)
-            await exam.run_until("2021-01-06 06:02")
-            await exam.run_until("2021-01-06 06:04")
+            await exam.run_until("2021-01-04 06:02")
+            await exam.run_until("2021-01-04 06:03")
 
             assert mock.call_count == 1
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
