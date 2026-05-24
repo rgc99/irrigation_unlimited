@@ -1636,7 +1636,9 @@ class IURun(IUBase):
         """Resume a paused run"""
         if self.expired or self._pause_time is None:
             return
-        delta = stime - self._pause_time
+        delta = stime - max(self._pause_time, self._start_time)
+        if delta < TD_ZERO:
+            delta = TD_ZERO
         self._start_time += delta
         self._end_time += delta
         self._pause_time = None
@@ -3345,7 +3347,10 @@ class IUSequenceRun(IUBase):
         if self._paused is None:
             return
         resume_run(stime, self._runs)
-        self._end_time += stime - self._paused
+        delta = stime - max(self._paused, self._start_time)
+        if delta < TD_ZERO:
+            delta = TD_ZERO
+        self._end_time += delta
         self._paused = None
         self.update_status(stime)
 
@@ -4396,6 +4401,14 @@ class IUSequence(IUBase):
             ):
                 sqr.pause(stime)
                 changed = True
+
+        # If nothing is currently active then pause the next scheduled run.
+        if not changed:
+            for sqr in self._run_queue:
+                if not sqr.expired and not sqr.paused:
+                    sqr.pause(stime)
+                    changed = True
+                    break
         return changed
 
     def service_resume(self, data: MappingProxyType, stime: datetime) -> bool:
