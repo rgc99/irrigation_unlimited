@@ -96,6 +96,7 @@ async def async_setup_platform(
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> None:
     """Setup binary_sensor platform (config entry / UI path)."""
+    # pylint: disable=unused-argument
     coordinator: IUCoordinator = hass.data[DOMAIN][COORDINATOR]
     async_add_entities(_build_entities(coordinator))
 
@@ -260,9 +261,6 @@ class IUZoneEntity(IUEntity):
         """Return the state attributes of the device."""
         # pylint: disable=too-many-branches
 
-        print(
-            f"Updating state_attributes; entity: {self.entity_id}, total_today: {self._zone.today_total_duration}"
-        )
         attr = {}
         attr[CONF_ZONE_ID] = self._zone.zone_id
         attr[ATTR_INDEX] = self._zone.index

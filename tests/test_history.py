@@ -169,7 +169,6 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             await hass.async_block_till_done()
 
             assert mock.call_count == 1
-            print("Checking state")
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 4.0
             timeline = [

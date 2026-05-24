@@ -7199,7 +7199,6 @@ class IUCoordinator:
         """History service call entry point. The history has changed
         and the sensors require an update"""
         stime = self.service_time()
-        print(f"service_history; time: {dt2lstr(stime)}, entities: {entity_ids}")
         for controller in self._controllers:
             for zone in controller.zones:
                 if zone.entity_id in entity_ids:
