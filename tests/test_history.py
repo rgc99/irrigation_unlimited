@@ -850,6 +850,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
             )
 
             await exam.run_until("2024-07-16 06:08")
+            await exam.run_until("2024-07-16 06:09")
             exam.check_iu_entity(
                 "c1_z1",
                 STATE_ON,
