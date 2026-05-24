@@ -169,6 +169,7 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             await exam.run_until("2021-01-04 06:03")
 
             assert mock.call_count == 1
+            print("Checking state")
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 4.0
             timeline = [
@@ -284,8 +285,10 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
 
             # Midnight rollover
             await exam.begin_test(2)
-            await exam.run_for("00:01:00")
+            await exam.run_until("2021-01-04 23:32")
+            await exam.run_until("2021-01-04 23:33")
 
+            print("Checking state")
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 4.0
 
