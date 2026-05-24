@@ -166,7 +166,7 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
 
             await exam.begin_test(1)
             await exam.run_until("2021-01-04 06:02")
-            await exam.run_until("2021-01-04 06:03")
+            await hass.async_block_till_done()
 
             assert mock.call_count == 1
             print("Checking state")
@@ -286,9 +286,8 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             # Midnight rollover
             await exam.begin_test(2)
             await exam.run_until("2021-01-04 23:32")
-            await exam.run_until("2021-01-04 23:33")
+            await hass.async_block_till_done()
 
-            print("Checking state")
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 4.0
 
@@ -402,6 +401,7 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
             assert state.attributes["timeline"] == timeline
 
             await exam.run_until("2021-01-05 00:01:00")
+            await hass.async_block_till_done()
             state = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
             assert state.attributes["today_total"] == 0.0
 
@@ -983,6 +983,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                 },
             )
             await exam.run_until("2024-07-16 06:18")
+            await hass.async_block_till_done()
             exam.check_iu_entity(
                 "c1_z1",
                 STATE_OFF,
@@ -1130,6 +1131,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
             )
 
             await exam.run_until("2024-07-16 06:30")
+            await hass.async_block_till_done()
             exam.check_iu_entity(
                 "c1_z1",
                 STATE_OFF,
@@ -1406,6 +1408,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                 },
             )
             await exam.run_until("2024-07-23 08:05")
+            await hass.async_block_till_done()
             await exam.call(
                 SERVICE_MANUAL_RUN,
                 {
@@ -1414,6 +1417,7 @@ async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
                 },
             )
             await exam.run_until("2024-07-23 08:30")
+            await hass.async_block_till_done()
             exam.check_iu_entity(
                 "c1_z1",
                 STATE_OFF,
