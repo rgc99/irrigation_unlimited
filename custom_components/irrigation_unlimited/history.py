@@ -136,7 +136,6 @@ class IUHistory:
             self._async_handle_refresh_event,
             self._history_last,
         )
-        print(f"Arming timer; time: {self._history_last}, now: {dt.utcnow()}")
 
     async def _async_handle_refresh_event(self, utc_time: datetime) -> None:
         """Handle history event."""
