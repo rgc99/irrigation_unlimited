@@ -45,12 +45,14 @@ from .const import (
 
 class IUTodayTotal(NamedTuple):
     """Class to hold totals for today"""
+
     duration: timedelta
     volume: float
 
 
 class IUZoneTimeline(TypedDict):
     """Class to hold a timeline item"""
+
     start: datetime
     end: datetime
     schedule: str
@@ -66,6 +68,7 @@ TIMELINE = "timeline"
 
 class IUZoneHistory(TypedDict):
     """History cache"""
+
     today_on: IUTodayTotal
     timeline: IUZoneTimeline
 
@@ -133,6 +136,7 @@ class IUHistory:
             self._async_handle_refresh_event,
             self._history_last,
         )
+        print(f"Arming timer; time: {self._history_last}, now: {dt.utcnow()}")
 
     async def _async_handle_refresh_event(self, utc_time: datetime) -> None:
         """Handle history event."""

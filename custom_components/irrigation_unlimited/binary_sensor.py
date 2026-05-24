@@ -260,6 +260,9 @@ class IUZoneEntity(IUEntity):
         """Return the state attributes of the device."""
         # pylint: disable=too-many-branches
 
+        print(
+            f"Updating state_attributes; entity: {self.entity_id}, total_today: {self._zone.today_total_duration}"
+        )
         attr = {}
         attr[CONF_ZONE_ID] = self._zone.zone_id
         attr[ATTR_INDEX] = self._zone.index
