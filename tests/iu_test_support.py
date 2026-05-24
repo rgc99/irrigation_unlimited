@@ -359,6 +359,7 @@ class IUExam:
             )
 
         def check_controller(controller: IUController) -> None:
+            # pylint: disable=too-many-branches
             lst = list(controller.runs)
             controller_runs: set[IURun] = set(lst)
             assert len(lst) == len(controller_runs), "Controller runs not unique"
@@ -429,6 +430,7 @@ class IUExam:
     def check_attr(self, fields: dict, attr: dict) -> None:
         """Check the specified fields in the attributes"""
 
+        # pylint: disable=too-many-nested-blocks
         def check_field(field: str, expected, attribute) -> dict:
             result = {}
             if attribute != expected:
@@ -484,10 +486,9 @@ class IUExam:
                 if value.tzinfo == UTC:
                     value = as_local(value)
                 return f'mk_local("{value.strftime("%Y-%m-%d %H:%M:%S")}")'
-            elif isinstance(value, str):
+            if isinstance(value, str):
                 return f'"{value}"'
-            else:
-                return f"{value}"
+            return f"{value}"
 
         def print_attrs(level: int, attrs: dict[str, Any]) -> None:
             output(level, "{")
@@ -564,7 +565,7 @@ class IURedirectOutput:
         self.original_stdout = sys.stdout
 
     def __enter__(self):
-        sys.stdout = open(self._file, "w")
+        sys.stdout = open(self._file, "w", encoding="utf8")
         return self
 
     def __exit__(self, *args):
