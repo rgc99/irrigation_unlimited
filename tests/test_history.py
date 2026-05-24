@@ -1,5 +1,6 @@
 """Test irrigation_unlimited history."""
 
+# pylint: disable=too-many-lines
 from unittest.mock import patch
 from datetime import datetime, timedelta
 from collections import Counter
@@ -42,7 +43,7 @@ def hist_data(
     no_attributes: bool = False,
 ) -> dict[str, list[ha.State]]:
     """Return dummy history data for a scheduled run"""
-
+    # pylint: disable=too-many-positional-arguments, too-many-locals
     result: dict[str, list[ha.State]] = {}
     idm = "binary_sensor.irrigation_unlimited_c1_m"
     idz1 = "binary_sensor.irrigation_unlimited_c1_z1"
@@ -51,10 +52,14 @@ def hist_data(
     atm = {"current_schedule": 0, "current_name": "Manual"}
 
     class Event(NamedTuple):
+        """Class to hold history event data"""
+
         atime: datetime
         entity_id: str
 
     class State(NamedTuple):
+        """Class to hold history state data"""
+
         state: str
         attributes: dict
 
