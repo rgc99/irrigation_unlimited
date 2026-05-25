@@ -307,11 +307,16 @@ class IUExam:
         for test in range(self._coordinator.tester.total_tests):
             await self.run_test(test + 1)
 
-    async def call(self, service: str, data: dict[str, Any] = None) -> None:
+    async def call(
+        self, service: str, data: dict[str, Any] = None, return_response: bool = False
+    ) -> ha.ServiceResponse:
         """Call IU service"""
-        await self._hass.services.async_call(DOMAIN, service, data, True)
+        response_data = await self._hass.services.async_call(
+            DOMAIN, service, data, True, None, None, return_response
+        )
         await self._hass.async_block_till_done()
         self.check_labyrinth()
+        return response_data
 
     async def reload(self, config: str) -> None:
         """Reload the specified config file"""
