@@ -647,7 +647,7 @@ class IUSchedule(IUBase):
         self._coordinator = coordinator
         # Config parameters
         self._schedule_id: str = None
-        self._time: time | dict = None
+        self._start_time: time | dict = None
         self._duration: timedelta = None
         self._name: str = None
         self._weekdays: list[int] = None
@@ -675,6 +675,26 @@ class IUSchedule(IUBase):
         return True
 
     @property
+    def start_time(self) -> time | dict:
+        """Return the start time of the schedule"""
+        return self._start_time
+
+    @property
+    def weekdays(self) -> list[int]:
+        """Return the week days of the schedule"""
+        return self._weekdays
+
+    @property
+    def days(self):
+        """Return the days of the month to run"""
+        return self._days
+
+    @property
+    def months(self) -> list[int]:
+        """Return the months of the year to run"""
+        return self._months
+
+    @property
     def duration(self) -> timedelta:
         """Return the duration"""
         return self._duration
@@ -693,7 +713,7 @@ class IUSchedule(IUBase):
         """Load schedule data from config"""
         if not update:
             self._schedule_id = None
-            self._time = None
+            self._start_time = None
             self._duration = None
             self._name = f"Schedule {self.index + 1}"
             self._weekdays = None
@@ -704,11 +724,11 @@ class IUSchedule(IUBase):
             self._until = None
 
         self._schedule_id = config.get(CONF_SCHEDULE_ID, self.schedule_id)
-        raw_time = config.get(CONF_TIME, self._time)
+        raw_time = config.get(CONF_TIME, self._start_time)
         # Config entry data is JSON so time arrives as a string; parse it to a time object
         if isinstance(raw_time, str):
             raw_time = cv.time(raw_time)
-        self._time = raw_time
+        self._start_time = raw_time
         self._anchor = config.get(CONF_ANCHOR, self._anchor)
         raw_duration = config.get(CONF_DURATION, self._duration)
         # Config entry data is JSON so duration arrives as a string; parse it to a timedelta
@@ -733,7 +753,10 @@ class IUSchedule(IUBase):
         if isinstance(self._days, dict) and CONF_START_N_DAYS in self._days:
             start = self._days[CONF_START_N_DAYS]
             if isinstance(start, str):
-                self._days = {**self._days, CONF_START_N_DAYS: date.fromisoformat(start)}
+                self._days = {
+                    **self._days,
+                    CONF_START_N_DAYS: date.fromisoformat(start),
+                }
         self._from = config.get(CONF_FROM, self._from)
         self._until = config.get(CONF_UNTIL, self._until)
 
@@ -743,7 +766,7 @@ class IUSchedule(IUBase):
         """Return the schedule as a dict"""
         result = OrderedDict()
 
-        result[CONF_TIME] = self._time
+        result[CONF_TIME] = self._start_time
         result[CONF_ANCHOR] = self._anchor
         result[CONF_DURATION] = self._duration
         result[CONF_NAME] = self._name
@@ -837,25 +860,25 @@ class IUSchedule(IUBase):
                     continue
 
             # Adjust time component
-            if isinstance(self._time, time):
+            if isinstance(self._start_time, time):
                 next_run = datetime.combine(
-                    next_run.date(), self._time, next_run.tzinfo
+                    next_run.date(), self._start_time, next_run.tzinfo
                 )
-            elif isinstance(self._time, dict) and CONF_SUN in self._time:
+            elif isinstance(self._start_time, dict) and CONF_SUN in self._start_time:
                 sun_event = sun.get_astral_event_date(
-                    self._hass, self._time[CONF_SUN], next_run
+                    self._hass, self._start_time[CONF_SUN], next_run
                 )
                 if sun_event is None:
                     continue  # Astral event did not occur today
 
                 next_run = dt.as_local(sun_event)
-                if CONF_AFTER in self._time:
-                    next_run += self._time[CONF_AFTER]
-                if CONF_BEFORE in self._time:
-                    next_run -= self._time[CONF_BEFORE]
-            elif isinstance(self._time, dict) and CONF_CRON in self._time:
+                if CONF_AFTER in self._start_time:
+                    next_run += self._start_time[CONF_AFTER]
+                if CONF_BEFORE in self._start_time:
+                    next_run -= self._start_time[CONF_BEFORE]
+            elif isinstance(self._start_time, dict) and CONF_CRON in self._start_time:
                 try:
-                    cron = CronTab(self._time[CONF_CRON])
+                    cron = CronTab(self._start_time[CONF_CRON])
                     cron_event = cron.next(
                         now=local_time, return_datetime=True, default_utc=True
                     )
@@ -864,7 +887,7 @@ class IUSchedule(IUBase):
                     next_run = dt.as_local(cron_event)
                 except ValueError as error:
                     self._coordinator.logger.log_invalid_crontab(
-                        stime, self, self._time[CONF_CRON], error
+                        stime, self, self._start_time[CONF_CRON], error
                     )
                     self._enabled = False  # Shutdown this schedule
                     return None
@@ -2278,6 +2301,11 @@ class IUZone(IUBase):
     def user(self) -> dict:
         """Return the arbitrary user information"""
         return self._user
+
+    @property
+    def duration(self) -> timedelta:
+        """Return the duration of this zone"""
+        return self._duration
 
     def _is_setup(self) -> bool:
         """Check if this object is setup"""
@@ -4611,6 +4639,11 @@ class IUController(IUBase):
         """Return the volume for this zone"""
         return self._volume
 
+    @property
+    def switch(self) -> IUSwitch:
+        """Return the switch component"""
+        return self._switch
+
     def _status(self) -> str:
         """Return status of the controller"""
         if self._initialised:
@@ -6594,6 +6627,8 @@ class IUCoordinator:
     def export_config(self) -> dict:
         """Serialise the current config into configuration.yaml-compatible format."""
 
+        # pylint: disable=too-many-statements
+
         def _fmt_td(td: timedelta | None) -> str | None:
             if td is None:
                 return None
@@ -6606,66 +6641,76 @@ class IUCoordinator:
             s = {}
             if sch.name:
                 s[CONF_NAME] = sch.name
-            if sch._time is not None:
-                s[CONF_TIME] = sch._time.strftime("%H:%M") if hasattr(sch._time, "strftime") else str(sch._time)
-            if sch._duration is not None:
-                s[CONF_DURATION] = _fmt_td(sch._duration)
-            if sch._weekdays is not None:
-                s[CONF_WEEKDAY] = [WEEKDAYS[d] for d in sch._weekdays]
-            if sch._months is not None:
-                s[CONF_MONTH] = [MONTHS[m - 1] for m in sch._months]
-            if sch._days is not None:
-                s[CONF_DAY] = sch._days
-            if not sch._enabled:
+            if sch.start_time is not None:
+                s[CONF_TIME] = (
+                    sch.start_time.strftime("%H:%M")
+                    if hasattr(sch.start_time, "strftime")
+                    else str(sch.start_time)
+                )
+            if sch.duration is not None:
+                s[CONF_DURATION] = _fmt_td(sch.duration)
+            if sch.weekdays is not None:
+                s[CONF_WEEKDAY] = [WEEKDAYS[d] for d in sch.weekdays]
+            if sch.months is not None:
+                s[CONF_MONTH] = [MONTHS[m - 1] for m in sch.months]
+            if sch.days is not None:
+                s[CONF_DAY] = sch.days
+            if not sch.enabled:
                 s[CONF_ENABLED] = False
             return s
 
         def _zone(zone: IUZone) -> dict:
             z = {}
             z[CONF_NAME] = zone.name
-            z[CONF_ZONE_ID] = zone._zone_id
-            switch_ids = zone._switch.switch_entity_id
+            z[CONF_ZONE_ID] = zone.zone_id
+            switch_ids = zone.switch.switch_entity_id
             if switch_ids:
-                z[CONF_ENTITY_ID] = switch_ids[0] if len(switch_ids) == 1 else switch_ids
-            if zone._duration is not None:
-                z[CONF_DURATION] = _fmt_td(zone._duration)
-            if zone._schedules:
-                z[CONF_SCHEDULES] = [_schedule(s) for s in zone._schedules]
+                z[CONF_ENTITY_ID] = (
+                    switch_ids[0] if len(switch_ids) == 1 else switch_ids
+                )
+            if zone.duration is not None:
+                z[CONF_DURATION] = _fmt_td(zone.duration)
+            if zone.schedules:
+                z[CONF_SCHEDULES] = [_schedule(s) for s in zone.schedules]
             return z
 
         def _sequence_zone(szn: IUSequenceZone) -> dict:
             z = {}
-            if szn._zone_ids:
-                z[CONF_ZONE_ID] = szn._zone_ids[0] if len(szn._zone_ids) == 1 else szn._zone_ids
-            if szn._duration is not None:
-                z[CONF_DURATION] = _fmt_td(szn._duration)
-            if szn._delay is not None:
-                z[CONF_DELAY] = _fmt_td(szn._delay)
-            if not szn._enabled:
+            if szn.zone_ids:
+                z[CONF_ZONE_ID] = (
+                    szn.zone_ids[0] if len(szn.zone_ids) == 1 else szn.zone_ids
+                )
+            if szn.duration is not None:
+                z[CONF_DURATION] = _fmt_td(szn.duration)
+            if szn.delay is not None:
+                z[CONF_DELAY] = _fmt_td(szn.delay)
+            if not szn.enabled:
                 z[CONF_ENABLED] = False
             return z
 
         def _sequence(seq: IUSequence) -> dict:
             s = {}
             s[CONF_NAME] = seq.name
-            if seq._duration is not None:
-                s[CONF_DURATION] = _fmt_td(seq._duration)
-            if seq._delay is not None:
-                s[CONF_DELAY] = _fmt_td(seq._delay)
-            s[CONF_ZONES] = [_sequence_zone(z) for z in seq._zones]
-            if seq._schedules:
-                s[CONF_SCHEDULES] = [_schedule(sch) for sch in seq._schedules]
+            if seq.duration is not None:
+                s[CONF_DURATION] = _fmt_td(seq.duration)
+            if seq.delay is not None:
+                s[CONF_DELAY] = _fmt_td(seq.delay)
+            s[CONF_ZONES] = [_sequence_zone(z) for z in seq.zones]
+            if seq.schedules:
+                s[CONF_SCHEDULES] = [_schedule(sch) for sch in seq.schedules]
             return s
 
         def _controller(ctl: IUController) -> dict:
             c = {}
             c[CONF_NAME] = ctl.name
-            switch_ids = ctl._switch.switch_entity_id
+            switch_ids = ctl.switch.switch_entity_id
             if switch_ids:
-                c[CONF_ENTITY_ID] = switch_ids[0] if len(switch_ids) == 1 else switch_ids
-            c[CONF_ZONES] = [_zone(z) for z in ctl._zones]
-            if ctl._sequences:
-                c[CONF_SEQUENCES] = [_sequence(s) for s in ctl._sequences]
+                c[CONF_ENTITY_ID] = (
+                    switch_ids[0] if len(switch_ids) == 1 else switch_ids
+                )
+            c[CONF_ZONES] = [_zone(z) for z in ctl.zones]
+            if ctl.sequences:
+                c[CONF_SEQUENCES] = [_sequence(s) for s in ctl.sequences]
             return c
 
         return {CONF_CONTROLLERS: [_controller(c) for c in self._controllers]}
