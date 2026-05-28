@@ -1,10 +1,11 @@
 """irrigation_unlimited config flow test"""
 
 # pylint: disable=unused-import
-import datetime
 import homeassistant.core as ha
 from custom_components.irrigation_unlimited.const import (
     SERVICE_EXPORT_CONFIG,
+    SERVICE_ENABLE,
+    SERVICE_DISABLE,
 )
 from tests.iu_test_support import IUExam, mk_utc, mk_local
 
@@ -12,7 +13,7 @@ IUExam.quiet_mode()
 
 
 async def test_export_config(hass: ha.HomeAssistant, skip_dependencies, skip_history):
-    """Model IUExam class."""
+    """Test export_config action"""
     # pylint: disable=unused-argument
 
     async with IUExam(hass, "test_export_config.yaml") as exam:
@@ -50,5 +51,64 @@ async def test_export_config(hass: ha.HomeAssistant, skip_dependencies, skip_his
                 }
             ]
         }
+        await exam.finish_test()
+        exam.check_summary()
+
+async def test_helpers(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test helpers"""
+    # pylint: disable=unused-argument
+
+    async with IUExam(hass, "test_helper.yaml") as exam:
+
+        await exam.begin_test(1)
+
+        # Initial state should be on
+        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes["enabled"] is True
+        assert hass.states.get("switch.zone_1_enabled").state == "on"
+
+        # Disable zone 1
+        await exam.call(
+            SERVICE_DISABLE,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        )
+        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes["enabled"] is False
+        # assert hass.states.get("switch.zone_1_enabled").state == "off"
+
+        # Reenable zone 1
+        await exam.call(
+            SERVICE_ENABLE,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        )
+        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes["enabled"] is True
+        assert hass.states.get("switch.zone_1_enabled").state == "on"
+
+        # Disable zone 1 via helper
+        await hass.services.async_call("switch", "turn_off", {"entity_id": "switch.zone_1_enabled"}, True)
+        await hass.async_block_till_done()
+        assert hass.states.get("switch.zone_1_enabled").state == "off"
+        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes["enabled"] is False
+
+        # Enable zone 1
+        await exam.call(
+            SERVICE_ENABLE,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        )
+        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes["enabled"] is True
+        # assert hass.states.get("switch.zone_1_enabled").state == "on"
+
+        # Disable zone 1
+        await exam.call(
+            SERVICE_DISABLE,
+            {"entity_id": "binary_sensor.irrigation_unlimited_c1_z1"},
+        )
+        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes["enabled"] is False
+        assert hass.states.get("switch.zone_1_enabled").state == "off"
+
+        # Enable zone 1 via helper
+        await hass.services.async_call("switch", "turn_on", {"entity_id": "switch.zone_1_enabled"}, True)
+        await hass.async_block_till_done()
+        assert hass.states.get("switch.zone_1_enabled").state == "on"
+        assert hass.states.get("binary_sensor.irrigation_unlimited_c1_z1").attributes["enabled"] is True
+
         await exam.finish_test()
         exam.check_summary()
