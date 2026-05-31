@@ -58,7 +58,7 @@ class IUZoneRunButton(ButtonEntity):
 
     @property
     def name(self) -> str:
-        return f"{self._zone.name} Run"
+        return f"{self._controller.name} {self._zone.name} Run"
 
     @property
     def icon(self) -> str:
@@ -111,7 +111,7 @@ class IUSequenceRunButton(ButtonEntity):
 
     @property
     def name(self) -> str:
-        return f"{self._sequence.name} Run"
+        return f"{self._controller.name} {self._sequence.name} Run"
 
     @property
     def icon(self) -> str:

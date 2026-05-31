@@ -69,7 +69,7 @@ class IUZoneRunDuration(NumberEntity):
 
     @property
     def name(self) -> str:
-        return f"{self._zone.name} Run Duration"
+        return f"{self._controller.name} {self._zone.name} Run Duration"
 
     @property
     def icon(self) -> str:
@@ -132,7 +132,7 @@ class IUSequenceRunDuration(NumberEntity):
 
     @property
     def name(self) -> str:
-        return f"{self._sequence.name} Run Duration"
+        return f"{self._controller.name} {self._sequence.name} Run Duration"
 
     @property
     def icon(self) -> str:
