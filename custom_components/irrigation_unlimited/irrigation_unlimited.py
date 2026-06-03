@@ -112,6 +112,7 @@ from .const import (
     CONF_CONTROLLERS,
     CONF_CONTROLLER_ID,
     CONF_CRON,
+    CONF_CYCLE,
     CONF_DAY,
     CONF_DECREASE,
     CONF_DURATION,
@@ -137,8 +138,11 @@ from .const import (
     CONF_INDEX,
     CONF_LOGGING,
     CONF_MAXIMUM,
+    CONF_MAX_DURATION,
     CONF_MAX_LOG_ENTRIES,
     CONF_MINIMUM,
+    CONF_MIN_DURATION,
+    CONF_MIN_SOAK,
     CONF_MODE,
     CONF_MONTH,
     CONF_ODD,
@@ -337,6 +341,40 @@ def str_to_td(atime: str) -> timedelta:
     """Convert a string in 0:00:00 format to timedelta"""
     dur = datetime.strptime(atime, "%H:%M:%S")
     return timedelta(hours=dur.hour, minutes=dur.minute, seconds=dur.second)
+
+
+def calc_cycles(
+    total: timedelta,
+    max_duration: timedelta,
+    min_duration: timedelta,
+) -> list[timedelta]:
+    """Split a total run time into evenly distributed cycle durations.
+
+    Each cycle is capped at max_duration (the runoff threshold) and floored at
+    min_duration. The total is distributed evenly across the cycles so there is
+    no tiny trailing cycle (45 min -> 3 x 15, 35 min -> 3 x ~11.7). Returns an
+    empty list when there is nothing to run."""
+    granularity = granularity_time()
+    if total <= TD_ZERO:
+        return []
+    # No cap configured or the total fits inside a single cycle
+    if max_duration is None or max_duration <= TD_ZERO or total <= max_duration:
+        return [total]
+    total_secs = total.total_seconds()
+    # 1. Number of cycles needed to stay under the runoff cap (ceil division)
+    num = int(-(-total_secs // max_duration.total_seconds()))
+    # 3. Floor each cycle at min_duration
+    if min_duration is not None and min_duration > TD_ZERO:
+        if total < min_duration:
+            return [total]  # Run once for whatever is needed
+        max_num = int(total_secs // min_duration.total_seconds())  # floor division
+        num = min(num, max(max_num, 1))
+    # 2. Distribute the total evenly across the cycles
+    per_cycle = max(round_td(total / num), granularity)
+    cycles = [per_cycle] * num
+    # Absorb any rounding drift into the last cycle so the sum equals the total
+    cycles[-1] = cycles[-1] + (total - per_cycle * num)
+    return [cycle for cycle in cycles if cycle > TD_ZERO]
 
 
 def render_positive_time_period(data: dict, key: str) -> None:
@@ -2659,6 +2697,57 @@ class IUZoneQueue(IURunQueue):
         return status
 
 
+class IUSequenceCycle:
+    """Irrigation Unlimited cycle-and-soak parameters for a sequence.
+
+    Splits each zone's total run time into shorter cycles (capped at
+    max_duration, floored at min_duration) and guarantees a minimum soak
+    between a zone's own cycles."""
+
+    def __init__(self) -> None:
+        self._max_duration: timedelta = None
+        self._min_duration: timedelta = None
+        self._min_soak: timedelta = None
+
+    @property
+    def max_duration(self) -> timedelta:
+        """Return the maximum (runoff threshold) cycle length"""
+        return self._max_duration
+
+    @property
+    def min_duration(self) -> timedelta:
+        """Return the minimum cycle length"""
+        return self._min_duration
+
+    @property
+    def min_soak(self) -> timedelta:
+        """Return the guaranteed soak between a zone's own cycles"""
+        return self._min_soak
+
+    @property
+    def enabled(self) -> bool:
+        """Return True when cycle-and-soak is configured"""
+        return self._max_duration is not None or self._min_soak is not None
+
+    def load(self, config: OrderedDict) -> "IUSequenceCycle":
+        """Load the cycle configuration"""
+        self._max_duration = wash_td(config.get(CONF_MAX_DURATION))
+        self._min_duration = wash_td(config.get(CONF_MIN_DURATION))
+        self._min_soak = wash_td(config.get(CONF_MIN_SOAK))
+        return self
+
+    def as_dict(self) -> dict:
+        """Return this cycle as a dict"""
+        result = OrderedDict()
+        if self._max_duration is not None:
+            result[CONF_MAX_DURATION] = self._max_duration
+        if self._min_duration is not None:
+            result[CONF_MIN_DURATION] = self._min_duration
+        if self._min_soak is not None:
+            result[CONF_MIN_SOAK] = self._min_soak
+        return result
+
+
 class IUSequenceZone(IUBase):
     """Irrigation Unlimited Sequence Zone class"""
 
@@ -2893,6 +2982,7 @@ class IUSequenceZoneRun(NamedTuple):
     sequence_zone: IUSequenceZone
     sequence_repeat: int
     zone_repeat: int
+    cycle: int = 0
 
 
 class IUSequenceRunAllocation(NamedTuple):
@@ -3054,6 +3144,8 @@ class IUSequenceRun(IUBase):
         """Build out the sequence. Pre allocate runs and determine
         the duration"""
         # pylint: disable=too-many-nested-blocks
+        if self._sequence.cycle_active(self):
+            return self._build_cycle(duration_factor)
         next_run = self._start_time = self._end_time = wash_dt(dt.utcnow())
         for sequence_repeat in range(self._sequence.repeat):
             for sequence_zone in self._sequence.zones:
@@ -3099,6 +3191,102 @@ class IUSequenceRun(IUBase):
                             zone_run_time += duration_adjusted + delay
                         duration_max = max(duration_max, zone_run_time - next_run)
                 next_run += duration_max
+
+        self._remaining_time = self._end_time - self._start_time
+        return self._remaining_time
+
+    def _build_cycle(self, duration_factor: float) -> timedelta:
+        """Build out the sequence using cycle-and-soak.
+
+        Each zone's total run time is split into evenly distributed cycles
+        (see calc_cycles). The cycles are interleaved across the zones so each
+        zone gets at least min_soak between its own cycles, with the soak
+        filled by running the other zones. Idle time is inserted only when
+        every remaining zone is still soaking. Zones with fewer cycles
+        complete early and drop out of later passes."""
+        # pylint: disable=too-many-locals
+        cycle = self._sequence.cycle
+        start = self._start_time = self._end_time = wash_dt(dt.utcnow())
+        min_soak = cycle.min_soak if cycle.min_soak is not None else TD_ZERO
+
+        # Pre-compute a work item (track) for each enabled sequence zone
+        tracks: list[dict] = []
+        for sequence_zone in self._sequence.zones:
+            if not self._sequence.zone_enabled(sequence_zone, self):
+                continue
+            duration = self._sequence.zone_duration_final(
+                sequence_zone, duration_factor, self
+            )
+            delay = self._sequence.zone_delay(sequence_zone, self)
+            members: list[tuple[IUZone, list[timedelta]]] = []
+            for zone in sequence_zone.zones:
+                if not self.zone_enabled(zone):
+                    continue
+                # Mirror build(): apply the zone adjustment/constraint unless
+                # this is a manual run or the sequence carries an adjustment
+                if not self.is_manual() and not self._sequence.has_adjustment(True):
+                    total = zone.runs.constrain(zone.adjustment.adjust(duration))
+                else:
+                    total = duration
+                cycles = calc_cycles(total, cycle.max_duration, cycle.min_duration)
+                if cycles:
+                    members.append((zone, cycles))
+            if not members:
+                continue
+            tracks.append(
+                {
+                    "sequence_zone": sequence_zone,
+                    "members": members,
+                    "count": max(len(cycles) for _, cycles in members),
+                    "delay": delay,
+                    "index": 0,
+                    "ready_at": start,
+                }
+            )
+
+        # Interleave the cycles across the zones
+        cursor = start
+        while True:
+            remaining = [t for t in tracks if t["index"] < t["count"]]
+            if not remaining:
+                break
+            doable = [t for t in remaining if t["ready_at"] <= cursor]
+            if not doable:
+                # Every remaining zone is soaking; jump ahead to the next one
+                cursor = min(t["ready_at"] for t in remaining)
+                continue
+            # Favour the zone idle the longest, then the one with the most
+            # remaining cycles, then sequence order for determinism
+            track = min(
+                doable,
+                key=lambda t: (
+                    t["ready_at"],
+                    -(t["count"] - t["index"]),
+                    t["sequence_zone"].index,
+                ),
+            )
+            idx = track["index"]
+            cycle_duration = TD_ZERO
+            for zone, cycles in track["members"]:
+                if idx >= len(cycles):
+                    continue
+                duration_adjusted = cycles[idx]
+                self._runs_pre_allocate.append(
+                    IUSequenceRunAllocation(
+                        cursor,
+                        duration_adjusted,
+                        zone,
+                        IUSequenceZoneRun(track["sequence_zone"], 0, 0, idx),
+                    )
+                )
+                if self._first_zone is None:
+                    self._first_zone = zone
+                self._end_time = max(self._end_time, cursor + duration_adjusted)
+                cycle_duration = max(cycle_duration, duration_adjusted)
+            track["index"] += 1
+            # The zone may not run again until its soak has elapsed
+            track["ready_at"] = cursor + cycle_duration + min_soak
+            cursor += cycle_duration + track["delay"]
 
         self._remaining_time = self._end_time - self._start_time
         return self._remaining_time
@@ -3783,6 +3971,7 @@ class IUSequence(IUBase):
         self._duration: timedelta = None
         self._repeat: int = None
         self._enabled: bool = True
+        self._cycle = IUSequenceCycle()
         # Private variables
         self._is_on = False
         self._is_in_delay = False
@@ -3888,6 +4077,18 @@ class IUSequence(IUBase):
     def repeat(self) -> int:
         """Returns the number of times to repeat this sequence"""
         return self._repeat
+
+    @property
+    def cycle(self) -> IUSequenceCycle:
+        """Returns the cycle-and-soak parameters for this sequence"""
+        return self._cycle
+
+    def cycle_active(self, sqr: "IUSequenceRun") -> bool:
+        """Return True when cycle-and-soak should drive the build.
+
+        Cycle-and-soak is mutually exclusive with repeat; when repeat is in
+        play the cycle block is ignored."""
+        return self._cycle.enabled and self._repeat == 1
 
     @property
     def is_enabled(self) -> bool:
@@ -4177,6 +4378,9 @@ class IUSequence(IUBase):
         self._duration = wash_td(raw_duration)
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
+        self._cycle = IUSequenceCycle()
+        if CONF_CYCLE in config:
+            self._cycle.load(config[CONF_CYCLE])
         zidx: int = 0
         for zidx, zone_config in enumerate(config[CONF_ZONES]):
             self.find_add_zone(zidx).load(zone_config)

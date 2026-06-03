@@ -31,6 +31,7 @@
     - [5.5.2 Crontab](#552-crontab)
     - [5.5.3 Every `n` Days](#553-every-n-days)
   - [5.6. Sequence Objects](#56-sequence-objects)
+    - [5.6.1. Cycle Object](#561-cycle-object)
   - [5.7. Sequence Zone Objects](#57-sequence-zone-objects)
   - [5.8. History Object](#58-history-object)
     - [5.8.1. Long term statistics (LTS)](#581-long-term-statistics-lts)
@@ -367,9 +368,50 @@ Sequences directly descend from a controller and are loosely connected to a zone
 | `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_. Can be negative to make the next zone on _before_ the current zone has finished |
 | `duration` | [duration](#142-duration-time-period) | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
+| `cycle` | [Cycle Object](#561-cycle-object) | | Enable native cycle-and-soak for this sequence, see below |
 | `name` | string | Run _N_ | Friendly name for the sequence |
 | `sequence_id` | string | _N_ | Sequence reference. This must be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
 | `enabled` | bool | true | Enable/disable the sequence |
+
+#### 5.6.1. Cycle Object
+
+Cycle-and-soak splits each zone's *total* run time into several shorter cycles with a soak period in between, so water can infiltrate instead of running off. This is the recommended approach for heavy soils (e.g. clay). It mirrors how commercial controllers (RainMachine, Rain Bird) implement cycle-and-soak: even distribution, a minimum cycle length, a minimum soak floor, and the *other* zones filling the soak window.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `max_duration` | [duration](#142-duration-time-period) | | The runoff threshold — no single cycle runs longer than this. Required to enable splitting |
+| `min_duration` | [duration](#142-duration-time-period) | | The floor — never run a cycle shorter than this. If a zone's total is below this it runs once |
+| `min_soak` | [duration](#142-duration-time-period) | | The guaranteed soak between a zone's own cycles |
+
+How it works, for each zone in the sequence:
+
+1. The number of cycles is derived from the zone's **total** `duration`: `num_cycles = ceil(total / max_duration)`.
+2. The total is distributed **evenly** across those cycles (`per_cycle = total / num_cycles`), so there is no tiny trailing cycle (45 min → 3 × 15, never 15 + 15 + 15 + 0; 35 min → 3 × ~11.7, never 15 + 15 + 5).
+3. The cycle count is capped so `per_cycle` never drops below `min_duration`. A zone whose total is itself below `min_duration` (e.g. a rained-on day) runs once for whatever it needs.
+4. Between a zone's own cycles a soak of at least `min_soak` is guaranteed. The soak is filled by **interleaving the other zones** in the sequence; idle time is inserted only for the remainder needed to reach `min_soak`.
+5. Zones with fewer cycles **complete early and drop out** of later passes, rather than being padded to match the longest zone.
+
+```yaml
+sequences:
+  - name: "Bib 1 - Front/Side"
+    cycle:
+      max_duration: "00:15"   # runoff threshold; cap per cycle
+      min_duration: "00:10"   # floor; never run a cycle shorter than this
+      min_soak: "01:00"       # guaranteed soak between a zone's own cycles
+    zones:
+      - zone_id: 1
+        duration: "00:45"     # total; cycle logic derives the per-cycle split
+      - zone_id: 2
+        duration: "00:45"
+      - zone_id: 3
+        duration: "00:45"
+```
+
+Notes:
+
+- The per-cycle split is **re-derived from the zone's total whenever that total changes**, including via the [`adjust_time`](#76-action-adjust_time) action. This makes cycle-and-soak compose cleanly with integrations such as Smart Irrigation that push a *total* daily run time per zone — there is no need to pre-divide by a repeat count. Use `adjust_time` with `actual` (and the `zones` parameter to target a position within the sequence) to set a zone's new total; the cycles are recalculated on the next run.
+- `cycle` is **mutually exclusive with `repeat`**. When `repeat` is greater than 1 the `cycle` block is ignored.
+- Because of the soak windows, a cycle-and-soak sequence occupies a longer wall-clock window than the sum of its run times.
 
 ### 5.7. Sequence Zone Objects
 
