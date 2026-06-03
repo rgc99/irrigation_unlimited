@@ -28,6 +28,7 @@ from .const import (
     CONF_CONTROLLERS,
     CONF_CONTROLLER_ID,
     CONF_CRON,
+    CONF_CYCLE,
     CONF_DAY,
     CONF_DECREASE,
     CONF_DURATION,
@@ -52,8 +53,11 @@ from .const import (
     CONF_HISTORY_SPAN,
     CONF_INCREASE,
     CONF_MAXIMUM,
+    CONF_MAX_DURATION,
     CONF_MAX_LOG_ENTRIES,
     CONF_MINIMUM,
+    CONF_MIN_DURATION,
+    CONF_MIN_SOAK,
     CONF_MODE,
     CONF_MONTH,
     CONF_ODD,
@@ -285,6 +289,14 @@ SEQUENCE_ZONE_SCHEMA = vol.Schema(
     }
 )
 
+CYCLE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_MAX_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_MIN_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_MIN_SOAK): cv.positive_time_period,
+    }
+)
+
 SEQUENCE_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_ZONES, default={}): vol.All(
@@ -299,6 +311,7 @@ SEQUENCE_SCHEMA = vol.Schema(
         vol.Optional(CONF_DURATION): cv.positive_time_period,
         vol.Optional(CONF_REPEAT): cv.positive_int,
         vol.Optional(CONF_ENABLED): cv.boolean,
+        vol.Optional(CONF_CYCLE): vol.All(CYCLE_SCHEMA),
     }
 )
 
