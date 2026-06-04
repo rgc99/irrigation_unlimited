@@ -894,16 +894,17 @@ class IUSchedule(IUBase):
             else:  # Some weird error happened
                 return None
 
+            # Handle the next section in UTC to avoid midnight and DST time change over issues
+            next_run_utc = dt.as_utc(next_run)
             if self._anchor == CONF_FINISH:
-                next_run -= adjusted_duration
+                next_run_utc -= adjusted_duration
 
-            next_run = wash_dt(next_run)
-            if (is_running and next_run > local_time) or (
-                not is_running and next_run + adjusted_duration > local_time
+            next_run_utc = wash_dt(next_run_utc)
+            if (is_running and next_run_utc > stime) or (
+                not is_running and next_run_utc + adjusted_duration > stime
             ):
-                break
-
-        return dt.as_utc(next_run)
+                return next_run_utc
+            next_run = dt.as_local(next_run_utc)
 
 
 class IUSwitch:
