@@ -785,7 +785,7 @@ class IUSchedule(IUBase):
         ftime: datetime,
         adjusted_duration: timedelta,
         is_running: bool,
-    ) -> datetime:
+    ) -> datetime | None:
         # pylint: disable=too-many-branches
         # pylint: disable=too-many-statements
         # pylint: disable=too-many-locals
