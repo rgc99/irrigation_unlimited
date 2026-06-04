@@ -4863,7 +4863,7 @@ class IUController(IUBase):
             schedule: IUSchedule,
             zone: IUZone,
             total_duration: timedelta,
-        ) -> datetime:
+        ) -> datetime | None:
             def is_running(sequence: IUSequence, schedule: IUSchedule) -> bool:
                 """Return True is this sequence & schedule is currently running"""
                 for srn in sequence.runs:
