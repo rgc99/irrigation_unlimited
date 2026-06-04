@@ -390,6 +390,7 @@ How it works, for each zone in the sequence:
 3. The cycle count is capped so `per_cycle` never drops below `min_duration`. A zone whose total is itself below `min_duration` (e.g. a rained-on day) runs once for whatever it needs.
 4. Between a zone's own cycles a soak of at least `min_soak` is guaranteed. The soak is filled by **interleaving the other zones** in the sequence; idle time is inserted only for the remainder needed to reach `min_soak`.
 5. Zones with fewer cycles **complete early and drop out** of later passes, rather than being padded to match the longest zone.
+6. Within each pass the zones run one at a time (the hardware constraint), **ordered by the number of cycles each has left** — the zone with the most remaining cycles goes first, ties broken by configuration order. This front-loads the busiest zones so their soak windows are filled by the others with the least idle time. Separate sequences still run concurrently.
 
 ```yaml
 sequences:
