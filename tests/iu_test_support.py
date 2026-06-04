@@ -255,6 +255,7 @@ class IUExam:
                 test.errors,
                 NO_CHECK,
             )
+        self._coordinator.end_test()
 
     async def run_until(self, stop_at: datetime | str) -> None:
         """Run until a point in time"""

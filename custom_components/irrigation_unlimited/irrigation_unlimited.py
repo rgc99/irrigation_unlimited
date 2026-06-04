@@ -7259,6 +7259,11 @@ class IUCoordinator:
             return next_time
         return None
 
+    def end_test(self) -> None:
+        """Main entry to finish a test"""
+        self._last_tick = None
+        self._last_muster = None
+
     def status_changed(
         self, stime: datetime, controller: IUController, zone: IUZone, state: bool
     ) -> None:
