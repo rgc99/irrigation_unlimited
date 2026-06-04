@@ -1751,9 +1751,10 @@ class IURunQueue(list[IURun]):
         self._sorted = False
         return run
 
-    def cancel(self, stime: datetime) -> None:
+    def cancel(self, stime: datetime) -> bool:
         """Flag the current run to be cancelled"""
         self._cancel_request = stime
+        return True
 
     def clear_all(self) -> None:
         """Clear out all runs"""
@@ -2367,7 +2368,7 @@ class IUZone(IUBase):
             self._coordinator.logger.log_sequence_entity(stime)
         return self._adjustment.load(data)
 
-    def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
+    def service_manual_run(self, data: MappingProxyType, stime: datetime) -> bool:
         """Add a manual run."""
         if self._allow_manual or (self.is_enabled and self._controller.is_enabled):
             duration = wash_td(data.get(CONF_TIME))
@@ -2376,7 +2377,7 @@ class IUZone(IUBase):
             if duration is None or duration == TD_ZERO:
                 duration = self._duration
                 if duration is None:
-                    return
+                    return False
                 duration = self._adjustment.adjust(duration)
             self._run_queue.add_manual(
                 stime,
@@ -2385,11 +2386,12 @@ class IUZone(IUBase):
                 self,
                 queue,
             )
+            return True
 
-    def service_cancel(self, data: MappingProxyType, stime: datetime) -> None:
+    def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
         """Cancel the current running schedule"""
         # pylint: disable=unused-argument
-        self._run_queue.cancel(stime)
+        return self._run_queue.cancel(stime)
 
     def add(self, schedule: IUSchedule) -> IUSchedule:
         """Add a new schedule to the zone"""
@@ -4372,7 +4374,7 @@ class IUSequence(IUBase):
             self._run_queue.clear_runs()
         return changed
 
-    def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
+    def service_manual_run(self, data: MappingProxyType, stime: datetime) -> bool:
         """Service handler for manual_run"""
         duration = wash_td(data.get(CONF_TIME))
         delay = wash_td(data.get(CONF_DELAY, TD_ZERO))
@@ -4386,6 +4388,7 @@ class IUSequence(IUBase):
             None,
             duration,
         )
+        return True
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
         """Cancel the sequence"""
@@ -5267,17 +5270,19 @@ class IUController(IUBase):
                 self.request_update(True)
         return changed
 
-    def service_manual_run(self, data: MappingProxyType, stime: datetime) -> None:
+    def service_manual_run(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the manual_run service call"""
+        changed = False
         sequence_list = self.decode_sequence_id(stime, data.get(CONF_SEQUENCE_ID))
         if sequence_list is None:
             zone_list = self.decode_zone_id(stime, data.get(CONF_ZONES, None))
             for zone in self._zones:
                 if zone_list is None or zone.index in zone_list:
-                    zone.service_manual_run(data, stime)
+                    changed |= zone.service_manual_run(data, stime)
         else:
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
-                sequence.service_manual_run(data, stime)
+                changed |= sequence.service_manual_run(data, stime)
+        return changed
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
         """Handler for the cancel service call"""
@@ -5287,8 +5292,7 @@ class IUController(IUBase):
         if sequence_list is None:
             for zone in self._zones:
                 if zone_list is None or zone.index + 1 in zone_list:
-                    zone.service_cancel(data, stime)
-                    changed = True
+                    changed |= zone.service_cancel(data, stime)
         else:
             for sequence in (self.get_sequence(sqid) for sqid in sequence_list):
                 changed |= sequence.service_cancel(data, stime)
@@ -7121,7 +7125,7 @@ class IUCoordinator:
             result = dt.utcnow()
         return wash_dt(result)
 
-    def service_load_schedule(self, data: MappingProxyType) -> None:
+    def service_load_schedule(self, data: MappingProxyType) -> bool:
         """Handle the load_schedule service call"""
         # pylint: disable=too-many-nested-blocks
         for controller in self._controllers:
@@ -7135,14 +7139,15 @@ class IUCoordinator:
                                 runs.append(run)
                         for run in runs:
                             zone.runs.remove_run(run)
-                        return
+                        return True
 
             for sequence in controller.sequences:
                 for schedule in sequence.schedules:
                     if schedule.schedule_id == data[CONF_SCHEDULE_ID]:
                         schedule.load(data, True)
                         sequence.runs.clear_runs()
-                        return
+                        return True
+        return False
 
     def service_call(
         self,
@@ -7155,7 +7160,7 @@ class IUCoordinator:
         """Entry point for all service calls."""
         # pylint: disable=too-many-branches, too-many-statements
         # pylint: disable=too-many-arguments, too-many-positional-arguments
-        changed = True
+        changed = False
         stime = self.service_time()
 
         data1 = dict(data)
@@ -7181,7 +7186,7 @@ class IUCoordinator:
             if sequence is not None:
                 changed = sequence.service_cancel(data1, stime)
             elif zone is not None:
-                zone.service_cancel(data1, stime)
+                changed = zone.service_cancel(data1, stime)
             else:
                 changed = controller.service_cancel(data1, stime)
         elif service == SERVICE_TIME_ADJUST:
@@ -7201,31 +7206,31 @@ class IUCoordinator:
         elif service == SERVICE_MANUAL_RUN:
             render_positive_time_period(data1, CONF_TIME)
             if sequence is not None:
-                sequence.service_manual_run(data1, stime)
+                changed = sequence.service_manual_run(data1, stime)
             elif zone is not None:
-                zone.service_manual_run(data1, stime)
+                changed = zone.service_manual_run(data1, stime)
             else:
-                controller.service_manual_run(data1, stime)
+                changed = controller.service_manual_run(data1, stime)
         elif service == SERVICE_SKIP:
             if sequence is not None:
-                sequence.service_skip(data1, stime)
+                changed = sequence.service_skip(data1, stime)
         elif service == SERVICE_PAUSE:
             if sequence is not None:
                 changed = sequence.service_pause(data1, stime)
             elif zone is not None:
                 pass
             else:
-                controller.service_pause(data1, stime)
+                changed = controller.service_pause(data1, stime)
         elif service == SERVICE_RESUME:
             if sequence is not None:
                 changed = sequence.service_resume(data1, stime)
             elif zone is not None:
                 pass
             else:
-                controller.service_resume(data1, stime)
+                changed = controller.service_resume(data1, stime)
         elif service == SERVICE_LOAD_SCHEDULE:
             render_positive_time_period(data1, CONF_DURATION)
-            self.service_load_schedule(data1)
+            changed = self.service_load_schedule(data1)
         else:
             return None
 
