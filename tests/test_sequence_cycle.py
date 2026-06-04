@@ -4,6 +4,7 @@ from datetime import timedelta
 import homeassistant.core as ha
 from tests.iu_test_support import IUExam
 from custom_components.irrigation_unlimited.const import (
+    SERVICE_MANUAL_RUN,
     SERVICE_TIME_ADJUST,
 )
 from custom_components.irrigation_unlimited.irrigation_unlimited import calc_cycles
@@ -88,4 +89,21 @@ async def test_sequence_cycle_adjust(
             },
         )
         await exam.run_test(2)
+        exam.check_summary()
+
+
+async def test_sequence_cycle_manual_run(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """manual_run honours cycle-and-soak and interleaves the zones."""
+    async with IUExam(hass, "test_sequence_cycle_manual.yaml") as exam:
+        await exam.begin_test(1)
+        await exam.call(
+            SERVICE_MANUAL_RUN,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
+                "sequence_id": 1,
+            },
+        )
+        await exam.finish_test()
         exam.check_summary()
