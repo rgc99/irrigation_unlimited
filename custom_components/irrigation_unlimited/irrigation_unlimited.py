@@ -2387,6 +2387,7 @@ class IUZone(IUBase):
                 queue,
             )
             return True
+        return False
 
     def service_cancel(self, data: MappingProxyType, stime: datetime) -> bool:
         """Cancel the current running schedule"""
