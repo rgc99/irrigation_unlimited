@@ -6885,16 +6885,15 @@ class IUCoordinator:
             EVENT_HOMEASSISTANT_STOP, self._async_shutdown_listener
         )
 
-    def _replay_last_timer(self, atime: datetime) -> None:
-        """Update after a service call"""
+    def _update_all(self, atime: datetime) -> None:
+        """Force an update from the top. Simulates a clock tick. Used before and
+        after a service call to syncronise the system"""
         self.request_update(False)
         self._muster_required = True
         if self._tester.is_testing:
             tick = self._tester.ticker
-        elif self._last_tick is not None:
-            tick = self._last_tick
         else:
-            return
+            tick = atime
         self.timer(tick)
         self._clock.rearm(atime)
 
@@ -7163,6 +7162,7 @@ class IUCoordinator:
         # pylint: disable=too-many-arguments, too-many-positional-arguments
         changed = False
         stime = self.service_time()
+        self._update_all(stime)
 
         data1 = dict(data)
 
@@ -7236,11 +7236,10 @@ class IUCoordinator:
             return None
 
         if changed:
-            self._last_tick = stime
             self._logger.log_service_call(
                 service, stime, controller, zone, sequence, data1
             )
-            self._replay_last_timer(stime)
+            self._update_all(stime)
         else:
             self._logger.log_service_call(
                 service, stime, controller, zone, sequence, data1, DEBUG
