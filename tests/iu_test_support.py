@@ -323,7 +323,7 @@ class IUExam:
         """Reload the specified config file"""
         self._config_file = config
         with patch(
-            "homeassistant.core.Config.path",
+            "homeassistant.core_config.Config.path",
             return_value=self.config_file_full,
         ):
             await self.call(SERVICE_RELOAD)
