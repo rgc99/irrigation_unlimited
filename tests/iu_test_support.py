@@ -84,8 +84,11 @@ class IUExam:
 
     default_config_dir = TEST_CONFIG_DIR
 
-    def __init__(self, hass: ha.HomeAssistant, config_file: str) -> None:
+    def __init__(
+        self, hass: ha.HomeAssistant, config_file: str, load_deps: bool = False
+    ) -> None:
         self._hass = hass
+        self._load_deps = load_deps
         self._config_directory, self._config_file = os.path.split(config_file)
         if self._config_directory == "":
             self._config_directory = type(self).default_config_dir
@@ -172,7 +175,7 @@ class IUExam:
         await async_setup_component(self._hass, domain, config)
         await self._hass.async_block_till_done()
 
-    async def load_dependencies(self) -> None:
+    async def _load_dependencies(self) -> None:
         """Load IU dependencies"""
         async_initialize_recorder(self._hass)
         await self.load_component("http", {})
@@ -186,6 +189,10 @@ class IUExam:
     async def setup(self) -> None:
         """Setup the hass environment"""
         _LOGGER.debug("Starting exam: %s", self.config_file_full)
+
+        if self._load_deps:
+            await self._load_dependencies()
+
         self._config = CONFIG_SCHEMA(load_yaml_config_file(self.config_file_full))
         if ha.DOMAIN in self._config:
             await async_process_ha_core_config(self._hass, self._config[ha.DOMAIN])
