@@ -363,7 +363,7 @@ async def test_service_time(hass: ha.HomeAssistant, skip_dependencies, skip_hist
             }
         )
         exam.coordinator.timer(dte)
-        exam.coordinator._replay_last_timer(dte)
+        exam.coordinator._update_all(dte)
         # Check next tick is midnight tonight
         assert exam.coordinator.clock.next_tick == dt.as_utc(
             dt.as_local(dte + datetime.timedelta(days=1)).replace(
