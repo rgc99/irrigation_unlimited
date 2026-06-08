@@ -399,7 +399,7 @@ IRRIGATION_SCHEMA = vol.Schema(
 
 positive_float_template = vol.Any(cv.positive_float, cv.template)
 
-ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
+SKIP_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_ids}
 
 ENABLE_DISABLE_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,

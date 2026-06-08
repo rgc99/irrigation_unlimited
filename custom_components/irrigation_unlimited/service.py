@@ -17,7 +17,7 @@ from .entity import IUEntity
 from .schema import (
     CANCEL_SCHEMA,
     ENABLE_DISABLE_SCHEMA,
-    ENTITY_SCHEMA,
+    SKIP_SCHEMA,
     GET_STATUS_SCHEMA,
     LOAD_SCHEDULE_SCHEMA,
     MANUAL_RUN_SCHEMA,
@@ -87,7 +87,7 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
         SERVICE_SUSPEND, SUSPEND_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
-        SERVICE_SKIP, ENTITY_SCHEMA, async_entity_service_handler
+        SERVICE_SKIP, SKIP_SCHEMA, async_entity_service_handler
     )
 
     platform.async_register_entity_service(
