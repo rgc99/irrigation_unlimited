@@ -7269,6 +7269,8 @@ class IUCoordinator:
         """Main entry to finish a test"""
         self._last_tick = None
         self._last_muster = None
+        for ctr in self._controllers:
+            ctr.clear()
 
     def status_changed(
         self, stime: datetime, controller: IUController, zone: IUZone, state: bool
