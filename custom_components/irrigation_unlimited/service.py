@@ -1,6 +1,6 @@
 """This module handles the HA service call interface"""
 
-from homeassistant.core import ServiceCall, SupportsResponse, ServiceResponse, callback
+from homeassistant.core import ServiceCall, SupportsResponse, ServiceResponse
 from homeassistant.util import dt
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
@@ -56,7 +56,6 @@ from .const import (
 )
 
 
-@callback
 async def async_entity_service_handler(
     entity: IUEntity, call: ServiceCall
 ) -> ServiceResponse:
@@ -105,11 +104,9 @@ def register_component_services(
 ) -> None:
     """Register the component"""
 
-    @callback
     async def reload_service_handler(call: ServiceCall) -> None:
         """Reload yaml entities."""
         # pylint: disable=unused-argument
-        # pylint: disable=import-outside-toplevel
         from .binary_sensor import async_reload_platform
 
         conf = await component.async_prepare_reload(skip_reset=True)
@@ -128,7 +125,6 @@ def register_component_services(
         schema=RELOAD_SERVICE_SCHEMA,
     )
 
-    @callback
     async def coordinator_service_handler(call: ServiceCall) -> ServiceResponse:
         """Reload schedule."""
         return coordinator.service_call(call.service, None, None, None, call.data)
@@ -140,7 +136,6 @@ def register_component_services(
         LOAD_SCHEDULE_SCHEMA,
     )
 
-    @callback
     async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
         """Return configuration"""
         # pylint: disable=unused-argument
@@ -186,7 +181,6 @@ def register_component_services(
         supports_response=SupportsResponse.ONLY,
     )
 
-    @callback
     async def get_status_service_handler(call: ServiceCall) -> ServiceResponse:
         """Return configuration"""
         # pylint: disable=unused-argument
@@ -203,7 +197,6 @@ def register_component_services(
         supports_response=SupportsResponse.ONLY,
     )
 
-    @callback
     async def export_config_service_handler(call: ServiceCall) -> ServiceResponse:
         """Return the current config in configuration.yaml-compatible format"""
         # pylint: disable=unused-argument
