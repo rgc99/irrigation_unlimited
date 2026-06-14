@@ -156,7 +156,12 @@ class IUStore:
         for k, v in gcfg.items():
             if v not in (None, ""):
                 result[k] = v
-        return result
+        # BUG FIX: wash_td() in IU calls delta.total_seconds() without
+        # type-checking; passing HH:MM:SS strings crashes it with
+        # AttributeError. Convert all known time fields to timedelta here,
+        # immediately before coordinator.load() consumes the dict.
+        # generate_yaml() has its own path and keeps strings.
+        return IUStore._strings_to_td(result)
 
     def generate_yaml(self) -> str:
         """Generate full IU YAML: global config + all controllers."""
@@ -203,6 +208,54 @@ class IUStore:
         # entity_states "all" = default, future_span 3 = default
         IUStore._drop_defaults(obj, {"entity_states": "all", "future_span": 3})
         return obj if obj else None
+
+    # Time fields that IU's wash_td expects as timedelta objects
+    # (not "time" -- that's cv.time / time.fromisoformat, not a timedelta)
+    _TD_FIELDS = frozenset({
+        "minimum", "maximum", "threshold", "duration",
+        "delay", "preamble", "postamble", "before", "after",
+    })
+
+    @staticmethod
+    def _strings_to_td(obj):
+        """Recursively convert HH:MM:SS string values for known time fields
+        to timedelta objects, so IU's wash_td() receives the correct type.
+
+        Called only in to_iu_config_multi() (the live IU config path).
+        generate_yaml() keeps strings, which YAML renders correctly.
+        """
+        from datetime import timedelta
+        if isinstance(obj, dict):
+            return {
+                k: (
+                    IUStore._parse_td(v)
+                    if k in IUStore._TD_FIELDS and isinstance(v, str)
+                    else IUStore._strings_to_td(v)
+                )
+                for k, v in obj.items()
+            }
+        if isinstance(obj, list):
+            return [IUStore._strings_to_td(i) for i in obj]
+        return obj
+
+    @staticmethod
+    def _parse_td(s: str):
+        """Parse a normalized HH:MM:SS string into a timedelta.
+        Falls back to the original string if parsing fails, so a bad
+        value reaches wash_td as-is (wash_td will then return None).
+        """
+        from datetime import timedelta
+        try:
+            parts = [int(p) for p in s.split(":")]
+            if len(parts) == 2:
+                h, m = parts; sec = 0
+            elif len(parts) == 3:
+                h, m, sec = parts
+            else:
+                return s
+            return timedelta(hours=h, minutes=m, seconds=sec)
+        except (ValueError, AttributeError):
+            return s
 
     @staticmethod
     def _norm_time(v) -> str | None:
