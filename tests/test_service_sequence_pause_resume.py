@@ -189,6 +189,38 @@ async def test_service_sequence_pause_resume_notify(
         exam.check_summary()
 
 
+async def test_service_sequence_pause_before_start(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Pause a sequence before runtime and ensure it starts on resume."""
+    async with IUExam(hass, "service_sequence_pause_resume_multi.yaml") as exam:
+        await exam.begin_test(1)
+
+        await exam.run_until("2023-11-28 06:03:00")
+        await exam.call(
+            SERVICE_PAUSE,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+            },
+        )
+        exam.check_iu_entity("c1_s1", "on", {"status": "paused"})
+        exam.check_iu_entity("c1_z1", "off", {})
+
+        # The scheduled run is now due but should stay paused until resume.
+        await exam.run_until("2023-11-28 06:06:00")
+        exam.check_iu_entity("c1_s1", "on", {"status": "paused"})
+        exam.check_iu_entity("c1_z1", "off", {})
+
+        await exam.call(
+            SERVICE_RESUME,
+            {
+                "entity_id": "binary_sensor.irrigation_unlimited_c1_s1",
+            },
+        )
+        exam.check_iu_entity("c1_s1", "on", {"status": "on"})
+        exam.check_iu_entity("c1_z1", "on", {})
+
+
 async def test_service_sequence_pause_resume_multi(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
 ):
