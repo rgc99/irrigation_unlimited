@@ -413,6 +413,23 @@ Notes:
 - The per-cycle split is **re-derived from the zone's total whenever that total changes**, including via the [`adjust_time`](#76-action-adjust_time) action. This makes cycle-and-soak compose cleanly with integrations such as Smart Irrigation that push a *total* daily run time per zone — there is no need to pre-divide by a repeat count. Use `adjust_time` with `actual` (and the `zones` parameter to target a position within the sequence) to set a zone's new total; the cycles are recalculated on the next run.
 - `cycle` is **mutually exclusive with `repeat`**. When `repeat` is greater than 1 the `cycle` block is ignored.
 - Because of the soak windows, a cycle-and-soak sequence occupies a longer wall-clock window than the sum of its run times.
+- The `cycle` block can be set at the **sequence level** (applies to every zone) and/or on an **individual sequence zone**. A zone-level `cycle` overrides the sequence-level values **per field** — e.g. a zone can set its own `max_duration` (a different runoff threshold) while inheriting `min_duration` and `min_soak` from the sequence. A sequence with cycle blocks only on its zones (no sequence-level `cycle`) still enables cycle-and-soak. This is fully backwards compatible: a config with only a sequence-level `cycle` behaves exactly as before.
+
+```yaml
+sequences:
+  - name: "Bib 1 - Front/Side"
+    cycle:
+      max_duration: "00:15"   # sequence default for every zone
+      min_duration: "00:10"
+      min_soak: "01:00"
+    zones:
+      - zone_id: 1
+        duration: "00:45"     # uses the sequence cycle (15-min cap)
+      - zone_id: 2
+        duration: "00:45"
+        cycle:
+          max_duration: "00:08"   # this zone only: 8-min cap; min_duration/min_soak inherited
+```
 
 ### 5.7. Sequence Zone Objects
 
@@ -426,6 +443,7 @@ The sequence zone is a reference to the actual zone defined in the _[Zone Object
 | `volume` | number | None | Volume limit. End this sequence zone when the volume has been reached. Requires the _[volume object](#512-volume-object)_ to be configured |
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
+| `cycle` | [Cycle Object](#561-cycle-object) | | Per-zone cycle-and-soak overrides. Each field set here overrides the matching field in the _[Sequence](#56-sequence-objects)_ `cycle`; unset fields fall back to the sequence value |
 
 Special note for [schedules](#55-schedule-objects) and the `duration` parameter contained within when used with sequences. Each zone in the sequence will be proportionally adjusted to fit the specified duration. For example, if 3 zones were to each run for 10, 20 and 30 minutes respectively (total 1 hour) and the `schedule.duration` parameter specified 30 minutes then each zone would be adjusted to 5, 10 and 15 minutes. Likewise if `schedule.duration` specified 1.5 hours then the zones would be 15, 30 and 45 minutes. Some variation may occur due to rounding of the times to the system boundaries (granularity). This parameter influences the durations specified in the sequence and sequence zone objects.
 

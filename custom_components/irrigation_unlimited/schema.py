@@ -278,6 +278,14 @@ ALL_ZONES_SCHEMA = vol.Schema(
     }
 )
 
+CYCLE_SCHEMA = vol.Schema(
+    {
+        vol.Optional(CONF_MAX_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_MIN_DURATION): cv.positive_time_period,
+        vol.Optional(CONF_MIN_SOAK): cv.positive_time_period,
+    }
+)
+
 SEQUENCE_ZONE_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_ZONE_ID): vol.All(cv.ensure_list, [cv.string]),
@@ -286,14 +294,7 @@ SEQUENCE_ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_REPEAT): cv.positive_int,
         vol.Optional(CONF_ENABLED): cv.boolean,
         vol.Optional(CONF_VOLUME): cv.positive_float,
-    }
-)
-
-CYCLE_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_MAX_DURATION): cv.positive_time_period,
-        vol.Optional(CONF_MIN_DURATION): cv.positive_time_period,
-        vol.Optional(CONF_MIN_SOAK): cv.positive_time_period,
+        vol.Optional(CONF_CYCLE): vol.All(CYCLE_SCHEMA),
     }
 )
 
