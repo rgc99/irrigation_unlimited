@@ -1,4 +1,5 @@
 """irrigation_unlimited model test template"""
+
 # pylint: disable=unused-import
 from datetime import timedelta
 import json
@@ -10,6 +11,7 @@ from custom_components.irrigation_unlimited.const import (
 from tests.iu_test_support import IUExam, mk_utc, mk_local
 
 IUExam.quiet_mode()
+
 
 # Remove the following decorator to run test
 # @pytest.mark.skip
@@ -28,9 +30,6 @@ async def test_model(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         # Load any components required for the test
         # await exam.async_load_component("homeassistant")
         # await exam.async_load_component("input_boolean")
-
-        # Load dependencies if required
-        # await exam.load_dependencies()
 
         # Run all tests
         # await exam.run_all()

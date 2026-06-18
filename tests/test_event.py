@@ -418,8 +418,7 @@ async def test_event_with_adjust(hass: ha.HomeAssistant, allow_memory_db):
 
         return result
 
-    async with IUExam(hass, "test_event_and_adjust.yaml") as exam:
-        await exam.load_dependencies()
+    async with IUExam(hass, "test_event_and_adjust.yaml", True) as exam:
 
         async def handle_event(event: ha.Event):
             # Simulate delay in triggering an automation and responding

@@ -62,6 +62,7 @@ from .const import (
     CONF_MONTH,
     CONF_ODD,
     CONF_OUTPUT_EVENTS,
+    CONF_PAUSE_NEXT,
     CONF_PERCENTAGE,
     CONF_POSTAMBLE,
     CONF_PREAMBLE,
@@ -337,6 +338,7 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_USER): vol.All(USER_SCHEMA),
         vol.Optional(CONF_SHOW_SEQUENCE_STATUS): cv.boolean,
+        vol.Optional(CONF_PAUSE_NEXT): cv.boolean,
     }
 )
 
@@ -413,7 +415,7 @@ IRRIGATION_SCHEMA = vol.Schema(
 
 positive_float_template = vol.Any(cv.positive_float, cv.template)
 
-ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
+SKIP_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_ids}
 
 ENABLE_DISABLE_SCHEMA = {
     vol.Required(CONF_ENTITY_ID): cv.entity_ids,
