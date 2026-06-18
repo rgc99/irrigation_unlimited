@@ -4432,12 +4432,13 @@ class IUSequence(IUBase):
                 changed = True
 
         # If nothing is currently active then pause the next scheduled run.
-        if not changed:
-            for sqr in self._run_queue:
-                if not sqr.expired and not sqr.paused:
-                    sqr.pause(stime)
-                    changed = True
-                    break
+        if (
+            not changed
+            and self._controller._pause_next
+            and self._run_queue.next_run is not None
+        ):
+            self._run_queue.next_run.pause(stime)
+            changed = True
         return changed
 
     def service_resume(self, data: MappingProxyType, stime: datetime) -> bool:
