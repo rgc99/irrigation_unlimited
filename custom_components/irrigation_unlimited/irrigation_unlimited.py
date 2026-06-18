@@ -2736,6 +2736,26 @@ class IUSequenceCycle:
         self._min_soak = wash_td(config.get(CONF_MIN_SOAK))
         return self
 
+    def resolve(self, parent: "IUSequenceCycle") -> "IUSequenceCycle":
+        """Return a cycle using this object's values, falling back per field to
+        the parent (sequence level) cycle for any value not set here."""
+        merged = IUSequenceCycle()
+        # pylint: disable=protected-access
+        merged._max_duration = (
+            self._max_duration
+            if self._max_duration is not None
+            else parent._max_duration
+        )
+        merged._min_duration = (
+            self._min_duration
+            if self._min_duration is not None
+            else parent._min_duration
+        )
+        merged._min_soak = (
+            self._min_soak if self._min_soak is not None else parent._min_soak
+        )
+        return merged
+
     def as_dict(self) -> dict:
         """Return this cycle as a dict"""
         result = OrderedDict()
@@ -2773,6 +2793,7 @@ class IUSequenceZone(IUBase):
         self._repeat: int = None
         self._enabled: bool = True
         self._volume: float = None
+        self._cycle = IUSequenceCycle()
         # Private variables
         self._adjustment = IUAdjustment()
         self._suspend_until: datetime = None
@@ -2781,6 +2802,11 @@ class IUSequenceZone(IUBase):
     def zone_ids(self) -> list[str]:
         """Returns a list of zone_id's"""
         return self._zone_ids
+
+    @property
+    def cycle(self) -> "IUSequenceCycle":
+        """Return the cycle-and-soak overrides for this sequence zone"""
+        return self._cycle
 
     @property
     def zones(self) -> list[IUZone]:
@@ -2899,6 +2925,9 @@ class IUSequenceZone(IUBase):
         self._repeat = config.get(CONF_REPEAT, 1)
         self._enabled = config.get(CONF_ENABLED, self._enabled)
         self._volume = config.get(CONF_VOLUME, self._volume)
+        self._cycle = IUSequenceCycle()
+        if CONF_CYCLE in config:
+            self._cycle.load(config[CONF_CYCLE])
         build_zones()
         return self
 
@@ -3205,15 +3234,17 @@ class IUSequenceRun(IUBase):
         every remaining zone is still soaking. Zones with fewer cycles
         complete early and drop out of later passes."""
         # pylint: disable=too-many-locals
-        cycle = self._sequence.cycle
         start = self._start_time = self._end_time = wash_dt(dt.utcnow())
-        min_soak = cycle.min_soak if cycle.min_soak is not None else TD_ZERO
 
         # Pre-compute a work item (track) for each enabled sequence zone
         tracks: list[dict] = []
         for sequence_zone in self._sequence.zones:
             if not self._sequence.zone_enabled(sequence_zone, self):
                 continue
+            # Resolve the cycle parameters for this zone, falling back per
+            # field to the sequence level cycle
+            cycle = self._sequence.zone_cycle(sequence_zone)
+            min_soak = cycle.min_soak if cycle.min_soak is not None else TD_ZERO
             duration = self._sequence.zone_duration_final(
                 sequence_zone, duration_factor, self
             )
@@ -3239,6 +3270,7 @@ class IUSequenceRun(IUBase):
                     "members": members,
                     "count": max(len(cycles) for _, cycles in members),
                     "delay": delay,
+                    "min_soak": min_soak,
                     "index": 0,
                     "ready_at": start,
                 }
@@ -3285,7 +3317,7 @@ class IUSequenceRun(IUBase):
                 cycle_duration = max(cycle_duration, duration_adjusted)
             track["index"] += 1
             # The zone may not run again until its soak has elapsed
-            track["ready_at"] = cursor + cycle_duration + min_soak
+            track["ready_at"] = cursor + cycle_duration + track["min_soak"]
             cursor += cycle_duration + track["delay"]
 
         self._remaining_time = self._end_time - self._start_time
@@ -4087,8 +4119,17 @@ class IUSequence(IUBase):
         """Return True when cycle-and-soak should drive the build.
 
         Cycle-and-soak is mutually exclusive with repeat; when repeat is in
-        play the cycle block is ignored."""
-        return self._cycle.enabled and self._repeat == 1
+        play the cycle block is ignored. A cycle block at either the sequence
+        or any sequence zone level activates the feature."""
+        enabled = self._cycle.enabled or any(
+            sequence_zone.cycle.enabled for sequence_zone in self._zones
+        )
+        return enabled and self._repeat == 1
+
+    def zone_cycle(self, sequence_zone: IUSequenceZone) -> IUSequenceCycle:
+        """Return the cycle parameters for the zone, with each field falling
+        back to the sequence level cycle when not set on the zone."""
+        return sequence_zone.cycle.resolve(self._cycle)
 
     @property
     def is_enabled(self) -> bool:

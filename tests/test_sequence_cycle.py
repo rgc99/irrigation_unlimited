@@ -107,3 +107,21 @@ async def test_sequence_cycle_manual_run(
         )
         await exam.finish_test()
         exam.check_summary()
+
+
+async def test_sequence_cycle_zone_override(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """A sequence zone overrides the sequence-level max_duration."""
+    async with IUExam(hass, "test_sequence_cycle_zone_override.yaml") as exam:
+        await exam.run_test(1)
+        exam.check_summary()
+
+
+async def test_sequence_cycle_zone_only(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Per-zone cycle blocks activate cycle-and-soak without a sequence cycle."""
+    async with IUExam(hass, "test_sequence_cycle_zone_only.yaml") as exam:
+        await exam.run_test(1)
+        exam.check_summary()
