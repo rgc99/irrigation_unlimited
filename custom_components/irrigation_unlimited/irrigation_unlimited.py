@@ -143,6 +143,7 @@ from .const import (
     CONF_MONTH,
     CONF_ODD,
     CONF_OUTPUT_EVENTS,
+    CONF_PAUSE_NEXT,
     CONF_PERCENTAGE,
     CONF_POSTAMBLE,
     CONF_PREAMBLE,
@@ -4429,6 +4430,15 @@ class IUSequence(IUBase):
             ):
                 sqr.pause(stime)
                 changed = True
+
+        # If nothing is currently active then pause the next scheduled run.
+        if (
+            not changed
+            and self._controller._pause_next
+            and self._run_queue.next_run is not None
+        ):
+            self._run_queue.next_run.pause(stime)
+            changed = True
         return changed
 
     def service_resume(self, data: MappingProxyType, stime: datetime) -> bool:
@@ -4479,6 +4489,7 @@ class IUController(IUBase):
         self._postamble: timedelta = None
         self._queue_manual: bool = False
         self._show_sequence_status: bool = True
+        self._pause_next: bool = False
         # Private variables
         self._initialised: bool = False
         self._finalised: bool = False
@@ -4766,6 +4777,7 @@ class IUController(IUBase):
         self._preamble = wash_td(config.get(CONF_PREAMBLE))
         self._postamble = wash_td(config.get(CONF_POSTAMBLE))
         self._queue_manual = config.get(CONF_QUEUE_MANUAL, self._queue_manual)
+        self._pause_next = config.get(CONF_PAUSE_NEXT, self._pause_next)
         self._show_sequence_status = config.get(
             CONF_SHOW_SEQUENCE_STATUS, self._show_sequence_status
         )
