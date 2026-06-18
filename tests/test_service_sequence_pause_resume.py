@@ -193,7 +193,7 @@ async def test_service_sequence_pause_before_start(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
 ):
     """Pause a sequence before runtime and ensure it starts on resume."""
-    async with IUExam(hass, "service_sequence_pause_resume_multi.yaml") as exam:
+    async with IUExam(hass, "service_sequence_pause_resume_next.yaml") as exam:
         await exam.begin_test(1)
 
         await exam.run_until("2023-11-28 06:03:00")
@@ -219,6 +219,8 @@ async def test_service_sequence_pause_before_start(
         )
         exam.check_iu_entity("c1_s1", "on", {"status": "on"})
         exam.check_iu_entity("c1_z1", "on", {})
+
+        await exam.finish_test()
 
 
 async def test_service_sequence_pause_resume_multi(
