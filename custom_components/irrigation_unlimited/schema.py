@@ -58,6 +58,7 @@ from .const import (
     CONF_MONTH,
     CONF_ODD,
     CONF_OUTPUT_EVENTS,
+    CONF_PAUSE_NEXT,
     CONF_PERCENTAGE,
     CONF_POSTAMBLE,
     CONF_PREAMBLE,
@@ -323,6 +324,7 @@ CONTROLLER_SCHEMA = vol.Schema(
         vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_USER): vol.All(USER_SCHEMA),
         vol.Optional(CONF_SHOW_SEQUENCE_STATUS): cv.boolean,
+        vol.Optional(CONF_PAUSE_NEXT): cv.boolean,
     }
 )
 
