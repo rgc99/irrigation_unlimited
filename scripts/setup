@@ -4,6 +4,6 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-npm install
-npm install --global rollup
+source $NVM_DIR/nvm.sh install --lts
+
 python3 -m pip install --requirement requirements.txt

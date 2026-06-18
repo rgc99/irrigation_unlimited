@@ -161,8 +161,7 @@ async def test_history_main(hass: ha.HomeAssistant, allow_memory_db):
     """Test out the history caching and timeline"""
     # pylint: disable=redefined-outer-name
 
-    async with IUExam(hass, "test_history.yaml") as exam:
-        await exam.load_dependencies()
+    async with IUExam(hass, "test_history.yaml", True) as exam:
 
         with patch(
             "homeassistant.components.recorder.history.get_significant_states"
@@ -527,8 +526,7 @@ async def test_history_disabled(hass: ha.HomeAssistant, allow_memory_db):
     # pylint: disable=redefined-outer-name
     # pylint: disable=protected-access
 
-    async with IUExam(hass, "test_history_disabled.yaml") as exam:
-        await exam.load_dependencies()
+    async with IUExam(hass, "test_history_disabled.yaml", True) as exam:
 
         with patch(
             "homeassistant.components.recorder.history.get_significant_states"
@@ -569,8 +567,7 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
     def service_history(entity_ids: set[str]) -> None:
         entity_updates.extend(entity_ids)
 
-    async with IUExam(hass, "test_skeleton.yaml") as exam:
-        await exam.load_dependencies()
+    async with IUExam(hass, "test_skeleton.yaml", True) as exam:
 
         stime = mk_utc("2021-06-04 04:32:00")
         exam.coordinator.history.load(None, False)
@@ -718,8 +715,8 @@ async def test_history_object(hass: ha.HomeAssistant, allow_memory_db):
 
 async def test_history_live(hass: ha.HomeAssistant, allow_memory_db):
     """Test out the IUHistory object"""
-    async with IUExam(hass, "test_history_live.yaml") as exam:
-        await exam.load_dependencies()
+
+    async with IUExam(hass, "test_history_live.yaml", True) as exam:
         with patch(
             "homeassistant.components.recorder.history.get_significant_states"
         ) as mock:

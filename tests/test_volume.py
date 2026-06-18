@@ -1963,8 +1963,7 @@ async def test_volume_live_history(hass: ha.HomeAssistant, allow_memory_db):
                     volume = data[5]
                     yield (op, dts, adjustment, volume)
 
-    async with IUExam(hass, "test_volume_live_history.yaml") as exam:
-        await exam.load_dependencies()
+    async with IUExam(hass, "test_volume_live_history.yaml", True) as exam:
         await exam.load_component("input_text")
 
         await exam.begin_test(1)
