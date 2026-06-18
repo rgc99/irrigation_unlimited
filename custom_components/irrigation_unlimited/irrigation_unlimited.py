@@ -1660,9 +1660,7 @@ class IURun(IUBase):
         """Resume a paused run"""
         if self.expired or self._pause_time is None:
             return
-        delta = stime - max(self._pause_time, self._start_time)
-        if delta < TD_ZERO:
-            delta = TD_ZERO
+        delta = stime - self._pause_time
         self._start_time += delta
         self._end_time += delta
         self._pause_time = None
@@ -3379,10 +3377,7 @@ class IUSequenceRun(IUBase):
         if self._paused is None:
             return
         resume_run(stime, self._runs)
-        delta = stime - max(self._paused, self._start_time)
-        if delta < TD_ZERO:
-            delta = TD_ZERO
-        self._end_time += delta
+        self._end_time += stime - self._paused
         self._paused = None
         self.update_status(stime)
 
