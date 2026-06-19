@@ -483,11 +483,11 @@ class IUStore:
 
     # ── Controller CRUD ──────────────────────────────────────────────────────
 
-    CTRL_KEYS = ("name","controller_id","entity_id","entity_states","enabled","queue_manual","show_sequence_status","preamble","postamble")
+    CTRL_KEYS = ("name","controller_id","entity_id","entity_states","enabled","queue_manual","show_sequence_status","pause_next","preamble","postamble")
 
     # IU default values -- fields with these values are omitted from the YAML
     CTRL_DEFAULTS:  dict = {"enabled": True,  "queue_manual": False,
-                            "show_sequence_status": False, "entity_states": "all",
+                            "show_sequence_status": False, "pause_next": False, "entity_states": "all",
                             # BUG FIX: preamble/postamble are run through
                             # _norm_time() -> "00:00:00" BEFORE _drop_defaults
                             # is applied (see to_iu_config_multi), so the
