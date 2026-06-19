@@ -142,5 +142,6 @@
   "confirm.del_adj": "Supprimer cet ajustement ?",
   "confirm.del_sqz": "Retirer cette zone de la séquence ?",
   "err.load": "Échec du chargement : ",
-  "fld.entity_picker_placeholder": "Saisissez l'entity_id ou le nom…"
+  "fld.entity_picker_placeholder": "Saisissez l'entity_id ou le nom…",
+  "fld.pause_next": "Pause de la prochaine exécution programmée"
 }
