@@ -142,5 +142,6 @@
   "confirm.del_adj": "¿Eliminar este ajuste?",
   "confirm.del_sqz": "¿Quitar esta zona de la secuencia?",
   "err.load": "Error al cargar: ",
-  "fld.entity_picker_placeholder": "Escribe el entity_id o el nombre…"
+  "fld.entity_picker_placeholder": "Escribe el entity_id o el nombre…",
+  "fld.pause_next": "Pausar la próxima ejecución programada"
 }
