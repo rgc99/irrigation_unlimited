@@ -142,5 +142,6 @@
   "confirm.del_adj": "Eliminare questa regolazione?",
   "confirm.del_sqz": "Rimuovere questa zona dalla sequenza?",
   "err.load": "Caricamento non riuscito: ",
-  "fld.entity_picker_placeholder": "Digita entity_id o nome…"
+  "fld.entity_picker_placeholder": "Digita entity_id o nome…",
+  "fld.pause_next": "Pausa della prossima esecuzione programmata"
 }
