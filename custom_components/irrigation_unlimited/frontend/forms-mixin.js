@@ -50,6 +50,7 @@ _fGlobalConfig(d = {}) {
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
       ${fToggle("queue_manual",this._t("fld.queue_manual"),!!d.queue_manual)}
       ${fToggle("show_sequence_status",this._t("fld.show_seq_status"),!!d.show_sequence_status)}
+      ${fToggle("pause_next",this._t("fld.pause_next"),!!d.pause_next)}
       ${fText("preamble",this._t("fld.preamble"),d.preamble??"")}
       ${fText("postamble",this._t("fld.postamble"),d.postamble??"")}
     </div>`;
