@@ -142,5 +142,6 @@
   "confirm.del_adj": "Ștergi această ajustare?",
   "confirm.del_sqz": "Elimini această zonă din secvență?",
   "err.load": "Încărcare eșuată: ",
-  "fld.entity_picker_placeholder": "Scrie entity id sau nume…"
+  "fld.entity_picker_placeholder": "Scrie entity id sau nume…",
+  "fld.pause_next": "Pauza la următoarea rulare planificată"
 }
