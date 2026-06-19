@@ -6937,6 +6937,16 @@ class IUCoordinator:
                 z[CONF_SCHEDULES] = [_schedule(s) for s in zone.schedules]
             return z
 
+        def _cycle(cyc: IUSequenceCycle) -> dict:
+            c = {}
+            if cyc.max_duration is not None:
+                c[CONF_MAX_DURATION] = _fmt_td(cyc.max_duration)
+            if cyc.min_duration is not None:
+                c[CONF_MIN_DURATION] = _fmt_td(cyc.min_duration)
+            if cyc.min_soak is not None:
+                c[CONF_MIN_SOAK] = _fmt_td(cyc.min_soak)
+            return c
+
         def _sequence_zone(szn: IUSequenceZone) -> dict:
             z = {}
             if szn.zone_ids:
@@ -6947,6 +6957,8 @@ class IUCoordinator:
                 z[CONF_DURATION] = _fmt_td(szn.duration)
             if szn.delay is not None:
                 z[CONF_DELAY] = _fmt_td(szn.delay)
+            if szn.cycle.enabled:
+                z[CONF_CYCLE] = _cycle(szn.cycle)
             if not szn.enabled:
                 z[CONF_ENABLED] = False
             return z
@@ -6958,6 +6970,8 @@ class IUCoordinator:
                 s[CONF_DURATION] = _fmt_td(seq.duration)
             if seq.delay is not None:
                 s[CONF_DELAY] = _fmt_td(seq.delay)
+            if seq.cycle.enabled:
+                s[CONF_CYCLE] = _cycle(seq.cycle)
             s[CONF_ZONES] = [_sequence_zone(z) for z in seq.zones]
             if seq.schedules:
                 s[CONF_SCHEDULES] = [_schedule(sch) for sch in seq.schedules]
