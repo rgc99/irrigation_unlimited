@@ -1,0 +1,37 @@
+irrigation_unlimited:
+  testing:
+    enabled: true
+    speed: 1.0
+    output_events: false
+    show_log: false
+    autoplay: false
+    times:
+      - name: "1-Noop"
+        start: "2026-05-25 06:30"
+        end: "2026-05-25 06:31"
+        results: []
+  controllers:
+    - name: "Test controller 1"
+      zones:
+        - name: "Zone 1"
+        - name: "Zone 2"
+        - name: "Zone 3"
+      sequences:
+        - name: "Sequence 1"
+          delay: "0:01:00"
+          cycle:
+            max_duration: "0:15:00"
+            min_duration: "0:10:00"
+            min_soak: "1:00:00"
+          schedules:
+            - name: "Schedule 1"
+              time: "06:00"
+          zones:
+            - zone_id: 1
+              duration: "0:45:00"
+            - zone_id: 2
+              duration: "0:45:00"
+              cycle:
+                max_duration: "0:08:00"
+            - zone_id: 3
+              duration: "0:45:00"

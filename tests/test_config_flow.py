@@ -54,6 +54,29 @@ async def test_export_config(hass: ha.HomeAssistant, skip_dependencies, skip_his
         await exam.finish_test()
         exam.check_summary()
 
+
+async def test_export_config_cycle(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Test export_config serialises the cycle-and-soak block at the sequence
+    and per-zone level."""
+    # pylint: disable=unused-argument
+
+    async with IUExam(hass, "test_export_config_cycle.yaml") as exam:
+        data = await exam.call(SERVICE_EXPORT_CONFIG, None, True)
+        sequence = data["controllers"][0]["sequences"][0]
+        assert sequence["cycle"] == {
+            "max_duration": "0:15:00",
+            "min_duration": "0:10:00",
+            "min_soak": "1:00:00",
+        }
+        # Zone 2 overrides max_duration; the other zones carry no cycle block
+        zones = sequence["zones"]
+        assert "cycle" not in zones[0]
+        assert zones[1]["cycle"] == {"max_duration": "0:08:00"}
+        assert "cycle" not in zones[2]
+
+
 async def test_helpers(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test helpers"""
     # pylint: disable=unused-argument
