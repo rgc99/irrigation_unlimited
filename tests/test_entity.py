@@ -9,7 +9,25 @@ from homeassistant.const import (
 )
 from custom_components.irrigation_unlimited.const import (
     ATTR_ENABLED,
+    ATTR_SUSPENDED,
     ATTR_INDEX,
+    ATTR_STATUS,
+    ATTR_ADJUSTMENT,
+    ATTR_ZONE_COUNT,
+    ATTR_CURRENT_ZONE,
+    ATTR_NEXT_ZONE,
+    ATTR_NEXT_NAME,
+    ATTR_NEXT_START,
+    ATTR_NEXT_DURATION,
+    ATTR_PERCENT_COMPLETE,
+    ATTR_SCHEDULE_COUNT,
+    ATTR_CURRENT_NAME,
+    ATTR_CURRENT_SCHEDULE,
+    ATTR_CURRENT_START,
+    ATTR_CURRENT_DURATION,
+    ATTR_NEXT_SCHEDULE,
+    ATTR_TIME_REMAINING,
+    CONF_ZONE_ID,
 )
 from custom_components.irrigation_unlimited.binary_sensor import RES_NOT_RUNNING
 from tests.iu_test_support import (
@@ -32,49 +50,52 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["zone_count"] == 2
-        assert sta.attributes["current_zone"] == RES_NOT_RUNNING
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_zone"] == 1
-        assert sta.attributes["next_name"] == "First zone"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:03")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=14)
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ZONE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_ZONE] == RES_NOT_RUNNING
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_ZONE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "First zone"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:03")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=14)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
         assert sta.attributes[ATTR_ICON] == "mdi:water-off"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["zone_id"] == "1"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 1
-        assert sta.attributes["next_name"] == "Morning 1"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:05")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=10)
+        assert sta.attributes[CONF_ZONE_ID] == "1"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "Morning 1"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:05")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=10)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 1
-        assert sta.attributes["zone_id"] == "2"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 1
-        assert sta.attributes["next_name"] == "Morning 2"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:10")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
+        assert sta.attributes[CONF_ZONE_ID] == "2"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "Morning 2"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:10")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=12)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -83,35 +104,37 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["zone_count"] == 2
-        assert sta.attributes["current_zone"] == 1
-        assert sta.attributes["current_name"] == "First zone"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:03")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=13)
-        assert sta.attributes["percent_complete"] == 7
-        assert sta.attributes["next_zone"] == 2
-        assert sta.attributes["next_name"] == "Second zone"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:08")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
+        assert sta.attributes[ATTR_SUSPENDED] is None
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ZONE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_ZONE] == 1
+        assert sta.attributes[ATTR_CURRENT_NAME] == "First zone"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:03")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=14)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=13)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 7
+        assert sta.attributes[ATTR_NEXT_ZONE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Second zone"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:08")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=16)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
         assert sta.attributes[ATTR_ICON] == "mdi:water"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["zone_id"] == "1"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 1
-        assert sta.attributes["next_name"] == "Morning 1"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:05")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=10)
+        assert sta.attributes[CONF_ZONE_ID] == "1"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "Morning 1"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:05")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=10)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -119,16 +142,17 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
         assert sta.attributes[ATTR_INDEX] == 1
-        assert sta.attributes["zone_id"] == "2"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 1
-        assert sta.attributes["next_name"] == "Morning 2"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:10")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
+        assert sta.attributes[ATTR_SUSPENDED] is None
+        assert sta.attributes[CONF_ZONE_ID] == "2"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "Morning 2"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:10")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=12)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -136,55 +160,58 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["zone_count"] == 2
-        assert sta.attributes["current_zone"] == 1
-        assert sta.attributes["current_name"] == "First zone"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:03")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=10)
-        assert sta.attributes["percent_complete"] == 28
-        assert sta.attributes["next_zone"] == 2
-        assert sta.attributes["next_name"] == "Second zone"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:08")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ZONE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_ZONE] == 1
+        assert sta.attributes[ATTR_CURRENT_NAME] == "First zone"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:03")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=14)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=10)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 28
+        assert sta.attributes[ATTR_NEXT_ZONE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Second zone"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:08")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=16)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
         assert sta.attributes[ATTR_ICON] == "mdi:water"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["zone_id"] == "1"
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["current_schedule"] == 1
-        assert sta.attributes["current_name"] == "Morning 1"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:05")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=10)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=8)
-        assert sta.attributes["percent_complete"] == 20
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 1"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+        assert sta.attributes[CONF_ZONE_ID] == "1"
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_CURRENT_NAME] == "Morning 1"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:05")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=10)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=8)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 20
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 1"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:05")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=20)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 1
-        assert sta.attributes["zone_id"] == "2"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 1
-        assert sta.attributes["next_name"] == "Morning 2"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:10")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=12)
+        assert sta.attributes[CONF_ZONE_ID] == "2"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "Morning 2"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:10")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=12)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -193,18 +220,19 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["zone_count"] == 2
-        assert sta.attributes["current_zone"] == 1
-        assert sta.attributes["current_name"] == "First zone"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:03")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=14)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=5)
-        assert sta.attributes["percent_complete"] == 64
-        assert sta.attributes["next_zone"] == 2
-        assert sta.attributes["next_name"] == "Second zone"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 06:08")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=16)
+        assert sta.attributes[ATTR_SUSPENDED] is None
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ZONE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_ZONE] == 1
+        assert sta.attributes[ATTR_CURRENT_NAME] == "First zone"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:03")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=14)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=5)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 64
+        assert sta.attributes[ATTR_NEXT_ZONE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Second zone"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 06:08")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=16)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
         assert sta.attributes[ATTR_ICON] == "mdi:water"
 
@@ -212,19 +240,20 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["zone_id"] == "1"
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["current_schedule"] == 1
-        assert sta.attributes["current_name"] == "Morning 1"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:05")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=10)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=3)
-        assert sta.attributes["percent_complete"] == 70
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 1"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+        assert sta.attributes[ATTR_SUSPENDED] is None
+        assert sta.attributes[CONF_ZONE_ID] == "1"
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_CURRENT_NAME] == "Morning 1"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:05")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=10)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=3)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 70
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 1"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:05")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=20)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
@@ -232,19 +261,20 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
         assert sta.attributes[ATTR_INDEX] == 1
-        assert sta.attributes["zone_id"] == "2"
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["current_schedule"] == 1
-        assert sta.attributes["current_name"] == "Morning 2"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:10")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=12)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=10)
-        assert sta.attributes["percent_complete"] == 16
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 2"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+        assert sta.attributes[ATTR_SUSPENDED] is None
+        assert sta.attributes[CONF_ZONE_ID] == "2"
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_CURRENT_NAME] == "Morning 2"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:10")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=12)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=10)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 16
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 2"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:10")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=22)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
@@ -252,56 +282,59 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["zone_count"] == 2
-        assert sta.attributes["current_zone"] == 2
-        assert sta.attributes["current_name"] == "Second zone"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:08")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=16)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=7)
-        assert sta.attributes["percent_complete"] == 56
-        assert sta.attributes["next_zone"] == 1
-        assert sta.attributes["next_name"] == "First zone"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:03")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ZONE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_ZONE] == 2
+        assert sta.attributes[ATTR_CURRENT_NAME] == "Second zone"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:08")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=16)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=7)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 56
+        assert sta.attributes[ATTR_NEXT_ZONE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "First zone"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:03")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=24)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
         assert sta.attributes[ATTR_ICON] == "mdi:water"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["zone_id"] == "1"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 1"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+        assert sta.attributes[CONF_ZONE_ID] == "1"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 1"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:05")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=20)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 1
-        assert sta.attributes["zone_id"] == "2"
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["current_schedule"] == 1
-        assert sta.attributes["current_name"] == "Morning 2"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:10")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=12)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=5)
-        assert sta.attributes["percent_complete"] == 58
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 2"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+        assert sta.attributes[CONF_ZONE_ID] == "2"
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] == 1
+        assert sta.attributes[ATTR_CURRENT_NAME] == "Morning 2"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:10")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=12)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=5)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 58
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 2"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:10")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=22)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-open"
 
@@ -309,52 +342,55 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
         assert sta.state == STATE_ON
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["status"] == STATE_ON
-        assert sta.attributes["zone_count"] == 2
-        assert sta.attributes["current_zone"] == 2
-        assert sta.attributes["current_name"] == "Second zone"
-        assert sta.attributes["current_start"] == mk_local("2021-01-04 06:08")
-        assert mk_td(sta.attributes["current_duration"]) == timedelta(minutes=16)
-        assert mk_td(sta.attributes["time_remaining"]) == timedelta(minutes=1)
-        assert sta.attributes["percent_complete"] == 93
-        assert sta.attributes["next_zone"] == 1
-        assert sta.attributes["next_name"] == "First zone"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:03")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
+        assert sta.attributes[ATTR_STATUS] == STATE_ON
+        assert sta.attributes[ATTR_ZONE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_ZONE] == 2
+        assert sta.attributes[ATTR_CURRENT_NAME] == "Second zone"
+        assert sta.attributes[ATTR_CURRENT_START] == mk_local("2021-01-04 06:08")
+        assert mk_td(sta.attributes[ATTR_CURRENT_DURATION]) == timedelta(minutes=16)
+        assert mk_td(sta.attributes[ATTR_TIME_REMAINING]) == timedelta(minutes=1)
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 93
+        assert sta.attributes[ATTR_NEXT_ZONE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "First zone"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:03")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=24)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
         assert sta.attributes[ATTR_ICON] == "mdi:water"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["zone_id"] == "1"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 1"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+        assert sta.attributes[CONF_ZONE_ID] == "1"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 1"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:05")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=20)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 1
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 2"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 2"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:10")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=22)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
@@ -362,48 +398,51 @@ async def test_entity(hass: ha.HomeAssistant, skip_dependencies, skip_history):
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_m")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["zone_count"] == 2
-        assert sta.attributes["current_zone"] == RES_NOT_RUNNING
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_zone"] == 1
-        assert sta.attributes["next_name"] == "First zone"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:03")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=24)
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ZONE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_ZONE] == RES_NOT_RUNNING
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_ZONE] == 1
+        assert sta.attributes[ATTR_NEXT_NAME] == "First zone"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:03")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=24)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Test controller 1"
         assert sta.attributes[ATTR_ICON] == "mdi:water-off"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 0
-        assert sta.attributes["zone_id"] == "1"
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 1"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:05")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=20)
+        assert sta.attributes[CONF_ZONE_ID] == "1"
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 1"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:05")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=20)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "First zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z2")
         assert sta.state == STATE_OFF
         assert sta.attributes[ATTR_ENABLED] is True
+        assert sta.attributes[ATTR_SUSPENDED] is None
         assert sta.attributes[ATTR_INDEX] == 1
-        assert sta.attributes["status"] == STATE_OFF
-        assert sta.attributes["adjustment"] == ""
-        assert sta.attributes["schedule_count"] == 2
-        assert sta.attributes["current_schedule"] is None
-        assert sta.attributes["percent_complete"] == 0
-        assert sta.attributes["next_schedule"] == 2
-        assert sta.attributes["next_name"] == "Afternoon 2"
-        assert sta.attributes["next_start"] == mk_local("2021-01-04 14:10")
-        assert mk_td(sta.attributes["next_duration"]) == timedelta(minutes=22)
+        assert sta.attributes[ATTR_STATUS] == STATE_OFF
+        assert sta.attributes[ATTR_ADJUSTMENT] == ""
+        assert sta.attributes[ATTR_SCHEDULE_COUNT] == 2
+        assert sta.attributes[ATTR_CURRENT_SCHEDULE] is None
+        assert sta.attributes[ATTR_PERCENT_COMPLETE] == 0
+        assert sta.attributes[ATTR_NEXT_SCHEDULE] == 2
+        assert sta.attributes[ATTR_NEXT_NAME] == "Afternoon 2"
+        assert sta.attributes[ATTR_NEXT_START] == mk_local("2021-01-04 14:10")
+        assert mk_td(sta.attributes[ATTR_NEXT_DURATION]) == timedelta(minutes=22)
         assert sta.attributes[ATTR_FRIENDLY_NAME] == "Second zone"
         assert sta.attributes[ATTR_ICON] == "mdi:valve-closed"
 

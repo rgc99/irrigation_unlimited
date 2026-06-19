@@ -4,3 +4,6 @@ irrigation_unlimited:
       schedules:
         time: "06:00"
         duration: "10:00"
+    sequences:
+      - zones:
+        - zone_id: 1

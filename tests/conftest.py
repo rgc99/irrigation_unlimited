@@ -85,3 +85,12 @@ def skip_start():
         return_value=None,
     ):
         yield
+
+@pytest.fixture(name="allow_memory_db")
+def allow_memory_db():
+    """Allow in memory DB"""
+    with patch(
+        "homeassistant.components.recorder.ALLOW_IN_MEMORY_DB",
+        return_value=True,
+    ):
+        yield

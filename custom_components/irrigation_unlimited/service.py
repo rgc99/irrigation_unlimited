@@ -1,79 +1,66 @@
 """This module handles the HA service call interface"""
-import voluptuous as vol
-from homeassistant.core import ServiceCall, callback
+
+from homeassistant.core import ServiceCall, SupportsResponse, ServiceResponse
+from homeassistant.util import dt
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.entity_component import EntityComponent
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service import async_register_admin_service
+
 from homeassistant.const import (
-    CONF_ENTITY_ID,
+    ATTR_ENTITY_ID,
     SERVICE_RELOAD,
 )
 
 from .irrigation_unlimited import IUCoordinator
+from .util import convert_data
 from .entity import IUEntity
+from .schema import (
+    CANCEL_SCHEMA,
+    ENABLE_DISABLE_SCHEMA,
+    SKIP_SCHEMA,
+    GET_STATUS_SCHEMA,
+    LOAD_SCHEDULE_SCHEMA,
+    MANUAL_RUN_SCHEMA,
+    PAUSE_RESUME_SCHEMA,
+    RELOAD_SERVICE_SCHEMA,
+    SUSPEND_SCHEMA,
+    TIME_ADJUST_SCHEMA,
+)
+
 from .const import (
+    ATTR_CONTROLLERS,
+    ATTR_CONTROLLER_ID,
+    ATTR_INDEX,
+    ATTR_NAME,
+    ATTR_SEQUENCES,
+    ATTR_VERSION,
+    ATTR_ZONES,
+    ATTR_ZONE_ID,
+    ATTR_ZONE_IDS,
+    CONF_EXTENDED,
     DOMAIN,
-    CONF_PERCENTAGE,
-    CONF_ACTUAL,
-    CONF_INCREASE,
-    CONF_DECREASE,
-    CONF_RESET,
-    CONF_TIME,
-    CONF_MINIMUM,
-    CONF_MAXIMUM,
-    CONF_ZONES,
-    CONF_SEQUENCE_ID,
     SERVICE_CANCEL,
     SERVICE_DISABLE,
     SERVICE_ENABLE,
+    SERVICE_EXPORT_CONFIG,
+    SERVICE_GET_INFO,
+    SERVICE_GET_STATUS,
+    SERVICE_LOAD_SCHEDULE,
     SERVICE_MANUAL_RUN,
+    SERVICE_PAUSE,
+    SERVICE_RESUME,
+    SERVICE_SKIP,
+    SERVICE_SUSPEND,
     SERVICE_TIME_ADJUST,
     SERVICE_TOGGLE,
 )
 
-ENTITY_SCHEMA = {vol.Required(CONF_ENTITY_ID): cv.entity_id}
 
-ENABLE_DISABLE_SCHEMA = {
-    vol.Required(CONF_ENTITY_ID): cv.entity_id,
-    vol.Optional(CONF_ZONES): cv.ensure_list,
-    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
-}
-
-TIME_ADJUST_SCHEMA = vol.All(
-    vol.Schema(
-        {
-            vol.Required(CONF_ENTITY_ID): cv.entity_id,
-            vol.Exclusive(CONF_ACTUAL, "adjust_method"): cv.positive_time_period,
-            vol.Exclusive(CONF_PERCENTAGE, "adjust_method"): cv.positive_float,
-            vol.Exclusive(CONF_INCREASE, "adjust_method"): cv.positive_time_period,
-            vol.Exclusive(CONF_DECREASE, "adjust_method"): cv.positive_time_period,
-            vol.Exclusive(CONF_RESET, "adjust_method"): None,
-            vol.Optional(CONF_MINIMUM): cv.positive_time_period,
-            vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
-            vol.Optional(CONF_ZONES): cv.ensure_list,
-            vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
-        }
-    ),
-    cv.has_at_least_one_key(
-        CONF_ACTUAL, CONF_PERCENTAGE, CONF_INCREASE, CONF_DECREASE, CONF_RESET
-    ),
-)
-
-MANUAL_RUN_SCHEMA = {
-    vol.Required(CONF_ENTITY_ID): cv.entity_id,
-    vol.Required(CONF_TIME): cv.positive_time_period,
-    vol.Optional(CONF_ZONES): cv.ensure_list,
-    vol.Optional(CONF_SEQUENCE_ID): cv.positive_int,
-}
-
-RELOAD_SERVICE_SCHEMA = vol.Schema({})
-
-
-@callback
-async def async_entity_service_handler(entity: IUEntity, call: ServiceCall) -> None:
+async def async_entity_service_handler(
+    entity: IUEntity, call: ServiceCall
+) -> ServiceResponse:
     """Dispatch the service call"""
-    entity.dispatch(call.service, call)
+    return entity.dispatch(call.service, call)
 
 
 def register_platform_services(platform: entity_platform.EntityPlatform) -> None:
@@ -88,13 +75,27 @@ def register_platform_services(platform: entity_platform.EntityPlatform) -> None
         SERVICE_TOGGLE, ENABLE_DISABLE_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
-        SERVICE_CANCEL, ENTITY_SCHEMA, async_entity_service_handler
+        SERVICE_CANCEL, CANCEL_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
         SERVICE_TIME_ADJUST, TIME_ADJUST_SCHEMA, async_entity_service_handler
     )
     platform.async_register_entity_service(
         SERVICE_MANUAL_RUN, MANUAL_RUN_SCHEMA, async_entity_service_handler
+    )
+    platform.async_register_entity_service(
+        SERVICE_SUSPEND, SUSPEND_SCHEMA, async_entity_service_handler
+    )
+    platform.async_register_entity_service(
+        SERVICE_SKIP, SKIP_SCHEMA, async_entity_service_handler
+    )
+
+    platform.async_register_entity_service(
+        SERVICE_PAUSE, PAUSE_RESUME_SCHEMA, async_entity_service_handler
+    )
+
+    platform.async_register_entity_service(
+        SERVICE_RESUME, PAUSE_RESUME_SCHEMA, async_entity_service_handler
     )
 
 
@@ -103,18 +104,17 @@ def register_component_services(
 ) -> None:
     """Register the component"""
 
-    @callback
     async def reload_service_handler(call: ServiceCall) -> None:
         """Reload yaml entities."""
         # pylint: disable=unused-argument
-        # pylint: disable=import-outside-toplevel
         from .binary_sensor import async_reload_platform
 
         conf = await component.async_prepare_reload(skip_reset=True)
-        if conf is None or conf == {}:
+        if conf is None or DOMAIN not in conf:
             conf = {DOMAIN: {}}
         coordinator.load(conf[DOMAIN])
         await async_reload_platform(component, coordinator)
+        coordinator.timer(dt.utcnow())
         coordinator.clock.start()
 
     async_register_admin_service(
@@ -123,4 +123,89 @@ def register_component_services(
         SERVICE_RELOAD,
         reload_service_handler,
         schema=RELOAD_SERVICE_SCHEMA,
+    )
+
+    async def coordinator_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Reload schedule."""
+        return coordinator.service_call(call.service, None, None, None, call.data)
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_LOAD_SCHEDULE,
+        coordinator_service_handler,
+        LOAD_SCHEDULE_SCHEMA,
+    )
+
+    async def get_info_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Return configuration"""
+        # pylint: disable=unused-argument
+        data = {}
+        data[ATTR_VERSION] = "1.0.0"
+        data[ATTR_CONTROLLERS] = [
+            {
+                ATTR_INDEX: ctl.index,
+                ATTR_CONTROLLER_ID: ctl.controller_id,
+                ATTR_NAME: ctl.name,
+                ATTR_ENTITY_ID: ctl.entity_id,
+                ATTR_ZONES: [
+                    {
+                        ATTR_INDEX: zone.index,
+                        ATTR_ZONE_ID: zone.zone_id,
+                        ATTR_NAME: zone.name,
+                        ATTR_ENTITY_ID: zone.entity_id,
+                    }
+                    for zone in ctl.zones
+                ],
+                ATTR_SEQUENCES: [
+                    {
+                        ATTR_INDEX: seq.index,
+                        ATTR_NAME: seq.name,
+                        ATTR_ENTITY_ID: seq.entity_id,
+                        ATTR_ZONES: [
+                            {ATTR_INDEX: sqz.index, ATTR_ZONE_IDS: sqz.zone_ids}
+                            for sqz in seq.zones
+                        ],
+                    }
+                    for seq in ctl.sequences
+                ],
+            }
+            for ctl in coordinator.controllers
+        ]
+        return data
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_GET_INFO,
+        get_info_service_handler,
+        {},
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    async def get_status_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Return configuration"""
+        # pylint: disable=unused-argument
+
+        return convert_data(
+            coordinator.as_dict(extended=call.data.get(CONF_EXTENDED, False))
+        )
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_GET_STATUS,
+        get_status_service_handler,
+        GET_STATUS_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+
+    async def export_config_service_handler(call: ServiceCall) -> ServiceResponse:
+        """Return the current config in configuration.yaml-compatible format"""
+        # pylint: disable=unused-argument
+        return convert_data(coordinator.export_config())
+
+    component.hass.services.async_register(
+        DOMAIN,
+        SERVICE_EXPORT_CONFIG,
+        export_config_service_handler,
+        {},
+        supports_response=SupportsResponse.ONLY,
     )

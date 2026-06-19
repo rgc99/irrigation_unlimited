@@ -7,6 +7,17 @@ IUExam.quiet_mode()
 
 
 # pylint: disable=unused-argument
+async def test_tester(hass: ha.HomeAssistant, skip_dependencies, skip_history):
+    """Test the testing object"""
+
+    async with IUExam(hass, "test_tester.yaml") as exam:
+        assert len(exam.coordinator.tester.tests) == 2
+        await exam.begin_test(1)
+        assert exam.coordinator.tester.last_test is None
+        await exam.finish_test()
+        assert exam.coordinator.tester.last_test == exam.coordinator.tester.tests[0]
+
+
 async def test_test_1(hass: ha.HomeAssistant, skip_dependencies, skip_history):
     """Test the testing unit. Parameter show_log=False"""
 

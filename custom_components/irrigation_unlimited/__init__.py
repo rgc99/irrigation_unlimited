@@ -4,273 +4,46 @@ Custom integration to integrate irrigation_unlimited with Home Assistant.
 For more details about this integration, please refer to
 https://github.com/rgc99/irrigation_unlimited
 """
+
 import logging
 import voluptuous as vol
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_component import EntityComponent
-from homeassistant.core import Config, HomeAssistant
-from homeassistant.const import (
-    CONF_AFTER,
-    CONF_BEFORE,
-    CONF_ENTITY_ID,
-    CONF_NAME,
-    CONF_REPEAT,
-    CONF_WEEKDAY,
-    CONF_DELAY,
-)
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
+from homeassistant.core import HomeAssistant
+from homeassistant.core_config import Config
 from homeassistant.helpers.discovery import async_load_platform
 
 from .irrigation_unlimited import IUCoordinator
 from .entity import IUComponent
 from .service import register_component_services
 
+from .schema import (
+    IRRIGATION_SCHEMA,
+)
+
 from .const import (
     BINARY_SENSOR,
-    CONF_CLOCK,
-    CONF_ENABLED,
-    CONF_FINISH,
-    CONF_FIXED,
-    CONF_FUTURE_SPAN,
-    CONF_HISTORY,
-    CONF_HISTORY_REFRESH,
-    CONF_HISTORY_SPAN,
-    CONF_MAX_LOG_ENTRIES,
-    CONF_MAXIMUM,
-    CONF_MINIMUM,
-    CONF_MODE,
-    CONF_MONTH,
-    CONF_DAY,
-    CONF_ODD,
-    CONF_EVEN,
-    CONF_RENAME_ENTITIES,
-    CONF_RESULTS,
-    CONF_SHOW_LOG,
-    CONF_AUTOPLAY,
-    CONF_ANCHOR,
-    CONF_SPAN,
-    CONF_SYNC_SWITCHES,
-    CONF_SEER,
+    BUTTON,
+    NUMBER,
+    SWITCH,
     DOMAIN,
     COORDINATOR,
     COMPONENT,
     STARTUP_MESSAGE,
-    CONF_CONTROLLERS,
-    CONF_SCHEDULES,
-    CONF_ZONES,
-    CONF_DURATION,
-    CONF_SUN,
-    CONF_TIME,
-    CONF_PREAMBLE,
-    CONF_POSTAMBLE,
-    CONF_GRANULARITY,
-    CONF_TESTING,
-    CONF_SPEED,
-    CONF_TIMES,
-    CONF_START,
-    CONF_END,
-    MONTHS,
-    CONF_SHOW,
-    CONF_CONFIG,
-    CONF_TIMELINE,
-    CONF_CONTROLLER_ID,
-    CONF_ZONE_ID,
-    CONF_SEQUENCES,
-    CONF_ALL_ZONES_CONFIG,
-    CONF_REFRESH_INTERVAL,
-    CONF_OUTPUT_EVENTS,
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
-
-def _list_is_not_empty(value):
-    if value is None or len(value) < 1:
-        raise vol.Invalid("Must have at least one entry")
-    return value
-
-
-SHOW_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_CONFIG, False): cv.boolean,
-        vol.Optional(CONF_TIMELINE, False): cv.boolean,
-    }
-)
-
-SUN_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_SUN): cv.sun_event,
-        vol.Optional(CONF_BEFORE): cv.positive_time_period,
-        vol.Optional(CONF_AFTER): cv.positive_time_period,
-    }
-)
-
-time_event = vol.Any(cv.time, SUN_SCHEMA)
-anchor_event = vol.Any(CONF_START, CONF_FINISH)
-month_event = vol.All(cv.ensure_list, [vol.In(MONTHS)])
-
-day_number = vol.All(vol.Coerce(int), vol.Range(min=0, max=31))
-day_event = vol.Any(CONF_ODD, CONF_EVEN, cv.ensure_list(day_number))
-
-SCHEDULE_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_TIME): time_event,
-        vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
-        vol.Required(CONF_DURATION): cv.positive_time_period,
-        vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_WEEKDAY): cv.weekdays,
-        vol.Optional(CONF_MONTH): month_event,
-        vol.Optional(CONF_DAY): day_event,
-    }
-)
-
-ZONE_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_SCHEDULES): vol.All(cv.ensure_list, [SCHEDULE_SCHEMA]),
-        vol.Optional(CONF_ZONE_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
-        vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
-        vol.Optional(CONF_ENABLED): cv.boolean,
-        vol.Optional(CONF_MINIMUM): cv.positive_time_period,
-        vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
-        vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
-        vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
-    }
-)
-
-ALL_ZONES_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_SHOW): vol.All(SHOW_SCHEMA),
-        vol.Optional(CONF_MINIMUM): cv.positive_time_period,
-        vol.Optional(CONF_MAXIMUM): cv.positive_time_period,
-        vol.Optional(CONF_FUTURE_SPAN): cv.positive_int,
-    }
-)
-
-SEQUENCE_SCHEDULE_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_TIME): time_event,
-        vol.Required(CONF_ANCHOR, default=CONF_START): anchor_event,
-        vol.Optional(CONF_DURATION): cv.positive_time_period,
-        vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_WEEKDAY): cv.weekdays,
-        vol.Optional(CONF_MONTH): month_event,
-        vol.Optional(CONF_DAY): day_event,
-    }
-)
-
-SEQUENCE_ZONE_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_ZONE_ID): vol.All(cv.ensure_list, [cv.string]),
-        vol.Optional(CONF_DELAY): cv.positive_time_period,
-        vol.Optional(CONF_DURATION): cv.positive_time_period,
-        vol.Optional(CONF_REPEAT): cv.positive_int,
-        vol.Optional(CONF_ENABLED): cv.boolean,
-    }
-)
-
-SEQUENCE_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_ZONES, default={}): vol.All(
-            cv.ensure_list, [SEQUENCE_ZONE_SCHEMA], _list_is_not_empty
-        ),
-        vol.Optional(CONF_SCHEDULES): vol.All(
-            cv.ensure_list, [SEQUENCE_SCHEDULE_SCHEMA]
-        ),
-        vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_DELAY): cv.positive_time_period,
-        vol.Optional(CONF_DURATION): cv.positive_time_period,
-        vol.Optional(CONF_REPEAT): cv.positive_int,
-        vol.Optional(CONF_ENABLED): cv.boolean,
-    }
-)
-
-CONTROLLER_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_ZONES): vol.All(
-            cv.ensure_list, [ZONE_SCHEMA], _list_is_not_empty
-        ),
-        vol.Optional(CONF_SEQUENCES): vol.All(
-            cv.ensure_list, [SEQUENCE_SCHEMA], _list_is_not_empty
-        ),
-        vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_CONTROLLER_ID): cv.matches_regex(r"^[a-z0-9]+(_[a-z0-9]+)*$"),
-        vol.Optional(CONF_ENTITY_ID): cv.entity_ids,
-        vol.Optional(CONF_PREAMBLE): cv.time_period,
-        vol.Optional(CONF_POSTAMBLE): cv.time_period,
-        vol.Optional(CONF_ENABLED): cv.boolean,
-        vol.Optional(CONF_ALL_ZONES_CONFIG): vol.All(ALL_ZONES_SCHEMA),
-    }
-)
-
-HISTORY_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_ENABLED): cv.boolean,
-        vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
-        vol.Optional(CONF_SPAN): cv.positive_int,
-    }
-)
-
-clock_mode = vol.Any(CONF_FIXED, CONF_SEER)
-
-CLOCK_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_MODE, default=CONF_SEER): clock_mode,
-        vol.Optional(CONF_SHOW_LOG, default=False): cv.boolean,
-        vol.Optional(CONF_MAX_LOG_ENTRIES): cv.positive_int,
-    }
-)
-
-TEST_RESULT_SCHEMA = vol.Schema(
-    {
-        vol.Required("t"): cv.datetime,
-        vol.Required("c"): cv.positive_int,
-        vol.Required("z"): cv.positive_int,
-        vol.Required("s"): cv.boolean,
-    }
-)
-
-TEST_TIME_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_START): cv.datetime,
-        vol.Required(CONF_END): cv.datetime,
-        vol.Optional(CONF_NAME): cv.string,
-        vol.Optional(CONF_RESULTS): [TEST_RESULT_SCHEMA],
-    }
-)
-
-TEST_SCHEMA = vol.Schema(
-    {
-        vol.Optional(CONF_ENABLED): cv.boolean,
-        vol.Optional(CONF_SPEED): cv.positive_float,
-        vol.Optional(CONF_TIMES): [TEST_TIME_SCHEMA],
-        vol.Optional(CONF_OUTPUT_EVENTS): cv.boolean,
-        vol.Optional(CONF_SHOW_LOG): cv.boolean,
-        vol.Optional(CONF_AUTOPLAY): cv.boolean,
-    }
-)
-
-IRRIGATION_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_CONTROLLERS, default={}): vol.All(
-            cv.ensure_list, [CONTROLLER_SCHEMA], _list_is_not_empty
-        ),
-        vol.Optional(CONF_GRANULARITY): cv.positive_int,
-        vol.Optional(CONF_REFRESH_INTERVAL): cv.positive_int,
-        vol.Optional(CONF_HISTORY_SPAN): cv.positive_int,
-        vol.Optional(CONF_HISTORY_REFRESH): cv.positive_int,
-        vol.Optional(CONF_SYNC_SWITCHES): cv.boolean,
-        vol.Optional(CONF_RENAME_ENTITIES): cv.boolean,
-        vol.Optional(CONF_TESTING): TEST_SCHEMA,
-        vol.Optional(CONF_HISTORY): HISTORY_SCHEMA,
-        vol.Optional(CONF_CLOCK): CLOCK_SCHEMA,
-    }
-)
 
 CONFIG_SCHEMA = vol.Schema({DOMAIN: IRRIGATION_SCHEMA}, extra=vol.ALLOW_EXTRA)
 
 
 async def async_setup(hass: HomeAssistant, config: Config):
     """Set up this integration using YAML."""
+
+    if DOMAIN not in config:
+        return True
 
     _LOGGER.info(STARTUP_MESSAGE)
 
@@ -286,6 +59,15 @@ async def async_setup(hass: HomeAssistant, config: Config):
     await hass.async_create_task(
         async_load_platform(hass, BINARY_SENSOR, DOMAIN, {}, config)
     )
+    await hass.async_create_task(
+        async_load_platform(hass, BUTTON, DOMAIN, {}, config)
+    )
+    await hass.async_create_task(
+        async_load_platform(hass, NUMBER, DOMAIN, {}, config)
+    )
+    await hass.async_create_task(
+        async_load_platform(hass, SWITCH, DOMAIN, {}, config)
+    )
 
     register_component_services(component, coordinator)
 
@@ -293,3 +75,62 @@ async def async_setup(hass: HomeAssistant, config: Config):
     coordinator.clock.start()
 
     return True
+
+
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload a config entry when options change."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up this integration from a config entry (UI)."""
+
+    _LOGGER.info(STARTUP_MESSAGE)
+
+    # Options written by the options flow take precedence over initial data
+    config = dict(entry.options) if entry.options else dict(entry.data)
+
+    hass.data.setdefault(DOMAIN, {})
+    coordinator = IUCoordinator(hass).load(config)
+    hass.data[DOMAIN][COORDINATOR] = coordinator
+
+    component = EntityComponent(_LOGGER, DOMAIN, hass)
+    hass.data[DOMAIN][COMPONENT] = component
+
+    await component.async_add_entities([IUComponent(coordinator)])
+
+    # Associate the coordinator entity with this config entry so it is
+    # removed automatically when the integration is deleted.
+    ent_reg = er.async_get(hass)
+    if coordinator_entry := ent_reg.async_get(coordinator.entity_id):
+        ent_reg.async_update_entity(
+            coordinator_entry.entity_id, config_entry_id=entry.entry_id
+        )
+
+    await hass.config_entries.async_forward_entry_setups(entry, [BINARY_SENSOR, BUTTON, NUMBER, SWITCH])
+
+    register_component_services(component, coordinator)
+
+    coordinator.listen()
+    coordinator.clock.start()
+
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, [BINARY_SENSOR, BUTTON, NUMBER, SWITCH])
+
+    coordinator: IUCoordinator = hass.data[DOMAIN].get(COORDINATOR)
+    if coordinator is not None:
+        coordinator.finalise(False)
+
+    component: EntityComponent = hass.data[DOMAIN].get(COMPONENT)
+    if component is not None:
+        for entity in list(component.entities):
+            await entity.async_remove()
+
+    hass.data.pop(DOMAIN, None)
+    return unload_ok

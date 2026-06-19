@@ -3,6 +3,10 @@ title: Enable/Disable Controller
 entities:
   - entity: input_select.irrigation_unlimited_entities
     name: Controller/Zone
+  - entity: input_select.irrigation_unlimited_sequences
+    name: Controller/Sequence
+  - entity: input_select.irrigation_unlimited_sequence_zones
+    name: Sequence Zone
   - type: divider
   - type: custom:paper-buttons-row
     buttons:
@@ -12,9 +16,13 @@ entities:
           service: irrigation_unlimited.shim_enable
           service_data:
             controller_zone_entity: input_select.irrigation_unlimited_entities
+            controller_sequence_entity: input_select.irrigation_unlimited_sequences
+            sequence_zone_entity: input_select.irrigation_unlimited_sequence_zones
       - name: Disable
         tap_action:
           action: call-service
           service: irrigation_unlimited.shim_disable
           service_data:
             controller_zone_entity: input_select.irrigation_unlimited_entities
+            controller_sequence_entity: input_select.irrigation_unlimited_sequences
+            sequence_zone_entity: input_select.irrigation_unlimited_sequence_zones

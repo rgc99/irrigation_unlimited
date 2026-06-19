@@ -9,5 +9,11 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+    },
+    "python.analysis.typeCheckingMode": "off",
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

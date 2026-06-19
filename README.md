@@ -1,13 +1,14 @@
 <!-- prettier-ignore -->
 
+<!-- omit in toc -->
 # Irrigation Unlimited
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
-[![License][license-shield]](LICENSE)
+[![License][license-shield]][license]
 
 [![hacs][hacsbadge]][hacs]
-![Project Maintenance][maintenance-shield]
+[![Project Maintenance][maintenance-shield]](https://github.com/rgc99)
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
 [![Community Forum][forum-shield]][forum]
@@ -26,12 +27,18 @@
   - [5.3. Zone Objects](#53-zone-objects)
   - [5.4. Zone Show Object](#54-zone-show-object)
   - [5.5. Schedule Objects](#55-schedule-objects)
-  - [5.6. Sun Event](#56-sun-event)
-  - [5.7. Sequence Objects](#57-sequence-objects)
-  - [5.8. Sequence Zone Objects](#58-sequence-zone-objects)
-  - [5.9. History Object](#59-history-object)
-    - [5.9.1. Long term statistics LTS](#591-long-term-statistics-lts)
-  - [5.10. Clock Object](#510-clock-object)
+    - [5.5.1 Sun Event](#551-sun-event)
+    - [5.5.2 Crontab](#552-crontab)
+    - [5.5.3 Every `n` Days](#553-every-n-days)
+  - [5.6. Sequence Objects](#56-sequence-objects)
+    - [5.6.1. Cycle Object](#561-cycle-object)
+  - [5.7. Sequence Zone Objects](#57-sequence-zone-objects)
+  - [5.8. History Object](#58-history-object)
+    - [5.8.1. Long term statistics (LTS)](#581-long-term-statistics-lts)
+  - [5.9. Clock Object](#59-clock-object)
+  - [5.10. Check Back Object](#510-check-back-object)
+  - [5.11. User Object](#511-user-object)
+  - [5.12. Volume Object](#512-volume-object)
 - [6. Configuration examples](#6-configuration-examples)
   - [6.1. Minimal configuration](#61-minimal-configuration)
   - [6.2. Sun event example](#62-sun-event-example)
@@ -41,37 +48,53 @@
   - [6.6. Seasonal watering](#66-seasonal-watering)
   - [6.7. Finish at sunrise](#67-finish-at-sunrise)
   - [6.8. Tips](#68-tips)
-- [7. Services](#7-services)
-  - [7.1. Services enable, disable and toggle](#71-services-enable-disable-and-toggle)
-  - [7.2. Service cancel](#72-service-cancel)
-  - [7.3. Service manual_run](#73-service-manual_run)
-  - [7.4. Service adjust_time](#74-service-adjust_time)
-    - [7.4.1. Tip](#741-tip)
-  - [7.5. Service reload](#75-service-reload)
-  - [7.6. Service call access roadmap](#76-service-call-access-roadmap)
+- [7. Actions](#7-actions)
+  - [7.1. Actions `enable`, `disable` and `toggle`](#71-actions-enable-disable-and-toggle)
+  - [7.2. Actions `pause` and `resume`](#72-actions-pause-and-resume)
+  - [7.3. Action `suspend`](#73-action-suspend)
+  - [7.4. Action `cancel`](#74-action-cancel)
+  - [7.5. Action `manual_run`](#75-action-manual_run)
+  - [7.6. Action `adjust_time`](#76-action-adjust_time)
+  - [7.7. Action `load_schedule`](#77-action-load_schedule)
+  - [7.8. Action `reload`](#78-action-reload)
+  - [7.9. Action call access roadmap](#79-action-call-access-roadmap)
 - [8. Frontend](#8-frontend)
   - [8.1. Generic Cards](#81-generic-cards)
   - [8.2. Timeline](#82-timeline)
   - [8.3. Frontend Requirements](#83-frontend-requirements)
   - [8.4. Manual run card](#84-manual-run-card)
   - [8.5. Enable-disable card](#85-enable-disable-card)
+  - [8.6. Pause-resume button](#86-pause-resume-button)
 - [9. Automation](#9-automation)
-  - [9.1. ESPHome](#91-esphome)
+  - [9.1. ESPHome soil moisture adjustment](#91-esphome-soil-moisture-adjustment)
   - [9.2. HAsmartirrigation](#92-hasmartirrigation)
+  - [9.3. Overnight watering](#93-overnight-watering)
+  - [9.4. Sonoff Smart Water Valve auto shutoff switch](#94-sonoff-smart-water-valve-auto-shutoff-switch)
+  - [9.5. ESPHome auto shutoff switch](#95-esphome-auto-shutoff-switch)
 - [10. Notifications](#10-notifications)
   - [10.1. Events](#101-events)
-    - [10.1.1. irrigation_unlimited_start, irrigation_unlimited_finish](#1011-irrigation_unlimited_start-irrigation_unlimited_finish)
+    - [10.1.1. irrigation\_unlimited\_start, irrigation\_unlimited\_finish](#1011-irrigation_unlimited_start-irrigation_unlimited_finish)
+    - [10.1.2. irrigation\_unlimited\_switch\_error, irrigation\_unlimited\_sync\_error](#1012-irrigation_unlimited_switch_error-irrigation_unlimited_sync_error)
+    - [10.1.3. irrigation\_unlimited\_valve\_on, irrigation\_unlimited\_valve\_off](#1013-irrigation_unlimited_valve_on-irrigation_unlimited_valve_off)
 - [11. Troubleshooting](#11-troubleshooting)
   - [11.1. Requirements](#111-requirements)
   - [11.2. HA Configuration](#112-ha-configuration)
-  - [11.3. Logging](#113-logging)
-  - [11.4. Last but not least](#114-last-but-not-least)
+  - [11.3. Community Forum](#113-community-forum)
+  - [11.4. Logging](#114-logging)
+  - [11.5. Last but not least](#115-last-but-not-least)
 - [12. Notes](#12-notes)
 - [13. Snake case](#13-snake-case)
-- [14. Switch entities](#14-switch-entities)
+- [14. Parameter Types](#14-parameter-types)
+  - [14.1 Irrigation Unlimited Entities](#141-irrigation-unlimited-entities)
+  - [14.2 Duration (Time Period)](#142-duration-time-period)
+  - [14.3 Switch entities](#143-switch-entities)
+  - [14.4 Templating](#144-templating)
+  - [14.5 Sequence](#145-sequence)
+  - [14.6 Zones](#146-zones)
+  - [14.7 Time (Time of Day)](#147-time-time-of-day)
 - [15. Contributions are welcome](#15-contributions-are-welcome)
 - [16. Credits](#16-credits)
-
+- [17. UI Configuration](#17-ui-configuration)
 <!-- /TOC -->
 
 ## 1. Introduction
@@ -84,11 +107,13 @@ Each controller has an associated (master) sensor which shows on/off status and 
 
 Zones also have an associated sensor which, like the master, shows on/off status and various attributes. Zones sensors have service calls that can enable/disable and provide manual runs. Also adjust run times in automation scripts using information from integrations that collect weather data like [OpenWeatherMap](https://www.home-assistant.io/integrations/openweathermap/), [BOM](https://github.com/bremor/bureau_of_meteorology), [weatherunderground](https://www.home-assistant.io/integrations/wunderground/) and many others. Go crazy with projects like [HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation). Easily integrate probes and sensors from [ESPHome](https://esphome.io) for real-time adjustments. Examples provided [below](#9-automation).
 
+View and control your system with the Irrigation Unlimited [companion card](https://github.com/rgc99/irrigation-unlimited-card). A compact card where you can monitor upcoming schedules along with irrigation history.
+
 ## 2. Features
 
 1. Unlimited controllers.
 2. Unlimited zones.
-3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Overlapped schedules.
+3. Unlimited schedules. Schedule by absolute time or sun events (sunrise/sunset). Select by days of the week (mon/tue/wed...). Select by days in the month (1/2/3.../odd/even). Select by months in the year (jan/feb/mar...). Use cron expressions. Overlapped schedules.
 4. Unlimited sequences. Operate zones one at a time in a particular order with a delay in between. A 'playlist' for your zones.
 5. Suitable for indoor (greenhouse, hothouse, undercover areas) and outdoor (gardens, lawns, crops).
 6. Hardware independent. Use your own switches/valve controllers.
@@ -172,26 +197,27 @@ custom_components/irrigation_unlimited/entity.py
 custom_components/irrigation_unlimited/history.py
 custom_components/irrigation_unlimited/irrigation_unlimited.py
 custom_components/irrigation_unlimited/manifest.json
+custom_components/irrigation_unlimited/schema.py
 custom_components/irrigation_unlimited/service.py
 custom_components/irrigation_unlimited/services.yaml
 ```
 
 ## 5. Configuration
 
-Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#75-service-reload) for details and limitations.
+Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#78-service-reload) for details and limitations.
 
-The time type is a string in the format HH:MM or H:MM:SS. Time type must be a positive value. Seconds can be specified but they will be rounded down to the system granularity. The default granularity is whole minutes (60 seconds). This is the heart beat or system pulse. All times will be synchronised to these boundaries.
+> **UI configuration is optional.** Irrigation Unlimited also supports configuration via the Home Assistant UI — see [UI Configuration](ui.md) for details. If a `yaml` configuration is present it will take precedence over any settings made through the UI.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |
 | `controllers` | list | _[Controller Objects](#51-controller-objects)_ | Controller details (Must have at least one) |
 | `granularity` | number | 60 | System time boundaries in seconds |
-| `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more responsive display. Increase this number to conserve resources.
-| `rename_entities` | bool | false | DANGER ZONE. Allow the sensor entity_id's to be altered. The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) will be combined to form the new entity_id. Note: Automations, sensors, scripts, front end cards etc. may need to be updated to reflect the new entity_id's of the controllers and zones.
-| `history_span` | number | 7 | Deprecated. See [history](#59-history-object) `span` |
-| `history_refresh` | number | 120 | Deprecated. See [history](#59-history-object) `refresh_interval` |
-| `history` | object | _[History Object](#59-history-object)_ | History data gathering options |
-| `clock` | object | _[Clock Object](#510-clock-object)_ | Clock options |
+| `refresh_interval` | number | 30 | Refresh interval in seconds. When a controller or zone is on this value will govern how often the count down timers will update. Decrease this number for a more responsive display. Increase this number to conserve resources |
+| `rename_entities` | bool | false | DANGER ZONE. Allow the sensor entity_id's to be altered. The [controller_id](#51-controller-objects) and [zone_id](#53-zone-objects) will be combined to form the new entity_id. Note: Automations, sensors, scripts, front end cards etc. may need to be updated to reflect the new entity_id's of the controllers and zones |
+| `history_span` | number | 7 | Deprecated. See [history](#58-history-object) `span` |
+| `history_refresh` | number | 120 | Deprecated. See [history](#58-history-object) `refresh_interval` |
+| `history` | object | _[History Object](#58-history-object)_ | History data gathering options |
+| `clock` | object | _[Clock Object](#59-clock-object)_ | Clock options |
 
 ### 5.1. Controller Objects
 
@@ -200,14 +226,19 @@ This is the controller or master object and manages a collection of zones. There
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zones` | list | _[Zone Objects](#53-zone-objects)_ | Zone details (Must have at least one) |
-| `sequences` | list | _[Sequence Objects](#57-sequence-objects)_ | Sequence details |
+| `sequences` | list | _[Sequence Objects](#56-sequence-objects)_ | Sequence details |
 | `name` | string | Controller _N_ | Friendly name for the controller |
-| `controller_id` | string | _N_ | Controller reference. Used to change the default entity name (enable with [rename_entities](#5-configuration)). This should be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
+| `controller_id` | string | _N_ | Controller reference. Used to change the default entity name (enable with [rename_entities](#5-configuration)). This must be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
 | `enabled` | bool | true | Enable/disable the controller |
-| `preamble` | time | '00:00' | The time master turns on before any zone turns on. This is in effect a delay-start timer, controller will turn on before the zones. Can be negative to make the controller turn on _after_ the zone |
-| `postamble` | time | '00:00' | The time master remains on after all zones are off. This is in effect a run-on timer, controller will turn off after the specified delay. Can be negative to make the controller turn off _before_ the zone - this can reduce water hammering |
-| `entity_id` | string/list | | Switch entity_id(s) for example `switch.my_master_valve_1`. More information [here](#14-switch-entities) |
+| `preamble` | [duration](#142-duration-time-period) | '00:00' | The time master turns on before any zone turns on. This is in effect a delay-start timer, controller will turn on before the zones. Can be negative to make the controller turn on _after_ the zone |
+| `postamble` | [duration](#142-duration-time-period) | '00:00' | The time master remains on after all zones are off. This is in effect a run-on timer, controller will turn off after the specified delay. Can be negative to make the controller turn off _before_ the zone - this can reduce water hammering |
+| `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_master_valve_1` |
+| `entity_states` | string | all | Actions to perform on `entity_id`. Possible values: all, on, off, none |
 | `all_zones_config` | object | _[All Zones Object](#52-all-zone-objects)_ | Shorthand default for all zones |
+| `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
+| `queue_manual` | bool | false | Manual runs should be queued or run immediately |
+| `user` | object | | See _[User Object](#511-user-object)_ |
+| `volume` | object | | See _[Volume Object](#512-volume-object)_ |
 
 ### 5.2. All Zone Objects
 
@@ -215,10 +246,16 @@ This object is useful when the same settings are required for each zone. It is s
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `minimum` | time | | The minimum run time |
-| `maximum` | time | | The maximum run time |
-| `future_span` | time | | Run queue look ahead |
+| `minimum` | [duration](#142-duration-time-period) | | The minimum run time |
+| `maximum` | [duration](#142-duration-time-period) | | The maximum run time |
+| `duration` | [duration](#142-duration-time-period) | | The default run time |
+| `future_span` | number | 3 | Run queue look ahead in days |
+| `allow_manual` | bool | false | Allow manual run even when disabled |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
+| `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
+| `user` | object | | See _[User Object](#511-user-object)_ |
+| `entity_states` | string | all | Actions to perform on `entity_id`. Possible values: all, on, off, none |
+| `volume` | object | | See _[Volume Object](#512-volume-object)_ |
 
 ### 5.3. Zone Objects
 
@@ -227,14 +264,21 @@ The zone object manages a collection of schedules. There must be at least one zo
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Optional) |
-| `zone_id` | string | _N_ | Zone reference. Used for sequencing and to rename the entity. This should be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number. Set [rename_entities](#5-configuration) to alter the entity _id of the sensor |
+| `zone_id` | string | _N_ | Zone reference. Used for sequencing and to rename the entity. This must be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number. Set [rename_entities](#5-configuration) to alter the entity _id of the sensor |
 | `name` | string | Zone _N_ | Friendly name for the zone |
 | `enabled` | bool | true | Enable/disable the zone |
-| `minimum` | time | '00:01' | The minimum run time |
-| `maximum` | time | | The maximum run time |
+| `minimum` | [duration](#142-duration-time-period) | '00:01' | The minimum run time |
+| `maximum` | [duration](#142-duration-time-period) | | The maximum run time |
+| `threshold` | [duration](#142-duration-time-period) | | The zone will not run until the duration meets the threshold |
+| `duration` | [duration](#142-duration-time-period) | | The default run time. Used when no `time` is provided for a manual run |
 | `future_span` | number | 3 | Number of days to look ahead |
-| `entity_id` | string/list | | Switch entity_id(s) for example `switch.my_zone_valve_1`. More information [here](#14-switch-entities) |
+| `allow_manual` | bool | false | Allow manual run even when disabled |
+| `entity_id` | [switch_entity](#143-switch-entities) | | Switch entity_id(s) for example `switch.my_zone_valve_1` |
+| `entity_states` | string | all | Actions to perform on `entity_id`. Possible values: all, on, off, none |
 | `show` | object | | See _[Zone Show Object](#54-zone-show-object)_ |
+| `check_back` | object | | See _[Check Back Object](#510-check-back-object)_ |
+| `user` | object | | See _[User Object](#511-user-object)_ |
+| `volume` | object | | See _[Volume Object](#512-volume-object)_ |
 
 ### 5.4. Zone Show Object
 
@@ -243,38 +287,60 @@ These are various options to reveal attributes on the zone entity (only one for 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `timeline` | bool | false | Show the zone timeline. This will expose an attribute called `timeline` on the zone entity |
+| `config` | bool | false | Show the zone configuration. This will expose an attribute called `configuration` on the zone entity with JSON encoded configuration objects |
 
 ### 5.5. Schedule Objects
 
 Schedules are future events, _not_ dates for example Mondays at sunrise.
 
-The schedule can have the commencement or completion fixed to a time or event with the `anchor` parameter. Any adjustments to the duration will alter the start time if `finish` is specified or the completion time if `start` is specified. Note: If anchoring to `finish` and the schedule can not complete before the specified time then the run will defer to the following day. This is an important consideration if adjusting run times dynamically as it may lead to a 'skipping' situation. Ensure there is sufficient time to complete the run when making adjustments. See _[here](#74-service-adjust_time)_ for more information on adjusting runs times.
+The schedule can have the commencement or completion fixed to a time or event with the `anchor` parameter. Any adjustments to the duration will alter the start time if `finish` is specified or the completion time if `start` is specified. Note: If anchoring to `finish` and the schedule can not complete before the specified time then the run will defer to the following day. This is an important consideration if adjusting run times dynamically as it may lead to a 'skipping' situation. Ensure there is sufficient time to complete the run when making adjustments. See _[here](#76-service-adjust_time)_ for more information on adjusting runs times.
 
-The parameters `weekday`, `day` and `month` are date filters. If not specified then all dates qualify.
-
-Tip: In some ojects a schedule is required (sequence for example). However if you do not wish it to automatically operate and have it soley for manual operation then add a `month: [feb]` and `day: [31]` filters.
+The parameters `weekday`, `day`, `month` and `from/until` are date filters. If not specified then all dates qualify.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `time` | time/_[Sun Event](#56-sun-event)_ | **Required** | The start time. Either a time (07:30) or sun event |
+| `time` | [time](#147-time-time-of-day)/_[Sun Event](#551-sun-event)_/_[Crontab](#552-crontab)_ | **Required** | The start time. Either a time (07:30), sun event or cron expression |
 | `anchor` | string | start | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
-| `duration` | time | | The length of time to run. Required for zones and optional for sequences |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. Required for zones and optional for sequences |
 | `name` | string | Schedule _N_ | Friendly name for the schedule |
 | `weekday` | list | | The days of week to run [mon, tue...sun] |
-| `day` | list | | Days of month to run [1, 2...31]/odd/even |
+| `day` | list/string/_[Every `n` days](#553-every-n-days)_ | | Days of month to run [1, 2...31]/odd/even/_[Every `n` days](#553-every-n-days)_ |
 | `month` | list | | Months of year to run [jan, feb...dec] |
+| `enabled` | bool | true | Enable/disable the schedule |
+| `schedule_id` | string | | A unique identifier across all schedules. This must be in [snake_case](#13-snake-case) style |
+| `from` | string | see below* | Start date in the year. Format is `dd mmm` for example `15 Mar` |
+| `until` | string | see below*| Last date in the year. Format is `dd mmm` for example `15 Sep` |
 
-### 5.6. Sun Event
+\* `from` and `until` are mutually inclusive.
+
+#### 5.5.1 Sun Event
 
 Leave the time value in the _[Schedule Objects](#55-schedule-objects)_ blank and add the following object. An optional `before` or `after` time can be specified.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `sun` | string | **Required** | `sunrise` or `sunset` |
-| `before` | time | '00:00' | Time before the event |
-| `after` | time | '00:00' | Time after the event |
+| `before` | [duration](#142-duration-time-period) | '00:00' | Time before the event |
+| `after` | [duration](#142-duration-time-period) | '00:00' | Time after the event |
 
-### 5.7. Sequence Objects
+#### 5.5.2 Crontab
+
+Leave the time value in the _[Schedule Objects](#55-schedule-objects)_ blank and add the following object.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `cron` | string | **Required** | A valid cron expression. Details can be found [here](https://github.com/josiahcarlson/parse-crontab) |
+
+#### 5.5.3 Every `n` Days
+
+Set the day value in the _[Schedule Objects](#55-schedule-objects)_ to a dictionary with the following keys.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `every_n_days` | number | **Required** | The interval between runs. |
+| `start_n_days` | date | **Required** | The start date for the interval, you can alternate multiple schdules by offseting this by `every_n_days`. |
+
+### 5.6. Sequence Objects
 
 Sequences allow zones to run one at a time in a particular order with a delay in between. This is a type of watering 'playlist'. If a delay is specified and a pump or master valve is operated by the controller then consider the postamble setting in the _[Controller Object](#51-controller-objects)_. Set this to the largest delay to prevent pump on/off operations.
 
@@ -297,29 +363,91 @@ Sequences directly descend from a controller and are loosely connected to a zone
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
-| `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Must have at least one). Note: `duration` if specified is the total run time for the sequence, see below for more details |
-| `zones` | list | _[Sequence Zone Objects](#58-sequence-zone-objects)_ | Zone details (Must have at least one) |
-| `delay` | time | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#58-sequence-zone-objects)_ |
-| `duration` | time | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#58-sequence-zone-objects)_ |
+| `schedules` | list | _[Schedule Objects](#55-schedule-objects)_ | Schedule details (Optional). Note: `duration` if specified is the total run time for the sequence, see below for more details |
+| `zones` | list | _[Sequence Zone Objects](#57-sequence-zone-objects)_ | Zone details (Must have at least one) |
+| `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_. Can be negative to make the next zone on _before_ the current zone has finished |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run each zone. This value is a default for all _[Sequence Zone Objects](#57-sequence-zone-objects)_ |
 | `repeat` | number | 1 | Number of times to repeat the sequence |
+| `cycle` | [Cycle Object](#561-cycle-object) | | Enable native cycle-and-soak for this sequence, see below |
 | `name` | string | Run _N_ | Friendly name for the sequence |
+| `sequence_id` | string | _N_ | Sequence reference. This must be in [snake_case](#13-snake-case) style with the exception the first character _can_ be a number |
 | `enabled` | bool | true | Enable/disable the sequence |
 
-### 5.8. Sequence Zone Objects
+#### 5.6.1. Cycle Object
+
+Cycle-and-soak splits each zone's *total* run time into several shorter cycles with a soak period in between, so water can infiltrate instead of running off. This is the recommended approach for heavy soils (e.g. clay). It mirrors how commercial controllers (RainMachine, Rain Bird) implement cycle-and-soak: even distribution, a minimum cycle length, a minimum soak floor, and the *other* zones filling the soak window.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `max_duration` | [duration](#142-duration-time-period) | | The runoff threshold — no single cycle runs longer than this. Required to enable splitting |
+| `min_duration` | [duration](#142-duration-time-period) | | The floor — never run a cycle shorter than this. If a zone's total is below this it runs once |
+| `min_soak` | [duration](#142-duration-time-period) | | The guaranteed soak between a zone's own cycles |
+
+How it works, for each zone in the sequence:
+
+1. The number of cycles is derived from the zone's **total** `duration`: `num_cycles = ceil(total / max_duration)`.
+2. The total is distributed **evenly** across those cycles (`per_cycle = total / num_cycles`), so there is no tiny trailing cycle (45 min → 3 × 15, never 15 + 15 + 15 + 0; 35 min → 3 × ~11.7, never 15 + 15 + 5).
+3. The cycle count is capped so `per_cycle` never drops below `min_duration`. A zone whose total is itself below `min_duration` (e.g. a rained-on day) runs once for whatever it needs.
+4. Between a zone's own cycles a soak of at least `min_soak` is guaranteed. The soak is filled by **interleaving the other zones** in the sequence; idle time is inserted only for the remainder needed to reach `min_soak`.
+5. Zones with fewer cycles **complete early and drop out** of later passes, rather than being padded to match the longest zone.
+6. Within each pass the zones run one at a time (the hardware constraint), **ordered by the number of cycles each has left** — the zone with the most remaining cycles goes first, ties broken by configuration order. This front-loads the busiest zones so their soak windows are filled by the others with the least idle time. Separate sequences still run concurrently.
+
+```yaml
+sequences:
+  - name: "Bib 1 - Front/Side"
+    cycle:
+      max_duration: "00:15"   # runoff threshold; cap per cycle
+      min_duration: "00:10"   # floor; never run a cycle shorter than this
+      min_soak: "01:00"       # guaranteed soak between a zone's own cycles
+    zones:
+      - zone_id: 1
+        duration: "00:45"     # total; cycle logic derives the per-cycle split
+      - zone_id: 2
+        duration: "00:45"
+      - zone_id: 3
+        duration: "00:45"
+```
+
+Notes:
+
+- The per-cycle split is **re-derived from the zone's total whenever that total changes**, including via the [`adjust_time`](#76-action-adjust_time) action. This makes cycle-and-soak compose cleanly with integrations such as Smart Irrigation that push a *total* daily run time per zone — there is no need to pre-divide by a repeat count. Use `adjust_time` with `actual` (and the `zones` parameter to target a position within the sequence) to set a zone's new total; the cycles are recalculated on the next run.
+- `cycle` is **mutually exclusive with `repeat`**. When `repeat` is greater than 1 the `cycle` block is ignored.
+- Because of the soak windows, a cycle-and-soak sequence occupies a longer wall-clock window than the sum of its run times.
+- The `cycle` block can be set at the **sequence level** (applies to every zone) and/or on an **individual sequence zone**. A zone-level `cycle` overrides the sequence-level values **per field** — e.g. a zone can set its own `max_duration` (a different runoff threshold) while inheriting `min_duration` and `min_soak` from the sequence. A sequence with cycle blocks only on its zones (no sequence-level `cycle`) still enables cycle-and-soak. This is fully backwards compatible: a config with only a sequence-level `cycle` behaves exactly as before.
+
+```yaml
+sequences:
+  - name: "Bib 1 - Front/Side"
+    cycle:
+      max_duration: "00:15"   # sequence default for every zone
+      min_duration: "00:10"
+      min_soak: "01:00"
+    zones:
+      - zone_id: 1
+        duration: "00:45"     # uses the sequence cycle (15-min cap)
+      - zone_id: 2
+        duration: "00:45"
+        cycle:
+          max_duration: "00:08"   # this zone only: 8-min cap; min_duration/min_soak inherited
+```
+
+### 5.7. Sequence Zone Objects
 
 The sequence zone is a reference to the actual zone defined in the _[Zone Objects](#53-zone-objects)_. Ensure the `zone_id`'s match between this object and the zone object. The zone may appear more than once in the case of a split run.
 
 | Name | Type | Default | Description |
 | ---- | ---- | ------- | ----------- |
 | `zone_id` | string/list | **Required** | Zone reference. This must match the `zone_id` in the _[Zone Objects](#53-zone-objects)_ |
-| `delay` | time | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#55-sequence-objects)_ |
-| `duration` | time | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#55-sequence-objects)_ |
+| `delay` | [duration](#142-duration-time-period) | | Delay between zones. This value will override the `delay` setting in the _[Sequence Objects](#56-sequence-objects)_ |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. This value will override the `duration` setting in the _[Sequence Objects](#56-sequence-objects)_. Can be negative to make the next zone on _before_ the current zone has finished |
+| `volume` | number | None | Volume limit. End this sequence zone when the volume has been reached. Requires the _[volume object](#512-volume-object)_ to be configured |
 | `repeat` | number | 1 | Number of times to repeat this zone |
 | `enabled` | bool | true | Enable/disable the sequence zone |
+| `cycle` | [Cycle Object](#561-cycle-object) | | Per-zone cycle-and-soak overrides. Each field set here overrides the matching field in the _[Sequence](#56-sequence-objects)_ `cycle`; unset fields fall back to the sequence value |
 
 Special note for [schedules](#55-schedule-objects) and the `duration` parameter contained within when used with sequences. Each zone in the sequence will be proportionally adjusted to fit the specified duration. For example, if 3 zones were to each run for 10, 20 and 30 minutes respectively (total 1 hour) and the `schedule.duration` parameter specified 30 minutes then each zone would be adjusted to 5, 10 and 15 minutes. Likewise if `schedule.duration` specified 1.5 hours then the zones would be 15, 30 and 45 minutes. Some variation may occur due to rounding of the times to the system boundaries (granularity). This parameter influences the durations specified in the sequence and sequence zone objects.
 
-### 5.9. History Object
+### 5.8. History Object
 
 The `timeline` and `total_today` attributes use history information. This information is read and cached by the history module.
 
@@ -328,13 +456,14 @@ The `timeline` and `total_today` attributes use history information. This inform
 | `enabled` | bool | true | Enable/disable history |
 | `span` | number | 7 | Number of days of history data to fetch |
 | `refresh_interval` | number | 120 | History refresh interval in seconds |
+| `read_delay` | number | 0 | Delay before reading history data in seconds |
 
-#### 5.9.1. Long term statistics (LTS)
+#### 5.8.1. Long term statistics (LTS)
 
 History is typically purged after 10 days. If you wish to retain the `total_today` data beyond this period then setup a Long-Term Statistic sensor. See [here](./packages/irrigation_unlimited_lts.yaml) for an example.
 For more information see [Long-Term Statistics](https://data.home-assistant.io/docs/statistics/)
 
-### 5.10. Clock Object
+### 5.9. Clock Object
 
 This object controls the internal clock mode.
 
@@ -342,7 +471,97 @@ This object controls the internal clock mode.
 | ---- | ---- | ------- | ----------- |
 | `mode` | string | seer | `fixed` or `seer`. Set the clock to fixed (game loop) or seer (event loop) |
 | `show_log` | bool | false | Expose the clock ticks via `next_tick` and `tick_log` attributes in the coordinator entity |
-| `max_log_entiries` | number | 50 | Set the number of entires in the tick log history |
+| `max_log_entries` | number | 50 | Set the number of entries in the tick log history |
+
+### 5.10. Check Back Object
+
+This is used to check the state of the physical switch concurs with the state of the controller or zone. An out of sync can occur due to transmission or communications problems especially with protcols like WiFi, Zigbee or ZWave. The check back will report discrepancies and attempt to resync the switch. Should the resync fail a message will be logged and an [event](#1012-irrigation_unlimited_switch_error-irrigation_unlimited_sync_error) fired. The event can be use for notifications such as an email or phone alert. For more information see [Notifications](#10-notifications)
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `state` | string | all | One of `none`, `all`, `on` or `off` |
+| `delay` | number | 30 | Seconds to wait after switch is turned on or off |
+| `retries` | number | 3 | Number of times to recheck the switch |
+| `resync` | bool | true | Attempt to resync the switch |
+| `toggle` | bool | false | Toggle the switch on/off or off/on instead of attempting to just set the state |
+| `state_on` | string | `on` | The value that represents the `on` state of the switch |
+| `state_off` | string | `off` | The value that repesents the `off` state of the switch |
+| `entity_id` | string | | Optional, use this when switch entity is write only and state is read from another entity. If switch entity is R/W then ignore this parameter |
+
+### 5.11. User Object
+
+The user object is available on the `controller`, `all_zone` and `zone` objects. It is basically a pass through of arbitrary static user defined data. Elements are prefixed and presented as attributes in the entities.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `name` | string/number/bool | | |
+| `name_2` | string/number/bool | | |
+
+\* `name` should be in [snake_case](#13-snake-case) style.
+
+ Here is an example:
+
+ ```yaml
+ controllers:
+    - name: "Test controller 1"
+      user:
+        area: My Farm
+        picture: /my_pic.jpg
+      all_zones_config:
+        user:
+          actuator: KNX 6.1
+      zones:
+        - name: "Zone 1"
+          user:
+            area: Eastern Pastures
+            flow_rate_gallon_per_minute: 25
+            picture: /my_pic.jpg
+            gps: 42.746635,-75.770045
+        - name: "Zone 2"
+```
+
+Thus, the controller and zone present the following attributes:
+
+```yaml
+#Controller 'Test controller 1':
+binary_sensor.irrigation_unlimited_c1_m.user_area = 'My Farm'
+binary_sensor.irrigation_unlimited_c1_m.user_picture = '/my_pic.jpg'
+
+#Zone 1:
+binary_sensor.irrigation_unlimited_c1_z1.user_actuator = 'KNX 6.1' #this is inherited from all_zones_config
+binary_sensor.irrigation_unlimited_c1_z1.user_area = 'Eastern Pastures'
+binary_sensor.irrigation_unlimited_c1_z1.user_flow_rate_gallon_per_minute = '25'
+binary_sensor.irrigation_unlimited_c1_z1.user_picture = '/my_pic.jpg'
+binary_sensor.irrigation_unlimited_c1_z1.user_gps = '42.746635,-75.770045'
+
+#Zone 2:
+binary_sensor.irrigation_unlimited_c1_z2.user_actuator = 'KNX 6.1' #this is inherited from all_zones_config
+
+```
+
+The user defined static data available as attribute may help to customize cards or to present additional data on cards, in particular via the functionality within [entity-multiple-row](type: custom:multiple-entity-row). This [feature](https://github.com/rgc99/irrigation_unlimited/issues/143) maybe further developed and extended to the ```sequence: object``` over time.
+
+### 5.12. Volume Object
+
+The volume object accepts a volume meter and calculates the total volume and flow rate. One volume sensor, perhaps in the main line or feed, can be shared among the zones. In this case use the same entity_id for each zone or setup the volume object in the [all_zones_config](#52-all-zone-objects)
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `entity_id` | str | | The volume sensor. The sensor should be a utility type meter where the reading increments forever |
+| `volume_scale` | number | 1 | Use this to convert to other unit i.e. to or from gallons and litres |
+| `volume_precision` | number | 3 | The number of decimal places to display |
+| `flow_rate_scale` | number | 3600 | Use this to convert to another time unit i.e. hours, minutes, seconds |
+| `flow_rate_precision` | number | 3 | The number of decimal places to display |
+
+If you only have a flow meter and not a volume counter then use the [Integral](https://www.home-assistant.io/integrations/integration/) platform to create one. Here is an example using a Sonoff Smart Water Valve.
+
+```yaml
+integration:
+  - source: sensor.sonoff_swv_volume_flow_rate
+    name: total_volume
+    round: 3
+    method: left
+```
 
 ## 6. Configuration examples
 
@@ -441,6 +660,24 @@ irrigation_unlimited:
         repeat: 12
         schedules:
           - time: "05:00"
+        zones:
+          - zone_id: 1
+```
+
+Similar to above but using the cron scheduler.
+
+```yaml
+# Example to run for 5 min every hour on the hour from 5am to 5pm
+irrigation_unlimited:
+  controllers:
+    zones:
+      - entity_id: "switch.my_switch_1"
+    sequences:
+      - name: "On the hour from 5am to 5pm"
+        duration: "00:05"
+        schedules:
+          - time:
+              cron: "0 5-17 * * *"
         zones:
           - zone_id: 1
 ```
@@ -586,82 +823,130 @@ For a more comprehensive example refer to [here](./examples/all_the_bells_and_wh
 
 4. After setting up configuration.yaml, the operation can be controlled via service calls as shown _[below](#7-services)_. Perform manual runs, adjust watering times, cancel running schedules and enable/disable zones from a _[frontend](#8-frontend)_
 
-## 7. Services
+## 7. Actions
 
-The binary sensor associated with each controller and zone provide several services. The sensors offer the following services:
+The binary sensor associated with each controller and zone provide several services. These sensors offer the following services:
 
 - `enable`
 - `disable`
 - `toggle`
+- `suspend`
 - `cancel`
 - `manual_run`
 - `adjust_time`
+- `load_schedule`
 
-If a controller sensor is targetted then it will effect all its children zones.
+If a controller sensor is targetted then it will effect all its children zones and/or sequences. The `sequence_id` may contain a list of sequences. If an element in the list is a number then it refers to the position of the sequence under the controller i.e. 1st, 2nd etc. If the element contains a string this then refers to the `sequence_id`. Similarly the `zones` may contain a list of zones. If the element in the list contains a number then it refers to the position of the zone under the controller. If the element is a string then it refers to the `zone_id`. For example `sequence_id: [1, 'lawn']` the 1 is a number because it is not enclosed in quotation marks.
 
-### 7.1. Services `enable`, `disable` and `toggle`
+### 7.1. Actions `enable`, `disable` and `toggle`
 
 Enables/disables/toggles the controller, zone, sequence or sequence zone respectively.
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to enable/disable/toggle. |
-| `sequence_id` | yes | Sequence to enable/disable/toggle (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. |
-| `zones` | yes | Zones to enable/disable/toggle (1, 2..N). Within a sequence, zones are numbered by their position starting a 1. A value of 0 means all zones. |
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to enable/disable/toggle. |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to enable/disable/toggle. Entity must be a controller. |
+| `zones` | [number/list](#146-zones) | no | Sequence zones to enable/disable/toggle. |
 
-### 7.2. Service `cancel`
+### 7.2. Actions `pause` and `resume`
+
+Pauses/resumes a sequence. This service call "stops the clock" when `paused` so to speak and "continues to run it" upon `resume`.
+
+This is particularly helpful in a use case scenario where a main water supply is used for both irrigation and ie filling a domestic cold water tank at the same time. If the water pressure is only sufficient for either irrigaton or tank filling, this service call allows to `pause` the irrigation whilst a tank is filled, and then `resumes` irrigation without interrupting the time allocated to the sequences or zones thereof.
+
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Entity_id of a controller or sequence to pause/resume. If a controller entity is selected it will target the sequence or all sequences (see next parameter). If more than one entity_id are to be targeted a group integration helper may be used. |
+| `sequence_id` | [number/list](#145-sequence) | only if entity_id represents a controller | Sequence to pause/resume. The sequence_id is only used when the entity_id is the controller. If sequence_id is set to 0 then all sequences of the controller will be effected. |
+
+There is an example for a [pause-resume button](#86-pause-resume-button) that targets all sequences within all controllers creating a globla `pause` and `resume` button.
+
+### 7.3. Action `suspend`
+
+Suspend operation of a controller, zone, sequence or sequence zone for a period of time. This is like a temporary `disable` that will automatically reset.
+
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to suspend. Entity must be a controller. |
+| `zones` | [number/list](#146-zones) | no | Sequence zones to suspend. |
+| `for` | [duration](#142-duration-time-period) | see below* | Suspend for a period of time. Supports [templating](#144-templating). |
+| `until` | string | see below* | Suspend until a point in time. Format is `%Y-%m-%d %H:%M:%S` for example `2023-08-01 07:30:00`. |
+| `reset` | none | see below* | Reset or cancel the current suspension. |
+
+\* Must have one and only one of `for`, `until` or `reset`.
+
+### 7.4. Action `cancel`
 
 Cancels the current running schedule.
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to cancel.
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to cancel. |
 
-### 7.3. Service `manual_run`
+### 7.5. Action `manual_run`
 
 Turn on the controller or zone for a period of time. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence. Zone times are calculated and rounded to the nearest time boundary. This means the total run time may vary from the specified time.
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to run.
-| `time` | no | Total time to run.
-| `sequence_id` | yes | Sequence to run (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
+| `time` | [duration](#142-duration-time-period) | no | Total time to run. Supports [templating](#144-templating). If not provided or is "0:00:00" then adjusted defaults will be applied |
+| `delay` | [duration](#142-duration-time-period) | no | Delay between runs when queued |
+| `queue` | boolean | no | Queue or run immediately. |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to run. Each zone duration will be adjusted to fit the allocated time, delays are not effected. Note: The time parameter _includes_ inter zone delays. If the total delays are greater than the specified time then the sequence will not run. Entity must be a controller. |
 
-### 7.4. Service `adjust_time`
+### 7.6. Action `adjust_time`
 
-Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
+Adjust the run times. Calling this service will override any previous adjustment i.e. it will _not_ make adjustments on adjustments. For example, if the scheduled duration is 30 minutes calling percent: 150 will make it 45 minutes then calling percent 200 will make it 60 minutes. When a sequence is specified each zone's duration will be auto adjusted as a proportion of the original sequence.
 
 A schedule anchored to a start time will alter the completion time. Likewise a schedule anchored to a finish time will change the commencement time. In this situation ensure there is enough time in the current day for the schedule to complete or it will be deferred to the following day. Adjustments must be made _before_ the scheduled start time. Running schedules will be not affected.
 
-#### 7.4.1. Tip
+Tip: Use forecast and observation data collected by weather integrations in automations to adjust the run times. See [below](#9-automation) for more information.
 
-Use forecast and observation data collected by weather integrations in automations to adjust the run times. See [below](#9-automation) for more information.
+| Service data attribute | Type | Required | Description |
+| ---------------------- | ---- | -------- | ----------- |
+| `entity_id` | [string/list](#141-irrigation-unlimited-entities) | yes | Controller or zone to run. |
+| `actual` | [duration](#142-duration-time-period) | see below* | Specify a new run time. This will replace the existing duration. Supports [templating](#144-templating). |
+| `percentage` | float | see below* | Adjust time by a percentage. Values less than 100 will decrease the run time while values greater than 100 will increase the run time. Supports [templating](#144-templating). |
+| `increase` | [duration](#142-duration-time-period) | see below* | Increase the run time by the specified time. A value of '00:10' will increase the duration by 10 minutes. Value will be capped by the `maximum` setting. Supports [templating](#144-templating). |
+| `decrease` | [duration](#142-duration-time-period) | see below* | Decrease the run time by the specified time. A value of '00:05' will decrease the run time by 5 minutes. Value will be limited by the `minimum` setting. Supports [templating](#144-templating). |
+| `reset` | none | see below* | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings). |
+| `minimum` | [duration](#142-duration-time-period) | no | Set the minimum run time. Supports [templating](#144-templating). |
+| `maximum` | [duration](#142-duration-time-period) | no | Set the maximum run time. Note: The default is no limit. Supports [templating](#144-templating). |
+| `sequence_id` | [number/list](#145-sequence) | no | Sequences to adjust. Entity must be a controller. |
+| `zones` | [number/list](#146-zones) | no | Zones to adjust. |
 
-| Service data attribute | Optional | Description |
-| ---------------------- | -------- | ----------- |
-| `entity_id` | no | Controller or zone to run.
-| `actual` | yes | Specify a new time time. This will replace the existing duration. A time value is required '00:30'.
-| `percentage` | yes | Adjust time by a percentage. A positive float value. Values less than 1 will decrease the run time while values greater than 1 will increase the run time.
-| `increase` | yes | Increase the run time by the specified time. A value of '00:10' will increase the duration by 10 minutes. Value will be capped by the `maximum` setting.
-| `decrease` | yes | Decrease the run time by the specified time. A value of '00:05' will decrease the run time by 5 minutes. Value will be limited by the `minimum` setting.
-| `reset` | yes | Reset adjustment back to the original schedule time (Does not effect minimum or maximum settings).
-| `minimum` | yes | Set the minimum run time.
-| `maximum` | yes | Set the maximum run time. Note: The default is no limit.
-| `sequence_id` | yes | Sequence to adjust (1, 2..N). Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. Each zone duration will be adjusted to fit the allocated time.
-| `zones` | yes | Zones to adjust (1, 2..N). Within a sequence, zones are numbered by their position starting a 1. A value of 0 means all zones.
+\* Must have one and only one of `actual`, `percentage`, `increase`, `decrease` or `reset`.
 
-### 7.5. Service `reload`
+### 7.7. Action `load_schedule`
+
+Reload a schedule. This will allow an edit to an existing schedule. All fields are optional except the `schedule_id`. If a field is specified then it is overwritten otherwise it is left untouched. This service does NOT save the new schedule in the event of a reload or HA restart, it will revert to the original configuration.
+
+| Name | Type | Default | Description |
+| ---- | ---- | ------- | ----------- |
+| `schedule_id` | string | **Required** | The unique schedule identifier. The target [schedule](#55-schedule-objects) must have the unique `schedule_id` set |
+| `time` | [time](#147-time-time-of-day)/_[Sun Event](#551-sun-event)_/_[Crontab](#552-crontab)_ | | The start time. Either a time (07:30), sun event or cron expression |
+| `anchor` | string | | `start` or `finish`. Sets the schedule to commence or complete at the specified time |
+| `duration` | [duration](#142-duration-time-period) | | The length of time to run. Required for zones and optional for sequences |
+| `name` | string | | Friendly name for the schedule |
+| `weekday` | list | | The days of week to run [mon, tue...sun] |
+| `day` | list/string/_[Every `n` days](#553-every-n-days)_ | | Days of month to run [1, 2...31]/odd/even/_[Every `n` days](#553-every-n-days)_ |
+| `month` | list | | Months of year to run [jan, feb...dec] |
+| `enabled` | bool | | Enable/disable the schedule |
+
+### 7.8. Action `reload`
 
 Reload the YAML configuration file. Do not add or delete controllers or zones, they will not work because of the associated entities which are created on startup. This may be addressed in a future release, however, suggested work around is to set enabled to false to effectively disable/delete. All other settings can be changed including schedules. You will find the control in Configuration -> Server Controls -> YAML configuration reloading. Note: since version 2021.10.0 all settings can be changed including new controllers and zones.
 
-### 7.6. Service call access roadmap
+### 7.9. Action call access roadmap
 
 A reminder that sequences directly descend from a controller. Therefore service calls that manipulate a sequence should address the parent controller. An entity_id of a zone when trying to adjust a sequence will most likely not have the desired effect.
 
 The combination of three key parameters `entity_id`, `sequence_id` and `zones` will target the various sections of the configuration.
 
 - `entity_id:` This will be either the controller or zone entity.
-- `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on.
+- `sequence_id:` This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on. As a shortcut, `sequence_id` will alter _all_ sequences.
 - `zones:` This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zone references in the sequence. May also take a list `zones: [1,3,5]`
 
 The following is a valid irrigation unlimited configuration. It shows how various points can be changed using the service calls above. Example numbers have the nomenclature C.Z.S.R = Controller.Zone.Sequence.zoneReference. If Z is zero then the `entity_id` must be the controller/master i.e. binary_sensor.irrigation_unlimited_cN_m. If Z is not zero then then entity_id is the zone i.e. binary_sensor.irrigation_unlimited_cN_zN.
@@ -740,7 +1025,7 @@ irrigation_unlimited:
 
 Notes:
 
-1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplicity however all methods are available as described _[above](#74-service-adjust_time)_.
+1. The `adjust_time` service call examples show the adjustment method of `actual`. This is shown for simplicity however all methods are available as described _[above](#76-service-adjust_time)_.
 2. The `enable` service call can also be `disable` or `toggle`.
 
 ```yaml
@@ -1010,10 +1295,10 @@ Minimum version 2021.12.0 of Irrigation Unlimited is required for this feature. 
 ```yaml
 irrigation_unlimited:
   controllers:
+    all_zones_config: # <= Add these three lines <─┐
+      show: # <= to the configuration            <─┤
+        timeline: true # <= for all zones        <─┘
     zones:
-      all_zones_config: # <= Add these three lines <─┐
-        show: # <= to the configuration            <─┤
-          timeline: true # <= for all zones        <─┘
       entity_id: "switch.my_switch"
       show: # <= Add these two lines to the                    <─┐
         timeline: true # <= configuration for individual zones <─┘
@@ -1060,6 +1345,66 @@ This card will enable or disable a zone from a dropdown list, see [requirements]
 
 ![enable_disable_card](./examples/card_enable_disable.png)
 
+### 8.6. Pause-resume button
+
+The following yaml script can be attached to a front end button to [`pause` and `resume`](#72-services-pause-and-resume) all zones of all sequences of all UI controllers.
+
+![pause_resume_button](./examples/pause-resume-button.png)
+
+Please note that a group helper for all UI controllers is required for this code sample to work.
+
+```yaml
+group:
+  irrigation_controllers:
+  name: Irrigation Controllers
+  entities:
+    #Add at least one UI controller entity here
+    - binary_sensor.irrigation_unlimited_c1_m
+    - binary_sensor.irrigation_unlimited_c2_m
+    - binary_sensor.irrigation_unlimited_c3_m
+    - binary_sensor.irrigation_unlimited_c4_m
+    - binary_sensor.irrigation_unlimited_c5_m
+    - binary_sensor.irrigation_unlimited_c6_m
+    #Add as many controller entities as you have configured
+
+script:
+  toggle_irrigation:
+      alias: "Irrigation: Pause/Resume all irrigation unlimited controllers"
+      sequence:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {% set paused_sensors = states.binary_sensor
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$')
+                        | selectattr('attributes.status', 'equalto', 'paused')
+                        | map(attribute='entity_id')
+                        | list %}
+                    {{ paused_sensors | length > 0 }}
+              sequence:
+                - service: irrigation_unlimited.resume
+                  data:
+                    entity_id: group.irrigation_controllers
+                    sequence_id: 0
+            - conditions:
+                - condition: template
+                  value_template: >-
+                    {% set paused_sensors = states.binary_sensor
+                        | selectattr('entity_id', 'match', '^binary_sensor\.irrigation_unlimited_c\d+_s\d+$')
+                        | selectattr('attributes.status', 'equalto', 'paused')
+                        | map(attribute='entity_id')
+                        | list %}
+                    {{ paused_sensors | length == 0 and states('group.irrigation_controllers') == 'on' }}
+              sequence:
+                - service: irrigation_unlimited.pause
+                  data:
+                    entity_id: group.irrigation_controllers
+                    sequence_id: 0
+      icon: mdi:play-pause
+```
+
+[Issue 142](https://github.com/rgc99/irrigation_unlimited/issues/142) has a detailed discussion relating the [`pause` and `resume` service call](#72-services-pause-and-resume) and its various use cases.
+
 ## 9. Automation
 
 Due to the many weather integrations available and their relevance to your situation, there is realistically no way to provide a built in 'auto-adjustment' feature. Therefore, no attempt has been made to include a solution and this also makes the integration more independent and flexible. Run time adjustment is achieved by setting up sensor(s) that consume weather information such as rainfall and temperature but could factor in wind speed, solar radiation etc. to determine if more or less watering time is required. You might also consider using forecast information... A service call is then made to irrigation unlimited to adjust the run times. This does mean some knowledge of creating automations is required.
@@ -1068,7 +1413,7 @@ On a personal note, I use the national weather service [BOM](http://www.bom.gov.
 
 You will find my adjustment automation [here](./packages/irrigation_unlimited_adjustment.yaml) which feeds off the temperature and rainfall observation data. There is a card [here](./lovelace/observations_card.yaml) which displays this information (uses [multiple-entity-row](https://github.com/benct/lovelace-multiple-entity-row)). Some ideas were gleaned from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
-### 9.1. ESPHome
+### 9.1. ESPHome soil moisture adjustment
 
 This example uses the data from a soil moisture probe created in [ESPHome](https://esphome.io/) to adjust the run times.
 
@@ -1105,59 +1450,203 @@ automation:
 
 ### 9.2. HAsmartirrigation
 
-[HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs at 23:30 and takes the calculated run time from HAsmartirrigation and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
+[HAsmartirrigation](https://github.com/jeroenterheerdt/HAsmartirrigation) calculates the time to run your irrigation system to compensate for moisture lost by evaporation / evapotranspiration. The following automation runs when HASmartIrrigation calculates the run times and updates Irrigation Unlimited with the new watering time. It then calls HAsmartirrigation to reset the bucket when the irrigation has run.
 
-The example below offers two methods for a single zone or a sequence.
-
+PLEASE NOTE: You must change the `entity_id` lines to match your specific situation. There are four (4) places that need to be updated. The automation WILL NOT RUN as is.
 ```yaml
 # Example automation for HAsmartirrigation integration (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
 automation:
-  - id: 'IU1653097957047'
-    alias: Smart Irrigation adjustment
+  - alias: Smart Irrigation adjustment
+    id: "IU1653097957047"
     description: Adjust watering times based on smart irrigation calculations
-    trigger:
-      - platform: time
-        at: "23:30"
-    condition:
-      condition: and
-      conditions:
-        - "{{ states('sensor.smart_irrigation_daily_adjusted_run_time') | float(-1) >= 0 }}"
-    action:
-      - service: irrigation_unlimited.adjust_time
-        data:
-          actual: "{{ timedelta(seconds=states('sensor.smart_irrigation_daily_adjusted_run_time') | int(0)) }}"
-          # -------------------------------------------------------------------
-          # Please see documentation regarding the adjust_time service call.
-          # Choose an option below. Comment out/delete as needed. This will NOT work as is.
-          # 1. Adjust a single zone. Change the zone as required
-          # entity_id: binary_sensor.irrigation_unlimited_c1_z1
-          # 2. Adjust a sequence. Change the sequence_id as required
-          # entity_id: binary_sensor.irrigation_unlimited_c1_m
-          # sequence_id: 1
-          # -------------------------------------------------------------------
     mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.smart_irrigation_[zone_name] # <== Change the Smart Irrigation entity_id as required
+        to: null
+    actions:
+      - action: irrigation_unlimited.adjust_time
+        data:
+          actual: "{{ timedelta(seconds=trigger.to_state.state | int(0)) }}"
+          entity_id: binary_sensor.irrigation_unlimited_c1_s1 # <== Change the Irrigation Unlimited sequence entity_id as required
 
-  - id: 'IU1653098247170'
-    alias: Smart Irrigation reset bucket
+  - alias: Smart Irrigation reset bucket
+    id: "IU1653098247170"
     description: Resets the Smart Irrigation bucket after watering
-    trigger:
-      - platform: state
-        entity_id:
-          # Add Irrigation Unlimited sensors here
-          - binary_sensor.irrigation_unlimited_c1_m
-        from: "on"
-        to: "off"
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: irrigation_unlimited_finish
     condition:
-      - condition: numeric_state
-        above: '0'
-        entity_id: sensor.smart_irrigation_daily_adjusted_run_time
+      - "{{ trigger.event.data.schedule.index is not none }}" # Not a manual run
+      - "{{ trigger.event.data.entity_id == 'binary_sensor.irrigation_unlimited_c1_s1' }}" # <== Match to the Irrigation Unlimited entity_id as above
+    actions:
+      - action: smart_irrigation.reset_bucket
+        entity_id: sensor.smart_irrigation_[zone_name] # <== Match to the Smart Irrigation entity_id as above
+        data: {}
+```
+
+### 9.3. Overnight watering
+
+Run from sunset to sunrise. This automation will run 1 hour before sunset. It uses the sun integration to calculate the duration from sunset to sunrise and then set this via the adjust_time service call. Create a schedule that starts at sunset and just put in a nominal duration. The duration will be replaced by the service call. Please take note of the comments in the automation as you must change it to suit your configuration.
+
+```yaml
+automation:
+  - id: 'IU1655789912900'
+    alias: IU Overnight
+    description: Run irrigation from sunset to sunrise
+    trigger:
+      - platform: sun
+        event: sunset
+        offset: -00:60:00
+    condition: []
     action:
-      - service: smart_irrigation.smart_irrigation_reset_bucket
+      service: irrigation_unlimited.adjust_time
+      data:
+        # -------------------------------------------------------------------
+        # Please see documentation regarding the adjust_time service call.
+        # Choose an option below. Comment out/delete/change as needed.
+        # *** This will NOT work as is. ***
+        # 1. Adjust a single zone. Change the zone as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_z1
+        # 2. Adjust a sequence. Change the sequence_id as required
+        # entity_id: binary_sensor.irrigation_unlimited_c1_m
+        # sequence_id: 1
+        # -------------------------------------------------------------------
+        actual: >
+          {% set t1 = as_datetime(state_attr("sun.sun", "next_setting")).replace(microsecond=0) %}
+          {% set t2 = as_datetime(state_attr("sun.sun", "next_rising")).replace(microsecond=0) %}
+          {{ t2 - t1 }}
+    mode: single
+```
+
+### 9.4. Sonoff Smart Water Valve auto shutoff switch
+
+This example controls a [Sonoff Smart Water Valve](https://sonoff.tech/products/sonoff-zigbee-smart-water-valve) and will turn off after the specified time. Note Sonoff firmware 1.0.4 is required and Irrigation Unlimited version 2025.10.0. Learn about switch entities [here](#143-switch-entities) and valve events [here](#1013-irrigation_unlimited_valve_on-irrigation_unlimited_valve_off)
+
+```yaml
+  # configuration.yaml
+  ...
+  entity_id: switch.sonoff_swv
+  entity_states: 'off' # Only send off actions to the entity_id
+  ...
+
+  # Automation to handle the on action via a custom Zigbee command. This
+  # automation sends an on time which will act as a deadman switch. Use
+  # only one of the actions below ZHA or zigbee2mqtt
+  alias: SWV
+  description: Set the on time for the Sonoff Smart Water Valve
+  triggers:
+    - trigger: event
+      event_type: irrigation_unlimited_valve_on
+  conditions:
+    - condition: template
+      value_template: "{{trigger.event.data.entity_id in entity_to_device}}"
+  actions:
+    # Action using ZHA
+    - action: zha.issue_zigbee_cluster_command
+      data:
+        ieee: "{{entity_to_device[trigger.event.data.entity_id]}}"
+        cluster_type: in
+        endpoint_id: 1
+        cluster_id: 6
+        command: 66
+        params:
+          on_off_control: []
+          on_time: "{{trigger.event.data.duration}}"
+          off_wait_time: 0
+        command_type: server
+
+    # Action using zigbee2mqtt. The device name must match the entity name
+    - action: mqtt.publish
+      metadata: {}
+      data:
+        evaluate_payload: true
+        qos: 0
+        retain: false
+        topic: zigbee2mqtt/{{entity_to_device[trigger.event.data.entity_id]}}/set
+        payload: |-
+          {
+            "state": "ON",
+            "on_time": "{{trigger.event.data.duration}}"
+          }
+
+  variables:
+    # Add your Zigbee devices to this table.
+    # For ZHA you will need to find the ieee address of the device.
+    # For MQTT you will need the device name
+    entity_to_device: |
+      {{ dict([
+        ('your_entity', 'your_ieee ZHA or device name MQTT'),
+        ('switch.sonoff_swv_zha', 'c4:d8:c8:ff:fe:1f:bf:6c'),
+        ('switch.sonoff_swv_mmqt', 'mmqt_device_name'),
+      ]) }}
+  mode: queued
+```
+
+### 9.5. ESPHome auto shutoff switch
+
+Here we use [ESPHome](https://esphome.io) to create a one shot timer. The valve will automatically turn off after the specified duration
+
+```yaml
+#ESPHome configuration YAML
+api:
+  ...
+  actions:
+    - action: start_irrigation
+      variables:
+        duration: int # Time in seconds
+      then:
+        - lambda: id(one_shot_timer)->execute(duration * 1000);
+script:
+  id: one_shot_timer
+  parameters:
+    on_time: int
+  mode: restart
+  then:
+    - switch.turn_on: valve
+    - delay: !lambda 'return on_time;'
+    - switch.turn_off: valve
+
+switch:
+  - platform: gpio
+    name: Valve
+    id: valve
+    pin: GPIO19
+```
+
+The above will create a `esphome.start_irrigation` action in Home Assistant. Use this to create an automation. You will need to adjust `my_entity_id` to suit your situation
+
+```yaml
+  # Automation to handle the on action via a esphome action
+  alias: ESPHome valve
+  description: Turn on a ESPHome valve with a duration
+  triggers:
+    - trigger: event
+      event_type: irrigation_unlimited_valve_on
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.event.data.entity_id == my_entity_id }}"
+  actions:
+    - action: esphome.start_irrigation
+      data:
+        duration: "{{ trigger.event.data.duration }}"
+  mode: queued
+```
+
+Add a `entity_states:` parameter to the Irrigation Unlimited configuration to prevent the turn_on command
+
+```yaml
+  # configuration.yaml
+  ...
+  entity_id: switch.sonoff_swv
+  entity_states: 'off' # Only send off actions to the entity_id
+  ...
 ```
 
 ## 10. Notifications
 
-This section shows how to send a notification when a sequence starts or finishes. Messages can be sent for example via email (SMTP), push notification to mobile phones, twitter and many [others](https://www.home-assistant.io/integrations/#notifications). See [here](https://www.home-assistant.io/integrations/notify/) for more information on notifications in Home Assistant. Note that it is not limited to sending notifications but many other [actions](https://www.home-assistant.io/docs/automation/action/) are available.
+This section shows how to send a notification when a sequence starts or finishes. Messages can be sent for example via email (SMTP), push notification to mobile phones, twitter and many [others](https://www.home-assistant.io/integrations/#notifications). See [here](https://www.home-assistant.io/integrations/notify/) for more information on notifications in Home Assistant. Note that it is not limited to sending notifications but many other [actions](https://www.home-assistant.io/docs/automation/action/) are available. There is quite a lot of information on using notifications in Home Assistant on the web. Try Google, YouTube etc. for some great information and tips.
 
 ### 10.1. Events
 
@@ -1169,13 +1658,27 @@ These events are fired when a sequence starts and finishes. The `trigger.event.d
 
 | Field | Description |
 | ----- | ----------- |
+| `entity_id` | The sequence entity i.e. `binary_sensor.irrigation_unlimted_c1_s1`. |
+| `iu_id` | Irrigation Unlimited unique id i.e. `c1_s1`. |
+| `id` | User defined id values. A combination of the `controller_id` and `zone_id` values. |
+| `volume` | Total volume. |
+| `zone_ids` | The zones scheduled to run. |
 | `controller.index` | The sequential index of the controller. |
+| `controller.controller_id` | The unique id of the controller. |
 | `controller.name` | The friendly name of the controller. |
 | `sequence.index` | The sequential index of the sequence. |
+| `sequence.sequence_id` | The unique id of the sequence. |
 | `sequence.name` | The friendly name of the sequence. |
 | `schedule.index` | The sequential index of the schedule. Note: This maybe blank/empty(None) if it was a manual run - useful as a test. |
+| `schedule.schedule_id` | The unique id of the schedule. Note: This maybe blank/empty(None) if it was a manual run. |
 | `schedule.name` | The friendly name of the schedule. |
 | `run.duration` | The run time of the sequence. |
+| `zones` | Summary list of zone run information. |
+| `zones[N].index` | The sequential index of the zone. |
+| `zones[N].name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
+| `zones[N].zone_id` | The unique id of the zone within the controller. |
+| `zones[N].duration` | The run time of the zone. |
+| `zones[N].volume` | The volume of the zone. |
 
 This example displays a [persistent notification](https://www.home-assistant.io/integrations/persistent_notification/) on the front end when a sequence completes. Note the use of [templating](https://www.home-assistant.io/docs/configuration/templating/) to construct a specific message. Although not used here, this platform also supports markdown.
 
@@ -1201,7 +1704,104 @@ Here is the notification displayed in the Home Assistant web interface.
 
 ![notification](./examples/persistent_notification.png)
 
-There is quite a lot of information on using notifications in Home Assistant on the web. Try Google, YouTube etc. for some great information and tips.
+#### 10.1.2. irrigation_unlimited_switch_error, irrigation_unlimited_sync_error
+
+These events are fired during a [check back](#510-check-back-object) operation. A `irrigation_unlimited_sync_error` is fired if the physical switch is found to be out of sync. This message will repeat for each attempted resync. After the specified number of retries have been exhusted a `irrigation_unlimited_switch_error` is fired. Additional information is available that can be used in automation scripts.
+
+| Field | Description |
+| ----- | ----------- |
+| `entity_id` | A CSV list of entities. |
+| `expected` | The expected state of the switch. |
+| `controller.index` | The sequential index of the controller. |
+| `controller.name` | The friendly name of the controller. |
+| `zone.index` | The sequential index of the zone. |
+| `zone.name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
+
+Example to send an email on switch failure. There are two parts to this procedure, the first is to setup an email notification for your provider. See [here](https://www.home-assistant.io/integrations/smtp/#google-mail) for a google mail example. The next is to use the notifier.
+
+```yaml
+automation:
+  - id: "IU1653340138435"
+    alias: "Irrigation Unlimited Switch Error"
+    description: "Email a switch syncronisation error"
+    trigger:
+      - platform: event
+        event_type:
+          # - irrigation_unlimited_sync_error
+          - irrigation_unlimited_switch_error
+    action:
+      - service: notify.NOTIFIER_NAME # Make sure this matches the "NOTIFIER_NAME" in the smtp setup
+        data:
+          title: "Irrigation Switch Error"
+          message: |
+            Type: {{ trigger.event.event_type }}
+            Time: {{ as_local(trigger.event.time_fired).strftime('%c') }}
+            Expected: {{ trigger.event.data.expected }}
+            Controller: {{ trigger.event.data.controller.index + 1 }} {{ trigger.event.data.controller.name }}
+            {% if trigger.event.data.zone.index is not none %}
+              Zone: {{ trigger.event.data.zone.index + 1 }} {{ trigger.event.data.zone.name }}
+            {% endif %}
+            Entity: {{ trigger.event.data.entity_id }}
+```
+
+#### 10.1.3. irrigation_unlimited_valve_on, irrigation_unlimited_valve_off
+
+These events are fired when the valve changes state. Listen for these events to create automations and custom actions. More information is available on using these events [here](#143-switch-entities). Additional data is available that can be used in automation scripts.
+
+| Field | Description |
+| ----- | ----------- |
+| `iu_id` | Irrigation Unlimited unique id i.e. `c1_m`, `c1_z1`. |
+| `id` | User defined id values. A combination of the `controller_id` and `zone_id` values. |
+| `type` | 1 = Normal, 2 = Resync attempt via a [check back](#510-check-back-object) operation, 3 = Run on/Run change. The current duration has been extended. |
+| `entity_id` | The target entity. |
+| `duration` | Time in seconds. |
+| `volume` | Total volume. |
+| `flow_rate` | Caclulated flow rate. |
+| `controller.index` | The sequential index of the controller. |
+| `controller.controller_id ` | The unique id of the controller. |
+| `controller.name` | The friendly name of the controller. |
+| `zone.index` | The sequential index of the zone. |
+| `zone.zone_id` | The unique id of the zone within the controller. |
+| `zone.name` | The friendly name of the zone. Note: This maybe blank/empty (None) if it was the controller switch. |
+
+Example to send an email on too little (blockage) or too much (burst pipe) water.
+1. Setup an email notification. See [here](https://www.home-assistant.io/integrations/smtp/#google-mail) for a google mail notification example.
+2. Setup volume monitoring as described in [Volume Object](#512-volume-object).
+3. Create the following automation.
+
+```yaml
+alias: Irrigation volume checker
+description: Irrigation Unlimited Volume Checker
+triggers:
+  - trigger: event
+    event_type:
+      - irrigation_unlimited_valve_off
+conditions:
+  - condition: template
+    value_template: >-
+      {{ id in volumes and (vol < volumes[id]['min'] or vol >
+      volumes[id]['max']) }}
+actions:
+  - action: notify.NOTIFIER_NAME # Make sure this matches the "NOTIFIER_NAME" in the smtp setup
+    data:
+      title: Irrigation Volume Error
+      message: >
+        Time: {{ as_local(trigger.event.time_fired).strftime('%c') }}
+        Controller: {{ trigger.event.data.controller.index + 1 }} {{ trigger.event.data.controller.name }}
+        Zone: {{ trigger.event.data.zone.index + 1 }} {{ trigger.event.data.zone.name }}
+        Volume: {{ vol }}
+mode: queued
+variables:
+  id: "{{ trigger.event.data.iu_id }}"
+  vol: "{{ trigger.event.data.volume | float(0) }}"
+  # Fill in this table of zones and their minimum and maximum volumes
+  volumes: |
+    {{ dict([
+      ('c1_z1', {'min': 5, 'max': 25}),
+      ('c1_z3', {'min': 10, 'max': 80}),
+      ('c1_z4', {'min': 10, 'max': 100}),
+    ]) }}
+```
 
 ## 11. Troubleshooting
 
@@ -1233,7 +1833,13 @@ There must be a `irrigation_unlimited:` section in the configuration. If the sec
 
 The above shows that Irrigation Unlimited loaded successfully. Note: The lines will most likely not be together so do a search. If it failed then use the minimal configuration shown _[here](#61-minimal-configuration)_. This is a good starting point to get acquainted with this integration.
 
-### 11.3. Logging
+### 11.3. Community Forum
+
+Have a question then head over to the Irrigation Unlimited [community forum](https://community.home-assistant.io/t/irrigation-unlimited-integration/325468/401). If discussing a problem it is best to post the configuration along with the [log](#114-logging).
+
+### 11.4. Logging
+
+These messages are very important in helping to determine any problem. Go into Settings -> System -> Logs. In the search box put in `irrigation_unlimited` (Note the underscore between the two words) and press the **LOAD FULL LOGS** button. The log should always accompany the configuration when seeking help on the [community forum](#113-community-forum) or opening an [issue](#115-last-but-not-least).
 
 For more detailed information set your logging for the component to debug:
 
@@ -1244,23 +1850,80 @@ logger:
     custom_components.irrigation_unlimited: debug
 ```
 
-### 11.4. Last but not least
+### 11.5. Last but not least
 
-If all else fails please open an [issue](https://github.com/rgc99/irrigation_unlimited/issues).
+If all else fails please open an [issue](https://github.com/rgc99/irrigation_unlimited/issues). Please be sure to post the configuration _AND_ the log.
 
 ## 12. Notes
 
 1. All feature requests, issues and questions are welcome.
 
-<a href="https://www.buymeacoffee.com/rgc99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height=40px width=144px></a><!---->
+<a href="https://www.buymeacoffee.com/rgc99" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height=40px width=144px></a><!-- markdownlint-disable-line MD033 -->
 
 ## 13. Snake case
 
- The [controller_id](#51-controller-objects) and [zone_id](#52-zone-objects) identifiers need to be in snake_case like `my_garden`, `vege_patch`, `rose_bed`, `front_lawn`. The allowable characters are lower case alphabet, numerals and the underscore. The underscore cannot be used as a leading or trailing character and not more than one together. For more information see [here](https://en.wikipedia.org/wiki/Snake_case)
+ The [controller_id](#51-controller-objects), [zone_id](#53-zone-objects) and [schedule_id](#55-schedule-objects) identifiers need to be in snake_case like `my_garden`, `vege_patch`, `rose_bed`, `front_lawn`, `before_dawn`. The allowable characters are lower case alphabet, numerals and the underscore. The underscore cannot be used as a leading or trailing character and not more than one together. For more information see [here](https://en.wikipedia.org/wiki/Snake_case)
 
-## 14. Switch entities
+## 14. Parameter Types
 
-These can be any entity from the `switch` or `light` platforms or anything that supports the `turn_on` and `turn_off` actions. In case you wish to control some other device like a motorised valve that presents itself in Home Assistant as a cover then adapt the following automation.
+### 14.1 Irrigation Unlimited Entities
+
+This parameter specifies one or more Irrigation Unlimited entities such as 'binary_sensor.irrigation_unlimited_c1_z1'. Multiple entities can be a CSV string or a list. Here is a code snippet to show different ways to specify the entity_ids.
+
+```yaml
+  ...
+  entity_id: binary_sensor.irrigation_unlimited_c1_z1
+  entity_id: binary_sensor.irrigation_unlimited_c1_z1,binary_sensor.irrigation_unlimited_c1_z2
+  entity_id:
+    - binary_sensor.irrigation_unlimited_c1_z1
+    - binary_sensor.irrigation_unlimited_c1_z2
+  ...
+```
+
+### 14.2 Duration (Time Period)
+
+The time period (duration) type is a string in the format HH:MM, HH:MM:SS, the number of seconds or a dictionary. Time type must be a positive value unless otherwise noted. The value will be rounded down to the system granularity. The default granularity is one second. This is the heart beat or system pulse. All times will be synchronised to these boundaries. Here are different ways to specify 10 minutes.
+
+```yaml
+  ...
+  time: '00:10' # HH:MM
+  time: '0:10:00' # H:MM:SS
+  time: '00:10:00' # HH:MM:SS
+  time: 600 # Seconds
+  time: # One or more or the following
+    days: 0
+    hours: 0
+    minutes: 10
+    seconds: 0
+  ...
+```
+
+### 14.3 Switch entities
+
+These can be any entity from the `switch`, `light`, `valve` or `cover` platforms or anything that supports the `turn_on` and `turn_off` actions. Multiple entities can be a CSV string or a list.
+
+Here is a code snippet to show different ways to specify the entity_ids.
+
+```yaml
+  ...
+  entity_id: switch.valve_1
+  entity_id: light.valve_1,light.valve_2
+  entity_id:
+    - switch.valve_1
+    - light.valve_2
+  ...
+```
+
+The `entity_states` setting control which actions are performed on the entities. Possible values are `all` the default, `on` where only `turn_on` actions are performed, `off` where only `turn_off` actions are performed or `none` where no actions are performed on the `entity_id`. This setting is useful in situations where you would like to handle one or both state changes via an automation. Use the [event](https://www.home-assistant.io/docs/automation/trigger/#event-trigger) trigger or the [state](https://www.home-assistant.io/docs/automation/trigger/#state-trigger) trigger in an automation
+
+```yaml
+  ...
+  entity_id: switch.sonoff_swv
+  entity_states: 'off' # Only send 'off' actions to the entity
+  ...
+```
+
+In case you wish to control some other device like a motorised valve that presents itself in Home Assistant as a cover then adapt the following automation.
 
 ```yaml
 automation:
@@ -1282,6 +1945,37 @@ automation:
     mode: single
 ```
 
+### 14.4 Templating
+
+Some parameters support [templating](https://www.home-assistant.io/docs/configuration/templating). Actual support is noted in the relevant documentation.
+
+Templating is an advanced Home Assistant scripting technique. In many cases such as scripts and automations templating is built in. In other situations like the tap action from a button card, templating is not available but the string will be passed to the service call. Irrigation Unlimited will detect the string contains a template and convert it. Here are some examples that retrieve data from an input text box and pass it to a service call.
+
+```yaml
+  ...
+  action:
+    service: irrigation_unlimited.adjust_time
+    service_data:
+      percentage: "{{ states('input_text.adjustment') | float(100) }}"
+  ...
+  action:
+    service: irrigation_unlimited.manual_run
+    service_data:
+      time: "{{ states('input_text.run_time') | default('00:00') }}"
+```
+
+### 14.5 Sequence
+
+Sequence to adjust, a number (1, 2..N). This is the position number of the sequence under the controller. `sequence_id: 1` is the first, 2 is the second and so on. As a shortcut, `sequence_id: 0` will alter _all_ sequences. Within a controller, sequences are numbered by their position starting at 1. Only relevant when entity_id is a controller/master. An error message will be generated if a `sequence_id` is specified and `entity_id` is not a controller/master.
+
+### 14.6 Zones
+
+Zone(s) to adjust, number/list (1, 2..N). This is the position number of the zone reference under the sequence. `zones: 1` is the first, 2 is the second and so on. As a shortcut, `zones: 0` will alter _all_ zones. Within a sequence, zones are numbered by their position starting a 1.
+
+### 14.7 Time (Time of Day)
+
+The time of day type is a string in the format HH:MM or HH:MM:SS. It is assumed to be in the local time.
+
 ## 15. Contributions are welcome
 
 If you want to contribute to this please read the [Contribution guidelines](CONTRIBUTING.md).
@@ -1292,21 +1986,25 @@ Code template was mainly taken from [@Ludeeus](https://github.com/ludeeus)'s [in
 
 Some inspiration was taken from [kloggy's](https://github.com/kloggy/HA-Irrigation-Version2) work.
 
+## 17. UI Configuration
+
+Irrigation Unlimited can be configured through the Home Assistant UI without any YAML. See [UI Configuration](ui.md) for full details.
+
+> **Note:** If a `yaml` configuration exists it will always take precedence over the UI settings.
+
 ---
 
-[irrigation_unlimited]: https://github.com/rgc99/irrigation_unlimited
 [buymecoffee]: https://www.buymeacoffee.com/rgc99
 [buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
 [commits-shield]: https://img.shields.io/github/commit-activity/y/rgc99/irrigation_unlimited?style=for-the-badge
 [commits]: https://github.com/rgc99/irrigation_unlimited/commits/master
 [hacs]: https://github.com/custom-components/hacs
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[exampleimg]: example.png
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
 [forum]: https://community.home-assistant.io/t/irrigation-unlimited-integration/
-[license-shield]: https://img.shields.io/github/license/rgc99/irrigation_unlimited.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Robert%20Cook%20%40rgc99-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/rgc99/irrigation_unlimited.svg?style=for-the-badge
 [releases]: https://github.com/rgc99/irrigation_unlimited/releases
-[download-shield]: https://img.shields.io/github/downloads/rgc99/irrigation_unlimited/total?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/rgc99/irrigation_unlimited.svg?style=for-the-badge
+[license]: LICENSE
 [integration_blueprint]: https://github.com/custom-components/integration_blueprint
