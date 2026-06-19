@@ -142,5 +142,6 @@
   "confirm.del_adj": "Delete this adjustment?",
   "confirm.del_sqz": "Remove this zone from the sequence?",
   "err.load": "Failed to load: ",
-  "fld.entity_picker_placeholder": "Type entity id or name…"
+  "fld.entity_picker_placeholder": "Type entity id or name…",
+  "fld.pause_next": "Pause next scheduled run"
 }
