@@ -121,8 +121,11 @@ class IUStore:
         ctrl["sequences"] = self._build_sequences(ed.get("sequences", []))
         return {"controllers": [ctrl]}
 
-    def to_iu_config_multi(self, subentries: list[tuple[str, dict]]) -> dict:
-        """Build IU config with multiple controllers from subentries list."""
+    def _build_iu_config_raw(self, subentries: list[tuple[str, dict]]) -> dict:
+        """Build full IU config dict with HH:MM:SS strings (not timedelta).
+        Used by both to_iu_config_multi() (which then converts to timedelta)
+        and generate_yaml() (which keeps strings for human-readable YAML).
+        """
         controllers = []
         for sid, ctrl_basics in subentries:
             ctrl = {k: v for k, v in ctrl_basics.items() if v not in (None, "")}
@@ -156,12 +159,17 @@ class IUStore:
         for k, v in gcfg.items():
             if v not in (None, ""):
                 result[k] = v
-        # BUG FIX: wash_td() in IU calls delta.total_seconds() without
-        # type-checking; passing HH:MM:SS strings crashes it with
-        # AttributeError. Convert all known time fields to timedelta here,
-        # immediately before coordinator.load() consumes the dict.
-        # generate_yaml() has its own path and keeps strings.
-        return IUStore._strings_to_td(result)
+        return result
+
+    def to_iu_config_multi(self, subentries: list[tuple[str, dict]]) -> dict:
+        """Build IU config for coordinator: strings converted to timedelta.
+        BUG FIX: wash_td() in IU calls delta.total_seconds() without
+        type-checking; passing HH:MM:SS strings crashes it with
+        AttributeError. _strings_to_td() converts all known time fields
+        immediately before coordinator.load() consumes the dict.
+        generate_yaml() uses _build_iu_config_raw() directly to keep strings.
+        """
+        return IUStore._strings_to_td(self._build_iu_config_raw(subentries))
 
     def generate_yaml(self) -> str:
         """Generate full IU YAML: global config + all controllers."""
@@ -172,7 +180,7 @@ class IUStore:
 
         yaml.add_representer(_FL, _fl_repr)
 
-        iu_config = self.to_iu_config_multi(self.get_controller_list())
+        iu_config = self._build_iu_config_raw(self.get_controller_list())
         return yaml.dump(
             {"irrigation_unlimited": iu_config},
             default_flow_style=False, allow_unicode=True, sort_keys=False,
