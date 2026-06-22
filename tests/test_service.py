@@ -268,7 +268,7 @@ async def test_service_adjust_time_basic(
             {
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
                 "percentage": 50,
-                "zones": ['zone_1', 'zone_2']
+                "zones": ["zone_1", "zone_2"],
             },
         )
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -283,7 +283,7 @@ async def test_service_adjust_time_basic(
             {
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
                 "percentage": 25,
-                "zones": 0
+                "zones": 0,
             },
         )
         sta = hass.states.get("binary_sensor.irrigation_unlimited_c1_z1")
@@ -920,8 +920,7 @@ async def test_service_adjust_time_finish(
                 "actual": "7:30:00",
             },
         )
-        await exam.finish_test()
-
+        await exam.run_until("2021-01-04 07:57:00")
         await exam.call(
             SERVICE_TIME_ADJUST,
             {
@@ -930,6 +929,8 @@ async def test_service_adjust_time_finish(
                 "reset": None,
             },
         )
+        await exam.finish_test()
+
         await exam.begin_test(26)
         await exam.finish_test()
 
@@ -1068,8 +1069,7 @@ async def test_service_bad(hass: ha.HomeAssistant, skip_dependencies, skip_histo
             )
         await exam.finish_test()
         assert (
-            sum([1 for call in mock.call_args_list if call.args[1] == "ZONE_ID"])
-            == 1
+            sum([1 for call in mock.call_args_list if call.args[1] == "ZONE_ID"]) == 1
         )
 
         await exam.begin_test(2)
@@ -1078,16 +1078,16 @@ async def test_service_bad(hass: ha.HomeAssistant, skip_dependencies, skip_histo
                 SERVICE_TIME_ADJUST,
                 {
                     "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                    "zones": 'zone_x',
+                    "zones": "zone_x",
                     "reset": None,
                 },
             )
         await exam.finish_test()
         assert (
-            sum([1 for call in mock.call_args_list if call.args[1] == "ZONE_ID"])
-            == 1
+            sum([1 for call in mock.call_args_list if call.args[1] == "ZONE_ID"]) == 1
         )
         exam.check_summary()
+
 
 async def test_service_suspend_sequence_bad(
     hass: ha.HomeAssistant, skip_dependencies, skip_history
@@ -1190,7 +1190,7 @@ async def test_service_sequence_id_list(
             SERVICE_TIME_ADJUST,
             {
                 "entity_id": "binary_sensor.irrigation_unlimited_c1_m",
-                "sequence_id": ['seq_1'],
+                "sequence_id": ["seq_1"],
                 "percentage": 200,
             },
         )
