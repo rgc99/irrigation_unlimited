@@ -229,10 +229,9 @@ class IUExam:
         self._coordinator.clock.stop()
         self._current_time = self._coordinator.start_test(test_no)
         assert self._current_time is not None, f"Invalid test {test_no}"
-        self._last_stop = self._coordinator.tester.virtual_time(self._current_time)
-        self._coordinator.clock.test_ticker_update(self._current_time)
-        await self._hass.async_block_till_done()
         _LOGGER.debug("Starting test: %s", self._coordinator.tester.current_test.name)
+        self._coordinator.tester.ticker = self._current_time
+        await self.run_until(self._coordinator.tester.virtual_time(self._current_time))
 
     async def finish_test(self) -> None:
         """Finish a test"""
