@@ -128,7 +128,7 @@ class IUZoneEnableSwitch(SwitchEntity):
 
     @property
     def name(self) -> str:
-        return f"{self._zone.name} Enabled"
+        return f"{self._controller.name} {self._zone.name} Enabled"
 
     @property
     def icon(self) -> str:
@@ -182,7 +182,7 @@ class IUSequenceEnableSwitch(SwitchEntity):
 
     @property
     def name(self) -> str:
-        return f"{self._sequence.name} Enabled"
+        return f"{self._controller.name} {self._sequence.name} Enabled"
 
     @property
     def icon(self) -> str:
@@ -239,7 +239,7 @@ class IUZoneScheduleEnableSwitch(SwitchEntity):
     @property
     def name(self) -> str:
         sname = self._schedule.name or f"Schedule {self._schedule.index + 1}"
-        return f"{self._zone.name} {sname} Enabled"
+        return f"{self._controller.name} {self._zone.name} {sname} Enabled"
 
     @property
     def icon(self) -> str:
@@ -286,7 +286,7 @@ class IUSequenceScheduleEnableSwitch(SwitchEntity):
     @property
     def name(self) -> str:
         sname = self._schedule.name or f"Schedule {self._schedule.index + 1}"
-        return f"{self._sequence.name} {sname} Enabled"
+        return f"{self._controller.name} {self._sequence.name} {sname} Enabled"
 
     @property
     def icon(self) -> str:
