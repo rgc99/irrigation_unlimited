@@ -9,10 +9,45 @@ from custom_components.irrigation_unlimited.const import (
     SERVICE_SUSPEND,
     SERVICE_TIME_ADJUST,
 )
-from custom_components.irrigation_unlimited.irrigation_unlimited import IUSequenceRun
+from custom_components.irrigation_unlimited.irrigation_unlimited import (
+    IURun,
+    IURunStatus,
+    IUSequenceRun,
+)
+from custom_components.irrigation_unlimited.util import TD_ZERO
 from tests.iu_test_support import IUExam, mk_local, mk_utc
 
 IUExam.quiet_mode()
+
+
+def test_sequence_run_ignores_incomplete_restored_timer():
+    """Test restored running sequence runs with missing times do not crash."""
+    run = IUSequenceRun.__new__(IUSequenceRun)
+    run._status = IURunStatus.RUNNING
+    run._start_time = mk_utc("2021-01-04 06:05")
+    run._end_time = None
+    run._remaining_time = None
+    run._percent_complete = 50
+
+    assert run.update_time_remaining(mk_utc("2021-01-04 06:07"))
+    assert run._status == IURunStatus.EXPIRED
+    assert run._remaining_time == TD_ZERO
+    assert run._percent_complete == 0
+
+
+def test_run_ignores_incomplete_restored_timer():
+    """Test restored running runs with missing times do not crash."""
+    run = IURun.__new__(IURun)
+    run._status = IURunStatus.RUNNING
+    run._start_time = mk_utc("2021-01-04 06:05")
+    run._end_time = None
+    run._remaining_time = None
+    run._percent_complete = 50
+
+    assert run.update_time_remaining(mk_utc("2021-01-04 06:07"))
+    assert run._status == IURunStatus.EXPIRED
+    assert run._remaining_time == TD_ZERO
+    assert run._percent_complete == 0
 
 
 async def test_sequence_run(hass: ha.HomeAssistant, skip_dependencies, skip_history):

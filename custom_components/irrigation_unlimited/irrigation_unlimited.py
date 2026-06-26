@@ -1641,6 +1641,11 @@ class IURun(IUBase):
     def update_time_remaining(self, stime: datetime) -> bool:
         """Update the count down timers"""
         if self.running:
+            if self._start_time is None or self._end_time is None:
+                self._remaining_time = TD_ZERO
+                self._percent_complete = 0
+                self._status = IURunStatus.EXPIRED
+                return True
             self._remaining_time = self._end_time - stime
             duration: timedelta = self._end_time - self._start_time
             elapsed: timedelta = stime - self._start_time
@@ -3506,6 +3511,11 @@ class IUSequenceRun(IUBase):
         """Update the count down timers"""
         if not (self.running or self.paused):
             return False
+        if self._start_time is None or self._end_time is None:
+            self._remaining_time = TD_ZERO
+            self._percent_complete = 0
+            self._status = IURunStatus.EXPIRED
+            return True
         self._remaining_time = self._end_time - stime
         elapsed = stime - self._start_time
         duration = self._end_time - self._start_time
