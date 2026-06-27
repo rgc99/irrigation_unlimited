@@ -98,7 +98,7 @@
   "fld.days": "Jour(s)",
   "fld.from": "Du",
   "fld.until": "Au",
-  "fld.cron": "Cron (remplace time)",
+  "fld.cron": "Cron (remplace l'heure)",
   "fld.sched_time": "Heure (HH:MM)",
   "fld.sched_duration": "Durée (HH:MM)",
   "fld.adj_method": "Méthode",
@@ -147,5 +147,5 @@
   "err.from_until_inclusive": "\"Du\" et \"Au\" doivent être définis ensemble ou laissés vides",
   "err.cron_invalid": "Cron : expression invalide (5 champs attendus : min heure jour-mois mois jour-sem)",
   "err.cron_impossible": "Cron : date impossible — aucun mois n'a autant de jours",
-  "warn.cron_dom_dow_or": "⚠ Cron : day-of-month et day-of-week sont tous deux définis — cron applique la logique OU (s'exécute le jour du mois OU le jour de la semaine spécifié, pas les deux ensemble)"
+  "warn.cron_dom_dow_or": "⚠ Cron : jour-du-mois et jour-de-la-semaine sont tous deux définis — cron applique la logique OU (s'exécute le jour du mois OU le jour de la semaine spécifié, pas les deux ensemble)"
 }
