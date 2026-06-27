@@ -27,7 +27,7 @@
   "sec.clock": "Ceas",
   "status.loading": "Se încarcă…",
   "status.no_ctrl": "Niciun controler configurat. Apăsați ＋ Controler.",
-  "status.defaults": "Implicit (granularitate: 60, refresh: 30)",
+  "status.defaults": "Implicit (granularitate: 60, reîmprospătare: 30)",
   "status.no_defaults": "Nicio valoare implicită setată",
   "chip.disabled": "dezactivat",
   "chip.allow_manual": "manual permis",
@@ -98,7 +98,7 @@
   "fld.days": "Zi(le)",
   "fld.from": "De la",
   "fld.until": "Până la",
-  "fld.cron": "Cron (înlocuiește time)",
+  "fld.cron": "Cron (înlocuiește ora)",
   "fld.sched_time": "Ora (HH:MM)",
   "fld.sched_duration": "Durată (HH:MM)",
   "fld.adj_method": "Metodă",
@@ -147,5 +147,5 @@
   "err.from_until_inclusive": "\"De la\" și \"Până la\" trebuie setate împreună sau lăsate goale",
   "err.cron_invalid": "Cron: expresie invalidă (așteptate 5 câmpuri: min oră zi-lună lună zi-săpt)",
   "err.cron_impossible": "Cron: dată imposibilă — nicio lună nu are atâtea zile",
-  "warn.cron_dom_dow_or": "⚠ Cron: ambele câmpuri day-of-month și day-of-week sunt setate — cron aplică logica SAU (rulează în ziua din lună SAU în ziua săptămânii specificate, nu ambele împreună)"
+  "warn.cron_dom_dow_or": "⚠ Cron: ambele câmpuri ziua-din-lună și ziua-din-săptămână sunt setate — cron aplică logica SAU (rulează în ziua din lună SAU în ziua săptămânii specificate, nu ambele împreună)"
 }
