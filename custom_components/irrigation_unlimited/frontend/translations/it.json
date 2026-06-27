@@ -98,7 +98,7 @@
   "fld.days": "Giorno/i",
   "fld.from": "Da",
   "fld.until": "A",
-  "fld.cron": "Cron (sostituisce time)",
+  "fld.cron": "Cron (sostituisce l'ora)",
   "fld.sched_time": "Ora (HH:MM)",
   "fld.sched_duration": "Durata (HH:MM)",
   "fld.adj_method": "Metodo",
@@ -147,5 +147,5 @@
   "err.from_until_inclusive": "\"Da\" e \"A\" devono essere entrambi impostati o entrambi vuoti",
   "err.cron_invalid": "Cron: espressione non valida (attesi 5 campi: min ora giorno-mese mese giorno-sett)",
   "err.cron_impossible": "Cron: data impossibile — nessun mese ha così tanti giorni",
-  "warn.cron_dom_dow_or": "⚠ Cron: day-of-month e day-of-week sono entrambi impostati — cron applica la logica O (esegue nel giorno del mese O nel giorno della settimana specificato, non entrambi insieme)"
+  "warn.cron_dom_dow_or": "⚠ Cron: giorno-del-mese e giorno-della-settimana sono entrambi impostati — cron applica la logica O (esegue nel giorno del mese O nel giorno della settimana specificato, non entrambi insieme)"
 }
