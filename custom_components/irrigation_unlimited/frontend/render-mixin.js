@@ -181,11 +181,11 @@ _html() {
             ${s.repeat!=null&&s.repeat!==1?`<span class="chip">×${s.repeat}</span>`:""}
           </div>
           <div class="ssh"><span>${this._t("sec.seq_zones")}</span>
-            <button class="btn bxs" data-a="add-sqz" data-eid="${eid}" data-sqid="${s.id}">＋</button>
+            <button class="btn bxs" data-a="add-sqz" data-eid="${eid}" data-sqid="${s.id}">${this._t("btn.add_sqz")}</button>
           </div>
           ${this._sqzList(eid, s, ctrlZones)}
           <div class="ssh"><span>${this._t("sec.seq_schedules")}</span>
-            <button class="btn bxs" data-a="add-sqsched" data-eid="${eid}" data-sqid="${s.id}">＋</button>
+            <button class="btn bxs" data-a="add-sqsched" data-eid="${eid}" data-sqid="${s.id}">${this._t("btn.add_sqsched")}</button>
           </div>
           ${this._sqSchedList(eid, s.id, s.schedules??[])}
         </div>`:``}
