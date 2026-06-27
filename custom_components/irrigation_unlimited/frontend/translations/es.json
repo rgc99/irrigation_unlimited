@@ -98,7 +98,7 @@
   "fld.days": "Día(s)",
   "fld.from": "Desde",
   "fld.until": "Hasta",
-  "fld.cron": "Cron (reemplaza time)",
+  "fld.cron": "Cron (reemplaza la hora)",
   "fld.sched_time": "Hora (HH:MM)",
   "fld.sched_duration": "Duración (HH:MM)",
   "fld.adj_method": "Método",
@@ -147,5 +147,5 @@
   "err.from_until_inclusive": "\"Desde\" y \"Hasta\" deben definirse juntos o dejarse vacíos",
   "err.cron_invalid": "Cron: expresión inválida (se esperan 5 campos: min hora día-mes mes día-sem)",
   "err.cron_impossible": "Cron: fecha imposible — ningún mes tiene tantos días",
-  "warn.cron_dom_dow_or": "⚠ Cron: tanto day-of-month como day-of-week están definidos — cron aplica lógica O (se ejecuta el día del mes O el día de la semana especificado, no ambos juntos)"
+  "warn.cron_dom_dow_or": "⚠ Cron: tanto día-del-mes como día-de-la-semana están definidos — cron aplica lógica O (se ejecuta el día del mes O el día de la semana especificado, no ambos juntos)"
 }
