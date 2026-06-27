@@ -89,7 +89,7 @@ _fGlobalConfig(d = {}) {
     const titles = {
       zone:this._t("modal.zone"), sched:this._t("modal.sched"), adj:this._t("modal.adj"),
       seq:this._t("modal.seq"), sqz:this._t("modal.sqz"), yaml:this._t("modal.yaml"),
-      allzones:this._t("sec.all_zones"), ctrl:this._t("modal.ctrl"),
+      allzones:this._t("modal.allzones"), ctrl:this._t("modal.ctrl"),
       global:this._t("modal.global"),
     };
     const forms = {
@@ -116,7 +116,8 @@ _fGlobalConfig(d = {}) {
           <button class="mc" data-a="close">✕</button></div>
         <div class="mb">${(forms[m.type]??(()=>""))()}</div>
         <div class="mf">
-          <div class="val-err" id="modal-err"></div>
+          <div class="val-err"  id="modal-err"></div>
+          <div class="val-warn" id="modal-warn"></div>
           ${m.type!=="yaml"
             ? `<button class="btn btxt" data-a="close">${this._t("btn.cancel")}</button>
                <button class="btn bpri" data-a="save">${this._t("btn.save")}</button>`
@@ -152,21 +153,47 @@ _fGlobalConfig(d = {}) {
     </div>`;
   },
 
+  // Helper: date picker for from/until fields.
+  // Initially shows only a month dropdown (—, Jan…Dec).
+  // When a month is selected, a day dropdown (1…N) appears dynamically.
+  // IU expects "dd Mon" format e.g. "01 Jan", "15 Jun".
+  _fDate(prefix, label, val) {
+    const MONS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const MDAYS = {Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
+    const parts = (val||"").trim().split(" ");
+    const d = parts[0]||"", m = parts[1]||"";
+    const maxDay = m ? (MDAYS[m]||31) : 0;
+    const dayOpts = Array.from({length:maxDay},(_,i)=>{
+      const v=String(i+1).padStart(2,"0");
+      return `<option value="${v}"${d===v?" selected":""}>${i+1}</option>`;
+    }).join("");
+    return `<div class="fg">
+      <label class="fl">${label}</label>
+      <div class="iu-date-wrap" style="display:flex;gap:4px">
+        <select class="fi" name="${prefix}_month">
+          <option value="">—</option>
+          ${MONS.map(mo=>`<option value="${mo}"${m===mo?" selected":""}>${mo}</option>`).join("")}
+        </select>
+        ${m ? `<select class="fi" name="${prefix}_day" style="flex:0 0 70px">${dayOpts}</select>` : ""}
+      </div>
+    </div>`;
+  },
+
   _fSched(d) {
     return `<div class="form">
       ${fText("name",this._t("fld.seq_name"),d.name)}
       ${fText("schedule_id",this._t("fld.schedule_id"),d.schedule_id??"")}
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
       ${fText("time",this._t("fld.sched_time"),d.time??"","")}
+      ${fText("cron",this._t("fld.cron"),d.cron??"","0 6 * * 1,3,5")}
       ${fText("duration",this._t("fld.sched_duration"),d.duration??"","")}
       ${fSelect("anchor",this._t("fld.anchor"),[{value:"start",label:this._t("opt.anchor_start")},{value:"finish",label:this._t("opt.anchor_finish")}],d.anchor??"start")}
       ${fPills("weekday",this._t("fld.weekdays"),WEEKDAYS,d.weekday??[])}
+      <div class="fg"><label class="fl">${this._t("fld.days")}</label><select class="fi" name="day"><option value="">${this._t("opt.day_all")}</option><option value="odd" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="odd"?"selected":""}>${this._t("opt.day_odd")}</option><option value="even" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="even"?"selected":""}>${this._t("opt.day_even")}</option></select></div>
+      <div class="fg"><label class="fl">${this._t("fld.day_specific")}</label><input class="fi" type="text" name="day_num" value="${Array.isArray(d.day)?d.day.join(", "):(d.day!=null&&d.day!=="odd"&&d.day!=="even"?String(d.day):"")}"></div>
       ${fPills("month",this._t("fld.months"),MONTHS,d.month??[])}
-      ${fText("day",this._t("fld.days"),Array.isArray(d.day)?d.day.join(","):(d.day??""),"odd / even / 1,15")}
-      ${fText("from",this._t("fld.from"),d.from??"","YYYY-MM-DD")}
-      ${fText("until",this._t("fld.until"),d.until??"","YYYY-MM-DD")}
-      ${fSec(this._t("sec.advanced"))}
-      ${fText("cron",this._t("fld.cron"),d.cron??"","0 6 * * 1,3,5")}
+      ${this._fDate("from",this._t("fld.from"),d.from??"")}
+      ${this._fDate("until",this._t("fld.until"),d.until??"")}
     </div>`;
   },
 
@@ -186,10 +213,11 @@ _fGlobalConfig(d = {}) {
       ${fText("minimum",this._t("fld.adj_minimum"),d.minimum??"","")}
       ${fText("maximum",this._t("fld.adj_maximum"),d.maximum??"","")}
       ${fPills("adj_weekday",this._t("fld.adj_weekday"),WEEKDAYS,d.weekday??[])}
+      <div class="fg"><label class="fl">${this._t("fld.days")}</label><select class="fi" name="day"><option value="">${this._t("opt.day_all")}</option><option value="odd" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="odd"?"selected":""}>${this._t("opt.day_odd")}</option><option value="even" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="even"?"selected":""}>${this._t("opt.day_even")}</option></select></div>
+      <div class="fg"><label class="fl">${this._t("fld.day_specific")}</label><input class="fi" type="text" name="day_num" value="${Array.isArray(d.day)?d.day.join(", "):(d.day!=null&&d.day!=="odd"&&d.day!=="even"?String(d.day):"")}"></div>
       ${fPills("adj_month",this._t("fld.adj_month"),MONTHS,d.month??[])}
-      ${fText("day",this._t("fld.days"),d.day!=null?String(d.day):"","odd / even / 1,15")}
-      ${fText("from",this._t("fld.from"),d.from??"","YYYY-MM-DD")}
-      ${fText("until",this._t("fld.until"),d.until??"","YYYY-MM-DD")}
+      ${this._fDate("from",this._t("fld.from"),d.from??"")}
+      ${this._fDate("until",this._t("fld.until"),d.until??"")}
       ${fText("load_factor",this._t("fld.load_factor"),d.load_factor!=null?String(d.load_factor):"","1")}
     </div>`;
   },
