@@ -24,12 +24,13 @@ export function fSelect(name, label, options, value) {
     </select>
   </div>`;
 }
-export function fPills(name, label, options, selected=[]) {
+export function fPills(name, label, options, selected=[], onchange="") {
+  const oc = onchange ? ` onchange="${onchange}"` : "";
   return `<div class="fg">
     <label class="fl">${label}</label>
     <div class="pg">${options.map(o=>`
       <label class="pill${selected.includes(o.key)?" on":""}">
-        <input type="checkbox" name="${name}" value="${o.key}"${selected.includes(o.key)?" checked":""} hidden>
+        <input type="checkbox" name="${name}" value="${o.key}"${selected.includes(o.key)?" checked":""}${oc} hidden>
         ${o.label}</label>`).join("")}
     </div>
   </div>`;
