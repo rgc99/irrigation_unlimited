@@ -38,6 +38,9 @@ controllers" architecture:
 --------------------------------------------------------------------------------
 """
 
+from __future__ import annotations  # enables PEP 563 postponed evaluation of annotations;
+                                    # consistent with all other files in this integration
+
 import logging
 from pathlib import Path  # NEW: needed to resolve the bundled frontend/ dir for StaticPathConfig
 
@@ -309,7 +312,3 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     if hass.data.get(DOMAIN, {}).get("panel_registered"):
         async_remove_panel(hass, "irrigation-unlimited")
     hass.data.pop(DOMAIN, None)
-
-
-    hass.data.pop(DOMAIN, None)
-    return unload_ok
