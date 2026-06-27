@@ -16,7 +16,12 @@ _bind(root) {
       const pill = e.target.closest(".pill");
       if (pill) {
         const cb = pill.querySelector("input[type=checkbox]");
-        if (cb) { cb.checked = !cb.checked; pill.classList.toggle("on", cb.checked); }
+        if (cb) {
+          cb.checked = !cb.checked;
+          pill.classList.toggle("on", cb.checked);
+          // Dispatch change so onchange handlers (e.g. mutual exclusion) fire
+          cb.dispatchEvent(new Event("change", {bubbles: true}));
+        }
         return;
       }
       const tog = e.target.closest("[data-tog]");
@@ -41,6 +46,81 @@ _bind(root) {
 
     root.addEventListener("click", this._clickH);
     root.addEventListener("change", this._changeH);
+
+    // Mutual exclusion: weekday/adj_weekday pills - day select - day_num text
+    // Note: month pills and from/until are mutually INCLUSIVE (they can coexist).
+    // Uses event delegation so it works inside Shadow DOM and modal re-renders.
+    root.addEventListener("change", e => {
+      const form = e.target.closest(".form");
+      if (!form) return;
+      const name = e.target.getAttribute("name");
+      const clearPills = n => form.querySelectorAll(`[name=${n}]`).forEach(cb => {
+        cb.checked = false; cb.closest(".pill")?.classList.remove("on");
+      });
+      if (name === "weekday" || name === "adj_weekday") {
+        if ([...form.querySelectorAll(`[name=${name}]`)].some(c => c.checked)) {
+          const ds = form.querySelector("[name=day]"); if (ds) ds.value = "";
+          const dn = form.querySelector("[name=day_num]"); if (dn) dn.value = "";
+        }
+      } else if (name === "day" && e.target.value) {
+        clearPills("weekday"); clearPills("adj_weekday");
+        const dn = form.querySelector("[name=day_num]"); if (dn) dn.value = "";
+      }
+      // _fDate pickers: month select controls visibility of day select
+      // Month -> value: add/rebuild day select (1..N, default 1, no —)
+      // Month -> —   : remove day select
+      if ((name === "from_month" || name === "until_month") && form) {
+        const MDAYS = {Jan:31,Feb:29,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
+        const dayName = name.replace("_month", "_day");
+        const wrap = e.target.parentElement;          // .iu-date-wrap
+        let daySelect = form.querySelector(`[name="${dayName}"]`);
+        if (!e.target.value) {
+          if (daySelect) daySelect.remove();          // hide day select
+        } else {
+          const maxDay = MDAYS[e.target.value] || 31;
+          if (!daySelect) {
+            // Create day select with days 1..maxDay, default to "01"
+            daySelect = document.createElement("select");
+            daySelect.className = "fi"; daySelect.name = dayName;
+            daySelect.style.cssText = "flex:0 0 70px";
+            daySelect.innerHTML = Array.from({length:maxDay},(_,i)=>{
+              const v=String(i+1).padStart(2,"0");
+              return `<option value="${v}">${i+1}</option>`;
+            }).join("");
+            wrap.appendChild(daySelect);
+          } else {
+            // Rebuild options for new month, preserve current day if valid
+            const cur = daySelect.value;
+            daySelect.innerHTML = Array.from({length:maxDay},(_,i)=>{
+              const v=String(i+1).padStart(2,"0");
+              return `<option value="${v}"${cur===v?" selected":""}>${i+1}</option>`;
+            }).join("");
+          }
+        }
+      }
+    });
+    root.addEventListener("input", e => {
+      const name = e.target.getAttribute("name");
+      const form = e.target.closest(".form");
+      if (!form) return;
+      if (name === "day_num") {
+        if (!e.target.value.trim()) return;
+        ["weekday","adj_weekday"].forEach(n =>
+          form.querySelectorAll(`[name=${n}]`).forEach(cb => {
+            cb.checked = false; cb.closest(".pill")?.classList.remove("on");
+          })
+        );
+        const ds = form.querySelector("[name=day]"); if (ds) ds.value = "";
+      }
+      // time ↔ cron mutual exclusion
+      if (name === "time" && e.target.value.trim()) {
+        const cron = form.querySelector("[name=cron]"); if (cron) cron.value = "";
+      }
+      if (name === "cron" && e.target.value.trim()) {
+        const time = form.querySelector("[name=time]"); if (time) time.value = "";
+      }
+    });
+
     this._initEntityPickers(root);
   },
 
@@ -182,13 +262,15 @@ _bind(root) {
 
   _validate(fd) {
     // fd = obiect simplu din _collect (valori string sau null)
+    // Returns {errors: [...], warnings: [...]}
+    // Errors block save; warnings are shown but allow save.
     const g = k => (fd[k] != null ? String(fd[k]) : "").trim();
 
     const rTime = /^\d+:\d{1,2}(:\d{1,2})?$/;  // HH:MM sau HH:MM:SS (0:5 etc.)
     const rNum  = /^\d+(\.\d*)?$/;               // positive number
     const rDate = /^\d{1,2}\s+[a-zA-Z]{3}$|^\d{4}-\d{2}-\d{2}$/;
 
-    const errs = [];
+    const errs = [], warns = [];
     const chkTime = (k, label) => {
       const v = g(k);
       if (v && !rTime.test(v))
@@ -241,10 +323,73 @@ _bind(root) {
       }
     }
 
-    chkDate("from",  "From");
-    chkDate("until", "Until");
+    // from/until: vol.Inclusive — both must be set or both empty.
+    // Also validate each field individually (day without month or vice versa).
+    const fromDay = g("from_day"), fromMon = g("from_month");
+    const untilDay = g("until_day"), untilMon = g("until_month");
+    // With the new UI, day select only exists when month is set,
+    // so fromDay without fromMon (or vice versa) is no longer possible.
+    const fromSet = !!(fromDay && fromMon);
+    const untilSet = !!(untilDay && untilMon);
+    if (fromSet !== untilSet)
+      errs.push(this._t("err.from_until_inclusive"));
 
-    return errs;
+    // Cron syntax validation (5 fields: min hour dom month dow)
+    const cron = g("cron");
+    if (cron) {
+      const RANGES = [[0,59],[0,23],[1,31],[1,12],[0,7]];
+      const parts = cron.trim().split(/\s+/);
+      let cronOk = parts.length === 5;
+      if (cronOk) {
+        cronOk = parts.every((p, i) => {
+          const [lo, hi] = RANGES[i];
+          return p.split(",").every(tok => {
+            if (tok === "*") return true;
+            if (/^\*\/\d+$/.test(tok)) return parseInt(tok.slice(2)) > 0;
+            const rangeStep = tok.match(/^(\d+)-(\d+)(\/\d+)?$/);
+            if (rangeStep) {
+              const a = +rangeStep[1], b = +rangeStep[2];
+              return a >= lo && b <= hi && a <= b;
+            }
+            const n = +tok;
+            return Number.isInteger(n) && n >= lo && n <= hi;
+          });
+        });
+      }
+      if (!cronOk) {
+        errs.push(this._t("err.cron_invalid"));
+      } else {
+        // Semantic validation: check for impossible dom+month combinations.
+        // MAX_DAYS[m] = max days in month m (Feb=29 allows leap-year scheduling).
+        const MAX_DAYS = [0,31,29,31,30,31,30,31,31,30,31,30,31];
+        const expand = field => {
+          // Returns array of numeric values for a cron field, or null if
+          // indeterminate (wildcard or step — too many possibilities to enumerate).
+          if (field === "*" || field.includes("/")) return null;
+          const vals = [];
+          for (const tok of field.split(",")) {
+            const r = tok.match(/^(\d+)-(\d+)$/);
+            if (r) { for (let v=+r[1]; v<=+r[2]; v++) vals.push(v); }
+            else vals.push(+tok);
+          }
+          return vals;
+        };
+        const domVals   = expand(parts[2]);   // day-of-month field
+        const monthVals = expand(parts[3]);   // month field
+        if (domVals && monthVals) {
+          // If NO (month, dom) pair is possible, the schedule can never run.
+          const possible = monthVals.some(m => domVals.some(d => d <= MAX_DAYS[m]));
+          if (!possible) errs.push(this._t("err.cron_impossible"));
+        }
+        // Warning: if BOTH dom and dow are non-wildcard, cron applies OR logic
+        // (not AND). "15 * Mon" means "the 15th OR every Monday", not "Monday the 15th".
+        const domIsWild = parts[2] === "*" || parts[2].startsWith("*/");
+        const dowIsWild = parts[4] === "*" || parts[4].startsWith("*/");
+        if (!domIsWild && !dowIsWild) warns.push(this._t("warn.cron_dom_dow_or"));
+      }
+    }
+
+    return {errors: errs, warnings: warns};
   },
 
   async _save(root) {
@@ -286,9 +431,11 @@ _bind(root) {
       const eid = m.eid;
 
       // -- Field validation ----------------------------------------------
-      const valErrs = this._validate(fd);
+      const {errors: valErrs, warnings: valWarns} = this._validate(fd);
       const errEl = root.getElementById("modal-err");
-      if (errEl) errEl.textContent = valErrs.join("\n");
+      const warnEl = root.getElementById("modal-warn");
+      if (errEl)  errEl.textContent  = valErrs.join("\n");
+      if (warnEl) warnEl.textContent = valWarns.join("\n");
       if (valErrs.length) return;
 
       if (m.type === "global") {
@@ -401,14 +548,51 @@ _bind(root) {
           for (const k of ["duration","delay","minimum"]) {
             if (payload[k]) payload[k] = normTime(payload[k]);
           }
+          // Combine day select (odd/even) + day_num text (specific numbers)
+          { const dn=(payload.day_num||"").trim(), dp=(payload.day||"").trim();
+            delete payload.day_num; delete payload.day;
+            if (dn) {
+              const nums=dn.split(",").map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=31);
+              if (nums.length===1) payload.day=nums[0];
+              else if (nums.length>1) payload.day=nums;
+            } else if (dp) { payload.day=dp; }
+          }
+          // Combine from_day + from_month -> "dd Mon", same for until
+          { const fd=payload.from_day||"", fm=payload.from_month||"";
+            delete payload.from_day; delete payload.from_month;
+            if (fd && fm) payload.from = `${fd} ${fm}`; else delete payload.from;
+          }
+          { const ud=payload.until_day||"", um=payload.until_month||"";
+            delete payload.until_day; delete payload.until_month;
+            if (ud && um) payload.until = `${ud} ${um}`; else delete payload.until;
+          }
           if (m.seqId)
             await callWS(this._hass,"save_sequence_schedule",{entry_id:eid,sequence_id:m.seqId,schedule:payload});
           else
             await callWS(this._hass,"save_schedule",{entry_id:eid,zone_id:m.zoneId,schedule:payload});
           break;
         }
-        case "adj":
+        case "adj": {
+          // Combine day select (odd/even) + day_num text (specific numbers)
+          { const dn=(payload.day_num||"").trim(), dp=(payload.day||"").trim();
+            delete payload.day_num; delete payload.day;
+            if (dn) {
+              const nums=dn.split(",").map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=31);
+              if (nums.length===1) payload.day=nums[0];
+              else if (nums.length>1) payload.day=nums;
+            } else if (dp) { payload.day=dp; }
+          }
+          // Combine from_day + from_month -> "dd Mon", same for until
+          { const fd=payload.from_day||"", fm=payload.from_month||"";
+            delete payload.from_day; delete payload.from_month;
+            if (fd && fm) payload.from = `${fd} ${fm}`; else delete payload.from;
+          }
+          { const ud=payload.until_day||"", um=payload.until_month||"";
+            delete payload.until_day; delete payload.until_month;
+            if (ud && um) payload.until = `${ud} ${um}`; else delete payload.until;
+          }
           await callWS(this._hass,"save_adjustment",{entry_id:eid,zone_id:m.zoneId,adjustment:payload}); break;
+        }
         case "seq": {
           const g  = k => (fd[k] != null ? String(fd[k]) : "").trim();
           const seq = {};
