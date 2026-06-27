@@ -113,9 +113,12 @@ export const STYLES = `
         font-size:.78rem; cursor:pointer; user-select:none; transition:all .15s; color:var(--secondary-text-color,#666); }
 .pill.on { background:var(--primary-color,#1976d2); border-color:var(--primary-color,#1976d2); color:#fff; }
 .epw { position:relative; width:100%; }
-.val-err { color:var(--error-color,#db4437); font-size:.8rem;
+.val-err  { color:var(--error-color,#db4437); font-size:.8rem;
             padding:6px 0 2px; white-space:pre-line; }
-.val-err:empty { display:none; }
+.val-err:empty  { display:none; }
+.val-warn { color:var(--warning-color,#f4b400); font-size:.8rem;
+            padding:2px 0 2px; white-space:pre-line; }
+.val-warn:empty { display:none; }
 .bdanger { background:var(--error-color,#db4437)!important; color:#fff!important; }
 .bdanger:hover { opacity:.85; }
 .fg-title { font-size:.72rem; font-weight:600; color:var(--secondary-text-color,#888);
