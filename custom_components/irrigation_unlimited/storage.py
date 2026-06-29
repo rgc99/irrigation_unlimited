@@ -17,7 +17,7 @@ IUStore wraps a single Store(STORAGE_VERSION, STORAGE_KEY) file and provides:
       * IU-schema defaults dropping (so untouched fields are omitted, e.g.
         enabled=true, allow_manual=false, future_span=3, anchor="start", ...)
       * HH:MM / HH:MM:SS time normalization (_norm_time)
-      * future_span as int (not float) in the generated config
+      * future_span as int (docs: 'Number of days to look ahead', default 3)
       * entity_id wrapped as a list (IU iterates entity_id as a list)
       * weekday/month/zone_id rendered as YAML flow-style lists (_FL)
 
@@ -288,13 +288,28 @@ class IUStore:
     @staticmethod
     def _normalize_schedule_times(data: dict) -> None:
         """Normalize 'time' and 'duration' to HH:MM:SS directly on save
-        (defensive -- regardless of whether JS already normalized them)."""
-        for k in ("time", "duration"):
-            v = data.get(k)
-            if v not in (None, ""):
-                normalized = IUStore._norm_time(v)
-                if normalized is not None:
-                    data[k] = normalized
+        (defensive -- regardless of whether JS already normalized them).
+        Sun events are stored as dicts {sun, before?, after?} and are
+        left intact; only their before/after offsets are normalized."""
+        # duration is always a time string
+        v = data.get("duration")
+        if v not in (None, ""):
+            normalized = IUStore._norm_time(v)
+            if normalized is not None:
+                data["duration"] = normalized
+        # time can be a plain HH:MM:SS string or a sun-event dict
+        t = data.get("time")
+        if isinstance(t, dict):
+            # Sun event: normalize before/after offsets if present
+            for k in ("before", "after"):
+                if t.get(k) not in (None, ""):
+                    normalized = IUStore._norm_time(t[k])
+                    if normalized is not None:
+                        t[k] = normalized
+        elif t not in (None, ""):
+            normalized = IUStore._norm_time(t)
+            if normalized is not None:
+                data["time"] = normalized
 
     @staticmethod
     def _drop_defaults(obj: dict, defaults: dict) -> dict:
