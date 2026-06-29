@@ -121,6 +121,10 @@ class IrrigationUnlimitedPanel extends HTMLElement {
       sr.appendChild(ov);
     }
     this._bind(sr);
+    // Initialize select colors: fi-changed when value differs from data-default
+    sr.querySelectorAll("select.fi[data-default]").forEach(sel => {
+      sel.classList.toggle("fi-changed", sel.value !== sel.dataset.default);
+    });
     this._updateRunning();
   }
 
