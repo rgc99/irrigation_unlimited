@@ -147,7 +147,7 @@
   "err.from_until_inclusive": "Von und Bis müssen entweder beide festgelegt oder beide leer sein",
   "err.cron_invalid": "Cron: ungültiger Ausdruck (erwartet 5 Felder: Minute Stunde Tag-des-Monats Monat Wochentag)",
   "err.cron_impossible": "Cron: unmögliches Datum — kein Monat hat so viele Tage",
-  "warn.cron_dom_dow_or": "⚠ Cron: Sowohl Tag-des-Monats als auch Wochentag sind gesetzt — Cron verwendet eine ODER-Logik (Ausführung am angegebenen Tag-des-Monats ODER am angegebenen Wochentag, nicht beides gleichzeitig)"
+  "warn.cron_dom_dow_or": "⚠ Cron: Sowohl Tag-des-Monats als auch Wochentag sind gesetzt — Cron verwendet eine ODER-Logik (Ausführung am angegebenen Tag-des-Monats ODER am angegebenen Wochentag, nicht beides gleichzeitig)",
   "err.future_span_int": "Zukünftiger Zeitraum: muss eine positive ganze Zahl sein (Anzahl Tage)",
   "err.id_format": "{field}: muss im snake_case-Format sein (nur Kleinbuchstaben, Ziffern und Unterstriche)",
   "err.day_num_format": "Spezifische Tage: müssen durch Kommas getrennte Ganzzahlen zwischen 1 und 31 sein",
