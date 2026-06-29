@@ -54,18 +54,127 @@ _bind(root) {
       const form = e.target.closest(".form");
       if (!form) return;
       const name = e.target.getAttribute("name");
+      // start_n_days: treat year/month/day as a group — any change makes all three primary
+      const _snNames = ["start_n_days_year","start_n_days_month","start_n_days_day"];
+      const _snDateChanged = frm => {
+        const els = _snNames.map(n => frm.querySelector(`[name=${n}]`)).filter(Boolean);
+        const changed = els.some(el => el.value !== (el.dataset.default??""));
+        els.forEach(el => el.classList.toggle("fi-changed", changed));
+      };
+      if (_snNames.includes(name) && form) {
+        // Explicit day change: clear clamp record
+        if (name === "start_n_days_day") {
+          const ds = form.querySelector("[name=start_n_days_day]");
+          if (ds) delete ds.dataset.clamped;
+        }
+        _snDateChanged(form);
+      }
+      // Select color: grey at default, primary when changed (skip start_n_days handled above)
+      else if (e.target.tagName === "SELECT" && e.target.dataset.default !== undefined)
+        e.target.classList.toggle("fi-changed", e.target.value !== e.target.dataset.default);
       const clearPills = n => form.querySelectorAll(`[name=${n}]`).forEach(cb => {
         cb.checked = false; cb.closest(".pill")?.classList.remove("on");
       });
       if (name === "weekday" || name === "adj_weekday") {
         if ([...form.querySelectorAll(`[name=${name}]`)].some(c => c.checked)) {
-          const ds = form.querySelector("[name=day]"); if (ds) ds.value = "";
+          const ds = form.querySelector("[name=day]");
+          if (ds) { ds.value = ""; ds.classList.toggle("fi-changed", ds.value !== (ds.dataset.default??""));  }
           const dn = form.querySelector("[name=day_num]"); if (dn) dn.value = "";
+          const eo = form.querySelector(".every-n-days-opts"); if (eo) eo.innerHTML = "";
         }
       } else if (name === "day" && e.target.value) {
         clearPills("weekday"); clearPills("adj_weekday");
         const dn = form.querySelector("[name=day_num]"); if (dn) dn.value = "";
       }
+      // sun select → clear time/cron; show/hide before+after offsets
+      if (name === "sun" && form) {
+        if (e.target.value) {
+          const time = form.querySelector("[name=time]"); if (time) time.value = "";
+          const cron = form.querySelector("[name=cron]"); if (cron) cron.value = "";
+        }
+        const offsets = form.querySelector(".sun-offsets");
+        if (offsets) {
+          if (e.target.value) {
+            if (!offsets.querySelector("[name=before]")) {
+              offsets.innerHTML =
+                `<div class="fg"><label class="fl">${this._t("fld.before")}</label>` +
+                `<input class="fi" type="text" name="before" value="" placeholder=""></div>` +
+                `<div class="fg"><label class="fl">${this._t("fld.after")}</label>` +
+                `<input class="fi" type="text" name="after"  value="" placeholder=""></div>`;
+            }
+          } else {
+            offsets.innerHTML = "";
+          }
+        }
+      }
+
+      // start_n_days_year → rebuild Feb days if month is February
+      if (name === "start_n_days_year" && form) {
+        const moEl = form.querySelector("[name=start_n_days_month]");
+        const ds   = form.querySelector("[name=start_n_days_day]");
+        if (moEl && moEl.value === "02" && ds) {
+          const yrN    = parseInt(e.target.value, 10);
+          const isLeap = yrN ? ((yrN%4===0 && yrN%100!==0) || yrN%400===0) : true;
+          const maxDay = isLeap ? 29 : 28;
+          const cur    = ds.value;
+          ds.innerHTML = Array.from({length:maxDay},(_,i)=>{
+            const v=String(i+1).padStart(2,"0");
+            return `<option value="${v}"${cur===v?" selected":""}>${i+1}</option>`;
+          }).join("");
+          if (!isLeap && parseInt(ds.value,10) > 28) {
+            ds.dataset.clamped = ds.value; // remember pre-clamp for restoration
+            ds.value = "28";
+          }
+        }
+        _snDateChanged(form);
+      }
+
+      // start_n_days_month → rebuild start_n_days_day options (day always visible)
+      if (name === "start_n_days_month" && form) {
+        const SMONS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const ds = form.querySelector("[name=start_n_days_day]");
+        if (ds && e.target.value) {
+          const moName = SMONS[parseInt(e.target.value,10)-1];
+          const yrEl = form.querySelector("[name=start_n_days_year]");
+          const yrN  = parseInt(yrEl ? yrEl.value : 0, 10);
+          const isLeap = yrN ? ((yrN%4===0 && yrN%100!==0) || yrN%400===0) : true;
+          const MDAYS = {Jan:31,Feb:isLeap?29:28,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
+          const maxDay = MDAYS[moName]||31;
+          // Restore pre-clamp value if valid in new month, else clamp/keep
+          const clamped = ds.dataset.clamped;
+          const preferred = (clamped && parseInt(clamped,10) <= maxDay) ? clamped : ds.value;
+          const safeDay = parseInt(preferred,10) <= maxDay
+            ? preferred : String(maxDay).padStart(2,"0");
+          ds.innerHTML = Array.from({length:maxDay},(_,i)=>{
+            const v=String(i+1).padStart(2,"0");
+            return `<option value="${v}"${safeDay===v?" selected":""}>${i+1}</option>`;
+          }).join("");
+          ds.value = safeDay;
+          // Clear clamp record if restored; set new one if we had to clamp
+          if (clamped && parseInt(clamped,10) <= maxDay) delete ds.dataset.clamped;
+          else if (parseInt(ds.value,10) >= maxDay && parseInt(preferred,10) > maxDay)
+            ds.dataset.clamped = preferred;
+          _snDateChanged(form);
+        }
+      }
+
+      // day select → "every_n_days" → show/hide .every-n-days-opts container
+      if ((name === "day" || name === "adj_day") && form) {
+        const opts = form.querySelector(".every-n-days-opts");
+        if (opts) {
+          if (e.target.value === "every_n_days") {
+            if (!opts.querySelector("[name=every_n_days]")) {
+              opts.innerHTML =
+                `<div class="fg"><label class="fl">${this._t("fld.every_n_days")}</label>` +
+                `<input class="fi" type="text" name="every_n_days" value="" placeholder="3"></div>` +
+                this._fStartDate("");
+            }
+          } else {
+            opts.innerHTML = "";
+          }
+        }
+      }
+
       // _fDate pickers: month select controls visibility of day select
       // Month -> value: add/rebuild day select (1..N, default 1, no —)
       // Month -> —   : remove day select
@@ -83,11 +192,13 @@ _bind(root) {
             daySelect = document.createElement("select");
             daySelect.className = "fi"; daySelect.name = dayName;
             daySelect.style.cssText = "flex:0 0 70px";
+            daySelect.dataset.default = "";  // day has no default (month must be selected first)
             daySelect.innerHTML = Array.from({length:maxDay},(_,i)=>{
               const v=String(i+1).padStart(2,"0");
               return `<option value="${v}">${i+1}</option>`;
             }).join("");
             wrap.appendChild(daySelect);
+            if (daySelect && daySelect.dataset.default !== undefined) daySelect.classList.toggle("fi-changed", daySelect.value !== daySelect.dataset.default);
           } else {
             // Rebuild options for new month, preserve current day if valid
             const cur = daySelect.value;
@@ -95,6 +206,7 @@ _bind(root) {
               const v=String(i+1).padStart(2,"0");
               return `<option value="${v}"${cur===v?" selected":""}>${i+1}</option>`;
             }).join("");
+            if (daySelect && daySelect.dataset.default !== undefined) daySelect.classList.toggle("fi-changed", daySelect.value !== daySelect.dataset.default);
           }
         }
       }
@@ -110,14 +222,22 @@ _bind(root) {
             cb.checked = false; cb.closest(".pill")?.classList.remove("on");
           })
         );
-        const ds = form.querySelector("[name=day]"); if (ds) ds.value = "";
+        const ds = form.querySelector("[name=day]");
+        if (ds) { ds.value = ""; ds.classList.toggle("fi-changed", ds.value !== (ds.dataset.default??"")); }
+        const eo = form.querySelector(".every-n-days-opts"); if (eo) eo.innerHTML = "";
       }
-      // time ↔ cron mutual exclusion
+      // time / cron / sun mutual exclusion
       if (name === "time" && e.target.value.trim()) {
         const cron = form.querySelector("[name=cron]"); if (cron) cron.value = "";
+        const sun = form.querySelector("[name=sun]");
+        if (sun) { sun.value = ""; sun.classList.toggle("fi-changed", sun.value !== (sun.dataset.default??""));
+          const so = form.querySelector(".sun-offsets"); if (so) so.innerHTML = ""; }
       }
       if (name === "cron" && e.target.value.trim()) {
         const time = form.querySelector("[name=time]"); if (time) time.value = "";
+        const sun = form.querySelector("[name=sun]");
+        if (sun) { sun.value = ""; sun.classList.toggle("fi-changed", sun.value !== (sun.dataset.default??""));
+          const so = form.querySelector(".sun-offsets"); if (so) so.innerHTML = ""; }
       }
     });
 
@@ -266,25 +386,42 @@ _bind(root) {
     // Errors block save; warnings are shown but allow save.
     const g = k => (fd[k] != null ? String(fd[k]) : "").trim();
 
-    const rTime = /^\d+:\d{1,2}(:\d{1,2})?$/;  // HH:MM sau HH:MM:SS (0:5 etc.)
-    const rNum  = /^\d+(\.\d*)?$/;               // positive number
-    const rDate = /^\d{1,2}\s+[a-zA-Z]{3}$|^\d{4}-\d{2}-\d{2}$/;
+    const rTime     = /^\d+:\d{1,2}(:\d{1,2})?$/;       // HH:MM sau HH:MM:SS
+    const rNum      = /^\d+(\.\d*)?$/;                   // positive number (float ok)
+    const rInt      = /^\d+$/;                             // positive integer only
+    const rIuId     = /^[a-z0-9]+(_[a-z0-9]+)*$/;          // IU snake_case ID
+    const rDate     = /^\d{1,2}\s+[a-zA-Z]{3}$|^\d{4}-\d{2}-\d{2}$/;
+    const rDayNums  = /^\d+(,\s*\d+)*$/;                 // comma-separated integers
 
     const errs = [], warns = [];
+
     const chkTime = (k, label) => {
       const v = g(k);
       if (v && !rTime.test(v))
         errs.push(`${label}: "${v}" — expected HH:MM or HH:MM:SS`);
     };
-    const chkNum  = (k, label) => {
+    const chkNum = (k, label) => {
       const v = g(k);
       if (v && !rNum.test(v))
         errs.push(`${label}: "${v}" — expected a number`);
     };
-    const chkDate = (k, label) => {
+    // cv.positive_int: integer >= 1
+    const chkPosInt = (k, label) => {
       const v = g(k);
-      if (v && !rDate.test(v))
-        errs.push(`${label}: "${v}" — expected dd Mmm (e.g. 15 Mar)`);
+      if (v && (!rInt.test(v.trim()) || parseInt(v, 10) < 1))
+        errs.push(`${label}: "${v}" — expected a positive integer`);
+    };
+    // cv.positive_float: number > 0
+    const chkPosFloat = (k, label) => {
+      const v = g(k);
+      if (v && (!rNum.test(v) || parseFloat(v) <= 0))
+        errs.push(`${label}: "${v}" — expected a positive number`);
+    };
+    // IU ID: optional snake_case (validated only if non-empty)
+    const chkIuId = (k, label) => {
+      const v = g(k);
+      if (v && !rIuId.test(v))
+        errs.push(this._t("err.id_format").replace("{field}", label));
     };
 
     for (const [k,l] of [
@@ -295,20 +432,48 @@ _bind(root) {
       ["duration", "Duration"],
     ]) chkTime(k, l);
 
-    // time (schedule): time-of-day -- after normTime() must be valid HH:MM:SS (00-23:00-59:00-59)
+    // time (schedule): strict HH:MM:SS check
     const t = g("time");
     if (t && /^[\d:]/.test(t) && !/^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(t))
       errs.push(`Time: "${t}" — expected HH:MM or HH:MM:SS`);
 
+    // future_span: docs "Number of days to look ahead" -> positive integer
     chkNum("future_span", "Future span");
-    chkNum("repeat",      "Repeat");
-    chkNum("load_factor", "Load factor");
-    chkNum("granularity",             "Granularity");
-    chkNum("refresh_interval",        "Refresh interval");
-    chkNum("history_span",            "History span");
-    chkNum("history_refresh_interval","History refresh interval");
-    chkNum("history_read_delay",      "History read delay");
-    chkNum("clock_max_log_entries",   "Clock max log entries");
+    { const v = g("future_span");
+      if (v && (!rInt.test(v.trim()) || parseInt(v, 10) < 1))
+        errs.push(this._t("err.future_span_int")); }
+
+    // cv.positive_int fields
+    chkPosInt("repeat",                   "Repeat");
+    chkPosInt("granularity",              "Granularity");
+    chkPosInt("refresh_interval",         "Refresh interval");
+    chkPosInt("history_span",             "History span");
+    chkPosInt("history_refresh_interval", "History refresh interval");
+    chkPosInt("history_read_delay",       "History read delay");
+    chkPosInt("clock_max_log_entries",    "Clock max log entries");
+
+    // cv.positive_float fields
+    chkPosFloat("load_factor", "Load factor");
+
+    // IU ID fields: optional, snake_case if provided
+    chkIuId("controller_id", "Controller ID");
+    chkIuId("zone_id",       "Zone ID");
+    chkIuId("schedule_id",   "Schedule ID");
+    chkIuId("sequence_id",   "Sequence ID");
+
+    // every_n_days + start_n_days: both Required in EVERY_N_DAYS_SCHEMA
+    chkPosInt("every_n_days", "Every N days");
+    { const en = g("every_n_days"), sny = g("start_n_days_year"), snm = g("start_n_days_month");
+      if (en && (!sny || !snm)) errs.push(this._t("err.start_n_days_required")); }
+    // Specific days (day_num): comma-separated integers 1-31
+    { const v = g("day_num");
+      if (v) {
+        const parts = v.split(",").map(s => s.trim()).filter(Boolean);
+        const ok = parts.length > 0 &&
+                   parts.every(p => rInt.test(p) && +p >= 1 && +p <= 31);
+        if (!ok) errs.push(this._t("err.day_num_format"));
+      }
+    }
 
     // Adjustment value
     const method = g("method");
@@ -316,19 +481,18 @@ _bind(root) {
       const isTime = ["actual","increase","decrease"].includes(method);
       const v = g("value");
       if (v) {
-        if (isTime  && !rTime.test(v))
+        if (isTime && !rTime.test(v))
           errs.push(`Value: "${v}" — expected HH:MM or HH:MM:SS`);
-        if (!isTime && method !== "reset" && !rNum.test(v))
-          errs.push(`Value: "${v}" — expected a number`);
+        if (!isTime && method !== "reset") {
+          if (!rNum.test(v) || parseFloat(v) <= 0)
+            errs.push(`Value: "${v}" — expected a positive number`);
+        }
       }
     }
 
-    // from/until: vol.Inclusive — both must be set or both empty.
-    // Also validate each field individually (day without month or vice versa).
+    // from/until: vol.Inclusive — both must be set or both empty
     const fromDay = g("from_day"), fromMon = g("from_month");
     const untilDay = g("until_day"), untilMon = g("until_month");
-    // With the new UI, day select only exists when month is set,
-    // so fromDay without fromMon (or vice versa) is no longer possible.
     const fromSet = !!(fromDay && fromMon);
     const untilSet = !!(untilDay && untilMon);
     if (fromSet !== untilSet)
@@ -346,11 +510,8 @@ _bind(root) {
           return p.split(",").every(tok => {
             if (tok === "*") return true;
             if (/^\*\/\d+$/.test(tok)) return parseInt(tok.slice(2)) > 0;
-            const rangeStep = tok.match(/^(\d+)-(\d+)(\/\d+)?$/);
-            if (rangeStep) {
-              const a = +rangeStep[1], b = +rangeStep[2];
-              return a >= lo && b <= hi && a <= b;
-            }
+            const rs = tok.match(/^(\d+)-(\d+)(\/\d+)?$/);
+            if (rs) { const a=+rs[1],b=+rs[2]; return a>=lo&&b<=hi&&a<=b; }
             const n = +tok;
             return Number.isInteger(n) && n >= lo && n <= hi;
           });
@@ -359,12 +520,9 @@ _bind(root) {
       if (!cronOk) {
         errs.push(this._t("err.cron_invalid"));
       } else {
-        // Semantic validation: check for impossible dom+month combinations.
-        // MAX_DAYS[m] = max days in month m (Feb=29 allows leap-year scheduling).
+        // Semantic: impossible dom+month combinations
         const MAX_DAYS = [0,31,29,31,30,31,30,31,31,30,31,30,31];
         const expand = field => {
-          // Returns array of numeric values for a cron field, or null if
-          // indeterminate (wildcard or step — too many possibilities to enumerate).
           if (field === "*" || field.includes("/")) return null;
           const vals = [];
           for (const tok of field.split(",")) {
@@ -374,17 +532,14 @@ _bind(root) {
           }
           return vals;
         };
-        const domVals   = expand(parts[2]);   // day-of-month field
-        const monthVals = expand(parts[3]);   // month field
+        const domVals = expand(parts[2]), monthVals = expand(parts[3]);
         if (domVals && monthVals) {
-          // If NO (month, dom) pair is possible, the schedule can never run.
-          const possible = monthVals.some(m => domVals.some(d => d <= MAX_DAYS[m]));
-          if (!possible) errs.push(this._t("err.cron_impossible"));
+          if (!monthVals.some(m => domVals.some(d => d <= MAX_DAYS[m])))
+            errs.push(this._t("err.cron_impossible"));
         }
-        // Warning: if BOTH dom and dow are non-wildcard, cron applies OR logic
-        // (not AND). "15 * Mon" means "the 15th OR every Monday", not "Monday the 15th".
-        const domIsWild = parts[2] === "*" || parts[2].startsWith("*/");
-        const dowIsWild = parts[4] === "*" || parts[4].startsWith("*/");
+        // Warning: dom + dow both non-wildcard -> OR logic
+        const domIsWild = parts[2]==="*" || parts[2].startsWith("*/");
+        const dowIsWild = parts[4]==="*" || parts[4].startsWith("*/");
         if (!domIsWild && !dowIsWild) warns.push(this._t("warn.cron_dom_dow_or"));
       }
     }
@@ -557,6 +712,16 @@ _bind(root) {
               else if (nums.length>1) payload.day=nums;
             } else if (dp) { payload.day=dp; }
           }
+          // Sun event: combine sun + before + after into payload.time object
+          { const sun=(payload.sun||"").trim(), bef=(payload.before||"").trim(), aft=(payload.after||"").trim();
+            delete payload.sun; delete payload.before; delete payload.after;
+            if (sun) {
+              const sunObj = {sun};
+              if (bef) sunObj.before = bef;
+              if (aft) sunObj.after  = aft;
+              payload.time = sunObj;
+            }
+          }
           // Combine from_day + from_month -> "dd Mon", same for until
           { const fd=payload.from_day||"", fm=payload.from_month||"";
             delete payload.from_day; delete payload.from_month;
@@ -573,14 +738,24 @@ _bind(root) {
           break;
         }
         case "adj": {
-          // Combine day select (odd/even) + day_num text (specific numbers)
+          // Combine day select (odd/even/every_n_days) + day_num + every_n_days fields
           { const dn=(payload.day_num||"").trim(), dp=(payload.day||"").trim();
+            const en=(payload.every_n_days||"").trim();
+            const sny=(payload.start_n_days_year||"").trim();
+            const snm=(payload.start_n_days_month||"").trim();
+            const snd=(payload.start_n_days_day||"01").trim();
             delete payload.day_num; delete payload.day;
-            if (dn) {
+            delete payload.every_n_days;
+            delete payload.start_n_days_year; delete payload.start_n_days_month; delete payload.start_n_days_day;
+            if (dp === "every_n_days" && en) {
+              const obj = {every_n_days: parseInt(en, 10)};
+              if (sny && snm) obj.start_n_days = `${sny}-${snm}-${snd}`;
+              payload.day = obj;
+            } else if (dn) {
               const nums=dn.split(",").map(s=>parseInt(s.trim())).filter(n=>!isNaN(n)&&n>=1&&n<=31);
               if (nums.length===1) payload.day=nums[0];
               else if (nums.length>1) payload.day=nums;
-            } else if (dp) { payload.day=dp; }
+            } else if (dp && dp !== "every_n_days") { payload.day=dp; }
           }
           // Combine from_day + from_month -> "dd Mon", same for until
           { const fd=payload.from_day||"", fm=payload.from_month||"";
