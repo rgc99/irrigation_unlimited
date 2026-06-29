@@ -38,6 +38,7 @@ _fGlobalConfig(d = {}) {
 
   _fCtrl(d = {}) {
     return `<div class="form">
+      <div class="fg-title">${this._t("sec.identity")}</div>
       ${fText("name",this._t("fld.ctrl_name"),d.name??"")}
       ${fText("controller_id",this._t("fld.ctrl_id"),d.controller_id??"")}
       ${fEntityPicker("entity_id",this._t("fld.entity_id_ctrl"),d.entity_id??"",this._hass)}
@@ -47,10 +48,12 @@ _fGlobalConfig(d = {}) {
         {value:"off", label:this._t("opt.states_off")},
         {value:"none",label:this._t("opt.states_none")},
       ], d.entity_states??"all")}
+      <div class="fg-title">${this._t("sec.behaviour")}</div>
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
       ${fToggle("queue_manual",this._t("fld.queue_manual"),!!d.queue_manual)}
       ${fToggle("show_sequence_status",this._t("fld.show_seq_status"),!!d.show_sequence_status)}
       ${fToggle("pause_next",this._t("fld.pause_next"),!!d.pause_next)}
+      <div class="fg-title">${this._t("sec.timing")}</div>
       ${fText("preamble",this._t("fld.preamble"),d.preamble??"")}
       ${fText("postamble",this._t("fld.postamble"),d.postamble??"")}
     </div>`;
@@ -129,6 +132,7 @@ _fGlobalConfig(d = {}) {
   _fZone(d) {
     const show = d.show || {};
     return `<div class="form">
+      <div class="fg-title">${this._t("sec.identity")}</div>
       ${fText("name",this._t("fld.zone_name"),d.name??"")}
       ${fText("zone_id",this._t("fld.zone_id"),d.zone_id??"")}
       ${fEntityPicker("entity_id",this._t("fld.entity_id_zone"),d.entity_id??"",this._hass)}
@@ -138,8 +142,10 @@ _fGlobalConfig(d = {}) {
         {value:"off", label:this._t("opt.states_off")},
         {value:"none",label:this._t("opt.states_none")},
       ], d.entity_states??"all")}
+      <div class="fg-title">${this._t("sec.behaviour")}</div>
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
       ${fToggle("allow_manual",this._t("fld.allow_manual"),!!d.allow_manual)}
+      <div class="fg-title">${this._t("sec.run_time")}</div>
       ${fText("minimum",  this._t("fld.minimum"), d.minimum??"", "00:01")}
       ${fText("maximum",  this._t("fld.maximum"), d.maximum??"")}
       ${fText("threshold",this._t("fld.threshold"),         d.threshold??"")}
@@ -150,6 +156,48 @@ _fGlobalConfig(d = {}) {
         !!(show.timeline || d.show_timeline))}
       ${fToggle("show_config",this._t("fld.show_config"),
         !!(show.config || d.show_config))}
+    </div>`;
+  },
+
+  // Helper: year+month+day picker for start_n_days (EVERY_N_DAYS_SCHEMA).
+  // Generates: <year-select> <month-select> <day-select (dynamic)>
+  // Saves as "YYYY-MM-DD" for cv.date compatibility.
+  _fStartDate(val) {
+    const MONS  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    // Default to today when no saved value
+    const today = new Date();
+    const defY  = String(today.getFullYear());
+    const defM  = String(today.getMonth()+1).padStart(2,"0");
+    const defD  = String(today.getDate()).padStart(2,"0");
+    const parts = (val||"").split("-");
+    const yr    = parts.length===3 ? parts[0] : defY;
+    const mo    = parts.length===3 ? parts[1] : defM;
+    const dy    = parts.length===3 ? parts[2] : defD;
+    const moName = MONS[parseInt(mo,10)-1] || MONS[parseInt(defM,10)-1];
+    // Leap year check for February
+    const yrN = parseInt(yr,10);
+    const isLeap = yrN ? ((yrN%4===0 && yrN%100!==0) || yrN%400===0) : true;
+    const MDAYS = {Jan:31,Feb:isLeap?29:28,Mar:31,Apr:30,May:31,Jun:30,Jul:31,Aug:31,Sep:30,Oct:31,Nov:30,Dec:31};
+    const maxDay = MDAYS[moName]||31;
+    const curY   = today.getFullYear();
+    const yearOpts = Array.from({length:11},(_,i)=>{
+      const y=curY+i; return `<option value="${y}"${yr===String(y)?" selected":""}>${y}</option>`;
+    }).join("");
+    const monthOpts = MONS.map((m,i)=>{
+      const v=String(i+1).padStart(2,"0");
+      return `<option value="${v}"${mo===v?" selected":""}>${m}</option>`;
+    }).join("");
+    const dayOpts = Array.from({length:maxDay},(_,i)=>{
+      const v=String(i+1).padStart(2,"0");
+      return `<option value="${v}"${dy===v?" selected":""}>${i+1}</option>`;
+    }).join("");
+    return `<div class="fg">
+      <label class="fl">${this._t("fld.start_n_days")}</label>
+      <div style="display:flex;gap:4px">
+        <select class="fi" name="start_n_days_year" style="flex:0 0 90px" data-default="${yr}">${yearOpts}</select>
+        <select class="fi" name="start_n_days_month" data-default="${mo}">${monthOpts}</select>
+        <select class="fi" name="start_n_days_day" style="flex:0 0 70px" data-default="${dy}">${dayOpts}</select>
+      </div>
     </div>`;
   },
 
@@ -170,27 +218,62 @@ _fGlobalConfig(d = {}) {
     return `<div class="fg">
       <label class="fl">${label}</label>
       <div class="iu-date-wrap" style="display:flex;gap:4px">
-        <select class="fi" name="${prefix}_month">
+        <select class="fi" name="${prefix}_month" data-default="${m}">
           <option value="">—</option>
           ${MONS.map(mo=>`<option value="${mo}"${m===mo?" selected":""}>${mo}</option>`).join("")}
         </select>
-        ${m ? `<select class="fi" name="${prefix}_day" style="flex:0 0 70px">${dayOpts}</select>` : ""}
+        ${m ? `<select class="fi" name="${prefix}_day" style="flex:0 0 70px" data-default="01">${dayOpts}</select>` : ""}
       </div>
     </div>`;
   },
 
   _fSched(d) {
+    // time can be a string (HH:MM) or a sun-event object {sun, before?, after?}
+    const isSun    = d.time && typeof d.time === "object" && d.time.sun;
+    const timeStr  = isSun ? "" : (d.time ?? "");
+    const sunVal   = isSun ? d.time.sun : "";
+    const beforeVal= isSun ? (d.time.before ?? "") : "";
+    const afterVal = isSun ? (d.time.after  ?? "") : "";
+    // day can be "odd"/"even", array/int, or {every_n_days, start_n_days}
+    const isEvery  = !!(d.day && typeof d.day === "object" && d.day.every_n_days);
+    const dayDp    = !isEvery && typeof d.day === "string" && (d.day==="odd"||d.day==="even") ? d.day : "";
+    const dayDn    = !isEvery && !dayDp ? (Array.isArray(d.day)?d.day.join(", "):(d.day!=null?String(d.day):"")) : "";
+    const everyN   = isEvery ? String(d.day.every_n_days) : "";
+    const startN   = isEvery ? (d.day.start_n_days ?? "") : "";
     return `<div class="form">
+      <div class="fg-title">${this._t("sec.identity")}</div>
       ${fText("name",this._t("fld.seq_name"),d.name)}
       ${fText("schedule_id",this._t("fld.schedule_id"),d.schedule_id??"")}
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
-      ${fText("time",this._t("fld.sched_time"),d.time??"","")}
+      <div class="fg-title">${this._t("sec.timing_sched")}</div>
+      ${fText("time",this._t("fld.sched_time"),timeStr,"")}
+      <div class="fg">
+        <label class="fl">${this._t("fld.sun")}</label>
+        <select class="fi" name="sun" data-default="${sunVal}">
+          <option value="">—</option>
+          <option value="sunrise" ${sunVal==="sunrise"?"selected":""}>${this._t("opt.sun_rise")}</option>
+          <option value="sunset"  ${sunVal==="sunset" ?"selected":""}>${this._t("opt.sun_set")}</option>
+        </select>
+        <div class="sun-offsets">${sunVal ? `
+          <div class="fg"><label class="fl">${this._t("fld.before")}</label>
+            <input class="fi" type="text" name="before" value="${beforeVal}" placeholder=""></div>
+          <div class="fg"><label class="fl">${this._t("fld.after")}</label>
+            <input class="fi" type="text" name="after" value="${afterVal}" placeholder=""></div>` : ""}
+        </div>
+      </div>
       ${fText("cron",this._t("fld.cron"),d.cron??"","0 6 * * 1,3,5")}
       ${fText("duration",this._t("fld.sched_duration"),d.duration??"","")}
       ${fSelect("anchor",this._t("fld.anchor"),[{value:"start",label:this._t("opt.anchor_start")},{value:"finish",label:this._t("opt.anchor_finish")}],d.anchor??"start")}
+      <div class="fg-title">${this._t("sec.day_filter")}</div>
       ${fPills("weekday",this._t("fld.weekdays"),WEEKDAYS,d.weekday??[])}
-      <div class="fg"><label class="fl">${this._t("fld.days")}</label><select class="fi" name="day"><option value="">${this._t("opt.day_all")}</option><option value="odd" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="odd"?"selected":""}>${this._t("opt.day_odd")}</option><option value="even" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="even"?"selected":""}>${this._t("opt.day_even")}</option></select></div>
-      <div class="fg"><label class="fl">${this._t("fld.day_specific")}</label><input class="fi" type="text" name="day_num" value="${Array.isArray(d.day)?d.day.join(", "):(d.day!=null&&d.day!=="odd"&&d.day!=="even"?String(d.day):"")}"></div>
+      <div class="fg"><label class="fl">${this._t("fld.days")}</label><select class="fi" name="day" data-default=""><option value="">${this._t("opt.day_all")}</option><option value="odd" ${dayDp==="odd"?"selected":""}>${this._t("opt.day_odd")}</option><option value="even" ${dayDp==="even"?"selected":""}>${this._t("opt.day_even")}</option><option value="every_n_days" ${isEvery?"selected":""}>${this._t("opt.day_every_n")}</option></select>
+        <div class="every-n-days-opts">${isEvery?`
+          <div class="fg"><label class="fl">${this._t("fld.every_n_days")}</label><input class="fi" type="text" name="every_n_days" value="${everyN}" placeholder="3"></div>
+          ${this._fStartDate(startN)}`
+        :""}</div>
+      </div>
+      <div class="fg"><label class="fl">${this._t("fld.day_specific")}</label><input class="fi" type="text" name="day_num" value="${!isEvery?dayDn:""}"></div>
+      <div class="fg-title">${this._t("sec.month_filter")}</div>
       ${fPills("month",this._t("fld.months"),MONTHS,d.month??[])}
       ${this._fDate("from",this._t("fld.from"),d.from??"")}
       ${this._fDate("until",this._t("fld.until"),d.until??"")}
@@ -200,7 +283,13 @@ _fGlobalConfig(d = {}) {
   _fAdj(d) {
     const method = d.method ?? "percentage";
     const isTime = ["actual","increase","decrease"].includes(method);
+    const isEvery= !!(d.day && typeof d.day === "object" && d.day.every_n_days);
+    const dayDp  = !isEvery && typeof d.day === "string" && (d.day==="odd"||d.day==="even") ? d.day : "";
+    const dayDn  = !isEvery && !dayDp ? (Array.isArray(d.day)?d.day.join(", "):(d.day!=null?String(d.day):"")) : "";
+    const everyN = isEvery ? String(d.day.every_n_days) : "";
+    const startN = isEvery ? (d.day.start_n_days ?? "") : "";
     return `<div class="form">
+      <div class="fg-title">${this._t("sec.adj_params")}</div>
       ${fSelect("method",this._t("fld.adj_method"),[
         {value:"actual",label:this._t("opt.adj_actual")},
         {value:"percentage",label:this._t("opt.adj_percentage")},
@@ -212,21 +301,30 @@ _fGlobalConfig(d = {}) {
       ${method!=="reset"?fText("value",isTime?this._t("fld.adj_value_duration"):method==="percentage"?this._t("fld.adj_value_percent"):this._t("fld.adj_value_factor"),d.value!=null?String(d.value):isTime?"":"",""):""}
       ${fText("minimum",this._t("fld.adj_minimum"),d.minimum??"","")}
       ${fText("maximum",this._t("fld.adj_maximum"),d.maximum??"","")}
+      ${fText("load_factor",this._t("fld.load_factor"),d.load_factor!=null?String(d.load_factor):"","1")}
+      <div class="fg-title">${this._t("sec.day_filter")}</div>
       ${fPills("adj_weekday",this._t("fld.adj_weekday"),WEEKDAYS,d.weekday??[])}
-      <div class="fg"><label class="fl">${this._t("fld.days")}</label><select class="fi" name="day"><option value="">${this._t("opt.day_all")}</option><option value="odd" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="odd"?"selected":""}>${this._t("opt.day_odd")}</option><option value="even" ${(typeof d.day==="string"&&(d.day==="odd"||d.day==="even")?d.day:"")==="even"?"selected":""}>${this._t("opt.day_even")}</option></select></div>
-      <div class="fg"><label class="fl">${this._t("fld.day_specific")}</label><input class="fi" type="text" name="day_num" value="${Array.isArray(d.day)?d.day.join(", "):(d.day!=null&&d.day!=="odd"&&d.day!=="even"?String(d.day):"")}"></div>
+      <div class="fg"><label class="fl">${this._t("fld.days")}</label><select class="fi" name="day" data-default=""><option value="">${this._t("opt.day_all")}</option><option value="odd" ${dayDp==="odd"?"selected":""}>${this._t("opt.day_odd")}</option><option value="even" ${dayDp==="even"?"selected":""}>${this._t("opt.day_even")}</option><option value="every_n_days" ${isEvery?"selected":""}>${this._t("opt.day_every_n")}</option></select>
+        <div class="every-n-days-opts">${isEvery?`
+          <div class="fg"><label class="fl">${this._t("fld.every_n_days")}</label><input class="fi" type="text" name="every_n_days" value="${everyN}" placeholder="3"></div>
+          ${this._fStartDate(startN)}`
+        :""}</div>
+      </div>
+      <div class="fg"><label class="fl">${this._t("fld.day_specific")}</label><input class="fi" type="text" name="day_num" value="${!isEvery?dayDn:""}"></div>
+      <div class="fg-title">${this._t("sec.month_filter")}</div>
       ${fPills("adj_month",this._t("fld.adj_month"),MONTHS,d.month??[])}
       ${this._fDate("from",this._t("fld.from"),d.from??"")}
       ${this._fDate("until",this._t("fld.until"),d.until??"")}
-      ${fText("load_factor",this._t("fld.load_factor"),d.load_factor!=null?String(d.load_factor):"","1")}
     </div>`;
   },
 
   _fSeq(d) {
     return `<div class="form">
+      <div class="fg-title">${this._t("sec.identity")}</div>
       ${fText("name",this._t("fld.seq_name"),d.name)}
       ${fText("sequence_id",this._t("fld.seq_id"),d.sequence_id??"")}
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
+      <div class="fg-title">${this._t("sec.timing")}</div>
       ${fText("delay",this._t("fld.delay"),d.delay??"","")}
       ${fText("duration",this._t("fld.seq_duration"),d.duration??"","")}
       ${fText("repeat",this._t("fld.repeat"),d.repeat!=null?String(d.repeat):"","1")}
@@ -241,8 +339,10 @@ _fGlobalConfig(d = {}) {
       : [{value:"1",label:"Zone 1"}];
     const curZid = Array.isArray(d.zone_id) ? (d.zone_id[0]??"1") : (d.zone_id ?? "1");
     return `<div class="form">
+      <div class="fg-title">${this._t("sec.zone")}</div>
       ${fSelect("zone_id",this._t("fld.sqz_zone"),zoneOpts,String(curZid))}
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
+      <div class="fg-title">${this._t("sec.timing")}</div>
       ${fText("duration",this._t("fld.sqz_duration"),d.duration??"","")}
       ${fText("delay",this._t("fld.sqz_delay"),d.delay??"","")}
       ${fText("repeat",this._t("fld.repeat"),d.repeat!=null?String(d.repeat):"","1")}
