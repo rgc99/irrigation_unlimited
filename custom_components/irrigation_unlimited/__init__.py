@@ -272,7 +272,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         """Reload coordinator from panel store, not from YAML."""
         iu_cfg = store.to_iu_config_multi(store.get_controller_list())
         coordinator.load(iu_cfg)
-        await _bs_reload(hass)
+        await _bs_reload(component, coordinator)
 
     async_register_admin_service(hass, DOMAIN, SERVICE_RELOAD, _panel_reload_service)
 
