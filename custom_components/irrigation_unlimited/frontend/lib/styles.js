@@ -90,7 +90,7 @@ export const STYLES = `
 .mf { display:flex; justify-content:flex-end; gap:8px; padding:12px 20px; border-top:1px solid var(--divider-color,#e0e0e0); }
 .form { display:flex; flex-direction:column; gap:14px; }
 .fg { display:flex; flex-direction:column; gap:4px; }
-.fl { font-size:.78rem; font-weight:600; color:var(--secondary-text-color,#777); text-transform:uppercase; letter-spacing:.04em; }
+.fl { font-size:.9rem; font-weight:500; color:var(--secondary-text-color,#777); }
 .fi { padding:8px 10px; border:1.5px solid var(--divider-color,#d0d0d0); border-radius:8px;
       font-size:.9rem; font-family:inherit; background:var(--primary-background-color,#fff);
       color:var(--primary-text-color); outline:none; transition:border-color .15s;
@@ -100,7 +100,10 @@ export const STYLES = `
         color:var(--secondary-text-color,#888); margin-top:4px; padding-top:10px;
         border-top:1px solid var(--divider-color,#e8e8e8); }
 .tw { display:flex; align-items:center; justify-content:space-between; }
-.tl { font-size:.9rem; }
+.tl { font-size:.9rem; color:var(--secondary-text-color,#777); }
+/* Toggle changed from default → label becomes primary text color */
+.tw:has(.ti[data-default="true"]:not(:checked)) .tl,
+.tw:has(.ti[data-default="false"]:checked) .tl { color:var(--primary-text-color,#1a1a1a); font-weight:600; }
 .tg { position:relative; width:44px; height:24px; display:inline-block; }
 .ti { opacity:0; width:0; height:0; position:absolute; }
 .ts { position:absolute; inset:0; background:#ccc; border-radius:24px; cursor:pointer; transition:background .2s; }
@@ -121,10 +124,15 @@ export const STYLES = `
 .val-warn:empty { display:none; }
 .bdanger { background:var(--error-color,#db4437)!important; color:#fff!important; }
 .bdanger:hover { opacity:.85; }
-.fg-title { font-size:.72rem; font-weight:600; color:var(--secondary-text-color,#888);
-            text-transform:uppercase; letter-spacing:.06em;
-            margin:12px 0 4px; padding-top:8px;
-            border-top:1px solid var(--divider-color,#e0e0e0); }
+.fg-title { font-size:.8rem; font-weight:700; color:var(--primary-color,#1976d2);
+            margin:16px 0 6px; padding:2px 0 2px 10px;
+            border-left:3px solid var(--primary-color,#1976d2); }
+.fg-title ~ .fg { padding-left:13px; }
+.sun-offsets { display:flex; flex-direction:column; gap:6px; margin-top:6px; padding-left:10px; }
+.every-n-days-opts { display:flex; flex-direction:column; gap:6px; margin-top:6px; padding-left:10px; }
+/* Selects: grey when at default value, primary when changed */
+select.fi           { color:var(--secondary-text-color,#777); }
+select.fi.fi-changed{ color:var(--primary-text-color,#1a1a1a); font-weight:500; }
 .ep-dd {
   position:absolute; top:100%; left:0; right:0; z-index:9000;
   background:var(--card-background-color,#fff);
