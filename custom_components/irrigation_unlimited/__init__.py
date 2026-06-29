@@ -40,7 +40,6 @@ controllers" architecture:
 
 from __future__ import annotations  # enables PEP 563 postponed evaluation of annotations;
                                     # consistent with all other files in this integration
-
 import logging
 from pathlib import Path  # NEW: needed to resolve the bundled frontend/ dir for StaticPathConfig
 
@@ -260,6 +259,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     register_component_services(component, coordinator)
+
+    # Override the master's reload service with a panel-aware version.
+    # The master's handler calls coordinator.load(conf[DOMAIN]) where conf
+    # comes from YAML; if the user has no 'controllers:' in YAML (panel-only
+    # mode) this raises KeyError: 'controllers'. Our version reloads from store.
+    from homeassistant.const import SERVICE_RELOAD  # noqa: PLC0415
+    from homeassistant.helpers.service import async_register_admin_service  # noqa: PLC0415
+    from .binary_sensor import async_reload_platform as _bs_reload  # noqa: PLC0415
+
+    async def _panel_reload_service(call: ServiceCall) -> None:
+        """Reload coordinator from panel store, not from YAML."""
+        iu_cfg = store.to_iu_config_multi(store.get_controller_list())
+        coordinator.load(iu_cfg)
+        await _bs_reload(hass)
+
+    async_register_admin_service(hass, DOMAIN, SERVICE_RELOAD, _panel_reload_service)
 
     coordinator.listen()
     coordinator.clock.start()
