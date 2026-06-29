@@ -13,13 +13,13 @@ export function fText(name, label, value="", hint="") {
 export function fToggle(name, label, checked=true) {
   return `<div class="fg"><div class="tw">
     <span class="tl">${label}</span>
-    <label class="tg"><input class="ti" type="checkbox" name="${name}"${checked?" checked":""}><span class="ts"></span></label>
+    <label class="tg"><input class="ti" type="checkbox" name="${name}" data-default="${checked}"${checked?" checked":""}><span class="ts"></span></label>
   </div></div>`;
 }
 export function fSelect(name, label, options, value) {
   return `<div class="fg">
     <label class="fl">${label}</label>
-    <select class="fi" name="${name}">
+    <select class="fi" name="${name}" data-default="${esc(String(value??""))}">
       ${options.map(o=>`<option value="${esc(o.value)}"${o.value===String(value??"")?` selected`:""}>${esc(o.label)}</option>`).join("")}
     </select>
   </div>`;
