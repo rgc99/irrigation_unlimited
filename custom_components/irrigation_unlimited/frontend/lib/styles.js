@@ -128,7 +128,15 @@ export const STYLES = `
             margin:16px 0 6px; padding:2px 0 2px 10px;
             border-left:3px solid var(--primary-color,#1976d2); }
 .fg-title ~ .fg { padding-left:13px; }
+.req { color:var(--error-color,#f44336); margin-left:2px; font-weight:700; }
 .sun-offsets { display:flex; flex-direction:column; gap:6px; margin-top:6px; padding-left:10px; }
+.ep-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+.ep-header .fl { margin:0; }
+.ep-header .ep-add:disabled { opacity:0.35; cursor:not-allowed; }
+.ep-multi { display:flex; flex-direction:column; gap:6px; }
+.ep-row { display:flex; gap:4px; align-items:flex-start; }
+.ep-row .epw { flex:1; }
+.ep-row .ep-del { flex:0 0 auto; margin-top:2px; }
 .every-n-days-opts { display:flex; flex-direction:column; gap:6px; margin-top:6px; padding-left:10px; }
 /* Selects: grey when at default value, primary when changed */
 select.fi           { color:var(--secondary-text-color,#777); }
