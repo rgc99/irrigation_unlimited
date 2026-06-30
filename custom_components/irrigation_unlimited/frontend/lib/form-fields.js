@@ -4,9 +4,9 @@
 import { esc } from "./helpers.js";
 import { _tr } from "./translations.js";
 
-export function fText(name, label, value="", hint="") {
+export function fText(name, label, value="", hint="", required=false) {
   return `<div class="fg">
-    <label class="fl">${label}</label>
+    <label class="fl">${label}${required?'<span class="req">*</span>':''}</label>
     <input class="fi" type="text" name="${name}" value="${esc(value)}"${hint?` placeholder="${esc(hint)}"`:""}>
   </div>`;
 }
@@ -37,9 +37,9 @@ export function fPills(name, label, options, selected=[], onchange="") {
 }
 export function fSec(t) { return `<div class="fsec">${t}</div>`; }
 
-export function fEntityPicker(name, label, value="") {
+export function fEntityPicker(name, label, value="", required=false) {
   return `<div class="fg">
-    <label class="fl">${label}</label>
+    <label class="fl">${label}${required?'<span class="req">*</span>':''}</label>
     <div class="epw">
       <input class="fi ep-inp" type="text" name="${name}"
              value="${esc(value)}" placeholder="${esc(_tr("fld.entity_picker_placeholder"))}" autocomplete="off">
@@ -47,4 +47,3 @@ export function fEntityPicker(name, label, value="") {
     </div>
   </div>`;
 }
-
