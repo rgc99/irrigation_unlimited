@@ -142,10 +142,25 @@ class IrrigationUnlimitedPanel extends HTMLElement {
     root.querySelectorAll(".ep-inp").forEach(inp => {
       inp.addEventListener("input",  () => this._showEntities(inp));
       inp.addEventListener("focus",  () => this._showEntities(inp));
-      inp.addEventListener("blur",   () => {
+      inp.addEventListener("blur", () => {
         setTimeout(() => {
           const dd = inp.nextElementSibling;
           if (dd) dd.style.display = "none";
+          const val = inp.value.trim();
+          const row = inp.closest(".ep-row");
+          const multi = inp.closest(".ep-multi");
+          const isFirst = multi && multi.querySelector(".ep-row") === row;
+          const invalid = val && this._hass?.states && !this._hass.states[val];
+          if (isFirst) {
+            // First row: never remove; clear if invalid text
+            if (invalid) inp.value = "";
+          } else if (row && multi && (!val || invalid)) {
+            // Other rows: remove if empty or invalid
+            row.remove();
+            if (this._updateEpMulti) this._updateEpMulti(multi);
+          } else if (!row && invalid) {
+            inp.value = ""; // single picker fallback
+          }
         }, 200);
       });
     });
@@ -153,7 +168,7 @@ class IrrigationUnlimitedPanel extends HTMLElement {
 
   _showEntities(inp) {
     if (!this._hass?.states) return;
-    const DOMAINS = ["switch", "input_boolean", "valve"];
+    const DOMAINS = ["switch", "light", "valve", "cover"];
     const search = inp.value.trim().toLowerCase();
     const dd = inp.nextElementSibling;
     if (!dd) return;
@@ -165,12 +180,14 @@ class IrrigationUnlimitedPanel extends HTMLElement {
         const name = (s.attributes.friendly_name ?? "").toLowerCase();
         return eid.includes(search) || name.includes(search);
       })
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(0, 25);
+      .sort(([a], [b]) => a.localeCompare(b));
 
-    if (!matches.length) { dd.style.display = "none"; return; }
+    // No limit when user is searching; cap unfiltered list to avoid huge dropdown
+    const shown = search ? matches : matches.slice(0, 50);
 
-    dd.innerHTML = matches.map(([eid, s]) => {
+    if (!shown.length) { dd.style.display = "none"; return; }
+
+    dd.innerHTML = shown.map(([eid, s]) => {
       const name = s.attributes.friendly_name ?? "";
       return `<div class="ep-item" data-val="${esc(eid)}">
         <span class="ep-id">${esc(eid)}</span>
@@ -184,6 +201,9 @@ class IrrigationUnlimitedPanel extends HTMLElement {
         e.preventDefault();
         inp.value = item.dataset.val;
         dd.style.display = "none";
+        // Update ＋ button directly (dispatching 'input' would reopen the dropdown)
+        const multi = inp.closest(".ep-multi");
+        if (multi && this._updateEpMulti) this._updateEpMulti(multi);
       });
     });
   }
