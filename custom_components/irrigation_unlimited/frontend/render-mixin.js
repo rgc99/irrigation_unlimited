@@ -9,6 +9,20 @@ import { esc, fmtWd, fmtAdj } from "./lib/helpers.js";
 
 export const renderMixin = {
 
+  // Format schedule time for display: string, sun event dict, or cron dict
+  _fmtTime(t) {
+    if (!t) return "—";
+    if (typeof t === "string") return t;
+    if (t.sun) {
+      let s = `☀ ${t.sun}`;
+      if (t.before) s += ` -${t.before}`;
+      if (t.after)  s += ` +${t.after}`;
+      return s;
+    }
+    if (t.cron) return `cron: ${t.cron}`;
+    return "—";
+  },
+
 _html() {
     if (this._loading) return `<div class="state">${this._t("status.loading")}</div>`;
     if (this._err)     return `<div class="state err">${esc(this._err)}</div>`;
@@ -126,7 +140,7 @@ _html() {
       <div class="li">
         <span class="lico">🕐</span>
         <span class="ln">${esc(s.name??"")}</span>
-        <span class="ld">${s.time??"—"}</span><span class="ld">${s.duration??"—"}</span>
+        <span class="ld">${this._fmtTime(s.time)}</span><span class="ld">${s.duration??"—"}</span>
         <span class="ld mu">${s.cron?"cron":fmtWd(s.weekday)}</span>
         ${s.enabled===false?`<span class="bdg off">${this._t("chip.disabled")}</span>`:""}
         <div class="la">
@@ -219,7 +233,7 @@ _html() {
       <div class="li">
         <span class="lico">🕐</span>
         <span class="ln">${esc(s.name??"")}</span>
-        <span class="ld">${s.time??"—"}</span><span class="ld">${s.duration??"—"}</span>
+        <span class="ld">${this._fmtTime(s.time)}</span><span class="ld">${s.duration??"—"}</span>
         <span class="ld mu">${s.cron?"cron":fmtWd(s.weekday)}</span>
         ${s.enabled===false?`<span class="bdg off">${this._t("chip.disabled")}</span>`:""}
         <div class="la">
