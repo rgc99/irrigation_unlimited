@@ -36,12 +36,17 @@ _fGlobalConfig(d = {}) {
     </div>`;
   },
 
-  _fCtrl(d = {}) {
+  _fCtrl(d = {}, ctrlId) {
+    const ctrls = this._config?.controllers ?? [];
+    const ctrlIdx = ctrlId
+      ? ctrls.findIndex(c => c.entry_id === ctrlId)
+      : ctrls.length;
+    const ctrlPlaceholder = `Controller ${ctrlIdx + 1}`;
     return `<div class="form">
       <div class="fg-title">${this._t("sec.identity")}</div>
-      ${fText("name",this._t("fld.ctrl_name"),d.name??"")}
-      ${fText("controller_id",this._t("fld.ctrl_id"),d.controller_id??"")}
-      ${fEntityPicker("entity_id",this._t("fld.entity_id_ctrl"),d.entity_id??"",this._hass)}
+      ${fText("name",this._t("fld.ctrl_name"),d.name??"",ctrlPlaceholder)}
+      ${fText("controller_id",this._t("fld.ctrl_id"),d.controller_id??"",String(ctrlIdx+1))}
+      ${fEntityPicker("entity_id",this._t("fld.entity_id_ctrl"),d.entity_id??"")}
       ${fSelect("entity_states",this._t("fld.entity_states"),[
         {value:"all", label:this._t("opt.states_all")},
         {value:"on",  label:this._t("opt.states_on")},
@@ -96,14 +101,14 @@ _fGlobalConfig(d = {}) {
       global:this._t("modal.global"),
     };
     const forms = {
-      zone:     () => this._fZone(m.data??{}),
-      sched:    () => this._fSched(m.data??{}),
+      zone:     () => this._fZone(m.data??{}, m.eid),
+      sched:    () => this._fSched(m.data??{}, m.eid, m.zoneId, !!m.seqId),
       adj:      () => this._fAdj(m.data??{}),
-      seq:      () => this._fSeq(m.data??{}),
+      seq:      () => this._fSeq(m.data??{}, m.eid),
       sqz:      () => this._fSqz(m.data??{}, m.eid),
       yaml:     () => `<pre class="yp">${esc(m.data??"")}</pre>`,
       allzones: () => this._fAllZones(m.data??{}),
-      ctrl:     () => this._fCtrl(m.data??{}),
+      ctrl:     () => this._fCtrl(m.data??{}, m.ctrlId),
       global:   () => this._fGlobalConfig(m.data??{}),
     };
     const isEdit = m.type === "ctrl" ? !!m.ctrlId : !!m.data?.id;
@@ -124,18 +129,50 @@ _fGlobalConfig(d = {}) {
           ${m.type!=="yaml"
             ? `<button class="btn btxt" data-a="close">${this._t("btn.cancel")}</button>
                <button class="btn bpri" data-a="save">${this._t("btn.save")}</button>`
-            : `<button class="btn btxt" data-a="close">${this._t("btn.close")}</button>`}
+            : `<button class="btn btxt" data-a="close">${this._t("btn.close")}</button>
+               <button class="btn btxt" data-a="copy-yaml">${this._t("btn.copy")}</button>
+               <button class="btn bpri" data-a="download-yaml">${this._t("btn.download")}</button>`}
         </div>
       </div>`;
   },
 
-  _fZone(d) {
+  _fZone(d, eid) {
+    const ctrl = this._config?.controllers?.find(c => c.entry_id === eid);
+    const zones = ctrl?.zones ?? [];
+    const zoneIdx = d.id ? zones.findIndex(z => z.id === d.id) : zones.length;
+    const zonePlaceholder = `Zone ${zoneIdx + 1}`;
     const show = d.show || {};
     return `<div class="form">
       <div class="fg-title">${this._t("sec.identity")}</div>
-      ${fText("name",this._t("fld.zone_name"),d.name??"")}
-      ${fText("zone_id",this._t("fld.zone_id"),d.zone_id??"")}
-      ${fEntityPicker("entity_id",this._t("fld.entity_id_zone"),d.entity_id??"",this._hass)}
+      ${fText("name",this._t("fld.zone_name"),d.name??"",zonePlaceholder)}
+      ${fText("zone_id",this._t("fld.zone_id"),d.zone_id??"",String(zoneIdx+1))}
+      <div class="fg">
+        <div class="ep-header">
+          <label class="fl">${this._t("fld.entity_id_zone")}</label>
+          ${(() => {
+            const eids = Array.isArray(d.entity_id) ? d.entity_id.filter(Boolean)
+                         : d.entity_id ? [d.entity_id] : [];
+            // ＋ disabled when last row is empty (incl. initial empty row)
+            const lastEmpty = eids.length === 0 || !eids[eids.length - 1];
+            return `<button class="btn bxs ep-add" data-a="add-ep-row" type="button"
+                            ${lastEmpty ? "disabled" : ""}>＋</button>`;
+          })()}
+        </div>
+        <div class="ep-multi">${(() => {
+          const eids = Array.isArray(d.entity_id) ? d.entity_id.filter(Boolean)
+                       : d.entity_id ? [d.entity_id] : [];
+          return eids.map((eid, i) =>
+            `<div class="ep-row">
+              <div class="epw">
+                <input class="fi ep-inp" type="text" value="${esc(eid)}"
+                       placeholder="${esc(this._t("fld.entity_picker_placeholder"))}" autocomplete="off">
+                <div class="ep-dd" style="display:none"></div>
+              </div>
+              <button class="ib rd ep-del" data-a="del-ep-row" type="button"
+        >×</button>
+            </div>`).join("");
+        })()}</div>
+      </div>
       ${fSelect("entity_states",this._t("fld.entity_states"),[
         {value:"all", label:this._t("opt.states_all")},
         {value:"on",  label:this._t("opt.states_on")},
@@ -227,7 +264,12 @@ _fGlobalConfig(d = {}) {
     </div>`;
   },
 
-  _fSched(d) {
+  _fSched(d, eid, zoneId, isSeqSched=false) {
+    const ctrl = this._config?.controllers?.find(c => c.entry_id === eid);
+    const zone = ctrl?.zones?.find(z => z.id === zoneId);
+    const scheds = zone?.schedules ?? [];
+    const schedIdx = d.id ? scheds.findIndex(s => s.id === d.id) : scheds.length;
+    const schedPlaceholder = `Schedule ${schedIdx + 1}`;
     // time can be a string (HH:MM) or a sun-event object {sun, before?, after?}
     const isSun    = d.time && typeof d.time === "object" && d.time.sun;
     const timeStr  = isSun ? "" : (d.time ?? "");
@@ -242,10 +284,10 @@ _fGlobalConfig(d = {}) {
     const startN   = isEvery ? (d.day.start_n_days ?? "") : "";
     return `<div class="form">
       <div class="fg-title">${this._t("sec.identity")}</div>
-      ${fText("name",this._t("fld.seq_name"),d.name)}
+      ${fText("name",this._t("fld.seq_name"),d.name,schedPlaceholder)}
       ${fText("schedule_id",this._t("fld.schedule_id"),d.schedule_id??"")}
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
-      <div class="fg-title">${this._t("sec.timing_sched")}</div>
+      <div class="fg-title">${this._t("sec.timing_sched")}<span class="req">*</span></div>
       ${fText("time",this._t("fld.sched_time"),timeStr,"")}
       <div class="fg">
         <label class="fl">${this._t("fld.sun")}</label>
@@ -262,7 +304,7 @@ _fGlobalConfig(d = {}) {
         </div>
       </div>
       ${fText("cron",this._t("fld.cron"),d.cron??"","0 6 * * 1,3,5")}
-      ${fText("duration",this._t("fld.sched_duration"),d.duration??"","")}
+      ${fText("duration",this._t("fld.sched_duration"),d.duration??"","",!isSeqSched)}
       ${fSelect("anchor",this._t("fld.anchor"),[{value:"start",label:this._t("opt.anchor_start")},{value:"finish",label:this._t("opt.anchor_finish")}],d.anchor??"start")}
       <div class="fg-title">${this._t("sec.day_filter")}</div>
       ${fPills("weekday",this._t("fld.weekdays"),WEEKDAYS,d.weekday??[])}
@@ -318,11 +360,14 @@ _fGlobalConfig(d = {}) {
     </div>`;
   },
 
-  _fSeq(d) {
+  _fSeq(d, eid) {
+    const seqs = this._config?.controllers?.find(c => c.entry_id === eid)?.sequences ?? [];
+    const seqIdx = d.id ? seqs.findIndex(s => s.id === d.id) : seqs.length;
+    const seqPlaceholder = `Run ${seqIdx + 1}`;
     return `<div class="form">
       <div class="fg-title">${this._t("sec.identity")}</div>
-      ${fText("name",this._t("fld.seq_name"),d.name)}
-      ${fText("sequence_id",this._t("fld.seq_id"),d.sequence_id??"")}
+      ${fText("name",this._t("fld.seq_name"),d.name,seqPlaceholder)}
+      ${fText("sequence_id",this._t("fld.seq_id"),d.sequence_id??"",String(seqIdx+1))}
       ${fToggle("enabled",this._t("fld.enabled"),d.enabled!==false)}
       <div class="fg-title">${this._t("sec.timing")}</div>
       ${fText("delay",this._t("fld.delay"),d.delay??"","")}
