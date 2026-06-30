@@ -166,5 +166,14 @@
   "fld.every_n_days": "Tous les N jours",
   "fld.start_n_days": "Date de début",
   "err.start_n_days_required": "La date de début est obligatoire lorsque 'Tous les N jours' est sélectionné",
-  "sec.timing_sched": "Minuterie (choisir une: Heure, Événement solaire ou Cron)"
+  "sec.timing_sched": "Minuterie (choisir une: Heure, Événement solaire ou Cron)",
+  "err.entity_id_req": "L'entité switch est obligatoire",
+  "err.entity_id_domain": "L'entité doit appartenir au domaine switch, light, valve ou cover",
+  "err.entity_id_not_found": "L'entité '{eid}' est introuvable dans Home Assistant",
+  "err.sched_time_req": "Le programme nécessite une heure, un événement solaire ou un cron",
+  "err.duration_req": "La durée est obligatoire",
+  "btn.copy": "Copier",
+  "btn.copied": "Copié !",
+  "btn.download": "Télécharger",
+  "err.copy_failed": "Échec de la copie"
 }
