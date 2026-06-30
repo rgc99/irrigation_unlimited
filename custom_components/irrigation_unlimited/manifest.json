@@ -15,5 +15,6 @@
   "requirements": [
     "crontab"
   ],
-  "version": "2025.12.0"
+  "version": "2026.06.0",
+  "integration_type": "hub"
 }
