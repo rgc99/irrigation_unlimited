@@ -212,6 +212,11 @@ _bind(root) {
       }
     });
     root.addEventListener("input", e => {
+      // ep-inp: update ＋ button state when user types in entity picker
+      if (e.target.classList.contains("ep-inp")) {
+        const multi = e.target.closest(".ep-multi");
+        if (multi) this._updateEpMulti(multi);
+      }
       const name = e.target.getAttribute("name");
       const form = e.target.closest(".form");
       if (!form) return;
@@ -242,6 +247,27 @@ _bind(root) {
     });
 
     this._initEntityPickers(root);
+    // Init del button visibility for any ep-multi already in DOM
+    root.querySelectorAll(".ep-multi").forEach(m => this._updateEpMulti(m));
+  },
+
+  _updateEpMulti(multi) {
+    const rows = multi.querySelectorAll(".ep-row");
+    // × visible only when 2+ rows
+    // × always visible: clears field (1 row) or removes row (2+ rows)
+    rows.forEach(r => {
+      const btn = r.querySelector(".ep-del");
+      if (btn) btn.style.display = "";
+    });
+    // ＋ is in .ep-header (sibling of .ep-multi inside .fg)
+    const addBtn = multi.closest(".fg")?.querySelector(".ep-add");
+    if (addBtn) {
+      if (rows.length === 0) { addBtn.disabled = false; }
+      else {
+        const lastInp = [...rows].pop()?.querySelector(".ep-inp");
+        addBtn.disabled = !lastInp?.value.trim();
+      }
+    }
   },
 
   _act(el, root) {
@@ -252,6 +278,25 @@ _bind(root) {
       case "close": this._modal = null; this._draw(); break;
       case "save":  this._save(root); break;
       case "yaml":  this._genYaml(); break;
+      case "copy-yaml": {
+        const yaml = this._modal?.data ?? "";
+        navigator.clipboard.writeText(yaml).then(() => {
+          el.textContent = this._t("btn.copied");
+          setTimeout(() => { el.textContent = this._t("btn.copy"); }, 2000);
+        }).catch(() => alert(this._t("err.copy_failed")));
+        break;
+      }
+      case "download-yaml": {
+        const yaml = this._modal?.data ?? "";
+        const blob = new Blob([yaml], {type: "text/yaml"});
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement("a");
+        a.href     = url;
+        a.download = "irrigation_unlimited.yaml";
+        a.click();
+        URL.revokeObjectURL(url);
+        break;
+      }
 
       // Global Configuration
       case "edit-global":
@@ -291,6 +336,38 @@ _bind(root) {
         this._open("zone",{},{eid}); break;
       case "edit-zone":
         this._open("zone",{...this._fz(eid,zid)},{eid,zoneId:zid}); break;
+      case "add-ep-row": {
+        // Add new entity row to multi-picker (＋ is in ep-header, ep-multi is sibling)
+        const multi = el.closest(".fg")?.querySelector(".ep-multi");
+        if (!multi) break;
+        const row = document.createElement("div");
+        row.className = "ep-row";
+        row.innerHTML =
+          `<div class="epw"><input class="fi ep-inp" type="text" value="" ` +
+          `placeholder="${this._t("fld.entity_picker_placeholder")}" autocomplete="off">` +
+          `<div class="ep-dd" style="display:none"></div></div>` +
+          `<button class="ib rd ep-del" data-a="del-ep-row" type="button">×</button>`;
+        multi.appendChild(row);
+        this._initEntityPickers(row);
+        this._updateEpMulti(multi);
+        // Focus pe noul câmp
+        row.querySelector(".ep-inp")?.focus();
+        break;
+      }
+      case "del-ep-row": {
+        const row = el.closest(".ep-row");
+        const multi = el.closest(".ep-multi");
+        if (row && multi) {
+          if (multi.querySelectorAll(".ep-row").length > 1) {
+            row.remove();                            // 2+ rânduri → șterge rândul
+          } else {
+            const inp = row.querySelector(".ep-inp");
+            if (inp) inp.value = "";                 // 1 rând → golește conținutul
+          }
+          this._updateEpMulti(multi);
+        }
+        break;
+      }
       case "del-zone":
         if (confirm(this._t("confirm.del_zone"))) this._del(()=>
           callWS(this._hass,"delete_zone",{entry_id:eid,zone_id:zid}),`z:${zid}`); break;
@@ -632,11 +709,7 @@ _bind(root) {
             ctrlPayload[k] = TIME_CTRL.has(k) ? normTime(payload[k]) : payload[k];
           }
         }
-        if (!ctrlPayload.name) {
-          const errEl = root.getElementById("modal-err");
-          if (errEl) errEl.textContent = this._t("err.name_req");
-          return;
-        }
+
         await callWS(this._hass,"save_controller",{
           ...(m.ctrlId ? {ctrl_id:m.ctrlId} : {}),
           data: ctrlPayload,
@@ -669,15 +742,47 @@ _bind(root) {
           // Build explicitly -- not using the generic payload, collect field-by-field from fd
           const g  = k => (fd[k] != null ? String(fd[k]) : "").trim();
           const gb = k => fd[k] === true;
+          // Validate entity_id format/domain if provided
+          { const eid_val=g("entity_id");
+            const errEl = root.getElementById("modal-err");
+            const VALID_DOMAINS = ["switch","light","valve","cover","script","automation"];
+            // Collect entity_ids from multi-picker for validation
+            const epMulti = (root.querySelector(".form") || root).querySelector(".ep-multi");
+            const eidsVal = epMulti
+              ? Array.from(epMulti.querySelectorAll(".ep-inp")).map(i=>i.value.trim()).filter(Boolean)
+              : eid_val ? [eid_val] : [];
+            for (const ev of eidsVal) {
+              const parts = ev.split(".");
+              if (parts.length < 2 || !parts[0] || !parts[1]) {
+                if (errEl) errEl.textContent = this._t("err.entity_id_req");
+                return;
+              }
+              if (!VALID_DOMAINS.includes(parts[0])) {
+                if (errEl) errEl.textContent = this._t("err.entity_id_domain");
+                return;
+              }
+              if (this._hass?.states && !this._hass.states[ev]) {
+                if (errEl) errEl.textContent = this._tr("err.entity_id_not_found", {eid: ev});
+                return;
+              }
+            }
+          }
           const zone = {};
           // Keep the id and schedules/adjustments from m.data
           if (m.data?.id) zone.id = m.data.id;
           if (m.data?.schedules)    zone.schedules    = m.data.schedules;
           if (m.data?.adjustments)  zone.adjustments  = m.data.adjustments;
+          // Collect entity_ids from multi-picker
+          { const multi = (root.querySelector(".form") || root).querySelector(".ep-multi");
+            if (multi) {
+              const eids = Array.from(multi.querySelectorAll(".ep-inp"))
+                .map(inp => inp.value.trim()).filter(Boolean);
+              if (eids.length) zone.entity_id = eids;
+            }
+          }
           // Text fields -- include only if filled in
           const TIME_ZONE = new Set(["minimum","maximum","threshold","duration"]);
-          const strKeys = ["name","zone_id","entity_id","minimum","maximum",
-                           "threshold","duration"];
+          const strKeys = ["name","zone_id","minimum","maximum","threshold","duration"];
           for (const k of strKeys) {
             const v=g(k); if (v) zone[k] = TIME_ZONE.has(k) ? normTime(v) : v;
           }
@@ -731,6 +836,36 @@ _bind(root) {
             delete payload.until_day; delete payload.until_month;
             if (ud && um) payload.until = `${ud} ${um}`; else delete payload.until;
           }
+          // Convert every_n_days select → day object {every_n_days, start_n_days}
+          { const dp2 = (payload.day??"");
+            const en  = (payload.every_n_days??"").trim();
+            const sny = (payload.start_n_days_year??"").trim();
+            const snm = String(payload.start_n_days_month??"").trim().padStart(2,"0");
+            const snd = String(payload.start_n_days_day??"01").trim().padStart(2,"0");
+            delete payload.every_n_days;
+            delete payload.start_n_days_year;
+            delete payload.start_n_days_month;
+            delete payload.start_n_days_day;
+            if (dp2 === "every_n_days" && en && sny && snm) {
+              payload.day = {every_n_days: parseInt(en), start_n_days: `${sny}-${snm}-${snd}`};
+            }
+          }
+          // Convert cron field → time: {cron: "..."} (IU CRON_SCHEMA format)
+          { const cron = (payload.cron??"").trim();
+            delete payload.cron;
+            if (cron) payload.time = {cron};
+          }
+          // Require time (or sun/cron → already in payload.time) + duration
+          { const errEl = root.getElementById("modal-err");
+            if (!payload.time) {
+              if (errEl) errEl.textContent = this._t("err.sched_time_req");
+              return;
+            }
+            if (!(payload.duration??"").trim()) {
+              if (errEl) errEl.textContent = this._t("err.duration_req");
+              return;
+            }
+          }
           if (m.seqId)
             await callWS(this._hass,"save_sequence_schedule",{entry_id:eid,sequence_id:m.seqId,schedule:payload});
           else
@@ -770,6 +905,7 @@ _bind(root) {
         }
         case "seq": {
           const g  = k => (fd[k] != null ? String(fd[k]) : "").trim();
+
           const seq = {};
           if (m.data?.id) seq.id = m.data.id;
           if (m.data?.zones)     seq.zones     = m.data.zones;
