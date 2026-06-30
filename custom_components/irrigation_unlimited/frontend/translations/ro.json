@@ -166,5 +166,14 @@
   "fld.every_n_days": "La fiecare N zile",
   "fld.start_n_days": "Dată de start",
   "err.start_n_days_required": "Data de start este obligatorie când 'La fiecare N zile' este selectat",
-  "sec.timing_sched": "Programare (alegeți una: Oră, Eveniment solar sau Cron)"
+  "sec.timing_sched": "Programare (alegeți una: Oră, Eveniment solar sau Cron)",
+  "err.entity_id_req": "Entitatea switch este obligatorie",
+  "err.entity_id_domain": "Entitatea trebuie să fie din domeniul switch, light, valve sau cover",
+  "err.entity_id_not_found": "Entitatea '{eid}' nu a fost găsită în Home Assistant",
+  "err.sched_time_req": "Programul necesită oră, eveniment solar sau cron",
+  "err.duration_req": "Durata este obligatorie",
+  "btn.copy": "Copiază",
+  "btn.copied": "Copiat!",
+  "btn.download": "Descarcă",
+  "err.copy_failed": "Copierea a eșuat"
 }
