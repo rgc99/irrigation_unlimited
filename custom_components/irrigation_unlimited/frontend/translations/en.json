@@ -166,5 +166,14 @@
   "fld.every_n_days": "Every N days",
   "fld.start_n_days": "Start date",
   "err.start_n_days_required": "Start date is required when 'Every N days' is selected",
-  "sec.timing_sched": "Timing (choose one: Time, Sun event or Cron)"
+  "sec.timing_sched": "Timing (choose one: Time, Sun event or Cron)",
+  "err.entity_id_req": "Switch entity is required",
+  "err.entity_id_domain": "Entity must be from switch, light, valve or cover domain",
+  "err.entity_id_not_found": "Entity '{eid}' not found in Home Assistant",
+  "err.sched_time_req": "Schedule requires a time, sun event or cron",
+  "err.duration_req": "Duration is required",
+  "btn.copy": "Copy",
+  "btn.copied": "Copied!",
+  "btn.download": "Download",
+  "err.copy_failed": "Copy failed"
 }
