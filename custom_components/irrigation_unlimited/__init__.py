@@ -53,6 +53,7 @@ from homeassistant.components.frontend import (
 # NEW: serve the bundled frontend/ directory as static files
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.helpers.entity_component import EntityComponent
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
@@ -289,6 +290,21 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(
         entry, [BINARY_SENSOR, BUTTON, NUMBER, SWITCH]
     )
+
+    # Remove entity registry entries for unloaded platforms so that deleted
+    # controllers/zones don't persist as "unavailable" after reload.
+    # On re-setup, async_add_entities re-creates only current entities.
+    _er = er.async_get(hass)
+    for ent in er.async_entries_for_config_entry(_er, entry.entry_id):
+        if ent.domain in (BINARY_SENSOR, BUTTON, NUMBER, SWITCH):
+            _er.async_remove(ent.entity_id)
+
+    # Remove devices that belong to this config entry and have no remaining
+    # entities (e.g. deleted zones leave an empty device in the registry).
+    _dr = dr.async_get(hass)
+    for dev in dr.async_entries_for_config_entry(_dr, entry.entry_id):
+        if not er.async_entries_for_device(_er, dev.id, include_disabled_entities=True):
+            _dr.async_remove_device(dev.id)
 
     # CHANGED: use a local reference instead of hass.data[DOMAIN] directly,
     # since (unlike upstream) this dict is no longer fully popped below.
