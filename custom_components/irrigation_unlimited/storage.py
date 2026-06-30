@@ -130,7 +130,8 @@ class IUStore:
         for sid, ctrl_basics in subentries:
             ctrl = {k: v for k, v in ctrl_basics.items() if v not in (None, "")}
             if "entity_id" in ctrl:
-                ctrl["entity_id"] = [ctrl["entity_id"]]
+                eid = ctrl["entity_id"]
+                ctrl["entity_id"] = eid if isinstance(eid, list) else [eid]
             for k in ("preamble","postamble"):
                 if ctrl.get(k) not in (None, ""):
                     ctrl[k] = IUStore._norm_time(ctrl[k])
@@ -175,14 +176,22 @@ class IUStore:
         """Generate full IU YAML: global config + all controllers."""
         import yaml  # pylint: disable=import-outside-toplevel
 
-        def _fl_repr(dumper, data):
-            return dumper.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True)
+        # Custom Dumper: always indent list items (indentless=False fixes the
+        # default PyYAML behaviour where list items sit at the same column as
+        # their parent key, which looks wrong even though it is valid YAML).
+        class _Dumper(yaml.Dumper):
+            def increase_indent(self, flow=False, indentless=False):
+                return super().increase_indent(flow=flow, indentless=False)
 
-        yaml.add_representer(_FL, _fl_repr)
+        _Dumper.add_representer(
+            _FL,
+            lambda d, data: d.represent_sequence("tag:yaml.org,2002:seq", data, flow_style=True),
+        )
 
         iu_config = self._build_iu_config_raw(self.get_controller_list())
         return yaml.dump(
             {"irrigation_unlimited": iu_config},
+            Dumper=_Dumper,
             default_flow_style=False, allow_unicode=True, sort_keys=False,
         )
 
@@ -332,7 +341,8 @@ class IUStore:
                 obj[k] = IUStore._norm_time(v) if k in TIME_KEYS_Z else v
             # entity_id: IU does `for e in entity_ids` -> must be a list
             if z.get("entity_id") not in (None, ""):
-                obj["entity_id"] = [z["entity_id"]]
+                eid = z["entity_id"]
+                obj["entity_id"] = eid if isinstance(eid, list) else [eid]
             # entity_states: skip if "all" (IU default) for a clean YAML
             if z.get("entity_states") and z["entity_states"] != "all":
                 obj["entity_states"] = z["entity_states"]
@@ -399,9 +409,16 @@ class IUStore:
         result = []
         for s in schedules:
             obj: dict = {}
-            TIME_KEYS_SCH = {"duration","time"}  # "time" normalizat defensiv la HH:MM:SS
+            TIME_KEYS_SCH = {"duration"}
+            # Migrate legacy: cron stored separately → time: {cron: ...}
+            raw_time = s.get("time")
+            raw_cron = s.get("cron")
+            if raw_time not in (None, ""):
+                obj["time"] = IUStore._norm_time(raw_time) if isinstance(raw_time, str) else raw_time
+            elif raw_cron not in (None, ""):
+                obj["time"] = {"cron": raw_cron}
             # "delay" is not a valid field in SCHEDULE_SCHEMA -- not included
-            for k in ("name","schedule_id","enabled","time","duration","anchor","from","until","cron"):
+            for k in ("name","schedule_id","enabled","duration","anchor","from","until"):
                 v = s.get(k)
                 if v in (None, ""): continue
                 obj[k] = IUStore._norm_time(v) if k in TIME_KEYS_SCH else v
@@ -409,8 +426,12 @@ class IUStore:
             if s.get("month"):   obj["month"]   = _FL(s["month"])   if isinstance(s.get("month"), list)   else s["month"]
             if s.get("day") not in (None, ""):
                 raw = s["day"]
-                if isinstance(raw, str) and raw in ("odd","even"):
+                if isinstance(raw, dict) and "every_n_days" in raw:
+                    obj["day"] = raw  # {every_n_days: N, start_n_days: "YYYY-MM-DD"}
+                elif isinstance(raw, str) and raw in ("odd","even"):
                     obj["day"] = raw
+                elif isinstance(raw, str) and raw == "every_n_days":
+                    pass  # invalid legacy value - skip
                 else:
                     try:
                         parts = [int(p.strip()) for p in str(raw).split(",") if p.strip()]
@@ -574,8 +595,33 @@ class IUStore:
 
     async def delete_zone(self, eid: str, zid: str) -> bool:
         zones = self._entry_zones(eid); before = len(zones)
+        # Capture zone identity BEFORE removing (needed for sqz cleanup)
+        deleted = next((z for z in zones if z["id"] == zid), None)
+        zone_pos = next((i for i, z in enumerate(zones) if z["id"] == zid), None)
         self._data[eid]["zones"] = [z for z in zones if z["id"] != zid]
-        if len(self._data[eid]["zones"]) != before: await self._save(); return True
+        if len(self._data[eid]["zones"]) != before:
+            # Build set of all possible references to the deleted zone:
+            # IU zone_id (if set) + 1-based position (positional fallback)
+            del_refs: set[str] = set()
+            if deleted and deleted.get("zone_id"):
+                del_refs.add(str(deleted["zone_id"]))
+            if zone_pos is not None:
+                del_refs.add(str(zone_pos + 1))
+            if del_refs:
+                def _refs_zone(zone_id_val) -> bool:
+                    """True if zone_id_val references one of the deleted refs."""
+                    if zone_id_val is None:
+                        return False
+                    if isinstance(zone_id_val, list):
+                        return any(str(v) in del_refs for v in zone_id_val)
+                    return str(zone_id_val) in del_refs
+                for seq in self._entry_seqs(eid):
+                    seq["zones"] = [
+                        sz for sz in seq.get("zones", [])
+                        if not _refs_zone(sz.get("zone_id"))
+                    ]
+            await self._save()
+            return True
         return False
 
     async def save_schedule(self, eid: str, zid: str, data: dict) -> dict | None:
