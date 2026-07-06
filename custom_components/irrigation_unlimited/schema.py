@@ -24,6 +24,8 @@ from .const import (
     CONF_CHAINS,
     CONF_CHECK_BACK,
     CONF_CLOCK,
+    CONF_CLOSE_DATA,
+    CONF_CLOSE_SERVICE,
     CONF_CONFIG,
     CONF_CONTROLLERS,
     CONF_CONTROLLER_ID,
@@ -57,6 +59,8 @@ from .const import (
     CONF_MODE,
     CONF_MONTH,
     CONF_ODD,
+    CONF_OPEN_DATA,
+    CONF_OPEN_SERVICE,
     CONF_OUTPUT_EVENTS,
     CONF_PAUSE_NEXT,
     CONF_PERCENTAGE,
@@ -256,6 +260,10 @@ ZONE_SCHEMA = vol.Schema(
         vol.Optional(CONF_VOLUME): vol.All(VOLUME_SCHEMA),
         vol.Optional(CONF_DURATION): cv.positive_time_period_template,
         vol.Optional(CONF_USER): vol.All(USER_SCHEMA),
+        vol.Optional(CONF_OPEN_SERVICE): cv.string,
+        vol.Optional(CONF_OPEN_DATA): dict,
+        vol.Optional(CONF_CLOSE_SERVICE): cv.string,
+        vol.Optional(CONF_CLOSE_DATA): dict,
     }
 )
 
