@@ -1264,7 +1264,6 @@ class IUVolume:
         value = float(sensor.state)
         if value < 0:
             raise ValueError(f"Negative sensor value: {sensor.state}")
-
         current_reading = IUVolumeSensorReading(
             stime, Decimal(f"{value * self._volume_scale:.{self._volume_precision}f}")
         )
@@ -1291,26 +1290,53 @@ class IUVolume:
                     f"current: {current_reading.value}"
                 )
 
-            # Total
-            self._total_volume = current_reading.value - self._first_reading.value
-            total_time = current_reading.timestamp - self._first_reading.timestamp
+            # Skip the first interval after a new recording starts.
+            # A pulse-based flow meter has a fixed resolution: each pulse
+            # represents a fixed volume (e.g. 1 litre/pulse or 1/96 litre/pulse).
+            # At the moment the valve opens, the counter may be anywhere within
+            # the current pulse interval. The first tick therefore represents only
+            # the remaining fraction of that interval, not a full pulse volume of
+            # actual flow since opening.
+            #
+            # Example with 1 litre/pulse resolution:
+            #   Counter is at 0.99 L into the current pulse when the valve opens.
+            #   The first tick fires after only 0.01 L of actual flow (0.6 s on a
+            #   3 l/min line), yet is counted as 1 L → apparent flow = 100 l/min.
+            #   On a low-flow circuit (3 l/min, 1 pulse every ~20 s) the error is
+            #   far greater than on a high-flow circuit (17 l/min, 1 pulse every
+            #   ~3.5 s) because the time_delta is proportionally shorter relative
+            #   to the pulse interval.
+            #
+            # Resetting first_reading to the current tick discards this unreliable
+            # first interval. All subsequent calculations start from a clean
+            # baseline where a complete pulse interval has elapsed since opening.
 
-            # SMA
-            rate = volume_delta * Decimal(self._flow_rate_scale) / time_delta
-            self._flow_rate_sum += rate
-            self._flow_rates.append(rate)
-            if len(self._flow_rates) > IUVolume.SMA_WINDOW:
-                self._flow_rate_sum -= self._flow_rates.pop(0)
-            # pylint: disable=invalid-unary-operand-type
-            self._flow_rate_sma = (
-                self._flow_rate_sum / len(self._flow_rates)
-            ).quantize(Decimal(10) ** -self._flow_rate_precision)
+            if self._total_readings == 1:
+                self._first_reading = current_reading
+                self._total_volume = 0
+                self._flow_rate_sma = 0
+                self._flow_rate_avg = 0
+            else:
+                # Total
+                self._total_volume = current_reading.value - self._first_reading.value
+                total_time = current_reading.timestamp - self._first_reading.timestamp
 
-            # AVG
-            if (secs := total_time.total_seconds()) > 0:
-                self._flow_rate_avg = (
-                    self._total_volume * Decimal(self._flow_rate_scale) / Decimal(secs)
+                # SMA
+                rate = volume_delta * Decimal(self._flow_rate_scale) / time_delta
+                self._flow_rate_sum += rate
+                self._flow_rates.append(rate)
+                if len(self._flow_rates) > IUVolume.SMA_WINDOW:
+                    self._flow_rate_sum -= self._flow_rates.pop(0)
+                # pylint: disable=invalid-unary-operand-type
+                self._flow_rate_sma = (
+                    self._flow_rate_sum / len(self._flow_rates)
                 ).quantize(Decimal(10) ** -self._flow_rate_precision)
+
+                # AVG
+                if (secs := total_time.total_seconds()) > 0:
+                    self._flow_rate_avg = (
+                        self._total_volume * Decimal(self._flow_rate_scale) / Decimal(secs)
+                    ).quantize(Decimal(10) ** -self._flow_rate_precision)
         else:
             self._first_reading = current_reading
             self._total_volume = 0
