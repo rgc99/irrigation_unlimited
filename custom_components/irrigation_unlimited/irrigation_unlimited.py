@@ -107,6 +107,8 @@ from .const import (
     CONF_AUTOPLAY,
     CONF_CHECK_BACK,
     CONF_CLOCK,
+    CONF_CLOSE_DATA,
+    CONF_CLOSE_SERVICE,
     CONF_CONFIG,
     CONF_CONTROLLER,
     CONF_CONTROLLERS,
@@ -142,6 +144,8 @@ from .const import (
     CONF_MODE,
     CONF_MONTH,
     CONF_ODD,
+    CONF_OPEN_DATA,
+    CONF_OPEN_SERVICE,
     CONF_OUTPUT_EVENTS,
     CONF_PAUSE_NEXT,
     CONF_PERCENTAGE,
@@ -933,6 +937,10 @@ class IUSwitch:
         self._check_back_resync: bool = True
         self._check_back_entity_id: str = None
         self._check_back_toggle: bool = False
+        self._open_service: str = None
+        self._open_data: dict = None
+        self._close_service: str = None
+        self._close_data: dict = None
         # private variables
         self._state: bool = None  # This parameter should mirror IUZone._is_on
         self._check_back_time: timedelta = None
@@ -958,24 +966,44 @@ class IUSwitch:
             or (self._switch_entity_states == "off" and not state)
         )
 
-    def _set_switch(self, entity_id: str | list[str], state: bool) -> None:
+    def _set_switch(
+        self, entity_id: str | list[str], state: bool, duration: timedelta = None
+    ) -> None:
         """Make the HA call to physically turn the switch on/off"""
 
         def make_call(entity: str) -> None:
-            domain = split_entity_id(entity)[0]
-            match domain:
-                case Platform.VALVE:
-                    service = SERVICE_OPEN_VALVE if state else SERVICE_CLOSE_VALVE
-                case Platform.COVER:
-                    service = SERVICE_OPEN_COVER if state else SERVICE_CLOSE_COVER
-                case _:
-                    domain = HADOMAIN
-                    service = SERVICE_TURN_ON if state else SERVICE_TURN_OFF
+            # Use custom open/close service if configured
+            if state and self._open_service is not None:
+                domain, service = self._open_service.split(".", 1)
+                duration_minutes = round(duration.total_seconds() / 60) if duration else 0
+                data = dict(self._open_data) if self._open_data else {}
+                data = {
+                    k: (
+                        v.replace("{{ duration_minutes }}", str(duration_minutes))
+                        if isinstance(v, str)
+                        else v
+                    )
+                    for k, v in data.items()
+                }
+            elif not state and self._close_service is not None:
+                domain, service = self._close_service.split(".", 1)
+                data = dict(self._close_data) if self._close_data else {}
+            else:
+                domain = split_entity_id(entity)[0]
+                match domain:
+                    case Platform.VALVE:
+                        service = SERVICE_OPEN_VALVE if state else SERVICE_CLOSE_VALVE
+                    case Platform.COVER:
+                        service = SERVICE_OPEN_COVER if state else SERVICE_CLOSE_COVER
+                    case _:
+                        domain = HADOMAIN
+                        service = SERVICE_TURN_ON if state else SERVICE_TURN_OFF
+                data = {ATTR_ENTITY_ID: entity}
             self._hass.async_create_task(
                 self._hass.services.async_call(
                     domain,
                     service,
-                    {ATTR_ENTITY_ID: entity},
+                    data,
                 )
             )
 
@@ -1062,6 +1090,10 @@ class IUSwitch:
         self._switch_entity_id = config.get(CONF_ENTITY_ID)
         load_params(config)
         load_check_back_params(config.get(CONF_CHECK_BACK))
+        self._open_service = config.get(CONF_OPEN_SERVICE)
+        self._open_data = config.get(CONF_OPEN_DATA)
+        self._close_service = config.get(CONF_CLOSE_SERVICE)
+        self._close_data = config.get(CONF_CLOSE_DATA)
         return self
 
     def muster(self, stime: datetime) -> int:
@@ -1117,7 +1149,9 @@ class IUSwitch:
                         do_resync(stime, self._switch_entity_id)
         return result
 
-    def call_switch(self, state: bool, stime: datetime = None) -> None:
+    def call_switch(
+        self, state: bool, stime: datetime = None, duration: timedelta = None
+    ) -> None:
         """Turn the HA entity on or off"""
         # pylint: disable=too-many-boolean-expressions
         if self._switch_entity_id is not None:
@@ -1127,7 +1161,7 @@ class IUSwitch:
                 self._check_back_time = None
             self._state = state
             if self._allow_set(state):
-                self._set_switch(self._switch_entity_id, state)
+                self._set_switch(self._switch_entity_id, state, duration)
             if stime is not None and (
                 self._check_back_states == "all"
                 or (self._check_back_states == "on" and state)
@@ -2613,7 +2647,10 @@ class IUZone(IUBase):
 
     def call_switch(self, state: bool, stime: datetime = None) -> None:
         """Turn the HA entity on or off"""
-        self._switch.call_switch(state, stime)
+        duration = None
+        if state and self._run_queue.current_run is not None:
+            duration = self._run_queue.current_run.duration
+        self._switch.call_switch(state, stime, duration)
         self._coordinator.status_changed(stime, self._controller, self, state)
 
 
