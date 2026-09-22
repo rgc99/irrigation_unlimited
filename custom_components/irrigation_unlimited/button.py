@@ -6,6 +6,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.core import HomeAssistant
 
 from .irrigation_unlimited import IUCoordinator, IUController, IUZone, IUSequence
+from .entity import get_device_info
 from .const import (
     BUTTON,
     CONF_TIME,
@@ -70,11 +71,7 @@ class IUZoneRunButton(ButtonEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._zone.unique_id)},
-            "name": self._zone.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(self._coordinator, self._zone.unique_id, self._zone.name)
 
     async def async_press(self) -> None:
         """Run the zone now using the configured run duration."""
@@ -123,11 +120,9 @@ class IUSequenceRunButton(ButtonEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._sequence.unique_id)},
-            "name": self._sequence.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(
+            self._coordinator, self._sequence.unique_id, self._sequence.name
+        )
 
     async def async_press(self) -> None:
         """Run the sequence now using the configured run duration."""

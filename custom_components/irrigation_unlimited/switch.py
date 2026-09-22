@@ -10,6 +10,7 @@ from .irrigation_unlimited import (
     IUSequence,
     IUSchedule,
 )
+from .entity import get_device_info
 from .const import (
     COORDINATOR,
     DOMAIN,
@@ -86,11 +87,9 @@ class IUControllerManualSwitch(SwitchEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._controller.unique_id)},
-            "name": self._controller.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(
+            self._coordinator, self._controller.unique_id, self._controller.name
+        )
 
     @property
     def is_on(self) -> bool:
@@ -140,11 +139,7 @@ class IUZoneEnableSwitch(SwitchEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._zone.unique_id)},
-            "name": self._zone.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(self._coordinator, self._zone.unique_id, self._zone.name)
 
     @property
     def is_on(self) -> bool:
@@ -194,11 +189,9 @@ class IUSequenceEnableSwitch(SwitchEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._sequence.unique_id)},
-            "name": self._sequence.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(
+            self._coordinator, self._sequence.unique_id, self._sequence.name
+        )
 
     @property
     def is_on(self) -> bool:

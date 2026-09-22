@@ -56,6 +56,8 @@ from homeassistant.const import (
     SERVICE_TURN_ON,
     STATE_CLOSED,
     STATE_OFF,
+    STATE_UNKNOWN,
+    STATE_UNAVAILABLE,
     STATE_ON,
     STATE_OPEN,
     WEEKDAYS,
@@ -1078,6 +1080,16 @@ class IUSwitch:
         def _check_entity(entity_id: str, expected: str) -> bool:
             state = self._hass.states.get(entity_id)
             found = state.state if state else None
+            # A device can briefly report an indeterminate state while Home
+            # Assistant is starting or reconnecting. Defer synchronization
+            # until it reports a usable state instead of raising a false
+            # mismatch and attempting a corrective service call.
+            if state is not None and state.state in (
+                STATE_UNKNOWN,
+                STATE_UNAVAILABLE,
+            ):
+                return True
+
             is_valid = state is not None and state.state == expected
             if not is_valid:
                 result.append(entity_id)
@@ -6441,9 +6453,10 @@ class IUCoordinator:
 
     # pylint: disable=too-many-instance-attributes, too-many-public-methods
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, config_entry_id: str | None = None) -> None:
         # Passed parameters
         self._hass = hass
+        self._config_entry_id = config_entry_id
         # Config parameters
         self._refresh_interval: timedelta = None
         self._sync_switches: bool = True
@@ -6476,6 +6489,11 @@ class IUCoordinator:
     def hass(self) -> HomeAssistant:
         """Return the HomeAssistant object"""
         return self._hass
+
+    @property
+    def config_entry_id(self) -> str | None:
+        """Return the config entry ID, if setup came from a config entry."""
+        return self._config_entry_id
 
     @property
     def entity_id(self) -> str:

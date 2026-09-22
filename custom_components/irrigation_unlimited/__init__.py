@@ -91,7 +91,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     config = dict(entry.options) if entry.options else dict(entry.data)
 
     hass.data.setdefault(DOMAIN, {})
-    coordinator = IUCoordinator(hass).load(config)
+    coordinator = IUCoordinator(hass, entry.entry_id).load(config)
     hass.data[DOMAIN][COORDINATOR] = coordinator
 
     component = EntityComponent(_LOGGER, DOMAIN, hass)
