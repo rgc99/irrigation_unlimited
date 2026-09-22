@@ -1393,7 +1393,7 @@ automation:
 
 PLEASE NOTE: You must change the `entity_id` lines to match your specific situation. There are four (4) places that need to be updated. The automation WILL NOT RUN as is.
 ```yaml
-# Example automation for HAsmartirrigation integration (smart_irrigation)[https://github.com/jeroenterheerdt/HAsmartirrigation]
+# Example automation for HAsmartirrigation integration ([smart_irrigation](https://github.com/jeroenterheerdt/HAsmartirrigation))
 automation:
   - alias: Smart Irrigation adjustment
     id: "IU1653097957047"
