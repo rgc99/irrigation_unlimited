@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import (
 from homeassistant.util import dt
 
 from .irrigation_unlimited import IUCoordinator
-from .entity import IUEntity
+from .entity import IUEntity, get_device_info
 from .service import register_platform_services
 from .const import (
     ATTR_ENABLED,
@@ -158,11 +158,9 @@ class IUMasterEntity(IUEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._controller.unique_id)},
-            "name": self._controller.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(
+            self._coordinator, self._controller.unique_id, self._controller.name
+        )
 
     @property
     def is_on(self):
@@ -235,11 +233,7 @@ class IUZoneEntity(IUEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._zone.unique_id)},
-            "name": self._zone.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(self._coordinator, self._zone.unique_id, self._zone.name)
 
     @property
     def is_on(self):
@@ -330,11 +324,9 @@ class IUSequenceEntity(IUEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._sequence.unique_id)},
-            "name": self._sequence.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(
+            self._coordinator, self._sequence.unique_id, self._sequence.name
+        )
 
     @property
     def is_on(self):

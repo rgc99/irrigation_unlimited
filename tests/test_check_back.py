@@ -333,3 +333,18 @@ async def test_check_back(hass: ha.HomeAssistant, skip_dependencies, skip_histor
         remove_switch_events()
         remove_sync_events()
         remove_hass_envents()
+
+
+async def test_indeterminate_switch_state_is_deferred(
+    hass: ha.HomeAssistant, skip_dependencies, skip_history
+):
+    """Unknown and unavailable states are not synchronization failures."""
+    # pylint: disable=unused-argument
+    async with IUExam(hass, "test_check_back.yaml") as exam:
+        await exam.load_component("homeassistant")
+        await exam.load_component("input_boolean")
+
+        zone = exam.coordinator.controllers[0].zones[1]
+        for state in ("unknown", "unavailable"):
+            hass.states.async_set("input_boolean.dummy_switch_z3", state)
+            assert zone.check_switch(False, datetime.now()) == []

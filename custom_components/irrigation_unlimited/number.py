@@ -6,6 +6,7 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.core import HomeAssistant
 
 from .irrigation_unlimited import IUCoordinator, IUController, IUZone, IUSequence
+from .entity import get_device_info
 from .const import (
     COORDINATOR,
     DOMAIN,
@@ -101,11 +102,7 @@ class IUZoneRunDuration(NumberEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._zone.unique_id)},
-            "name": self._zone.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(self._coordinator, self._zone.unique_id, self._zone.name)
 
     async def async_set_native_value(self, value: float) -> None:
         self._attr_native_value = value
@@ -164,11 +161,9 @@ class IUSequenceRunDuration(NumberEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, self._sequence.unique_id)},
-            "name": self._sequence.name,
-            "manufacturer": "Irrigation Unlimited",
-        }
+        return get_device_info(
+            self._coordinator, self._sequence.unique_id, self._sequence.name
+        )
 
     async def async_set_native_value(self, value: float) -> None:
         self._attr_native_value = value

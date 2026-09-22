@@ -46,6 +46,7 @@ from .const import (
     CONF_ZONE,
     CONF_ZONES,
     COORDINATOR,
+    DOMAIN,
     ICON,
     SERVICE_ENABLE,
     SERVICE_DISABLE,
@@ -53,6 +54,22 @@ from .const import (
     SERVICE_SUSPEND,
     STATUS_INITIALISING,
 )
+
+
+def get_device_info(coordinator: IUCoordinator, unique_id: str, name: str):
+    """Return device metadata only for config-entry entities.
+
+    YAML entities do not have a config entry to own a device. Returning
+    device metadata for them causes newer Home Assistant versions to warn
+    about attaching a device without a config entry.
+    """
+    if coordinator.config_entry_id is None:
+        return None
+    return {
+        "identifiers": {(DOMAIN, unique_id)},
+        "name": name,
+        "manufacturer": "Irrigation Unlimited",
+    }
 
 
 class IURestore:
