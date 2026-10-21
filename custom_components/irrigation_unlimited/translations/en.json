@@ -4,21 +4,36 @@
             "user": {
                 "title": "Set up Irrigation Unlimited",
                 "description": "Give your irrigation controller a name.",
-                "data": {"name": "Controller name"}
+                "data": {
+                    "name": "Controller name"
+                }
             },
             "add_zone": {
                 "title": "Add zone {zone_number}",
-                "description": "Configure the zone and optionally select the switch or valve entity that controls it.",
-                "data": {"name": "Zone name", "entity_id": "Switch / valve entity"}
+                "description": "Configure the zone, select one or more switch or valve entities that control it, and optionally cap run times.",
+                "data": {
+                    "name": "Zone name",
+                    "entity_id": "Switch / valve entities",
+                    "minimum": "Minimum run time (HH:MM:SS)",
+                    "maximum": "Maximum run time (HH:MM:SS)",
+                    "threshold": "Threshold (HH:MM:SS)"
+                }
             },
             "zone_menu": {
                 "title": "Zone added",
                 "description": "Would you like to add another zone?",
-                "menu_options": {"add_zone": "Add another zone", "finish": "Finish"}
+                "menu_options": {
+                    "add_zone": "Add another zone",
+                    "finish": "Finish"
+                }
             },
-            "finish": {"title": "Finish"}
+            "finish": {
+                "title": "Finish"
+            }
         },
-        "abort": {"already_configured": "Irrigation Unlimited is already configured."}
+        "abort": {
+            "already_configured": "Irrigation Unlimited is already configured."
+        }
     },
     "options": {
         "step": {
@@ -43,26 +58,44 @@
             "master_valve": {
                 "title": "Master valve",
                 "description": "Select the switch or valve entity that acts as the master valve for the controller. Leave blank to remove.",
-                "data": {"entity_id": "Master valve entity"}
+                "data": {
+                    "entity_id": "Master valve entity"
+                }
             },
             "add_zone": {
                 "title": "Add zone {zone_number}",
-                "description": "Configure the zone and optionally select the switch or valve entity that controls it.",
-                "data": {"name": "Zone name", "entity_id": "Switch / valve entity"}
+                "description": "Configure the zone, select one or more switch or valve entities that control it, and optionally cap run times.",
+                "data": {
+                    "name": "Zone name",
+                    "entity_id": "Switch / valve entities",
+                    "minimum": "Minimum run time (HH:MM:SS)",
+                    "maximum": "Maximum run time (HH:MM:SS)",
+                    "threshold": "Threshold (HH:MM:SS)"
+                }
             },
             "edit_zone": {
                 "title": "Edit zone",
                 "description": "Select the zone to edit.",
-                "data": {"zone_index": "Zone"}
+                "data": {
+                    "zone_index": "Zone"
+                }
             },
             "edit_zone_details": {
                 "title": "Edit zone: {zone_name}",
-                "data": {"name": "Zone name", "entity_id": "Switch / valve entity"}
+                "data": {
+                    "name": "Zone name",
+                    "entity_id": "Switch / valve entities",
+                    "minimum": "Minimum run time (HH:MM:SS)",
+                    "maximum": "Maximum run time (HH:MM:SS)",
+                    "threshold": "Threshold (HH:MM:SS)"
+                }
             },
             "remove_zone": {
                 "title": "Remove zone",
                 "description": "Select the zone to remove.",
-                "data": {"zone_index": "Zone"}
+                "data": {
+                    "zone_index": "Zone"
+                }
             },
             "add_sequence": {
                 "title": "Add a sequence",
@@ -75,7 +108,9 @@
             "edit_sequence": {
                 "title": "Edit a sequence",
                 "description": "Select the sequence to edit.",
-                "data": {"sequence_index": "Sequence"}
+                "data": {
+                    "sequence_index": "Sequence"
+                }
             },
             "edit_sequence_details": {
                 "title": "Edit sequence",
@@ -88,12 +123,16 @@
             "remove_sequence": {
                 "title": "Remove a sequence",
                 "description": "Select the sequence to remove.",
-                "data": {"sequence_index": "Sequence"}
+                "data": {
+                    "sequence_index": "Sequence"
+                }
             },
             "view_sequences": {
                 "title": "Sequences",
                 "description": "{sequences}",
-                "data": {"sequence_index": "Select sequence to edit"}
+                "data": {
+                    "sequence_index": "Select sequence to edit"
+                }
             },
             "sequence_menu": {
                 "title": "Sequence",
@@ -107,66 +146,104 @@
             },
             "add_sequence_zone": {
                 "title": "Add zone to sequence",
-                "data": {"zone_id": "Zone"}
+                "data": {
+                    "zone_id": "Zone",
+                    "duration": "Run time for this step (HH:MM:SS, blank = sequence default)",
+                    "delay": "Delay after this step (HH:MM:SS, blank = sequence default)",
+                    "repeat": "Repeat this step"
+                }
             },
             "edit_sequence_zone": {
                 "title": "Edit sequence zone",
                 "description": "Select the zone to edit.",
-                "data": {"zone_position": "Zone"}
+                "data": {
+                    "zone_position": "Zone"
+                }
             },
             "edit_sequence_zone_details": {
                 "title": "Edit sequence zone",
-                "data": {"zone_id": "Zone"}
+                "data": {
+                    "zone_id": "Zone",
+                    "duration": "Run time for this step (HH:MM:SS, blank = sequence default)",
+                    "delay": "Delay after this step (HH:MM:SS, blank = sequence default)",
+                    "repeat": "Repeat this step"
+                }
             },
             "remove_sequence_zone": {
                 "title": "Remove zone from sequence",
                 "description": "Select the zone to remove.",
-                "data": {"zone_position": "Zone"}
+                "data": {
+                    "zone_position": "Zone"
+                }
             },
             "add_schedule": {
                 "title": "Add a schedule",
                 "description": "Select the zone or sequence to schedule.",
-                "data": {"target_ref": "Zone or sequence"}
+                "data": {
+                    "target_ref": "Zone or sequence"
+                }
             },
             "add_schedule_details": {
                 "title": "Schedule details",
-                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.\n{duration_info}",
+                "description": "Leave 'Start time' as the trigger, or pick a sun event and set 'before'/'after'. Set 'Every N days' OR days of the week - not both. Use months, days of the month and the from/until dates to restrict the season. {duration_info}",
                 "data": {
                     "name": "Schedule name (optional)",
                     "time": "Start time (HH:MM)",
                     "duration": "Duration (HH:MM:SS)",
+                    "sun": "Start at a sun event instead of a time",
+                    "before": "Start before the sun event by (HH:MM:SS)",
+                    "after": "Start after the sun event by (HH:MM:SS)",
                     "every_n_days": "Every N days (leave blank for daily or day-of-week)",
                     "start_n_days": "Every-N-days start date",
-                    "weekday": "Days of the week (ignored if Every N days is set)"
+                    "weekday": "Days of the week (ignored if Every N days is set)",
+                    "month": "Months (blank = all year)",
+                    "day_type": "Days of the month",
+                    "day_numbers": "Day numbers, comma separated (e.g. 1,15,31)",
+                    "from": "Only run from this date",
+                    "until": "Only run until this date"
                 }
             },
             "edit_schedule": {
                 "title": "Edit a schedule",
                 "description": "Select the schedule to edit.",
-                "data": {"schedule_ref": "Schedule"}
+                "data": {
+                    "schedule_ref": "Schedule"
+                }
             },
             "edit_schedule_details": {
                 "title": "Edit schedule",
-                "description": "Set 'Every N days' OR select days of the week — not both. Every N days takes priority if both are set.\n{duration_info}",
+                "description": "Leave 'Start time' as the trigger, or pick a sun event and set 'before'/'after'. Set 'Every N days' OR days of the week - not both. Use months, days of the month and the from/until dates to restrict the season. {duration_info}",
                 "data": {
                     "name": "Schedule name (optional)",
                     "time": "Start time (HH:MM)",
                     "duration": "Duration (HH:MM:SS)",
+                    "sun": "Start at a sun event instead of a time",
+                    "before": "Start before the sun event by (HH:MM:SS)",
+                    "after": "Start after the sun event by (HH:MM:SS)",
                     "every_n_days": "Every N days (leave blank for daily or day-of-week)",
                     "start_n_days": "Every-N-days start date",
-                    "weekday": "Days of the week (ignored if Every N days is set)"
+                    "weekday": "Days of the week (ignored if Every N days is set)",
+                    "month": "Months (blank = all year)",
+                    "day_type": "Days of the month",
+                    "day_numbers": "Day numbers, comma separated (e.g. 1,15,31)",
+                    "from": "Only run from this date",
+                    "until": "Only run until this date"
                 }
             },
             "remove_schedule": {
                 "title": "Remove a schedule",
                 "description": "Select the schedule to remove.",
-                "data": {"schedule_ref": "Schedule"}
+                "data": {
+                    "schedule_ref": "Schedule"
+                }
             },
             "view_schedules": {
                 "title": "Current schedules",
                 "description": "{schedules}"
             },
-            "finish": {"title": "Finish"}
+            "finish": {
+                "title": "Finish"
+            }
         }
     }
 }

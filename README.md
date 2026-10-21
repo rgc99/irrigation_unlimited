@@ -173,8 +173,8 @@ A binary sensor is associated with each controller and zone. Controller or maste
 ### 4.1. Install from HACS
 
 1. Just search for Irrigation Unlimited integration in [HACS][hacs] and install it.
-2. Add Irrigation Unlimited to your configuration.yaml file. See _[configuration examples](#6-configuration-examples)_ below.
-3. Restart Home Assistant.
+2. Restart Home Assistant.
+3. In the HA UI go to **Settings → Devices & Services → Add Integration** and search for **Irrigation Unlimited**. See _[UI Configuration](ui.md)_ for a walkthrough.
 
 ### 4.2. Manual installation
 
@@ -191,21 +191,28 @@ Using your HA configuration directory (folder) as a starting point you should no
 ```text
 custom_components/irrigation_unlimited/__init__.py
 custom_components/irrigation_unlimited/binary_sensor.py
+custom_components/irrigation_unlimited/button.py
+custom_components/irrigation_unlimited/config_flow.py
 custom_components/irrigation_unlimited/const.py
 custom_components/irrigation_unlimited/entity.py
 custom_components/irrigation_unlimited/history.py
 custom_components/irrigation_unlimited/irrigation_unlimited.py
 custom_components/irrigation_unlimited/manifest.json
+custom_components/irrigation_unlimited/number.py
 custom_components/irrigation_unlimited/schema.py
 custom_components/irrigation_unlimited/service.py
 custom_components/irrigation_unlimited/services.yaml
+custom_components/irrigation_unlimited/strings.json
+custom_components/irrigation_unlimited/switch.py
+custom_components/irrigation_unlimited/util.py
+custom_components/irrigation_unlimited/translations/en.json
 ```
 
 ## 5. Configuration
 
-Configuration is done by yaml. Note: The configuration can be reloaded without restarting HA. See [below](#78-service-reload) for details and limitations.
+Configuration is done through the Home Assistant UI — see [UI Configuration](ui.md) for a walkthrough. Note: The configuration can be reloaded without restarting HA. See [below](#78-service-reload) for details and limitations.
 
-> **UI configuration is optional.** Irrigation Unlimited also supports configuration via the Home Assistant UI — see [UI Configuration](ui.md) for details. If a `yaml` configuration is present it will take precedence over any settings made through the UI.
+> **YAML is supported for advanced setups.** The UI covers controllers, zones, sequences and the common scheduling options — including sun events, month/day recurrence and seasonal spans. Options it doesn't expose yet — cron expressions, `check_back`, `volume`, history, clock and preamble/postamble, and the diagnostic settings — are configured in `configuration.yaml` and documented in the sections below. A `yaml` configuration takes precedence over any settings made through the UI, so use one or the other, not both.
 
 | Name | Type | Default | Description |
 | -----| ---- | ------- | ----------- |

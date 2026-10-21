@@ -1,8 +1,6 @@
 # UI Configuration
 
-> **Experimental.** UI configuration is still in early development and covers a subset of the full feature set. For complex setups, YAML configuration is recommended.
-
-Irrigation Unlimited can be configured through the Home Assistant UI for basic setups — no `yaml` required.
+Irrigation Unlimited is configured through the Home Assistant UI — no `yaml` required. This is the default and recommended way to set up the integration.
 
 > **YAML takes precedence.** If an `irrigation_unlimited:` block exists in your `configuration.yaml`, it will override any settings made through the UI. Remove or comment out the YAML block to use UI configuration exclusively.
 
@@ -14,14 +12,22 @@ Irrigation Unlimited can be configured through the Home Assistant UI for basic s
 
 ## What can be configured via the UI
 
-- Controllers (name, master valve entity)
-- Zones (name, switch entity, default duration)
-- Sequences (name, zone order)
-- Schedules (start time, duration, days of week or every N days)
+**Controllers** — name, master valve entity
+
+**Zones** — name, one or more switch/valve entities, minimum/maximum run time, threshold
+
+**Sequences** — name, delay, duration, and per-step duration/delay/repeat
+
+**Schedules** — name, start time, duration, and recurrence:
+
+- Start at a clock time, or at **sunrise/sunset** with a `before`/`after` offset
+- Days of the week, or every _N_ days from a start date
+- Specific months, or odd/even/specific days of the month
+- A seasonal `from`/`until` date span
 
 ## Limitations
 
-The UI currently supports a subset of the options available through YAML. Features such as sun events, cron expressions, adjustments, history, check-back, and advanced sequence options require YAML configuration. See the [full configuration reference](README.md#5-configuration) in the README.
+The UI covers the options most setups need. Not yet exposed in the UI — cron expressions, adjustments, `check_back`, `volume`, history and clock settings, preamble/postamble, and the diagnostic options (`testing`, `rename_entities`, `granularity` and friends) — are configured in `configuration.yaml`. See the [full configuration reference](README.md#5-configuration) in the README.
 
 ## Entities created per zone
 
