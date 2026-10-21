@@ -125,10 +125,10 @@ from .const import (
     CONF_EXTENDED_CONFIG,
     CONF_FINISH,
     CONF_FIXED,
+    CONF_FROM,
     CONF_FLOW_RATE_PRECISION,
     CONF_FLOW_RATE_SCALE,
     CONF_FOUND,
-    CONF_FROM,
     CONF_FUTURE_SPAN,
     CONF_GLOBAL_SEQUENCE_IDS,
     CONF_GLOBAL_ZONE_IDS,
@@ -279,6 +279,16 @@ def reset_granularity() -> None:
 def granularity_time() -> timedelta:
     """Return the system granularity as a timedelta"""
     return timedelta(seconds=SYSTEM_GRANULARITY)
+
+
+def as_td(value):
+    """Coerce a duration that arrived as a string via a config entry round trip"""
+    return cv.positive_time_period(value) if isinstance(value, str) else value
+
+
+def as_date(value):
+    """Coerce a date that arrived as an ISO string via a config entry round trip"""
+    return date.fromisoformat(value) if isinstance(value, str) else value
 
 
 def wash_td(delta: timedelta, granularity: int = None) -> timedelta:
@@ -729,7 +739,18 @@ class IUSchedule(IUBase):
         # Config entry data is JSON so time arrives as a string; parse it to a time object
         if isinstance(raw_time, str):
             raw_time = cv.time(raw_time)
-        self._start_time = raw_time
+        if isinstance(raw_time, dict) and CONF_SUN in raw_time:
+            # Sun offsets are durations, which survive a config entry round trip as strings
+            self._start_time = {
+                **raw_time,
+                CONF_AFTER: as_td(raw_time.get(CONF_AFTER)),
+                CONF_BEFORE: as_td(raw_time.get(CONF_BEFORE)),
+            }
+            self._start_time = {
+                k: v for k, v in self._start_time.items() if v is not None
+            }
+        else:
+            self._start_time = raw_time
         self._anchor = config.get(CONF_ANCHOR, self._anchor)
         raw_duration = config.get(CONF_DURATION, self._duration)
         # Config entry data is JSON so duration arrives as a string; parse it to a timedelta
@@ -758,8 +779,8 @@ class IUSchedule(IUBase):
                     **self._days,
                     CONF_START_N_DAYS: date.fromisoformat(start),
                 }
-        self._from = config.get(CONF_FROM, self._from)
-        self._until = config.get(CONF_UNTIL, self._until)
+        self._from = as_date(config.get(CONF_FROM, self._from))
+        self._until = as_date(config.get(CONF_UNTIL, self._until))
 
         return self
 
@@ -2089,12 +2110,14 @@ class IUScheduleQueue(IURunQueue):
 
         super().load(config, all_zones)
         if all_zones is not None:
-            self._minimum = wash_td(all_zones.get(CONF_MINIMUM, self._minimum))
-            self._maximum = wash_td(all_zones.get(CONF_MAXIMUM, self._maximum))
-            self._threshold = wash_td(all_zones.get(CONF_THRESHOLD, self._threshold))
-        self._minimum = wash_td(config.get(CONF_MINIMUM, self._minimum))
-        self._maximum = wash_td(config.get(CONF_MAXIMUM, self._maximum))
-        self._threshold = wash_td(config.get(CONF_THRESHOLD, self._threshold))
+            self._minimum = wash_td(as_td(all_zones.get(CONF_MINIMUM, self._minimum)))
+            self._maximum = wash_td(as_td(all_zones.get(CONF_MAXIMUM, self._maximum)))
+            self._threshold = wash_td(
+                as_td(all_zones.get(CONF_THRESHOLD, self._threshold))
+            )
+        self._minimum = wash_td(as_td(config.get(CONF_MINIMUM, self._minimum)))
+        self._maximum = wash_td(as_td(config.get(CONF_MAXIMUM, self._maximum)))
+        self._threshold = wash_td(as_td(config.get(CONF_THRESHOLD, self._threshold)))
         return self
 
 

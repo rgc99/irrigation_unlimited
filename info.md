@@ -39,9 +39,16 @@ and expands to
 ## Installation
 
 1. Click install.
-2. See the [repository][irrigation_unlimited] for detailed setup instructions.
+2. Restart Home Assistant.
+3. Go to **Settings → Devices & Services → Add Integration** and search for **Irrigation Unlimited**.
 
-## Configuration is done in the configuration.yaml
+## Configuration is done in the UI
+
+Irrigation Unlimited is configured through the Home Assistant UI — there is no `configuration.yaml` editing required.
+
+Once added, select the integration and use the **Configure** button to add zones, sequences and schedules. See the [repository][irrigation_unlimited] for the full reference.
+
+> **Need an option the UI doesn't expose yet?** Cron expressions, `check_back`, volume tracking, history and the diagnostic settings are configured in `configuration.yaml`. A `yaml` configuration takes precedence over the UI, so use one or the other — not both.
 
 <!---->
 
